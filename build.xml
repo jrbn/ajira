@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="querypie" default="jar" basedir=".">
+
+	<property name="BUILD_PATH" value="bin" />
+	<property name="SRC_PATH" value="src" />
+	<property name="LIB_PATH" value="lib" />
+	<property name="JAR_LOCATION" value="arch.jar" />
+	<property name="IPL_PATH" value="${LIB_PATH}/ipl/" />
+	<property name="LOG_PATH" value="${LIB_PATH}/logging/" />
+
+	<property name="JAR_LOCATION" value="" />
+	<property name="SCP_PRIVATE_KEY" value="" />
+	<property name="SCP_PASSPHRASE" value="" />
+
+	<target name="clean">
+		<delete dir="${BUILD_PATH}" />
+	</target>
+
+	<target name="init" depends="clean">
+		<mkdir dir="${BUILD_PATH}" />
+	</target>
+
+	<target name="compile" depends="init" description="">
+		<javac srcdir="${SRC_PATH}" destdir="${BUILD_PATH}" debug="true">
+			<classpath>
+				<fileset dir="${LIB_PATH}">
+					<include name="**/*.jar" />
+				</fileset>
+			</classpath>
+		</javac>
+	</target>
+
+	<target name="ibis-server" description="launch the Ibis server">
+		<java classname="ibis.ipl.server.Server" fork="true">
+			<arg value="--events" />
+			<jvmarg value="-Dlogback.configurationFile=conf/logback.xml" />
+			<classpath>
+				<fileset dir="${LIB_PATH}">
+					<include name="logging/*.jar" />
+					<include name="ipl/*.jar" />
+				</fileset>
+				<file name="${CONF_PATH}/logback.xml" />
+			</classpath>
+		</java>
+	</target>
+
+	<target name="jar" depends="compile">
+		<jar destfile="${JAR_LOCATION}" basedir="${BUILD_PATH}">
+		</jar>
+	</target>
+
+	<target name="deploy" depends="jar" description="Copy the jar in a specific location">
+		<scp file="${JAR_LOCATION}" todir="${JAR_REMOTE_LOCATION}" keyfile="${SCP_PRIVATE_KEY}" passphrase="${SCP_PASSPHRASE}" trust="true" />
+	</target>
+
+</project>
