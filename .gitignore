@@ -1,0 +1,8 @@
+.project
+bin
+tmp-eclipse
+.settings
+.externalToolBuilders
+*~
+.*~
+.DS_Store
