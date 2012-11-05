@@ -34,6 +34,8 @@ public class SortData {
 			System.exit(0);
 		}
 
+		// TODO: still need to fix SendTo and store it in a B+Tree.
+
 		// Launch a simple job
 		Configuration conf = new Configuration();
 		arch.Arch arch = new Arch();
