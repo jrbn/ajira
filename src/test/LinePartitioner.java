@@ -1,4 +1,4 @@
-package sortingbenchmark;
+package test;
 
 import arch.actions.Partitioner;
 import arch.data.types.TString;
