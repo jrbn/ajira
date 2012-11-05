@@ -1,5 +1,6 @@
 .project
 .classpath
+arch.jar
 bin
 tmp-eclipse
 .settings
