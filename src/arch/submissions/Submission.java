@@ -14,8 +14,8 @@ public class Submission {
 	int assignedBucket = -1;
 	int rootChainsReceived = -1;
 
-	boolean printStats;
-	boolean printIntermediateStats;
+	// boolean printStats;
+	// boolean printIntermediateStats;
 
 	Map<Long, int[]> monitors = new HashMap<Long, int[]>();
 

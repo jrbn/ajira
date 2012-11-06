@@ -138,8 +138,8 @@ public class SubmissionRegistry {
 		sub.state = Consts.STATE_OPEN;
 		sub.finalStatsReceived = 0;
 		sub.rootChainsReceived = -1;
-		sub.printIntermediateStats = job.getPrintIntermediateStatistics();
-		sub.printStats = job.getPrintIntermediateStatistics();
+		// sub.printIntermediateStats = job.getPrintIntermediateStatistics();
+		// sub.printStats = job.getPrintIntermediateStatistics();
 		sub.assignedBucket = job.getAssignedOutputBucket();
 
 		submissions.put(sub.submissionId, sub);
@@ -177,17 +177,17 @@ public class SubmissionRegistry {
 			throws Exception {
 
 		Submission submission = submitNewJob(context, job);
-		int printInterval = conf.getInt(Consts.STATISTICAL_INTERVAL,
+		int waitInterval = conf.getInt(Consts.STATISTICAL_INTERVAL,
 				Consts.DEFAULT_STATISTICAL_INTERVAL);
 		// Pool the submission registry to know when it is present and return it
 		synchronized (submission) {
 			while (!submission.getState().equalsIgnoreCase(
 					Consts.STATE_FINISHED)) {
-				submission.wait(printInterval);
-				if (submission.printIntermediateStats
-						&& !submission.getState().equalsIgnoreCase(
-								Consts.STATE_FINISHED))
-					stats.printStatistics(submission.getSubmissionId());
+				submission.wait(waitInterval);
+				// if (submission.printIntermediateStats
+				// && !submission.getState().equalsIgnoreCase(
+				// Consts.STATE_FINISHED))
+				// stats.printStatistics(submission.getSubmissionId());
 			}
 		}
 
@@ -196,31 +196,31 @@ public class SubmissionRegistry {
 		return submission;
 	}
 
-	public void getStatistics(JobDescriptor job, Submission submission) {
-		if (job.getWaitForStatistics()) {
-			try {
-				log.info("Waiting for statistics...");
-				Thread.sleep(2000);
-			} catch (InterruptedException e) {
-				// ignore
-			}
-		}
+	public void getStatistics(JobDescriptor job, Submission submission)
+			throws InterruptedException {
+		// if (job.getWaitForStatistics()) {
+		// try {
+		// log.info("Waiting for statistics...");
+		Thread.sleep(500);
+		// } catch (InterruptedException e) {
+		// // ignore
+		// }
+		// }
 
 		submission.counters = stats.removeCountersSubmission(submission
 				.getSubmissionId());
 
 		// Print the counters
-		if (submission.printStats) {
-			String stats = "Final statistics submission "
-					+ submission.getSubmissionId() + ":\n";
-			if (submission.counters != null) {
-				for (Map.Entry<String, Long> entry : submission.counters
-						.entrySet()) {
-					stats += " " + entry.getKey() + " = " + entry.getValue()
-							+ "\n";
-				}
+		// if (submission.printStats) {
+		String stats = "Final statistics for job "
+				+ submission.getSubmissionId() + ":\n";
+		if (submission.counters != null) {
+			for (Map.Entry<String, Long> entry : submission.counters.entrySet()) {
+				stats += " " + entry.getKey() + " = " + entry.getValue() + "\n";
 			}
-			log.info(stats);
 		}
+		log.info(stats);
+		// System.out.println(stats);
+		// }
 	}
 }

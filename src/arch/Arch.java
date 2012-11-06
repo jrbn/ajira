@@ -226,8 +226,7 @@ public class Arch {
 	public Submission waitForCompletion(JobDescriptor job) throws Exception {
 		Submission sub = globalContext.getSubmissionsRegistry()
 				.waitForCompletion(globalContext, job);
-		if (job.getWaitForStatistics())
-			globalContext.getSubmissionsRegistry().getStatistics(job, sub);
+		globalContext.getSubmissionsRegistry().getStatistics(job, sub);
 		return sub;
 	}
 

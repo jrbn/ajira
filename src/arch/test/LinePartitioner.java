@@ -1,4 +1,4 @@
-package test;
+package arch.test;
 
 import arch.actions.Partitioner;
 import arch.data.types.TString;

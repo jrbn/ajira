@@ -25,14 +25,6 @@ public class JobDescriptor extends Writable {
 	private int assignedBucket = -1;
 	private final Chain chain = new Chain();
 
-	public boolean getPrintIntermediateStatistics() {
-		return printIntermediateStats;
-	}
-
-	public void setPrintIntermediateStats(boolean value) {
-		printIntermediateStats = value;
-	}
-
 	@Override
 	public void readFrom(DataInput input) throws IOException {
 		inputLayer = input.readByte();
@@ -93,14 +85,6 @@ public class JobDescriptor extends Writable {
 
 	public void setAssignedOutputBucket(int bucket) {
 		assignedBucket = bucket;
-	}
-
-	public void setWaitForStatistics(boolean waitForStatistics) {
-		this.waitForStatistics = waitForStatistics;
-	}
-
-	public boolean getWaitForStatistics() {
-		return waitForStatistics;
 	}
 
 	public int getAssignedOutputBucket() {

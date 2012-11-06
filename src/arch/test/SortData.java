@@ -1,4 +1,4 @@
-package test;
+package arch.test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,7 +52,6 @@ public class SortData {
 		if (arch.isServer()) {
 			// Now we can launch our program
 			JobDescriptor job = new JobDescriptor();
-			job.setWaitForStatistics(true);
 
 			// Set up the program
 			Chain chain = job.getNewChain();

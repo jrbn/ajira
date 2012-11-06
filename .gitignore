@@ -1,6 +1,7 @@
 .project
 .classpath
 arch.jar
+logback.xml
 bin
 tmp-eclipse
 .settings
