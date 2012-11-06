@@ -1,5 +1,7 @@
 package arch.webinterface;
 
+import java.net.BindException;
+
 import org.apache.jasper.servlet.JspServlet;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -12,6 +14,8 @@ public class WebServer implements Runnable {
 
 	public static final String WEBSERVER_START = "webserver.start";
 	public static final String WEBSERVER_PORT = "webserver.port";
+
+	private static final int MAX_ATTEMPTS = 10;
 
 	static final Logger log = LoggerFactory.getLogger(WebServer.class);
 
@@ -28,24 +32,38 @@ public class WebServer implements Runnable {
 
 	@Override
 	public void run() {
-		Server server = new Server(serverPort);
 
-		ServletContextHandler handler = new ServletContextHandler(
-				ServletContextHandler.SESSIONS);
-		handler.setContextPath("/");
-		handler.setClassLoader(Thread.currentThread().getContextClassLoader());
-		handler.setResourceBase(System.getProperty("user.dir"));
-		handler.setAttribute("context", context);
+		int currentAttempt = 0;
+		ServletContextHandler handler = null;
+		while (currentAttempt < MAX_ATTEMPTS) {
+			try {
+				handler = new ServletContextHandler(
+						ServletContextHandler.SESSIONS);
+				handler.setContextPath("/");
+				handler.setClassLoader(Thread.currentThread()
+						.getContextClassLoader());
+				handler.setResourceBase(System.getProperty("user.dir"));
+				handler.setAttribute("context", context);
 
-		handler.addServlet(MainServlet.class, "/");
-		handler.addServlet(JspServlet.class, "*.jsp");
-
-		try {
-			server.setHandler(handler);
-			server.start();
-			server.join();
-		} catch (Exception e) {
-			log.error("The web server instance has terminated", e);
+				handler.addServlet(MainServlet.class, "/");
+				handler.addServlet(JspServlet.class, "*.jsp");
+				Server server = new Server(serverPort);
+				server.setHandler(handler);
+				server.start();
+				server.join();
+				break;
+			} catch (BindException e) {
+				try {
+					handler.stop();
+				} catch (Exception e1) {
+				}
+				serverPort++;
+				currentAttempt++;
+			} catch (Exception e) {
+				log.error("The web server instance has terminated", e);
+				return;
+			}
 		}
+
 	}
 }

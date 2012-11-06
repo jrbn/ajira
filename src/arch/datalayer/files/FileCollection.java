@@ -1,10 +1,13 @@
 package arch.datalayer.files;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class FileCollection {
+public class FileCollection implements Serializable {
+
+	private static final long serialVersionUID = -5088467846029256354L;
 
 	private final List<File> files = new ArrayList<File>();
 	long totalSize = 0;

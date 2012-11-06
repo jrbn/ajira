@@ -28,9 +28,9 @@ public class SortData {
 	 */
 	public static void main(String[] args) throws Exception {
 
-		if (args.length != 3) {
+		if (args.length < 3) {
 			System.out
-					.println("Usage: SortData <input dir> <output dir> <number partitions>");
+					.println("Usage: SortData <input dir> <output dir> <number nodes> --without-ibis");
 			System.exit(0);
 		}
 
@@ -44,7 +44,12 @@ public class SortData {
 		conf.set(Consts.STORAGE_IMPL, FilesLayer.class.getName());
 		conf.set(FilesLayer.IMPL_FILE_READER,
 				LineTextFilesReader.class.getName());
-		conf.setBoolean(Consts.START_IBIS, true);
+
+		if (args.length == 4 && args[3].equals("--without-ibis")) {
+			conf.setBoolean(Consts.START_IBIS, false);
+		} else {
+			conf.setBoolean(Consts.START_IBIS, true);
+		}
 
 		// Start the cluster
 		arch.startup(conf);
