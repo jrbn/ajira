@@ -140,9 +140,12 @@ public class SendTo extends Action {
 		ft = value;
 	}
 
-	public void sendChain(boolean value, long allowedChainId) {
+	public void setSendChain(boolean value) {
 		sc = value;
-		responsibleChain = allowedChainId;
+	}
+
+	public void setMainChainForBucket(long chain) {
+		responsibleChain = chain;
 	}
 
 	public void setBucketId(int bucket) {

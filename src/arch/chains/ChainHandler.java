@@ -376,7 +376,7 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 			} catch (Exception e) {
 				// Broadcast all the nodes that a chain part of a job has
 				// failed.
-				log.debug("Chain is failed. Cancelling the job ...", e);
+				log.error("Chain is failed. Cancelling the job ...", e);
 				try {
 
 					context.cleanupSubmission(chain.getSubmissionNode(),
@@ -386,7 +386,7 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 				} catch (Exception e1) {
 					log.error("Failed in managing to cancel the job."
 							+ "This instance will be terminated.", e);
-					System.exit(0);
+					System.exit(1);
 				}
 			}
 		}

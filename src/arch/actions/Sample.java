@@ -46,10 +46,8 @@ public class Sample extends Action {
 			WritableContainer<Chain> chainsToProcess,
 			WritableContainer<Tuple> output, ActionContext context)
 			throws Exception {
-		if (tuple != null) {
-			if (rand.nextInt(100) < sampling) {
-				output.add(inputTuple);
-			}
+		if (rand.nextInt(100) < sampling) {
+			output.add(inputTuple);
 		}
 	}
 }

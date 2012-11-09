@@ -17,7 +17,7 @@ abstract public class Partitioner extends Action {
 
 	static final Logger log = LoggerFactory.getLogger(Partitioner.class);
 
-	int partitions;
+	int partitions = -1;
 
 	Tuple tuple = new Tuple();
 	TInt tnode = new TInt();
@@ -46,6 +46,9 @@ abstract public class Partitioner extends Action {
 	@Override
 	public void startProcess(ActionContext context, Chain chain)
 			throws Exception {
+		if (partitions == -1) {
+			partitions = context.getNetworkLayer().getNumberNodes();
+		}
 		tnode.setValue(partitions);
 	}
 
