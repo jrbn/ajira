@@ -86,9 +86,8 @@ public class FileSplitter extends Action {
 		long sizeFile = file.length();
 		if (currentFileSplit.getSize() + sizeFile >= minimumFileSplitSize) {
 			processSplit(context, remainingChain, chainsToProcess);
-		} else {
-			currentFileSplit.addFile(file);
 		}
+		currentFileSplit.addFile(file);
 	}
 
 	@Override
@@ -99,5 +98,6 @@ public class FileSplitter extends Action {
 		if (currentFileSplit.getSize() > 0) {
 			processSplit(context, chain, newChains);
 		}
+		context.incrCounter("# file splits", splitId);
 	}
 }
