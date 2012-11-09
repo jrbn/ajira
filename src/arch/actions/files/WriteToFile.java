@@ -47,9 +47,9 @@ public class WriteToFile extends Action {
 			}
 
 			tuple.get(array);
-			String value = "";
-			for (SimpleData v : array) {
-				value += v.toString() + "\t";
+			String value = array[0].toString();
+			for (int i = 1; i < array.length; ++i) {
+				value += "\t" + array[i].toString();
 			}
 			writer.write(value + "\n");
 		}
@@ -108,8 +108,11 @@ public class WriteToFile extends Action {
 	}
 
 	@Override
-	public void startProcess(ActionContext context, Chain chain)
-			throws Exception {
+	public void startProcess(ActionContext context, Chain chain) {
+		file = null;
+	}
+
+	private void openFile(ActionContext context) throws IOException {
 		NumberFormat nf = NumberFormat.getInstance();
 		nf.setMinimumIntegerDigits(5);
 		nf.setGroupingUsed(false);
@@ -122,7 +125,7 @@ public class WriteToFile extends Action {
 		}
 
 		f = new File(f, "part-"
-				+ nf.format(context.getNetworkLayer().getMyPartition()) + "_"
+				+ nf.format(context.getUniqueCounter("OutputFile")) + "_"
 				+ nf.format(0));
 
 		try {
@@ -149,8 +152,10 @@ public class WriteToFile extends Action {
 			WritableContainer<Chain> chainsToProcess,
 			WritableContainer<Tuple> output, ActionContext context)
 			throws Exception {
-		if (file != null)
-			file.write(inputTuple);
+		if (file == null) {
+			openFile(context);
+		}
+		file.write(inputTuple);
 	}
 
 	@Override

@@ -1,4 +1,4 @@
-package arch.actions;
+package arch.actions.partitioners;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import arch.ActionContext;
+import arch.actions.Action;
 import arch.chains.Chain;
 import arch.data.types.TInt;
 import arch.data.types.Tuple;
