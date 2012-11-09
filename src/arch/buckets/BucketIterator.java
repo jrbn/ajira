@@ -11,68 +11,68 @@ import arch.utils.Consts;
 
 public class BucketIterator extends TupleIterator {
 
-    static final Logger log = LoggerFactory.getLogger(BucketIterator.class);
+	static final Logger log = LoggerFactory.getLogger(BucketIterator.class);
 
-    WritableContainer<Tuple> tuples = new WritableContainer<Tuple>(true, false,
-	    Consts.TUPLES_CONTAINER_BUFFER_SIZE);
+	WritableContainer<Tuple> tuples = new WritableContainer<Tuple>(true, false,
+			Consts.TUPLES_CONTAINER_BUFFER_SIZE);
 
-    Bucket bucket;
-    int idSubmission;
-    int idBucket;
-    Buckets buckets;
-    boolean isUsed;
+	Bucket bucket;
+	int idSubmission;
+	int idBucket;
+	Buckets buckets;
+	boolean isUsed;
 
-    public void init(Bucket bucket, int idSubmission, int idBucket,
-	    Buckets buckets) {
-	tuples.clear();
-	this.bucket = bucket;
-	this.idSubmission = idSubmission;
-	this.idBucket = idBucket;
-	this.buckets = buckets;
-	this.isUsed = false;
-    }
+	// boolean removeDuplicates;
 
-    /*
-     * public WritableContainer<Tuple> getTuplesBuffer() { return tuples; }
-     */
-
-    @Override
-    public boolean next() throws Exception {
-	isUsed = true;
-	// If the local buffer is finished, get tuples from the bucket
-	if (tuples.getNElements() == 0) {
-	    long time = System.currentTimeMillis();
-	    bucket.removeChunk(tuples);
-	    if (log.isDebugEnabled()) {
-		log.debug("Bucket  " + bucket.getKey() + " delivering "
-			+ tuples.getNElements() + " entries, time merging: "
-			+ (System.currentTimeMillis() - time));
-	    }
+	public void init(Bucket bucket, int idSubmission, int idBucket,
+			Buckets buckets/* , boolean removeDuplicates */) {
+		tuples.clear();
+		this.bucket = bucket;
+		this.idSubmission = idSubmission;
+		this.idBucket = idBucket;
+		this.buckets = buckets;
+		this.isUsed = false;
+		// this.removeDuplicates = removeDuplicates;
 	}
 
-	return tuples.getNElements() > 0;
+	@Override
+	public boolean next() throws Exception {
+		isUsed = true;
+		// If the local buffer is finished, get tuples from the bucket
+		if (tuples.getNElements() == 0) {
+			long time = System.currentTimeMillis();
+			bucket.removeChunk(tuples);
+			if (log.isDebugEnabled()) {
+				log.debug("Bucket  " + bucket.getKey() + " delivering "
+						+ tuples.getNElements() + " entries, time merging: "
+						+ (System.currentTimeMillis() - time));
+			}
+		}
 
-    }
-    
-    public void registerReadyNotifier(ChainNotifier notifier) {
-        bucket.registerFinishedNotifier(notifier, this);
-    }
+		return tuples.getNElements() > 0;
 
-    @Override
-    public void getTuple(Tuple tuple) throws Exception {
-	tuples.remove(tuple);
-    }
+	}
 
-    @Override
-    public boolean isReady() {
-	return bucket.isFinished();
-    }
+	@Override
+	public void registerReadyNotifier(ChainNotifier notifier) {
+		bucket.registerFinishedNotifier(notifier, this);
+	}
 
-    @Override
-    public String toString() {
-	return "Iterator for bucket "
-		+ (bucket == null ? "(no bucket yet)" : bucket.getKey())
-		+ (tuples == null ? "" : (" tuples.getNElements = " + tuples
-			.getNElements()));
-    }
+	@Override
+	public void getTuple(Tuple tuple) throws Exception {
+		tuples.remove(tuple);
+	}
+
+	@Override
+	public boolean isReady() {
+		return bucket.isFinished();
+	}
+
+	@Override
+	public String toString() {
+		return "Iterator for bucket "
+				+ (bucket == null ? "(no bucket yet)" : bucket.getKey())
+				+ (tuples == null ? "" : (" tuples.getNElements = " + tuples
+						.getNElements()));
+	}
 }

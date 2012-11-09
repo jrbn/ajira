@@ -95,7 +95,7 @@ public class HashJoin extends Action {
 			}
 			map = new HashMap<Tuple, List<Tuple>>();
 			TupleIterator itr = context.getTuplesBuckets().getIterator(
-					chain.getSubmissionId(), bucketID);
+					chain.getSubmissionId(), bucketID/* , false */);
 			int count = 0;
 			// Back storage for tuples in the HashMap.
 			byte[] buf = new byte[1024 * 100];

@@ -21,6 +21,8 @@ public class BucketsLayer extends InputLayer {
 
 	Factory<TInt> intFactory = new Factory<TInt>(TInt.class);
 
+	// Factory<TBoolean> booleanFactory = new Factory<TBoolean>(TBoolean.class);
+
 	@Override
 	protected void load(Context context) throws IOException {
 	}
@@ -31,25 +33,22 @@ public class BucketsLayer extends InputLayer {
 		try {
 			TInt submissionBucket = intFactory.get();
 			TInt numberBucket = intFactory.get();
+			// TBoolean removeDuplicates = booleanFactory.get();
 
-			if (tuple.getNElements() == 4
-					&& tuple.getType(2) == submissionBucket.getIdDatatype()) {
-				TInt submissionNode = new TInt();
-				tuple.get(submissionNode);
-				tuple.get(submissionBucket, 1);
-				tuple.get(numberBucket, 2);
-				itr = context.getTuplesBuckets().getIterator(
-						submissionNode.getValue(), submissionBucket.getValue(),
-						numberBucket.getValue());
-			} else {
-				tuple.get(submissionBucket, 0);
-				tuple.get(numberBucket, 1);
-				itr = context.getTuplesBuckets().getIterator(
-						submissionBucket.getValue(), numberBucket.getValue());
-			}
+			tuple.get(submissionBucket, numberBucket/* , removeDuplicates */);
+
+			itr = context.getTuplesBuckets().getIterator(
+					submissionBucket.getValue(), numberBucket.getValue()/*
+																		 * ,
+																		 * removeDuplicates
+																		 * .
+																		 * getValue
+																		 * ()
+																		 */);
 
 			intFactory.release(submissionBucket);
 			intFactory.release(numberBucket);
+			// booleanFactory.release(removeDuplicates);
 		} catch (Exception e) {
 			log.error("Error retrieving the tuple iterator", e);
 		}

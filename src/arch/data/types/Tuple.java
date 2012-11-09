@@ -331,7 +331,6 @@ public class Tuple extends Writable {
 		}
 
 		return false;
-
 	}
 
 	public int compareElement(int i, Tuple buffer, int j) throws Exception {

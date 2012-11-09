@@ -117,20 +117,14 @@ public class Buckets {
 		buckets.clear();
 	}
 
-	public TupleIterator getIterator(int idSubmission, int idBucket) {
+	public TupleIterator getIterator(int idSubmission, int idBucket/*
+																	 * , boolean
+																	 * removeDuplicates
+																	 */) {
 		Bucket bucket = null;
 		bucket = getExistingBucket(idSubmission, idBucket);
 		BucketIterator itr = new BucketIterator();
-		itr.init(bucket, idSubmission, idBucket, this);
-		return itr;
-	}
-
-	public TupleIterator getIterator(int submissionNode, int idSubmission,
-			int idBucket) {
-		Bucket bucket = getOrCreateBucket(submissionNode, idSubmission,
-				idBucket, null, null);
-		BucketIterator itr = new BucketIterator();
-		itr.init(bucket, idSubmission, idBucket, this);
+		itr.init(bucket, idSubmission, idBucket, this/* , removeDuplicates */);
 		return itr;
 	}
 

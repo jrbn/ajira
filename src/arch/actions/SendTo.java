@@ -12,10 +12,7 @@ import arch.ActionContext;
 import arch.buckets.Bucket;
 import arch.buckets.Buckets;
 import arch.chains.Chain;
-import arch.data.types.SimpleData;
-import arch.data.types.TByte;
 import arch.data.types.TInt;
-import arch.data.types.TString;
 import arch.data.types.Tuple;
 import arch.net.NetworkLayer;
 import arch.storage.container.WritableContainer;
@@ -44,12 +41,13 @@ public class SendTo extends Action {
 	private int bucket = -1;
 	private boolean sc = true;
 	private boolean ft = false;
+	// private boolean removeDuplicates = false;
 	private String sortingFunction = null;
 	private byte[] sortingParams = null;
 
 	private final TInt tbucket = new TInt();
-	private final TString tsorting = new TString();
 	private final TInt tsub = new TInt();
+	// private final TBoolean tremove = new TBoolean();
 	private final TInt tnode = new TInt();
 	private final Tuple tuple = new Tuple();
 
@@ -64,6 +62,7 @@ public class SendTo extends Action {
 		bucket = input.readInt();
 		ft = input.readBoolean();
 		sc = input.readBoolean();
+		// removeDuplicates = input.readBoolean();
 		responsibleChain = input.readLong();
 		int l = input.readByte();
 		if (l > 0) {
@@ -86,6 +85,7 @@ public class SendTo extends Action {
 		output.writeInt(bucket);
 		output.writeBoolean(ft);
 		output.writeBoolean(sc);
+		// output.writeBoolean(removeDuplicates);
 		output.writeLong(responsibleChain);
 		if (sortingFunction != null && sortingFunction.length() > 0) {
 			byte[] raw = sortingFunction.getBytes();
@@ -143,6 +143,10 @@ public class SendTo extends Action {
 	public void setSendChain(boolean value) {
 		sc = value;
 	}
+
+	// public void setRemoveDuplicates(boolean duplicates) {
+	// this.removeDuplicates = duplicates;
+	// }
 
 	public void setMainChainForBucket(long chain) {
 		responsibleChain = chain;
@@ -237,7 +241,6 @@ public class SendTo extends Action {
 			WritableContainer<Chain> newChains,
 			WritableContainer<Chain> chainsToSend) {
 		try {
-
 			nchildren = chain.getChainChildren();
 			replicatedFactor = chain.getReplicatedFactor();
 
@@ -254,29 +257,8 @@ public class SendTo extends Action {
 				tsub.setValue(idSubmission);
 				tnode.setValue(nodeId);
 				tbucket.setValue(bucket);
-				if (sortingFunction != null) {
-					tsorting.setValue(sortingFunction);
-					if (sortingParams != null && sortingParams.length > 0) {
-						SimpleData[] params = new SimpleData[4 + sortingParams.length];
-						params[0] = tsub;
-						params[1] = tbucket;
-						params[2] = tsorting;
-						for (int i = 0; i < sortingParams.length; ++i) {
-							params[3 + i] = new TByte(sortingParams[i]);
-						}
-						params[params.length - 1] = tnode;
-						this.tuple.set(params);
-						for (int i = 0; i < sortingParams.length; ++i) {
-							context.getDataProvider().release(params[3 + i]);
-						}
-
-						this.tuple.set(params);
-					} else {
-						this.tuple.set(tsub, tbucket, tsorting, tnode);
-					}
-				} else {
-					this.tuple.set(tsub, tbucket, tnode);
-				}
+				// tremove.setValue(removeDuplicates);
+				this.tuple.set(tsub, tbucket/* , tremove */, tnode);
 				newChain.replaceInputTuple(this.tuple);
 				chainsToSend.add(newChain);
 			}

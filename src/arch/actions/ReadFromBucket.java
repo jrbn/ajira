@@ -16,6 +16,8 @@ public class ReadFromBucket extends Action {
 	int node;
 	int bucketId;
 
+	// boolean duplicates = false;
+
 	public void setBucket(int bucketId) {
 		this.bucketId = bucketId;
 	}
@@ -24,16 +26,22 @@ public class ReadFromBucket extends Action {
 		this.node = nodeId;
 	}
 
+	// public void setRemoveDuplicates(boolean duplicates) {
+	// this.duplicates = duplicates;
+	// }
+
 	@Override
 	public void readFrom(DataInput input) throws IOException {
 		node = input.readInt();
 		bucketId = input.readInt();
+		// duplicates = input.readBoolean();
 	}
 
 	@Override
 	public void writeTo(DataOutput output) throws IOException {
 		output.writeInt(node);
 		output.writeInt(bucketId);
+		// output.writeBoolean(duplicates);
 	}
 
 	@Override
@@ -60,7 +68,10 @@ public class ReadFromBucket extends Action {
 
 		newChain.setInputLayerId(Consts.BUCKET_INPUT_LAYER_ID);
 		newChain.replaceInputTuple(new Tuple(new TInt(newChain
-				.getSubmissionId()), new TInt(bucketId), new TInt(node)));
+				.getSubmissionId()), new TInt(bucketId), /*
+														 * new TBoolean(
+														 * duplicates),
+														 */new TInt(node)));
 
 		chainsToSend.add(newChain);
 	}
