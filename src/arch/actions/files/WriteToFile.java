@@ -49,7 +49,7 @@ public class WriteToFile extends Action {
 			tuple.get(array);
 			String value = array[0].toString();
 			for (int i = 1; i < array.length; ++i) {
-				value += "\t" + array[i].toString();
+				value += " " + array[i].toString();
 			}
 			writer.write(value + "\n");
 		}
