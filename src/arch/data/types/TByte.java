@@ -10,7 +10,7 @@ public class TByte extends SimpleData {
 
 	int value;
 
-	public TByte(byte b) {
+	public TByte(int b) {
 		value = b;
 	}
 

@@ -15,7 +15,8 @@ import arch.data.types.TInt;
 import arch.data.types.TString;
 import arch.data.types.Tuple;
 import arch.datalayer.files.FileCollection;
-import arch.datalayer.files.FilesLayer;
+import arch.datalayer.files.FileIterator;
+import arch.datalayer.files.FileLayer;
 import arch.storage.container.WritableContainer;
 import arch.utils.Consts;
 
@@ -30,18 +31,32 @@ public class FileSplitter extends Action {
 	private int minimumFileSplitSize;
 	private FileCollection currentFileSplit;
 	private int splitId;
+	private String customReader = null;
 
 	@Override
 	public void readFrom(DataInput input) throws IOException {
+		int l = input.readByte();
+		if (l != -1) {
+			byte[] content = new byte[l];
+			input.readFully(content);
+			customReader = new String(content);
+		}
 	}
 
 	@Override
 	public void writeTo(DataOutput output) throws IOException {
+		if (customReader == null) {
+			output.writeByte(-1);
+		} else {
+			byte[] c = customReader.getBytes();
+			output.writeByte(c.length);
+			output.write(c);
+		}
 	}
 
 	@Override
 	public int bytesToStore() {
-		return 0;
+		return customReader == null ? 1 : 1 + customReader.getBytes().length;
 	}
 
 	private Chain processSplit(ActionContext context, Chain chain,
@@ -51,8 +66,16 @@ public class FileSplitter extends Action {
 
 		Chain newChain = new Chain();
 		chain.createBranch(context, newChain);
-		tuple.set(new TInt(FilesLayer.OP_READ), new TString(key), new TInt(
-				context.getNetworkLayer().getMyPartition()));
+
+		if (customReader == null) {
+			tuple.set(new TInt(FileLayer.OP_READ), new TString(key), new TInt(
+					context.getNetworkLayer().getMyPartition()));
+		} else {
+			tuple.set(new TInt(FileLayer.OP_READ), new TString(key), new TInt(
+					context.getNetworkLayer().getMyPartition()), new TString(
+					customReader));
+		}
+
 		newChain.replaceInputTuple(tuple);
 		newChain.setInputLayerId(Consts.DEFAULT_INPUT_LAYER_ID);
 
@@ -99,5 +122,9 @@ public class FileSplitter extends Action {
 			processSplit(context, chain, newChains);
 		}
 		context.incrCounter("# file splits", splitId);
+	}
+
+	public void setCustomIteratorClass(Class<? extends FileIterator> class1) {
+		customReader = class1.getName();
 	}
 }

@@ -16,14 +16,14 @@ import arch.datalayer.InputLayer;
 import arch.datalayer.TupleIterator;
 import arch.storage.Factory;
 
-public class FilesLayer extends InputLayer {
+public class FileLayer extends InputLayer {
 
 	public final static int OP_LS = 0;
 	public final static int OP_READ = 1;
 
 	public final static String IMPL_FILE_READER = "fileslayer.reader.impl";
 
-	static final Logger log = LoggerFactory.getLogger(FilesLayer.class);
+	static final Logger log = LoggerFactory.getLogger(FileLayer.class);
 
 	Factory<TString> factory = new Factory<TString>(TString.class);
 	Factory<TInt> factoryInt = new Factory<TInt>(TInt.class);
@@ -82,7 +82,17 @@ public class FilesLayer extends InputLayer {
 					col = (FileCollection) files.get(0)[0];
 				}
 
-				itr = new MultiFilesReader(col, classFileIterator);
+				if (tuple.getNElements() == 4) {
+					// There is a customized file reader
+					TString clazz = factory.get();
+					tuple.get(clazz, 3);
+					itr = new MultiFilesReader(col, clazz.getValue());
+					factory.release(clazz);
+
+				} else {
+					itr = new MultiFilesReader(col, classFileIterator);
+				}
+
 			}
 
 			factoryInt.release(operation);

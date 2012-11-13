@@ -15,42 +15,42 @@ import arch.data.types.Tuple;
 
 public class LineTextFilesReader extends FileIterator {
 
-    static final Logger log = LoggerFactory
-	    .getLogger(LineTextFilesReader.class);
-    BufferedReader reader = null;
-    TString currentLine = new TString();
+	static final Logger log = LoggerFactory
+			.getLogger(LineTextFilesReader.class);
+	protected BufferedReader reader = null;
+	TString currentLine = new TString();
 
-    public LineTextFilesReader(File file) {
-	super(file);
-	try {
-	    log.debug("Reading file " + file.getPath());
-	    InputStream input = new FileInputStream(file);
-	    if (file.getName().endsWith(".gz")) {
-		input = new GZIPInputStream(input);
-	    }
-	    reader = new BufferedReader(new InputStreamReader(input));
-	} catch (Exception e) {
-	    log.error("Failed reading file " + file);
+	public LineTextFilesReader(File file) {
+		super(file);
+		try {
+			log.debug("Reading file " + file.getPath());
+			InputStream input = new FileInputStream(file);
+			if (file.getName().endsWith(".gz")) {
+				input = new GZIPInputStream(input);
+			}
+			reader = new BufferedReader(new InputStreamReader(input));
+		} catch (Exception e) {
+			log.error("Failed reading file " + file);
+		}
 	}
-    }
 
-    @Override
-    public boolean next() {
-	try {
-	    currentLine.setValue(reader.readLine());
-	    if (currentLine.getValue() == null) {
-		reader.close();
+	@Override
+	public boolean next() {
+		try {
+			currentLine.setValue(reader.readLine());
+			if (currentLine.getValue() == null) {
+				reader.close();
+				return false;
+			}
+			return true;
+		} catch (Exception e) {
+			log.error("Error reading record", e);
+		}
 		return false;
-	    }
-	    return true;
-	} catch (Exception e) {
-	    log.error("Error reading record", e);
 	}
-	return false;
-    }
 
-    @Override
-    public void getTuple(Tuple tuple) throws Exception {
-	tuple.set(currentLine);
-    }
+	@Override
+	public void getTuple(Tuple tuple) throws Exception {
+		tuple.set(currentLine);
+	}
 }

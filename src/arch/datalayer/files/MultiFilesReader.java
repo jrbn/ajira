@@ -19,6 +19,16 @@ public class MultiFilesReader extends TupleIterator {
 	Constructor<? extends FileIterator> cfileReader;
 	FileIterator currentItr = null;
 
+	public MultiFilesReader(FileCollection files, String clazzFileReader)
+			throws NoSuchMethodException, SecurityException,
+			ClassNotFoundException {
+		Class<? extends FileIterator> clazz = Class.forName(clazzFileReader)
+				.asSubclass(FileIterator.class);
+		this.cfileReader = clazz.getConstructor(File.class);
+		log.debug("Input: " + files);
+		this.files = files;
+	}
+
 	public MultiFilesReader(FileCollection files,
 			Class<? extends FileIterator> cfileReader)
 			throws SecurityException, NoSuchMethodException, IOException {

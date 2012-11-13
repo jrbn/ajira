@@ -6,42 +6,38 @@ import java.io.IOException;
 
 import arch.ActionContext;
 import arch.chains.Chain;
-import arch.data.types.TInt;
 import arch.data.types.Tuple;
 import arch.storage.container.WritableContainer;
 import arch.utils.Consts;
 
-public class ReadFromBucket extends Action {
+public class CreateBranch extends Action {
 
-	int node;
-	int bucketId;
-	boolean forward = false;
+	// @Override
+	// public boolean blockProcessing() {
+	// return true;
+	// }
 
-	public void setBucket(int bucketId) {
-		this.bucketId = bucketId;
-	}
+	Chain newChain = new Chain();
 
-	public void setDestination(int nodeId) {
-		this.node = nodeId;
+	int inputLayer = Consts.DEFAULT_INPUT_LAYER_ID;
+
+	public void setBranchInputLayer(int inputLayer) {
+		this.inputLayer = inputLayer;
 	}
 
 	@Override
 	public void readFrom(DataInput input) throws IOException {
-		node = input.readInt();
-		bucketId = input.readInt();
-		forward = input.readBoolean();
+		inputLayer = input.readByte();
 	}
 
 	@Override
 	public void writeTo(DataOutput output) throws IOException {
-		output.writeInt(node);
-		output.writeInt(bucketId);
-		output.writeBoolean(forward);
+		output.writeByte(inputLayer);
 	}
 
 	@Override
 	public int bytesToStore() throws IOException {
-		return 9;
+		return 1;
 	}
 
 	@Override
@@ -50,8 +46,6 @@ public class ReadFromBucket extends Action {
 			WritableContainer<Chain> chainsToProcess,
 			WritableContainer<Tuple> output, ActionContext context)
 			throws Exception {
-		if (forward)
-			output.add(inputTuple);
 	}
 
 	@Override
@@ -59,19 +53,10 @@ public class ReadFromBucket extends Action {
 			WritableContainer<Tuple> output,
 			WritableContainer<Chain> newChains,
 			WritableContainer<Chain> chainsToSend) throws Exception {
-		// Generate a new chain and send it.
-		Chain newChain = new Chain();
 		chain.createBranch(context, newChain);
-
-		newChain.setInputLayerId(Consts.BUCKET_INPUT_LAYER_ID);
-		newChain.replaceInputTuple(new Tuple(new TInt(newChain
-				.getSubmissionId()), new TInt(bucketId), new TInt(node)));
-
+		newChain.replaceInputTuple(null); // Force to read the input of the
+											// first action
+		newChain.setInputLayerId(inputLayer);
 		chainsToSend.add(newChain);
 	}
-
-	public void setForwardTuples(boolean b) {
-		forward = b;
-	}
-
 }
