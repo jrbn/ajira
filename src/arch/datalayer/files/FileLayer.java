@@ -79,7 +79,9 @@ public class FileLayer extends InputLayer {
 					if (files == null || files.size() == 0) {
 						throw new Exception("Failed retrieving the iterator");
 					}
-					col = (FileCollection) files.get(0)[0];
+					for (int i = 0; i < files.size() && col == null; ++i) {
+						col = (FileCollection) files.get(i)[0];
+					}
 				}
 
 				if (tuple.getNElements() == 4) {
