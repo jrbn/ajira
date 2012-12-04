@@ -328,7 +328,7 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 						if (chainsBuffer.getNElements() > 0) {
 							stats.addCounter(chain.getSubmissionNode(),
 									chain.getSubmissionId(),
-									"Chains Generated From Chains",
+									"ChainHandler:run: chains generated from chains",
 									chainsBuffer.getNElements());
 							chainsToResolve.addAll(chainsBuffer);
 							chainsBuffer.clear();
@@ -339,7 +339,7 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 							stats.addCounter(
 									chain.getSubmissionNode(),
 									chain.getSubmissionId(),
-									"Chains Generated From Chains (To Process)",
+									"ChainHandler:run: chains generated from chains (To Process)",
 									chainsBuffer2.getNElements());
 							net.sendChains(chainsBuffer2);
 							chainsBuffer2.clear();
@@ -351,7 +351,7 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 					if (log.isDebugEnabled()) {
 						timeCycle = System.currentTimeMillis() - timeCycle;
 						log.debug("Chain " + chain.getChainId()
-								+ "runtime cycle: " + timeCycle);
+								+ " runtime cycle: " + timeCycle);
 					}
 
 					input.releaseIterator(itr, ac);
@@ -371,7 +371,7 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 				}
 
 				stats.addCounter(chain.getSubmissionNode(),
-						chain.getSubmissionId(), "Chains Processed", 1);
+						chain.getSubmissionId(), "ChainHandler:run: chains processed", 1);
 
 			} catch (Exception e) {
 				// Broadcast all the nodes that a chain part of a job has

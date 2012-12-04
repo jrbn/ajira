@@ -6,6 +6,7 @@ import ibis.ipl.WriteMessage;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -144,27 +145,30 @@ public class StatisticsCollector implements Runnable {
     }
     
     public void printStatistics(int submissionId) {
-	printStatistics(submissionId, myId);
+    	printStatistics(submissionId, myId);
     }
 
     public synchronized void printStatistics(int submissionId, int nodeId) {
-	Map<Integer, Map<String, Long>> localMap = counters.get(nodeId);
-	if (localMap != null) {
-	    String stats = "";
-	    // for (Map.Entry<Integer, Map<String, Long>> entry : localMap
-	    // .entrySet()) {
-	    stats += "\nSubmission ID: " + submissionId + "\n";
-	    Map<String, Long> submissionCounters = localMap.get(submissionId);
-	    if (submissionCounters != null) {
-		for (Map.Entry<String, Long> entry2 : submissionCounters
-			.entrySet()) {
-		    stats += " " + entry2.getKey() + " = " + entry2.getValue()
-			    + "\n";
-
-		}
-	    }
-	    // }
-	    log.info(stats);
-	}
+    	Map<Integer, Map<String, Long>> localMap = counters.get(nodeId);
+    	if (localMap != null) {
+    		String stats = "";
+    		// for (Map.Entry<Integer, Map<String, Long>> entry : localMap
+    		// .entrySet()) {
+    		stats += "\nSubmission ID: " + submissionId + "\n";
+    		
+    		Map<String, Long> submissionCounters = localMap.get(submissionId);
+    		Map<String, Long> sortedSubmissionCounters = 
+    				new TreeMap<String, Long>(submissionCounters);
+    		
+    		if (sortedSubmissionCounters != null) {
+    			for (Map.Entry<String, Long> entry2 : 
+    				sortedSubmissionCounters.entrySet()) {
+	    				stats += " " + entry2.getKey() + " = " + entry2.getValue()
+	    						+ "\n";
+    			}
+    		}
+    		// }
+    		log.info(stats);
+    	}
     }
 }

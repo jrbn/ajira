@@ -472,8 +472,8 @@ class Receiver implements MessageUpcall {
 			throws IOException {
 		long bytes = msg.finish();
 		long time = System.currentTimeMillis() - startTime;
-		stats.addCounter(0, submissionId, "Time reading", time);
-		stats.addCounter(0, submissionId, "Bytes read", bytes);
+		stats.addCounter(0, submissionId, "Receiever:upcall: time receiving msgs (ms)", time);
+		stats.addCounter(0, submissionId, "Receiever:upcall: bytes received", bytes);
 		// stats.addCounter(0, submissionId, "Messages read", 1);
 	}
 
@@ -481,8 +481,8 @@ class Receiver implements MessageUpcall {
 			throws IOException {
 		long bytes = msg.bytesRead();
 		long time = System.currentTimeMillis() - startTime;
-		stats.addCounter(0, submissionId, "Time reading", time);
-		stats.addCounter(0, submissionId, "Bytes read", bytes);
+		stats.addCounter(0, submissionId, "Receiever:upcall: time receiving msgs (ms)", time);
+		stats.addCounter(0, submissionId, "Receiever:upcall: bytes received", bytes);
 		// stats.addCounter(0, submissionId, "Messages read", 1);
 	}
 }

@@ -247,6 +247,9 @@ public class Bucket {
 	public synchronized void addAll(
 			WritableContainer<Tuple> newTuplesContainer, boolean isSorted,
 			Factory<WritableContainer<Tuple>> factory) throws Exception {
+		
+		long time = System.currentTimeMillis();
+		
 		if (tuples == null) {
 			tuples = fb.get();
 			tuples.clear();
@@ -304,6 +307,10 @@ public class Bucket {
 			// } else if (factory != null) {
 			// factory.release(newTuplesContainer);
 		}
+		
+		stats.addCounter(submissionNode, submissionId,
+				"Bucket:addAll: overall time (ms)",
+				System.currentTimeMillis() - time);
 	}
 
 	public synchronized void copyTo(Bucket bucket) throws Exception {
@@ -343,6 +350,8 @@ public class Bucket {
 
 	public synchronized boolean add(Tuple tuple) throws Exception {
 
+		long time = System.currentTimeMillis();
+		
 		if (tuples == null) {
 			tuples = fb.get();
 			tuples.clear();
@@ -362,6 +371,10 @@ public class Bucket {
 			}
 		}
 
+		stats.addCounter(submissionNode, submissionId,
+				"Bucket:add: overall time (ms)",
+				System.currentTimeMillis() - time);
+		
 		return response;
 	}
 
@@ -402,6 +415,8 @@ public class Bucket {
 
 		gettingData = true;
 
+		long totTime = System.currentTimeMillis();
+		
 		// If some threads still have to finish writing
 		waitForCachers();
 
@@ -417,10 +432,10 @@ public class Bucket {
 					FDataInput di = cacheFiles.remove(0);
 					tmpBuffer.readFrom(di); // Read the oldest file
 					stats.addCounter(submissionNode, submissionId,
-							"Time spent reading from cache (ms)",
+							"Bucket:removeChunk: time reading from cache (ms)",
 							System.currentTimeMillis() - time);
 					stats.addCounter(submissionNode, submissionId,
-							"Bytes read from cache", tmpBuffer.bytesToStore());
+							"Bucket:removeChunk: bytes read from cache", tmpBuffer.bytesToStore());
 					elementsInCache -= tmpBuffer.getNElements();
 					di.close();
 				} else { // Need to sort
@@ -593,6 +608,10 @@ public class Bucket {
 		} catch (Exception e) {
 			log.error("Error in retrieving the results", e);
 		}
+		
+		stats.addCounter(submissionNode, submissionId,
+				"Bucket:removeChunk: overall time (ms)",
+				System.currentTimeMillis() - totTime);
 
 		return isFinished && elementsInCache == 0
 				&& (tuples == null || tuples.getNElements() == 0)
@@ -664,7 +683,7 @@ public class Bucket {
 					}
 
 					stats.addCounter(submissionNode, submissionId,
-							"Time spent writing to cache (ms)",
+							"Bucket:cacheBuffer: overall time (ms)",
 							System.currentTimeMillis() - time);
 
 					cacheOutputStream.close();

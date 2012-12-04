@@ -92,7 +92,7 @@ public class ChainResolver implements Runnable {
 				if (chainsToProcess.getNElements() > 0) {
 					stats.addCounter(chain.getSubmissionNode(),
 							chain.getSubmissionId(),
-							"Chains Generated From Expansion",
+							"ChainResolver:run: chains generated from expansion",
 							chainsToProcess.getNElements());
 					chainsToResolve.addAll(chainsToProcess);
 				}
@@ -100,7 +100,7 @@ public class ChainResolver implements Runnable {
 				if (chainsToSend.getNElements() > 0) {
 					stats.addCounter(chain.getSubmissionNode(),
 							chain.getSubmissionId(),
-							"Chains Sent From Expansion",
+							"ChainResolver:run: chains sent from expansion",
 							chainsToSend.getNElements());
 					net.sendChains(chainsToSend);
 				}

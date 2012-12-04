@@ -121,7 +121,7 @@ public class FileSplitter extends Action {
 		if (currentFileSplit.getSize() > 0) {
 			processSplit(context, chain, newChains);
 		}
-		context.incrCounter("# file splits", splitId);
+		context.incrCounter("FileSplitter: # of file splits", splitId);
 	}
 
 	public void setCustomIteratorClass(Class<? extends FileIterator> class1) {

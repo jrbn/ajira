@@ -479,9 +479,9 @@ public class NetworkLayer {
 		SendPort p = msg.localPort();
 		long bytes = msg.finish();
 		long startTime = timers.get(p.name());
-		stats.addCounter(0, submissionId, "Time sending",
+		stats.addCounter(0, submissionId, "NetworkLayer: time sending msgs (ms)",
 				System.currentTimeMillis() - startTime);
-		stats.addCounter(0, submissionId, "Bytes sent", bytes);
+		stats.addCounter(0, submissionId, "NetworkLayer: bytes sent", bytes);
 		// stats.addCounter(0, submissionId, "Messages sent", 1);
 	}
 

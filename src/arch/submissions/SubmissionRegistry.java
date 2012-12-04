@@ -5,6 +5,7 @@ import ibis.ipl.WriteMessage;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -209,13 +210,16 @@ public class SubmissionRegistry {
 
 		submission.counters = stats.removeCountersSubmission(submission
 				.getSubmissionId());
+		
+		Map<String, Long> sortedSubmissionCounters = 
+				new TreeMap<String, Long>(submission.counters);
 
 		// Print the counters
 		// if (submission.printStats) {
 		String stats = "Final statistics for job "
 				+ submission.getSubmissionId() + ":\n";
-		if (submission.counters != null) {
-			for (Map.Entry<String, Long> entry : submission.counters.entrySet()) {
+		if (sortedSubmissionCounters != null) {
+			for (Map.Entry<String, Long> entry : sortedSubmissionCounters.entrySet()) {
 				stats += " " + entry.getKey() + " = " + entry.getValue() + "\n";
 			}
 		}
