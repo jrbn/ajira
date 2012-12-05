@@ -16,7 +16,7 @@ import arch.data.types.TString;
 import arch.data.types.Tuple;
 import arch.datalayer.files.FileCollection;
 import arch.datalayer.files.FileLayer;
-import arch.datalayer.files.FileParser;
+import arch.datalayer.files.DefaultFileParser;
 import arch.storage.container.WritableContainer;
 import arch.utils.Consts;
 
@@ -124,7 +124,7 @@ public class FileSplitter extends Action {
 		context.incrCounter("# file splits", splitId);
 	}
 
-	public void setCustomIteratorClass(Class<? extends FileParser> class1) {
+	public void setCustomIteratorClass(Class<? extends DefaultFileParser> class1) {
 		customReader = class1.getName();
 	}
 }

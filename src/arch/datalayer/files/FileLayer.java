@@ -20,7 +20,7 @@ public class FileLayer extends InputLayer {
 
 	public final static int OP_LS = 0;
 	public final static int OP_READ = 1;
-	private final static Class<? extends FileParser> DEFAULT_FILE_PARSER = FileParser.class;
+	private final static Class<? extends DefaultFileParser> DEFAULT_FILE_PARSER = DefaultFileParser.class;
 
 	static final Logger log = LoggerFactory.getLogger(FileLayer.class);
 
@@ -78,10 +78,10 @@ public class FileLayer extends InputLayer {
 					tuple.get(clazz, 3);
 
 					// Test whether it is a good class
-					Class<? extends FileParser> c = null;
+					Class<? extends DefaultFileParser> c = null;
 					try {
 						c = Class.forName(clazz.getValue()).asSubclass(
-								FileParser.class);
+								DefaultFileParser.class);
 					} catch (Exception e) {
 						log.warn("Customized file parser " + clazz.getValue()
 								+ " is not valid.");

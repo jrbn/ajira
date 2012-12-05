@@ -13,14 +13,14 @@ import org.slf4j.LoggerFactory;
 import arch.data.types.TString;
 import arch.data.types.Tuple;
 
-public class FileParser {
+public class DefaultFileParser {
 
 	static final Logger log = LoggerFactory
-			.getLogger(FileParser.class);
+			.getLogger(DefaultFileParser.class);
 	protected BufferedReader reader = null;
 	TString currentLine = new TString();
 
-	public FileParser(File file) {
+	public DefaultFileParser(File file) {
 		try {
 			log.debug("Reading file " + file.getPath());
 			InputStream input = new FileInputStream(file);

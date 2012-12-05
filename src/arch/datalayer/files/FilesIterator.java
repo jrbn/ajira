@@ -16,11 +16,11 @@ public class FilesIterator extends TupleIterator {
 
 	int currentIndex = 0;
 	FileCollection files = null;
-	Constructor<? extends FileParser> cfileReader;
-	FileParser currentItr = null;
+	Constructor<? extends DefaultFileParser> cfileReader;
+	DefaultFileParser currentItr = null;
 
 	public FilesIterator(FileCollection files,
-			Class<? extends FileParser> cfileReader)
+			Class<? extends DefaultFileParser> cfileReader)
 			throws SecurityException, NoSuchMethodException, IOException {
 		this.cfileReader = cfileReader.getConstructor(File.class);
 		log.debug("Input: " + files);
