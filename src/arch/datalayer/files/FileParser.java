@@ -13,15 +13,14 @@ import org.slf4j.LoggerFactory;
 import arch.data.types.TString;
 import arch.data.types.Tuple;
 
-public class LineTextFilesReader extends FileIterator {
+public class FileParser {
 
 	static final Logger log = LoggerFactory
-			.getLogger(LineTextFilesReader.class);
+			.getLogger(FileParser.class);
 	protected BufferedReader reader = null;
 	TString currentLine = new TString();
 
-	public LineTextFilesReader(File file) {
-		super(file);
+	public FileParser(File file) {
 		try {
 			log.debug("Reading file " + file.getPath());
 			InputStream input = new FileInputStream(file);
@@ -34,7 +33,6 @@ public class LineTextFilesReader extends FileIterator {
 		}
 	}
 
-	@Override
 	public boolean next() {
 		try {
 			currentLine.setValue(reader.readLine());
@@ -49,7 +47,6 @@ public class LineTextFilesReader extends FileIterator {
 		return false;
 	}
 
-	@Override
 	public void getTuple(Tuple tuple) throws Exception {
 		tuple.set(currentLine);
 	}

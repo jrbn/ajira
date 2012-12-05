@@ -20,8 +20,7 @@ public class FileLayer extends InputLayer {
 
 	public final static int OP_LS = 0;
 	public final static int OP_READ = 1;
-
-	public final static String IMPL_FILE_READER = "fileslayer.reader.impl";
+	private final static Class<? extends FileParser> DEFAULT_FILE_PARSER = FileParser.class;
 
 	static final Logger log = LoggerFactory.getLogger(FileLayer.class);
 
@@ -30,21 +29,10 @@ public class FileLayer extends InputLayer {
 	int numberNodes;
 	int currentPivot;
 
-	Class<? extends FileIterator> classFileIterator = null;
-
 	@Override
 	protected void load(Context context) throws IOException {
 		currentPivot = -1;
 		numberNodes = context.getNetworkLayer().getNumberNodes();
-
-		String clazz = context.getConfiguration().get(IMPL_FILE_READER, null);
-		try {
-			classFileIterator = Class.forName(clazz).asSubclass(
-					FileIterator.class);
-		} catch (Exception e) {
-			log.error("Failed in loading the file reader class", e);
-		}
-
 	}
 
 	@Override
@@ -65,7 +53,7 @@ public class FileLayer extends InputLayer {
 
 			TupleIterator itr = null;
 			if (operation.getValue() == OP_LS) {
-				itr = new ListFilesReader(value.getValue(), sFilter);
+				itr = new ListFilesIterator(value.getValue(), sFilter);
 			} else { // OP_READ
 
 				// In this case value is the key to a file collection
@@ -88,11 +76,24 @@ public class FileLayer extends InputLayer {
 					// There is a customized file reader
 					TString clazz = factory.get();
 					tuple.get(clazz, 3);
-					itr = new MultiFilesReader(col, clazz.getValue());
+
+					// Test whether it is a good class
+					Class<? extends FileParser> c = null;
+					try {
+						c = Class.forName(clazz.getValue()).asSubclass(
+								FileParser.class);
+					} catch (Exception e) {
+						log.warn("Customized file parser " + clazz.getValue()
+								+ " is not valid.");
+					}
+					if (c != null)
+						itr = new FilesIterator(col, c);
+					else
+						itr = new FilesIterator(col, DEFAULT_FILE_PARSER);
 					factory.release(clazz);
 
 				} else {
-					itr = new MultiFilesReader(col, classFileIterator);
+					itr = new FilesIterator(col, DEFAULT_FILE_PARSER);
 				}
 
 			}

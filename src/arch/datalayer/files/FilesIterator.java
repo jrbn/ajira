@@ -10,27 +10,17 @@ import org.slf4j.LoggerFactory;
 import arch.data.types.Tuple;
 import arch.datalayer.TupleIterator;
 
-public class MultiFilesReader extends TupleIterator {
+public class FilesIterator extends TupleIterator {
 
-	static final Logger log = LoggerFactory.getLogger(MultiFilesReader.class);
+	static final Logger log = LoggerFactory.getLogger(FilesIterator.class);
 
 	int currentIndex = 0;
 	FileCollection files = null;
-	Constructor<? extends FileIterator> cfileReader;
-	FileIterator currentItr = null;
+	Constructor<? extends FileParser> cfileReader;
+	FileParser currentItr = null;
 
-	public MultiFilesReader(FileCollection files, String clazzFileReader)
-			throws NoSuchMethodException, SecurityException,
-			ClassNotFoundException {
-		Class<? extends FileIterator> clazz = Class.forName(clazzFileReader)
-				.asSubclass(FileIterator.class);
-		this.cfileReader = clazz.getConstructor(File.class);
-		log.debug("Input: " + files);
-		this.files = files;
-	}
-
-	public MultiFilesReader(FileCollection files,
-			Class<? extends FileIterator> cfileReader)
+	public FilesIterator(FileCollection files,
+			Class<? extends FileParser> cfileReader)
 			throws SecurityException, NoSuchMethodException, IOException {
 		this.cfileReader = cfileReader.getConstructor(File.class);
 		log.debug("Input: " + files);

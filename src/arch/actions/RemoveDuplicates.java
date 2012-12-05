@@ -9,7 +9,7 @@ import arch.chains.Chain;
 import arch.data.types.Tuple;
 import arch.storage.container.WritableContainer;
 
-public class FilterDuplicates extends Action {
+public class RemoveDuplicates extends Action {
 
 	@Override
 	public void readFrom(DataInput input) throws IOException {

@@ -14,9 +14,9 @@ import arch.data.types.TInt;
 import arch.data.types.Tuple;
 import arch.storage.container.WritableContainer;
 
-abstract public class Partitioner extends Action {
+abstract public class AbstractPartitioner extends Action {
 
-	static final Logger log = LoggerFactory.getLogger(Partitioner.class);
+	static final Logger log = LoggerFactory.getLogger(AbstractPartitioner.class);
 
 	int partitions = -1;
 

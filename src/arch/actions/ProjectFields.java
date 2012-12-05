@@ -10,7 +10,7 @@ import arch.data.types.SimpleData;
 import arch.data.types.Tuple;
 import arch.storage.container.WritableContainer;
 
-public class Project extends Action {
+public class ProjectFields extends Action {
 
 	Tuple tuple = new Tuple();
 	SimpleData[] outputFields;
