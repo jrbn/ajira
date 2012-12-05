@@ -45,9 +45,41 @@ public class Arch {
 
 	private Context globalContext;
 
-	/*
-	 * Start the architecture and return a data-structure that can be used to
-	 * insert new chains to be executed.
+	/**
+	 * Returns whether the current instance was the elected server of the
+	 * cluster.
+	 * 
+	 * @return true if it is, false otherwise.
+	 */
+	public boolean isServer() {
+		return globalContext.getNetworkLayer().isServer();
+	}
+
+	/**
+	 * This method shutdowns the entire cluster. The current JVM is terminated
+	 * and a signal is send to all the other nodes to perform the same.
+	 */
+	public void shutdown() {
+		log.info("Framework is shutting down ...");
+		try {
+			// Send message to everyone that should stop
+			globalContext.getNetworkLayer().signalTermination();
+			globalContext.getNetworkLayer().ibis.end();
+		} catch (IOException e) {
+			log.error("Error in shutting down", e);
+			System.exit(1);
+		}
+		log.info("...done");
+	}
+
+	/**
+	 * This method starts the entire cluster. Should be invoked on every node
+	 * that participate in the computation. After it is finished, the cluster is
+	 * ready to accept incoming jobs.
+	 * 
+	 * @param conf
+	 *            A configuration object that contains some possible
+	 *            initialization parameters.
 	 */
 	public void startup(Configuration conf) {
 		try {
@@ -77,7 +109,7 @@ public class Arch {
 			}
 
 			/***** NET *******/
-			log.debug("Starting the Ibis server ...");
+			log.debug("Starting the network layer ...");
 			@SuppressWarnings("unchecked")
 			Class<WritableContainer<Tuple>> clazz = (Class<WritableContainer<Tuple>>) (Class<?>) WritableContainer.class;
 			Factory<WritableContainer<Tuple>> bufferFactory = new Factory<WritableContainer<Tuple>>(
@@ -85,9 +117,7 @@ public class Arch {
 			NetworkLayer net = NetworkLayer.getInstance();
 			net.setBufferFactory(bufferFactory);
 			net.startIbis();
-			// Get some buffers in the factory ... it is better to have some
-			// available, and
-			// not having to allocate inside the upcall.
+
 			ArrayList<WritableContainer<Tuple>> l = new ArrayList<WritableContainer<Tuple>>(
 					Consts.STARTING_SIZE_FACTORY);
 			for (int i = 0; i < Consts.STARTING_SIZE_FACTORY; i++) {
@@ -210,28 +240,21 @@ public class Arch {
 		}
 	}
 
-	public void shutdown() {
-		log.info("Framework is shutting down ...");
-		try {
-			// Send message to everyone that should stop
-			globalContext.getNetworkLayer().signalTermination();
-			globalContext.getNetworkLayer().ibis.end();
-		} catch (IOException e) {
-			log.error("Error in shutting down", e);
-			System.exit(1);
-		}
-		log.info("...done");
-	}
-
+	/**
+	 * This method is used to launch a job in the cluster. It waits until the
+	 * job is terminated (or has failed).
+	 * 
+	 * @param job
+	 *            The specification of the job to launch
+	 * @return The corresponding submission object that contains informations
+	 *         and statistics about the processed job.
+	 * @throws Exception
+	 */
 	public Submission waitForCompletion(JobDescriptor job) throws Exception {
 		Submission sub = globalContext.getSubmissionsRegistry()
 				.waitForCompletion(globalContext, job);
 		globalContext.getSubmissionsRegistry().getStatistics(job, sub);
 		return sub;
-	}
-
-	public boolean isServer() {
-		return globalContext.getNetworkLayer().isServer();
 	}
 
 }
