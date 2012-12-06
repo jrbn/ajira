@@ -31,16 +31,16 @@ public abstract class Action extends Writable {
 			throws Exception {
 	}
 
-	public abstract void process(Tuple inputTuple, Chain remainingChain,
-			WritableContainer<Chain> chainsToResolve,
-			WritableContainer<Chain> chainsToProcess,
-			WritableContainer<Tuple> output, ActionContext context)
+	public abstract void process(ActionContext context, Chain chain,
+			Tuple inputTuple,
+			WritableContainer<Tuple> output,
+			WritableContainer<Chain> chainsToResolve, WritableContainer<Chain> chainsToProcess)
 			throws Exception;
 
 	public void stopProcess(ActionContext context, Chain chain,
 			WritableContainer<Tuple> output,
-			WritableContainer<Chain> newChains,
-			WritableContainer<Chain> chainsToSend) throws Exception {
+			WritableContainer<Chain> chainsToResolve,
+			WritableContainer<Chain> chainsToProcess) throws Exception {
 	}
 
 }

@@ -24,14 +24,6 @@ public class RemoveDuplicates extends Action {
 		return 0;
 	}
 
-	@Override
-	public void stopProcess(ActionContext context, Chain chain,
-			WritableContainer<Tuple> output,
-			WritableContainer<Chain> newChains,
-			WritableContainer<Chain> chainsToSend) throws Exception {
-		process(null, chain, null, null, output, context);
-	}
-
 	private final Tuple tuple = new Tuple();
 	boolean first = true;
 	long filtered = 0;
@@ -45,10 +37,10 @@ public class RemoveDuplicates extends Action {
 	}
 
 	@Override
-	public void process(Tuple inputTuple, Chain remainingChain,
-			WritableContainer<Chain> chainsToResolve,
-			WritableContainer<Chain> chainsToProcess,
-			WritableContainer<Tuple> output, ActionContext context)
+	public void process(ActionContext context, Chain chain,
+			Tuple inputTuple,
+			WritableContainer<Tuple> output,
+			WritableContainer<Chain> chainsToResolve, WritableContainer<Chain> chainsToProcess)
 			throws Exception {
 
 		if (inputTuple == null) {
@@ -68,4 +60,11 @@ public class RemoveDuplicates extends Action {
 		}
 	}
 
+	@Override
+	public void stopProcess(ActionContext context, Chain chain,
+			WritableContainer<Tuple> output,
+			WritableContainer<Chain> newChains,
+			WritableContainer<Chain> chainsToSend) throws Exception {
+		process(context, chain, null, output, null, null);
+	}
 }

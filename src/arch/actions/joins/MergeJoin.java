@@ -86,12 +86,12 @@ public class MergeJoin extends Action {
 	}
 
 	@Override
-	public void process(Tuple inputTuple,
-			Chain remainingChain,
+	public void process(ActionContext context,
+			Chain chain,
+			Tuple inputTuple,
+			WritableContainer<Tuple> output,
 			// Action[] actionsInChain, int indexAction,
-			WritableContainer<Chain> chainsToResolve,
-			WritableContainer<Chain> chainsToProcess,
-			WritableContainer<Tuple> output, ActionContext context)
+			WritableContainer<Chain> chainsToResolve, WritableContainer<Chain> chainsToProcess)
 			throws Exception {
 
 		if (first) {

@@ -54,15 +54,15 @@ abstract public class AbstractPartitioner extends Action {
 	}
 
 	@Override
-	public void process(Tuple inputTuple, Chain remainingChain,
-			WritableContainer<Chain> chainsToResolve,
-			WritableContainer<Chain> chainsToProcess,
-			WritableContainer<Tuple> output, ActionContext context)
+	public void process(ActionContext context, Chain chain,
+			Tuple inputTuple,
+			WritableContainer<Tuple> output,
+			WritableContainer<Chain> chainsToResolve, WritableContainer<Chain> chainsToProcess)
 			throws Exception {
-		inputTuple.copyTo(tuple);
+		inputTuple.copyTo(inputTuple);
 
 		tnode.setValue(partition(inputTuple, partitions));
-		tuple.add(tnode);
-		output.add(tuple);
+		inputTuple.add(tnode);
+		output.add(inputTuple);
 	}
 }

@@ -95,10 +95,10 @@ public class ParallelFileReader extends Action {
 	}
 
 	@Override
-	public void process(Tuple inputTuple, Chain remainingChain,
-			WritableContainer<Chain> chainsToResolve,
-			WritableContainer<Chain> chainsToProcess,
-			WritableContainer<Tuple> output, ActionContext context)
+	public void process(ActionContext context, Chain chain,
+			Tuple inputTuple,
+			WritableContainer<Tuple> output,
+			WritableContainer<Chain> chainsToResolve, WritableContainer<Chain> chainsToProcess)
 			throws Exception {
 
 		// In input I receive a list of files
@@ -108,7 +108,7 @@ public class ParallelFileReader extends Action {
 
 		long sizeFile = file.length();
 		if (currentFileSplit.getSize() + sizeFile >= minimumFileSplitSize) {
-			processSplit(context, remainingChain, chainsToProcess);
+			processSplit(context, chain, chainsToProcess);
 		}
 		currentFileSplit.addFile(file);
 	}

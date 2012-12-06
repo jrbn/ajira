@@ -186,22 +186,22 @@ public class SendTo extends Action {
 	}
 
 	@Override
-	public void process(Tuple tuple, Chain remainingChain,
-			WritableContainer<Chain> chainsToResolve,
-			WritableContainer<Chain> chainsToProcess,
-			WritableContainer<Tuple> outputTuples, ActionContext context) {
+	public void process(ActionContext context, Chain chain,
+			Tuple inputTuple,
+			WritableContainer<Tuple> outputTuples,
+			WritableContainer<Chain> chainsToResolve, WritableContainer<Chain> chainsToProcess) {
 		try {
 
 			int nodeId = this.nodeId;
 			if (nodeId == -1) {
 				// Node to send is tuple's last record. Must remove it
-				tuple.get(tnode, tuple.getNElements() - 1);
+				inputTuple.get(tnode, inputTuple.getNElements() - 1);
 				nodeId = tnode.getValue();
-				tuple.removeLast();
+				inputTuple.removeLast();
 			}
 
 			if (ft) {
-				outputTuples.add(tuple);
+				outputTuples.add(inputTuple);
 			}
 
 			if (nodeId >= 0) {
@@ -212,7 +212,7 @@ public class SendTo extends Action {
 							sortingParams);
 					bucketsCache[nodeId] = b;
 				}
-				b.add(tuple);
+				b.add(inputTuple);
 			} else { // Send it to all the nodes
 
 				for (int i = 0; i < net.getNumberNodes(); ++i) {
@@ -223,7 +223,7 @@ public class SendTo extends Action {
 								i, bucket, sortingFunction, sortingParams);
 						bucketsCache[i] = b;
 					}
-					b.add(tuple);
+					b.add(inputTuple);
 				}
 
 			}
@@ -231,7 +231,7 @@ public class SendTo extends Action {
 		} catch (Exception e) {
 			log.error(
 					"Failed processing tuple. Chain="
-							+ remainingChain.toString(), e);
+							+ chain.toString(), e);
 		}
 	}
 

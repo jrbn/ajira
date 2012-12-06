@@ -47,10 +47,10 @@ public class PutIntoBucket extends Action {
 	}
 
 	@Override
-	public void process(Tuple inputTuple, Chain remainingChain,
-			WritableContainer<Chain> chainsToResolve,
-			WritableContainer<Chain> chainsToProcess,
-			WritableContainer<Tuple> output, ActionContext context)
+	public void process(ActionContext context, Chain chain,
+			Tuple inputTuple,
+			WritableContainer<Tuple> output,
+			WritableContainer<Chain> chainsToResolve, WritableContainer<Chain> chainsToProcess)
 			throws Exception {
 		bucket.add(inputTuple);
 		output.add(inputTuple);

@@ -227,8 +227,8 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 				&& !actions[indexAction].blockProcessing()) {
 			indexAction++;
 			chain.setRawSize(rawSizes[indexAction]);
-			actions[indexAction].process(element, chain, chainsBuffer,
-					chainsBuffer2, this, ac);
+			actions[indexAction].process(ac, chain, element, this,
+					chainsBuffer, chainsBuffer2);
 			indexAction--;
 		}
 		return true;
@@ -304,8 +304,8 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 							chain.setRawSize(rawSizes[0]);
 
 							indexAction = 0;
-							actions[indexAction].process(tuple, chain,
-									chainsBuffer, chainsBuffer2, this, ac);
+							actions[indexAction].process(ac, chain, tuple,
+									this, chainsBuffer, chainsBuffer2);
 
 						} else { // EOF Case
 							indexAction = 0;
