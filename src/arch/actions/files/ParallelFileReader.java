@@ -20,12 +20,12 @@ import arch.datalayer.files.DefaultFileParser;
 import arch.storage.container.WritableContainer;
 import arch.utils.Consts;
 
-public class FileSplitter extends Action {
+public class ParallelFileReader extends Action {
 
 	public static final String MINIMUM_SPLIT_SIZE = "splitinput.minimumsize";
 	public static final int MINIMUM_FILE_SPLIT = 4 * 1024 * 1024; // 1 MB
 
-	static final Logger log = LoggerFactory.getLogger(FileSplitter.class);
+	static final Logger log = LoggerFactory.getLogger(ParallelFileReader.class);
 
 	private final Tuple tuple = new Tuple();
 	private int minimumFileSplitSize;

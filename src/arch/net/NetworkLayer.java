@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import arch.Context;
 import arch.StatisticsCollector;
 import arch.chains.Chain;
+import arch.chains.ChainLocation;
 import arch.data.types.Tuple;
 import arch.storage.Container;
 import arch.storage.Factory;
@@ -373,16 +374,16 @@ public class NetworkLayer {
 		return assignedIds.get(id.name());
 	}
 
-	public IbisIdentifier[] getPeersLocation(int start, int end) {
-		try {
-			return Arrays.copyOfRange(assignedPartitions, start, end + 1);
-		} catch (Exception e) {
-			log.error("Error in doing this: length: "
-					+ assignedPartitions.length + " start: " + start + " end: "
-					+ end, e);
+	public IbisIdentifier[] getPeersLocation(ChainLocation loc) {
+		if (loc.getValue() == ChainLocation.V_ALL_NODES) {
+			return assignedPartitions;
+		} else if (loc.getValue() == ChainLocation.V_THIS_NODE) {
+			return Arrays.copyOfRange(assignedPartitions, partitionId,
+					partitionId + 1);
+		} else {
+			return Arrays.copyOfRange(assignedPartitions, loc.getValue(),
+					loc.getValue() + 1);
 		}
-
-		return null;
 	}
 
 	private SendPort startSenderPort(PortType senderPortType,

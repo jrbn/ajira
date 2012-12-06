@@ -9,6 +9,7 @@ import arch.ActionContext;
 import arch.Context;
 import arch.buckets.BucketIterator;
 import arch.chains.Chain;
+import arch.chains.ChainLocation;
 import arch.data.types.TInt;
 import arch.data.types.Tuple;
 import arch.datalayer.InputLayer;
@@ -57,27 +58,23 @@ public class BucketsLayer extends InputLayer {
 	}
 
 	@Override
-	public int[] getLocations(Tuple tuple, Chain chain, Context context) {
-		int[] range = new int[2];
-
+	public ChainLocation getLocations(Tuple tuple, Chain chain, Context context) {
 		try {
 			TInt locationBucket = intFactory.get();
 			tuple.get(locationBucket, tuple.getNElements() - 1);
 			if (locationBucket.getValue() == -1
 					|| locationBucket.getValue() == -2) { // All buckets or
-				// multiple
-				range[0] = 0;
-				range[1] = context.getNetworkLayer().getNumberNodes() - 1;
+				intFactory.release(locationBucket);
+				return ChainLocation.ALL_NODES;
 			} else {
-				range[0] = locationBucket.getValue();
-				range[1] = locationBucket.getValue();
+				intFactory.release(locationBucket);
+				return new ChainLocation(locationBucket.getValue());
 			}
-			intFactory.release(locationBucket);
 		} catch (Exception e) {
 			log.error("Error parsing tuple", e);
 		}
 
-		return range;
+		return null;
 	}
 
 	@Override

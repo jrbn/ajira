@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import arch.Context;
 import arch.StatisticsCollector;
 import arch.chains.Chain;
+import arch.chains.ChainLocation;
 import arch.data.types.Tuple;
 import arch.storage.Container;
 
@@ -39,12 +40,11 @@ class ChainSender implements Runnable {
 				chainsToSend.remove(chain);
 				chain.getInputTuple(tuple);
 
-				int[] range = context.getInputLayer(chain.getInputLayerId())
+				ChainLocation loc = context.getInputLayer(chain.getInputLayerId())
 						.getLocations(tuple, chain, context);
 
 				NetworkLayer ibis = context.getNetworkLayer();
-				IbisIdentifier[] nodes = ibis.getPeersLocation(range[0],
-						range[1]);
+				IbisIdentifier[] nodes = ibis.getPeersLocation(loc);
 
 				chain.setReplicatedFactor(Math.max(nodes.length, 1));
 				if (nodes.length == 0) { // Put it directly in the queue

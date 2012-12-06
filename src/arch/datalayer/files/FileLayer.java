@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import arch.ActionContext;
 import arch.Context;
 import arch.chains.Chain;
+import arch.chains.ChainLocation;
 import arch.data.types.TInt;
 import arch.data.types.TString;
 import arch.data.types.Tuple;
@@ -27,11 +28,9 @@ public class FileLayer extends InputLayer {
 	Factory<TString> factory = new Factory<TString>(TString.class);
 	Factory<TInt> factoryInt = new Factory<TInt>(TInt.class);
 	int numberNodes;
-	int currentPivot;
 
 	@Override
 	protected void load(Context context) throws IOException {
-		currentPivot = -1;
 		numberNodes = context.getNetworkLayer().getNumberNodes();
 	}
 
@@ -109,14 +108,26 @@ public class FileLayer extends InputLayer {
 	}
 
 	@Override
-	public int[] getLocations(Tuple tuple, Chain chain, Context context) {
-		int[] range = new int[2];
-		if (++currentPivot == numberNodes) {
-			currentPivot = 0;
-		}
+	public ChainLocation getLocations(Tuple tuple, Chain chain, Context context) {
+		TInt operation = factoryInt.get();
+		TString value = factory.get();
+		try {
+			tuple.get(operation, value);
+			if (operation.getValue() == OP_LS) {
+				return ChainLocation.THIS_NODE;
+			} else {
+				int index = Integer.valueOf(value.toString().substring(
+						value.toString().indexOf('-')));
+				return new ChainLocation(index % numberNodes);
+			}
 
-		range[0] = range[1] = currentPivot;
-		return range;
+		} catch (Exception e) {
+			log.error("Error", e);
+		} finally {
+			factoryInt.release(operation);
+			factory.release(value);
+		}
+		return null;
 	}
 
 	@Override
