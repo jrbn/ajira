@@ -3,7 +3,7 @@
 
 <configuration>
     <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-        <File>/var/log/${HOSTNAME}/output.log</File>
+        <File>log/${HOSTNAME}/output.log</File>
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{15} - %msg%n</pattern>
         </encoder>
