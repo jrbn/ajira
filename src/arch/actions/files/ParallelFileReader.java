@@ -14,9 +14,9 @@ import arch.chains.Chain;
 import arch.data.types.TInt;
 import arch.data.types.TString;
 import arch.data.types.Tuple;
+import arch.datalayer.files.DefaultFileParser;
 import arch.datalayer.files.FileCollection;
 import arch.datalayer.files.FileLayer;
-import arch.datalayer.files.DefaultFileParser;
 import arch.storage.container.WritableContainer;
 import arch.utils.Consts;
 
@@ -95,11 +95,9 @@ public class ParallelFileReader extends Action {
 	}
 
 	@Override
-	public void process(ActionContext context, Chain chain,
-			Tuple inputTuple,
+	public void process(ActionContext context, Chain chain, Tuple inputTuple,
 			WritableContainer<Tuple> output,
-			WritableContainer<Chain> chainsToResolve, WritableContainer<Chain> chainsToProcess)
-			throws Exception {
+			WritableContainer<Chain> chainsToProcess) throws Exception {
 
 		// In input I receive a list of files
 		TString path = new TString();
@@ -116,10 +114,9 @@ public class ParallelFileReader extends Action {
 	@Override
 	public void stopProcess(ActionContext context, Chain chain,
 			WritableContainer<Tuple> output,
-			WritableContainer<Chain> newChains,
 			WritableContainer<Chain> chainsToSend) throws Exception {
 		if (currentFileSplit.getSize() > 0) {
-			processSplit(context, chain, newChains);
+			processSplit(context, chain, chainsToSend);
 		}
 		context.incrCounter("# file splits", splitId);
 	}

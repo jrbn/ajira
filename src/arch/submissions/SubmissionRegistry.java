@@ -38,15 +38,15 @@ public class SubmissionRegistry {
 	Configuration conf;
 
 	Map<Integer, Submission> submissions = new HashMap<Integer, Submission>();
-	Container<Chain> chainsToResolve;
+	Container<Chain> chainsToProcess;
 	int submissionCounter = 0;
 
 	public SubmissionRegistry(NetworkLayer net, StatisticsCollector stats,
-			Container<Chain> chainsToResolve, Buckets buckets,
+			Container<Chain> chainsToProcess, Buckets buckets,
 			ActionsProvider ap, DataProvider dp, Configuration conf) {
 		this.net = net;
 		this.stats = stats;
-		this.chainsToResolve = chainsToResolve;
+		this.chainsToProcess = chainsToProcess;
 		this.buckets = buckets;
 		this.ap = ap;
 		this.dp = dp;
@@ -146,7 +146,7 @@ public class SubmissionRegistry {
 		chain.setSubmissionNode(context.getNetworkLayer().getMyPartition());
 		chain.setSubmissionId(sub.submissionId);
 
-		chainsToResolve.add(chain);
+		chainsToProcess.add(chain);
 		chainFactory.release(chain);
 
 		return sub;

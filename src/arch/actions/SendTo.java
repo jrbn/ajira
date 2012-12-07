@@ -189,7 +189,7 @@ public class SendTo extends Action {
 	public void process(ActionContext context, Chain chain,
 			Tuple inputTuple,
 			WritableContainer<Tuple> outputTuples,
-			WritableContainer<Chain> chainsToResolve, WritableContainer<Chain> chainsToProcess) {
+			WritableContainer<Chain> chainsToProcess) {
 		try {
 
 			int nodeId = this.nodeId;
@@ -238,7 +238,6 @@ public class SendTo extends Action {
 	@Override
 	public void stopProcess(ActionContext context, Chain chain,
 			WritableContainer<Tuple> outputTuples,
-			WritableContainer<Chain> newChains,
 			WritableContainer<Chain> chainsToSend) {
 		try {
 			nchildren = chain.getChainChildren();

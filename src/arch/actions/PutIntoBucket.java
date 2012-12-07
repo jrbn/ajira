@@ -17,6 +17,11 @@ public class PutIntoBucket extends Action {
 
 	static final Logger log = LoggerFactory.getLogger(PutIntoBucket.class);
 
+	public static final int BUCKET_ID = 0;
+	static {
+		registerParameter(BUCKET_ID, "Bucket ID", null, true);
+	}
+
 	Bucket bucket = null;
 	int bucketID;
 
@@ -47,11 +52,9 @@ public class PutIntoBucket extends Action {
 	}
 
 	@Override
-	public void process(ActionContext context, Chain chain,
-			Tuple inputTuple,
+	public void process(ActionContext context, Chain chain, Tuple inputTuple,
 			WritableContainer<Tuple> output,
-			WritableContainer<Chain> chainsToResolve, WritableContainer<Chain> chainsToProcess)
-			throws Exception {
+			WritableContainer<Chain> chainsToProcess) throws Exception {
 		bucket.add(inputTuple);
 		output.add(inputTuple);
 	}
@@ -59,7 +62,6 @@ public class PutIntoBucket extends Action {
 	@Override
 	public void stopProcess(ActionContext context, Chain chain,
 			WritableContainer<Tuple> output,
-			WritableContainer<Chain> newChains,
 			WritableContainer<Chain> chainsToSend) throws Exception {
 		bucket.setFinished(true);
 	}

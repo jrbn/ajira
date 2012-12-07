@@ -44,14 +44,13 @@ public class CreateBranch extends Action {
 	public void process(ActionContext context, Chain chain,
 			Tuple inputTuple,
 			WritableContainer<Tuple> output,
-			WritableContainer<Chain> chainsToResolve, WritableContainer<Chain> chainsToProcess)
+			WritableContainer<Chain> chainsToProcess)
 			throws Exception {
 	}
 
 	@Override
 	public void stopProcess(ActionContext context, Chain chain,
 			WritableContainer<Tuple> output,
-			WritableContainer<Chain> newChains,
 			WritableContainer<Chain> chainsToSend) throws Exception {
 		chain.createBranch(context, newChain);
 		newChain.replaceInputTuple(null); // Force to read the input of the

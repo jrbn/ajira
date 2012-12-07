@@ -30,7 +30,6 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 	static final Logger log = LoggerFactory.getLogger(ChainHandler.class);
 
 	NetworkLayer net = null;
-	Container<Chain> chainsToResolve = null;
 	Container<Chain> chainsToProcess = null;
 	Context context = null;
 	ActionsProvider ap = null;
@@ -62,7 +61,6 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 		super(0);
 		this.context = context;
 		this.net = context.getNetworkLayer();
-		this.chainsToResolve = context.getChainsToResolve();
 		this.chainsToProcess = context.getChainsToProcess();
 		this.stats = context.getStatisticsCollector();
 		this.ap = context.getActionsProvider();
@@ -228,7 +226,7 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 			indexAction++;
 			chain.setRawSize(rawSizes[indexAction]);
 			actions[indexAction].process(ac, chain, element, this,
-					chainsBuffer, chainsBuffer2);
+					chainsBuffer2);
 			indexAction--;
 		}
 		return true;
@@ -305,7 +303,7 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 
 							indexAction = 0;
 							actions[indexAction].process(ac, chain, tuple,
-									this, chainsBuffer, chainsBuffer2);
+									this, chainsBuffer2);
 
 						} else { // EOF Case
 							indexAction = 0;
@@ -313,7 +311,7 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 								chain.setRawSize(rawSizes[indexAction]);
 
 								actions[indexAction].stopProcess(ac, chain,
-										this, chainsBuffer, chainsBuffer2);
+										this, chainsBuffer2);
 								if (actions[indexAction].blockProcessing()) {
 									ap.release(actions[indexAction]);
 									break;
@@ -330,7 +328,6 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 									chain.getSubmissionId(),
 									"Chains Generated From Chains",
 									chainsBuffer.getNElements());
-							chainsToResolve.addAll(chainsBuffer);
 							chainsBuffer.clear();
 						}
 

@@ -13,13 +13,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import arch.actions.ActionsProvider;
-import arch.actions.ControllersProvider;
 import arch.buckets.Buckets;
 import arch.buckets.CachedFilesMerger;
 import arch.chains.Chain;
 import arch.chains.ChainHandler;
 import arch.chains.ChainNotifier;
-import arch.chains.ChainResolver;
 import arch.data.types.DataProvider;
 import arch.data.types.Tuple;
 import arch.datalayer.InputLayer;
@@ -135,9 +133,6 @@ public class Arch {
 			}
 
 			/**** SHARED DATA STRUCTURES ****/
-			WritableContainer<Chain> chainsToResolve = new CheckedConcurrentWritableContainer<Chain>(
-					Consts.SIZE_BUFFERS_CHAINS_RESOLVE);
-			List<ChainResolver> listResolvers = new ArrayList<ChainResolver>();
 			WritableContainer<Chain> chainsToProcess = new CheckedConcurrentWritableContainer<Chain>(
 					Consts.SIZE_BUFFERS_CHAINS_PROCESS);
 			List<ChainHandler> listHandlers = new ArrayList<ChainHandler>();
@@ -147,14 +142,13 @@ public class Arch {
 			Buckets tuplesContainer = new Buckets(stats, bufferFactory, merger,
 					net);
 			ActionsProvider ap = new ActionsProvider();
-			ControllersProvider cp = new ControllersProvider();
 			DataProvider dp = new DataProvider();
 			Factory<Tuple> defaultTupleFactory = new Factory<Tuple>(
 					Tuple.class, (Object[]) null);
 			SubmissionCache cache = new SubmissionCache(net);
 
 			SubmissionRegistry registry = new SubmissionRegistry(net, stats,
-					chainsToResolve, tuplesContainer, ap, dp, conf);
+					chainsToProcess, tuplesContainer, ap, dp, conf);
 
 			/**** INIT INPUT LAYERS ****/
 			InputLayer input = InputLayer.getImplementation(conf);
@@ -167,23 +161,11 @@ public class Arch {
 			globalContext = new Context();
 			ChainNotifier notifier = new ChainNotifier(globalContext, dp);
 			globalContext.init(inputRegistry, tuplesContainer, registry,
-					chainsToResolve, listResolvers, chainsToProcess,
-					listHandlers, notifier, merger, net, stats, ap, cp, dp,
-					defaultTupleFactory, cache, conf);
-
-			/**** START RESOLUTION THREADS ****/
-			int i = conf.getInt(Consts.N_RES_THREADS, 1);
-			for (int j = 0; j < i; ++j) {
-				log.debug("Starting ChainResolver " + j + " ...");
-				ChainResolver resolver = new ChainResolver(globalContext);
-				Thread thread = new Thread(resolver);
-				thread.setName("Chain Resolver " + j);
-				thread.start();
-				listResolvers.add(resolver);
-			}
+					chainsToProcess, listHandlers, notifier, merger, net,
+					stats, ap, dp, defaultTupleFactory, cache, conf);
 
 			/**** START PROCESSING THREADS ****/
-			i = conf.getInt(Consts.N_PROC_THREADS, 1);
+			int i = conf.getInt(Consts.N_PROC_THREADS, 1);
 			for (int j = 0; j < i; ++j) {
 				log.debug("Starting Chain Handler " + j + " ...");
 				ChainHandler handler = new ChainHandler(globalContext);
@@ -213,18 +195,17 @@ public class Arch {
 			thread.setName("Statistics Printer");
 			thread.start();
 
-			/***** STORAGE *****/
+			/***** LOAD STORAGE *****/
 			log.debug("Starting Data Layer ...");
 			input.startup(globalContext);
 
-			/***** WEB INTERFACE *****/
-			if (conf.getBoolean(WebServer.WEBSERVER_START, true)) {
+			/***** LOAD WEB INTERFACE *****/
+			if (conf.getBoolean(WebServer.WEBSERVER_START, false)) {
 				log.debug("Starting Web Server on port " + 8080 + "...");
 				WebServer www = new WebServer();
 				www.startWebServer(globalContext);
 			}
 
-			Runtime.getRuntime().gc();
 			if (serverMode) {
 				net.waitUntilAllReady();
 				log.info("Time to startup the cluster (ms): "

@@ -90,8 +90,7 @@ public class MergeJoin extends Action {
 			Chain chain,
 			Tuple inputTuple,
 			WritableContainer<Tuple> output,
-			// Action[] actionsInChain, int indexAction,
-			WritableContainer<Chain> chainsToResolve, WritableContainer<Chain> chainsToProcess)
+			WritableContainer<Chain> chainsToProcess)
 			throws Exception {
 
 		if (first) {
@@ -166,7 +165,6 @@ public class MergeJoin extends Action {
 	@Override
 	public void stopProcess(ActionContext context, Chain chain,
 			WritableContainer<Tuple> output,
-			WritableContainer<Chain> newChains,
 			WritableContainer<Chain> chainsToSend) throws Exception {
 		if (itr != null) {
 			context.getTuplesBuckets().releaseIterator((BucketIterator) itr,

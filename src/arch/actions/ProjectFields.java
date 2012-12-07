@@ -53,7 +53,7 @@ public class ProjectFields extends Action {
 	public void process(ActionContext context, Chain chain,
 			Tuple inputTuple,
 			WritableContainer<Tuple> output,
-			WritableContainer<Chain> chainsToResolve, WritableContainer<Chain> chainsToProcess)
+			WritableContainer<Chain> chainsToProcess)
 			throws Exception {
 		if (first) {
 			first = false;
@@ -76,7 +76,6 @@ public class ProjectFields extends Action {
 	@Override
 	public void stopProcess(ActionContext context, Chain chain,
 			WritableContainer<Tuple> output,
-			WritableContainer<Chain> newChains,
 			WritableContainer<Chain> chainsToSend) throws Exception {
 		for (int i = 0; i < outputFields.length; ++i) {
 			if (outputFields[i] != null)
