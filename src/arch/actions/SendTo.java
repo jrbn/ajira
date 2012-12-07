@@ -1,10 +1,5 @@
 package arch.actions;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.util.Random;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,14 +15,33 @@ import arch.utils.Consts;
 
 public class SendTo extends Action {
 
-	public static final String THIS = "this";
-	public static final String MULTIPLE = "multiple";
-	public static final String ALL = "all";
-	public static final String RANDOM = "random";
+	public static final int MULTIPLE = -1;
+	public static final int ALL = -2;
+
+	public static final int NODE_ID = 0;
+	public static final String S_NODE_ID = "node_id";
+	public static final int BUCKET_ID = 1;
+	public static final String S_BUCKET_ID = "bucket_id";
+	public static final int FORWARD_TUPLES = 2;
+	public static final String S_FORWARD_TUPLES = "forward_tuples";
+	public static final int SEND_CHAIN = 3;
+	public static final String S_SEND_CHAIN = "send_chain";
+	public static final int RESPONSIBLE_CHAIN = 4;
+	public static final String S_RESPONSIBLE_CHAIN = "resp_chain";
+	public static final int SORTING_FUNCTION = 5;
+	public static final String S_SORTING_FUNCTION = "sorting_function";
+	// FIXME: sorting params not implemented
+
+	static {
+		registerParameter(NODE_ID, S_NODE_ID, null, true);
+		registerParameter(BUCKET_ID, S_BUCKET_ID, null, true);
+		registerParameter(FORWARD_TUPLES, S_FORWARD_TUPLES, false, false);
+		registerParameter(SEND_CHAIN, S_SEND_CHAIN, true, false);
+		registerParameter(RESPONSIBLE_CHAIN, S_RESPONSIBLE_CHAIN, null, true);
+		registerParameter(SORTING_FUNCTION, S_SORTING_FUNCTION, null, false);
+	}
 
 	static final Logger log = LoggerFactory.getLogger(SendTo.class);
-
-	private static Random r = new Random();
 
 	private int submissionNode;
 	private int idSubmission;
@@ -41,13 +55,11 @@ public class SendTo extends Action {
 	private int bucket = -1;
 	private boolean sc = true;
 	private boolean ft = false;
-	// private boolean removeDuplicates = false;
 	private String sortingFunction = null;
 	private byte[] sortingParams = null;
 
 	private final TInt tbucket = new TInt();
 	private final TInt tsub = new TInt();
-	// private final TBoolean tremove = new TBoolean();
 	private final TInt tnode = new TInt();
 	private final Tuple tuple = new Tuple();
 
@@ -57,123 +69,20 @@ public class SendTo extends Action {
 	private int totalNumberNodes = 0;
 
 	@Override
-	public void readFrom(DataInput input) throws IOException {
-		nodeId = input.readInt();
-		bucket = input.readInt();
-		ft = input.readBoolean();
-		sc = input.readBoolean();
-		// removeDuplicates = input.readBoolean();
-		responsibleChain = input.readLong();
-		int l = input.readByte();
-		if (l > 0) {
-			byte[] sSorting = new byte[l];
-			input.readFully(sSorting);
-			sortingFunction = new String(sSorting);
-			l = input.readByte();
-			if (l > 0) {
-				sortingParams = new byte[l];
-				for (int i = 0; i < l; ++i) {
-					sortingParams[i] = input.readByte();
-				}
-			}
-		}
-	}
-
-	@Override
-	public void writeTo(DataOutput output) throws IOException {
-		output.writeInt(nodeId);
-		output.writeInt(bucket);
-		output.writeBoolean(ft);
-		output.writeBoolean(sc);
-		// output.writeBoolean(removeDuplicates);
-		output.writeLong(responsibleChain);
-		if (sortingFunction != null && sortingFunction.length() > 0) {
-			byte[] raw = sortingFunction.getBytes();
-			output.writeByte(raw.length);
-			output.write(raw);
-			if (sortingParams != null && sortingParams.length > 0) {
-				output.writeByte(sortingParams.length);
-				for (int i = 0; i < sortingParams.length; ++i) {
-					output.writeByte(sortingParams[i]);
-				}
-			} else {
-				output.writeByte(0);
-			}
-		} else {
-			output.writeByte(0);
-		}
-	}
-
-	@Override
-	public int bytesToStore() {
-		int size = 19;
-		if (sortingFunction != null) {
-			byte[] s = sortingFunction.getBytes();
-			size += 1 + s.length;
-			if (sortingParams != null) {
-				size += sortingParams.length;
-			}
-		}
-		return size;
-	}
-
-	public void setDestination(String destination) {
-		if (destination.equals(THIS)) {
-			nodeId = NetworkLayer.getInstance().getMyPartition();
-		} else if (destination.equals(RANDOM)) {
-			nodeId = r.nextInt(NetworkLayer.getInstance().getNumberNodes());
-		} else if (destination.equals(MULTIPLE)) {
-			nodeId = -1;
-		} else if (destination.equals(ALL)) {
-			nodeId = -2;
-		} else {
-			try {
-				nodeId = Integer.valueOf(destination);
-			} catch (Exception e) {
-				log.warn("Unrecognized node (" + destination + ")! Set node=0");
-				nodeId = 0;
-			}
-		}
-	}
-
-	public void setForwardTriples(boolean value) {
-		ft = value;
-	}
-
-	public void setSendChain(boolean value) {
-		sc = value;
-	}
-
-	// public void setRemoveDuplicates(boolean duplicates) {
-	// this.removeDuplicates = duplicates;
-	// }
-
-	public void setMainChainForBucket(long chain) {
-		responsibleChain = chain;
-	}
-
-	public void setBucketId(int bucket) {
-		this.bucket = bucket;
-	}
-
-	public void setSortingFunction(String sortingFunction, byte[] fields) {
-		this.sortingFunction = sortingFunction;
-		if (fields != null) {
-			sortingParams = fields;
-		}
-	}
-
-	public void setSortingFunction(String sortingFunction) {
-		setSortingFunction(sortingFunction, null);
-	}
-
-	@Override
 	public boolean blockProcessing() {
 		return sc;
 	}
 
 	@Override
-	public void startProcess(ActionContext context, Chain chain) {
+	public void startProcess(ActionContext context, Chain chain)
+			throws Exception {
+		nodeId = getParamInt(NODE_ID);
+		bucket = getParamInt(BUCKET_ID);
+		ft = getParamBoolean(FORWARD_TUPLES);
+		sc = getParamBoolean(SEND_CHAIN);
+		responsibleChain = getParamLong(RESPONSIBLE_CHAIN);
+		sortingFunction = getParamString(SORTING_FUNCTION);
+
 		// Init variables
 		net = context.getNetworkLayer();
 		bucketsCache = new Bucket[net.getNumberNodes()];
@@ -186,8 +95,7 @@ public class SendTo extends Action {
 	}
 
 	@Override
-	public void process(ActionContext context, Chain chain,
-			Tuple inputTuple,
+	public void process(ActionContext context, Chain chain, Tuple inputTuple,
 			WritableContainer<Tuple> outputTuples,
 			WritableContainer<Chain> chainsToProcess) {
 		try {
@@ -229,9 +137,7 @@ public class SendTo extends Action {
 			}
 
 		} catch (Exception e) {
-			log.error(
-					"Failed processing tuple. Chain="
-							+ chain.toString(), e);
+			log.error("Failed processing tuple. Chain=" + chain.toString(), e);
 		}
 	}
 
@@ -256,9 +162,8 @@ public class SendTo extends Action {
 				tsub.setValue(idSubmission);
 				tnode.setValue(nodeId);
 				tbucket.setValue(bucket);
-				// tremove.setValue(removeDuplicates);
-				this.tuple.set(tsub, tbucket/* , tremove */, tnode);
-				newChain.replaceInputTuple(this.tuple);
+				this.tuple.set(tsub, tbucket, tnode);
+				newChain.setInputTuple(this.tuple);
 				chainsToSend.add(newChain);
 			}
 

@@ -168,9 +168,12 @@ public class ActionConf extends Writable {
 		return currentValues[pos];
 	}
 
+	public String getClassName() {
+		return className;
+	}
+
 	@Override
 	public void readFrom(DataInput input) throws IOException {
-		className = input.readUTF();
 		allowedParams = actionParameters.get(className);
 		int size = input.readByte();
 		currentValues = new Object[size];
@@ -195,7 +198,6 @@ public class ActionConf extends Writable {
 
 	@Override
 	public void writeTo(DataOutput output) throws IOException {
-		output.writeUTF(className);
 		output.writeByte(currentValues.length);
 		for (int i = 0; i < currentValues.length; ++i) {
 			Object value = currentValues[i];

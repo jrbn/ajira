@@ -1,9 +1,6 @@
 package arch.actions.files;
 
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.File;
-import java.io.IOException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +11,6 @@ import arch.chains.Chain;
 import arch.data.types.TInt;
 import arch.data.types.TString;
 import arch.data.types.Tuple;
-import arch.datalayer.files.DefaultFileParser;
 import arch.datalayer.files.FileCollection;
 import arch.datalayer.files.FileLayer;
 import arch.storage.container.WritableContainer;
@@ -22,8 +18,15 @@ import arch.utils.Consts;
 
 public class ParallelFileReader extends Action {
 
-	public static final String MINIMUM_SPLIT_SIZE = "splitinput.minimumsize";
-	public static final int MINIMUM_FILE_SPLIT = 4 * 1024 * 1024; // 1 MB
+	private static final String MINIMUM_SPLIT_SIZE = "splitinput.minimumsize";
+	private static final int MINIMUM_FILE_SPLIT = 4 * 1024 * 1024; // 1 MB
+
+	public static final int CUSTOM_READER = 0;
+	public static final String S_CUSTOM_READER = "custom_reader";
+
+	static {
+		registerParameter(CUSTOM_READER, S_CUSTOM_READER, null, false);
+	}
 
 	static final Logger log = LoggerFactory.getLogger(ParallelFileReader.class);
 
@@ -32,32 +35,6 @@ public class ParallelFileReader extends Action {
 	private FileCollection currentFileSplit;
 	private int splitId;
 	private String customReader = null;
-
-	@Override
-	public void readFrom(DataInput input) throws IOException {
-		int l = input.readByte();
-		if (l != -1) {
-			byte[] content = new byte[l];
-			input.readFully(content);
-			customReader = new String(content);
-		}
-	}
-
-	@Override
-	public void writeTo(DataOutput output) throws IOException {
-		if (customReader == null) {
-			output.writeByte(-1);
-		} else {
-			byte[] c = customReader.getBytes();
-			output.writeByte(c.length);
-			output.write(c);
-		}
-	}
-
-	@Override
-	public int bytesToStore() {
-		return customReader == null ? 1 : 1 + customReader.getBytes().length;
-	}
 
 	private Chain processSplit(ActionContext context, Chain chain,
 			WritableContainer<Chain> chainsToProcess) throws Exception {
@@ -76,7 +53,7 @@ public class ParallelFileReader extends Action {
 					customReader));
 		}
 
-		newChain.replaceInputTuple(tuple);
+		newChain.setInputTuple(tuple);
 		newChain.setInputLayerId(Consts.DEFAULT_INPUT_LAYER_ID);
 
 		chainsToProcess.add(newChain);
@@ -88,6 +65,7 @@ public class ParallelFileReader extends Action {
 	@Override
 	public void startProcess(ActionContext context, Chain chain)
 			throws Exception {
+		customReader = getParamString(CUSTOM_READER);
 		minimumFileSplitSize = context.getConfiguration().getInt(
 				MINIMUM_SPLIT_SIZE, MINIMUM_FILE_SPLIT);
 		currentFileSplit = new FileCollection();
@@ -121,7 +99,4 @@ public class ParallelFileReader extends Action {
 		context.incrCounter("# file splits", splitId);
 	}
 
-	public void setCustomIteratorClass(Class<? extends DefaultFileParser> class1) {
-		customReader = class1.getName();
-	}
 }

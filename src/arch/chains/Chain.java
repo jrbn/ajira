@@ -3,8 +3,6 @@ package arch.chains;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -12,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import arch.ActionContext;
 import arch.actions.Action;
+import arch.actions.ActionConf;
 import arch.actions.ActionsProvider;
 import arch.data.types.Tuple;
 import arch.data.types.bytearray.BDataInput;
@@ -48,58 +47,58 @@ public class Chain extends Writable {
 	public void init(String[] availableControllers) {
 		System.arraycopy(zeroBuf, 0, buffer, 0, Consts.CHAIN_RESERVED_SPACE);
 		startingPosition = Consts.CHAIN_RESERVED_SPACE;
-		if (availableControllers == null) {
-			Utils.encodeInt(buffer, 35, 0);
-		} else {
-			// Sort the strings to save space
-			String list = "";
-
-			Arrays.sort(availableControllers);
-			String nameLastPackage = "";
-			for (String action : availableControllers) {
-				String packageName = action.substring(0,
-						action.lastIndexOf('.'));
-				if (packageName.equals(nameLastPackage)) {
-					list += "," + action.substring(action.lastIndexOf('.') + 1);
-				} else {
-					list += ":" + action;
-					nameLastPackage = packageName;
-				}
-			}
-
-			if (list.startsWith(",") || list.startsWith(":")) {
-				list = list.substring(1);
-			}
-
-			byte[] toArray = list.getBytes();
-			Utils.encodeInt(buffer, 35, toArray.length);
-			System.arraycopy(toArray, 0, buffer, 39, toArray.length);
-			startingPosition += toArray.length;
-		}
+		// if (availableControllers == null) {
+		Utils.encodeInt(buffer, 35, 0);
+		// } else {
+		// // Sort the strings to save space
+		// String list = "";
+		//
+		// Arrays.sort(availableControllers);
+		// String nameLastPackage = "";
+		// for (String action : availableControllers) {
+		// String packageName = action.substring(0,
+		// action.lastIndexOf('.'));
+		// if (packageName.equals(nameLastPackage)) {
+		// list += "," + action.substring(action.lastIndexOf('.') + 1);
+		// } else {
+		// list += ":" + action;
+		// nameLastPackage = packageName;
+		// }
+		// }
+		//
+		// if (list.startsWith(",") || list.startsWith(":")) {
+		// list = list.substring(1);
+		// }
+		//
+		// byte[] toArray = list.getBytes();
+		// Utils.encodeInt(buffer, 35, toArray.length);
+		// System.arraycopy(toArray, 0, buffer, 39, toArray.length);
+		// startingPosition += toArray.length;
+		// }
 		bufferSize = startingPosition;
 		inputTuple = null;
 	}
 
-	public String[] getAvailableControllers() {
-		int size = Utils.decodeInt(buffer, 35);
-
-		if (size != 0) {
-			ArrayList<String> classes = new ArrayList<String>();
-			String list = new String(buffer, 39, size);
-			String[] blocks = list.split(":");
-			for (String block : blocks) {
-				String[] names = block.split(",");
-				String packageName = names[0].substring(0,
-						names[0].lastIndexOf("."));
-				classes.add(names[0]);
-				for (int i = 1; i < names.length; ++i) {
-					classes.add(packageName + "." + names[i]);
-				}
-			}
-			return classes.toArray(new String[classes.size()]);
-		}
-		return null;
-	}
+	// public String[] getAvailableControllers() {
+	// int size = Utils.decodeInt(buffer, 35);
+	//
+	// if (size != 0) {
+	// ArrayList<String> classes = new ArrayList<String>();
+	// String list = new String(buffer, 39, size);
+	// String[] blocks = list.split(":");
+	// for (String block : blocks) {
+	// String[] names = block.split(",");
+	// String packageName = names[0].substring(0,
+	// names[0].lastIndexOf("."));
+	// classes.add(names[0]);
+	// for (int i = 1; i < names.length; ++i) {
+	// classes.add(packageName + "." + names[i]);
+	// }
+	// }
+	// return classes.toArray(new String[classes.size()]);
+	// }
+	// return null;
+	// }
 
 	@Override
 	public void readFrom(DataInput input) throws IOException {
@@ -211,24 +210,15 @@ public class Chain extends Writable {
 		return buffer[34];
 	}
 
-	public void replaceInputTuple(Tuple tuple) {
+	public void setInputTuple(Tuple tuple) {
 		inputTuple = tuple;
 	}
 
 	public void getInputTuple(Tuple tuple) throws Exception {
-		if (inputTuple != null) {
-			inputTuple.copyTo(tuple);
-			return;
-		}
-
-		int sizeNameAction = Utils.decodeInt(buffer, bufferSize - 4);
-		int startingPoint = bufferSize - 12 - sizeNameAction;
-		startingPoint -= Utils.decodeInt(buffer, startingPoint);
-		cis.setCurrentPosition(startingPoint);
-		tuple.readFrom(cis);
+		inputTuple.copyTo(tuple);
 	}
 
-	public void addActions(List<Action> actions) throws Exception {
+	public void addActions(List<ActionConf> actions) throws Exception {
 		if (actions != null) {
 			for (int i = actions.size() - 1; i >= 0; i--) {
 				addAction(actions.get(i));
@@ -238,11 +228,11 @@ public class Chain extends Writable {
 		}
 	}
 
-	public void addAction(Action action) throws Exception {
+	public void addAction(ActionConf action) throws Exception {
 
 		int totalSize = bufferSize;
 
-		// First serialize the action
+		// Serialize the action configuration
 		cos.setCurrentPosition(bufferSize);
 		action.writeTo(cos);
 		int sizeAction = cos.cb.end - totalSize;
@@ -250,29 +240,12 @@ public class Chain extends Writable {
 		Utils.encodeInt(buffer, bufferSize, sizeAction);
 		bufferSize += 4;
 
-		// Add eventually the tuple
-		int sizeTuple = bufferSize;
-		Tuple tuple = action.getInputTuple();
-		if (tuple != null) {
-			cos.setCurrentPosition(bufferSize);
-			tuple.writeTo(cos);
-		} else {
-			cos.setCurrentPosition(bufferSize);
-			Tuple.EMPTY_TUPLE.writeTo(cos);
-		}
-		bufferSize = cos.cb.end;
-		Utils.encodeInt(buffer, bufferSize, bufferSize - sizeTuple);
-		bufferSize += 4;
-
-		// Add the total size of the action
-		Utils.encodeInt(buffer, bufferSize, bufferSize - totalSize);
-		bufferSize += 4;
-
-		// Add the action class name
-		byte[] sAction = action.getClass().getName().getBytes();
+		// Serialize the class name
+		byte[] sAction = action.getClassName().getBytes();
 		System.arraycopy(sAction, 0, buffer, bufferSize, sAction.length);
-		Utils.encodeInt(buffer, bufferSize + sAction.length, sAction.length);
-		bufferSize += 4 + sAction.length;
+		bufferSize += sAction.length;
+		Utils.encodeInt(buffer, bufferSize, sAction.length);
+		bufferSize += 4;
 	}
 
 	public int getRawSize() {
@@ -290,8 +263,10 @@ public class Chain extends Writable {
 		if (inputTuple != null) {
 			if (newChain.inputTuple == null) {
 				newChain.inputTuple = new Tuple();
-				inputTuple.copyTo(newChain.inputTuple);
 			}
+			inputTuple.copyTo(newChain.inputTuple);
+		} else {
+			newChain.inputTuple = null;
 		}
 	}
 

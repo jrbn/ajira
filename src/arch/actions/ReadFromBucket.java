@@ -1,9 +1,5 @@
 package arch.actions;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-
 import arch.ActionContext;
 import arch.chains.Chain;
 import arch.data.types.TInt;
@@ -17,39 +13,31 @@ public class ReadFromBucket extends Action {
 	int bucketId;
 	boolean forward = false;
 
-	public void setBucket(int bucketId) {
-		this.bucketId = bucketId;
-	}
+	public static final int BUCKET_ID = 0;
+	public static final String S_BUCKET_ID = "bucket_id";
+	public static final int NODE_ID = 1;
+	public static final String S_NODE_ID = "node_id";
+	public static final int FORWARD_TUPLES = 2;
+	public static final String S_FORWARD_TUPLES = "forward_tuples";
 
-	public void setDestination(int nodeId) {
-		this.node = nodeId;
-	}
-
-	@Override
-	public void readFrom(DataInput input) throws IOException {
-		node = input.readInt();
-		bucketId = input.readInt();
-		forward = input.readBoolean();
-	}
-
-	@Override
-	public void writeTo(DataOutput output) throws IOException {
-		output.writeInt(node);
-		output.writeInt(bucketId);
-		output.writeBoolean(forward);
+	static {
+		registerParameter(BUCKET_ID, S_BUCKET_ID, null, true);
+		registerParameter(NODE_ID, S_NODE_ID, null, true);
+		registerParameter(FORWARD_TUPLES, S_FORWARD_TUPLES, false, false);
 	}
 
 	@Override
-	public int bytesToStore() throws IOException {
-		return 9;
-	}
-
-	@Override
-	public void process(ActionContext context, Chain chain,
-			Tuple inputTuple,
-			WritableContainer<Tuple> output,
-			WritableContainer<Chain> chainsToProcess)
+	public void startProcess(ActionContext context, Chain chain)
 			throws Exception {
+		bucketId = getParamInt(BUCKET_ID);
+		node = getParamInt(NODE_ID);
+		forward = getParamBoolean(FORWARD_TUPLES);
+	}
+
+	@Override
+	public void process(ActionContext context, Chain chain, Tuple inputTuple,
+			WritableContainer<Tuple> output,
+			WritableContainer<Chain> chainsToProcess) throws Exception {
 		if (forward)
 			output.add(inputTuple);
 	}
@@ -63,14 +51,9 @@ public class ReadFromBucket extends Action {
 		chain.createBranch(context, newChain);
 
 		newChain.setInputLayerId(Consts.BUCKET_INPUT_LAYER_ID);
-		newChain.replaceInputTuple(new Tuple(new TInt(newChain
-				.getSubmissionId()), new TInt(bucketId), new TInt(node)));
+		newChain.setInputTuple(new Tuple(new TInt(newChain.getSubmissionId()),
+				new TInt(bucketId), new TInt(node)));
 
 		chainsToSend.add(newChain);
 	}
-
-	public void setForwardTuples(boolean b) {
-		forward = b;
-	}
-
 }

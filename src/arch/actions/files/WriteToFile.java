@@ -1,7 +1,5 @@
 package arch.actions.files;
 
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -22,6 +20,16 @@ import arch.storage.container.WritableContainer;
 public class WriteToFile extends Action {
 
 	final static Logger log = LoggerFactory.getLogger(WriteToFile.class);
+
+	public static final int CUSTOM_WRITER = 0;
+	public static final String S_CUSTOM_WRITER = "custom_writer";
+	public static final int OUTPUT_DIR = 1;
+	public static final String S_OUTPUT_DIR = "output_dir";
+
+	static {
+		registerParameter(CUSTOM_WRITER, S_CUSTOM_WRITER, null, false);
+		registerParameter(OUTPUT_DIR, S_OUTPUT_DIR, null, true);
+	}
 
 	static public class StandardFileWriter {
 
@@ -63,52 +71,11 @@ public class WriteToFile extends Action {
 	String outputDirectory = null;
 	String customWriter = null;
 
-	public void setOutputDirectory(String outputDirectory) {
-		this.outputDirectory = outputDirectory;
-	}
-
-	public void setCustomWriter(Class<? extends StandardFileWriter> clazz) {
-		customWriter = clazz.getName();
-	}
-
 	@Override
-	public void readFrom(DataInput input) throws IOException {
-		int l = input.readByte();
-		byte[] content = new byte[l];
-		input.readFully(content);
-		outputDirectory = new String(content);
-
-		l = input.readByte();
-		if (l > 0) {
-			content = new byte[l];
-			input.readFully(content);
-			customWriter = new String(content);
-		} else {
-			customWriter = null;
-		}
-	}
-
-	@Override
-	public void writeTo(DataOutput output) throws IOException {
-		byte[] b = outputDirectory.getBytes();
-		output.writeByte(b.length);
-		output.write(b);
-		if (customWriter == null) {
-			output.writeByte(0);
-		} else {
-			b = customWriter.getBytes();
-			output.writeByte(b.length);
-			output.write(b);
-		}
-	}
-
-	@Override
-	public int bytesToStore() throws IOException {
-		throw new IOException("Not supported");
-	}
-
-	@Override
-	public void startProcess(ActionContext context, Chain chain) {
+	public void startProcess(ActionContext context, Chain chain)
+			throws Exception {
+		outputDirectory = getParamString(OUTPUT_DIR);
+		customWriter = getParamString(CUSTOM_WRITER);
 		file = null;
 	}
 
@@ -147,11 +114,9 @@ public class WriteToFile extends Action {
 	}
 
 	@Override
-	public void process(ActionContext context, Chain chain,
-			Tuple inputTuple,
+	public void process(ActionContext context, Chain chain, Tuple inputTuple,
 			WritableContainer<Tuple> output,
-			WritableContainer<Chain> chainsToProcess)
-			throws Exception {
+			WritableContainer<Chain> chainsToProcess) throws Exception {
 		if (file == null) {
 			openFile(context);
 		}

@@ -1,9 +1,5 @@
 package arch.actions.partitioners;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,37 +12,27 @@ import arch.storage.container.WritableContainer;
 
 abstract public class AbstractPartitioner extends Action {
 
-	static final Logger log = LoggerFactory.getLogger(AbstractPartitioner.class);
+	static final Logger log = LoggerFactory
+			.getLogger(AbstractPartitioner.class);
+
+	public static final int N_PARTITIONS = 0;
+	public static final String S_N_PARTITIONS = "n_partitions";
+
+	static {
+		registerParameter(N_PARTITIONS, S_N_PARTITIONS, null, true);
+	}
 
 	int partitions = -1;
 
 	Tuple tuple = new Tuple();
 	TInt tnode = new TInt();
 
-	public void setNumberPartitions(int partitions) {
-		this.partitions = partitions;
-	}
-
-	@Override
-	public void readFrom(DataInput input) throws IOException {
-		partitions = input.readInt();
-	}
-
-	@Override
-	public void writeTo(DataOutput output) throws IOException {
-		output.writeInt(partitions);
-	}
-
-	@Override
-	public int bytesToStore() {
-		return 4;
-	}
-
 	protected abstract int partition(Tuple tuple, int nnodes) throws Exception;
 
 	@Override
 	public void startProcess(ActionContext context, Chain chain)
 			throws Exception {
+		partitions = getParamInt(N_PARTITIONS);
 		if (partitions == -1) {
 			partitions = context.getNetworkLayer().getNumberNodes();
 		}
@@ -54,11 +40,9 @@ abstract public class AbstractPartitioner extends Action {
 	}
 
 	@Override
-	public void process(ActionContext context, Chain chain,
-			Tuple inputTuple,
+	public void process(ActionContext context, Chain chain, Tuple inputTuple,
 			WritableContainer<Tuple> output,
-			WritableContainer<Chain> chainsToProcess)
-			throws Exception {
+			WritableContainer<Chain> chainsToProcess) throws Exception {
 		inputTuple.copyTo(inputTuple);
 
 		tnode.setValue(partition(inputTuple, partitions));

@@ -1,9 +1,5 @@
 package arch.actions;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,34 +14,18 @@ public class PutIntoBucket extends Action {
 	static final Logger log = LoggerFactory.getLogger(PutIntoBucket.class);
 
 	public static final int BUCKET_ID = 0;
+	public static final String S_BUCKET_ID = "Bucket ID";
 	static {
-		registerParameter(BUCKET_ID, "Bucket ID", null, true);
+		registerParameter(BUCKET_ID, S_BUCKET_ID, null, true);
 	}
 
 	Bucket bucket = null;
 	int bucketID;
 
-	public void setBucket(int bucketID) {
-		this.bucketID = bucketID;
-	}
-
 	@Override
-	public void readFrom(DataInput input) throws IOException {
-		bucketID = input.readInt();
-	}
-
-	@Override
-	public void writeTo(DataOutput output) throws IOException {
-		output.writeInt(bucketID);
-	}
-
-	@Override
-	public int bytesToStore() {
-		return 4;
-	}
-
-	@Override
-	public void startProcess(ActionContext context, Chain chain) {
+	public void startProcess(ActionContext context, Chain chain)
+			throws Exception {
+		bucketID = getParamInt(BUCKET_ID);
 		bucket = context.getTuplesBuckets().getOrCreateBucket(
 				chain.getSubmissionNode(), chain.getSubmissionId(), bucketID,
 				null, null);

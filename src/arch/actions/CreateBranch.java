@@ -1,9 +1,5 @@
 package arch.actions;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-
 import arch.ActionContext;
 import arch.chains.Chain;
 import arch.data.types.Tuple;
@@ -12,40 +8,26 @@ import arch.utils.Consts;
 
 public class CreateBranch extends Action {
 
-	// @Override
-	// public boolean blockProcessing() {
-	// return true;
-	// }
+	public static final int INPUT_LAYER = 0;
+	public static final String S_INPUT_LAYER = "input_layer";
+	static {
+		registerParameter(INPUT_LAYER, S_INPUT_LAYER,
+				Consts.DEFAULT_INPUT_LAYER_ID, false);
+	}
 
 	Chain newChain = new Chain();
-
-	int inputLayer = Consts.DEFAULT_INPUT_LAYER_ID;
-
-	public void setBranchInputLayer(int inputLayer) {
-		this.inputLayer = inputLayer;
-	}
+	int inputLayer;
 
 	@Override
-	public void readFrom(DataInput input) throws IOException {
-		inputLayer = input.readByte();
-	}
-
-	@Override
-	public void writeTo(DataOutput output) throws IOException {
-		output.writeByte(inputLayer);
-	}
-
-	@Override
-	public int bytesToStore() throws IOException {
-		return 1;
-	}
-
-	@Override
-	public void process(ActionContext context, Chain chain,
-			Tuple inputTuple,
-			WritableContainer<Tuple> output,
-			WritableContainer<Chain> chainsToProcess)
+	public void startProcess(ActionContext context, Chain chain)
 			throws Exception {
+		inputLayer = getParamInt(INPUT_LAYER);
+	}
+
+	@Override
+	public void process(ActionContext context, Chain chain, Tuple inputTuple,
+			WritableContainer<Tuple> output,
+			WritableContainer<Chain> chainsToProcess) throws Exception {
 	}
 
 	@Override
