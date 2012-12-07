@@ -189,7 +189,7 @@ public class Arch {
 
 			/***** WEB INTERFACE *****/
 			if (conf.getBoolean(WebServer.WEBSERVER_START, true)) {
-				log.debug("Starting Web Server on port " + 8080 + "...");
+				log.debug("Starting Web Server on port " + 8881 + "...");
 				WebServer www = new WebServer();
 				www.startWebServer(globalContext);
 			}
