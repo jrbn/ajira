@@ -25,6 +25,9 @@ public class ActionConf extends Writable {
 	ActionConf(String className, List<ParamItem> allowedParameters) {
 		this.className = className;
 		this.allowedParameters = allowedParameters;
+		if (allowedParameters != null) {
+			valuesParameters = new Object[allowedParameters.size()];
+		}
 	}
 
 	final static Object[] readValuesFromStream(DataInput input)
@@ -78,6 +81,7 @@ public class ActionConf extends Writable {
 		ParamItem item = new ParamItem();
 		item.name = nameParam;
 		item.required = isRequired;
+		item.defaultValue = defaultValue;
 		allowedParameters.add(id, item);
 	}
 
@@ -124,9 +128,11 @@ public class ActionConf extends Writable {
 		throw new IOException("Not (yet) implemented");
 	}
 
-	public final ActionConf setParam(int pos, Object value) throws Exception {
-		if (allowedParameters != null
-				&& (pos >= 0 && pos < allowedParameters.size())) {
+	public final void setParam(int pos, Object value) throws Exception {
+		if (valuesParameters == null) {
+			throw new Exception("No parameters are allowed");
+		}
+		if (pos < 0 || pos >= valuesParameters.length) {
 			throw new Exception("Position not valid (" + pos + ")");
 		}
 
@@ -135,10 +141,25 @@ public class ActionConf extends Writable {
 		}
 
 		valuesParameters[pos] = value;
-		return this;
 	}
 
 	public String getClassName() {
 		return className;
+	}
+
+	public boolean validateParameters() {
+		if (allowedParameters != null) {
+			for (int i = 0; i < allowedParameters.size(); ++i) {
+				ParamItem item = allowedParameters.get(i);
+				if (valuesParameters[i] == null) {
+					if (item.required)
+						return false;
+					if (item.defaultValue != null) {
+						valuesParameters[i] = item.defaultValue;
+					}
+				}
+			}
+		}
+		return true;
 	}
 }

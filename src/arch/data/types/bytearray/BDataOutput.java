@@ -111,6 +111,8 @@ public class BDataOutput implements DataOutput {
 
 	@Override
 	public void writeUTF(String s) throws IOException {
-		throw new IOException("Not supported");
+		byte[] b = s.getBytes();
+		writeInt(b.length);
+		write(b);
 	}
 }

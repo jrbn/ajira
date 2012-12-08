@@ -110,7 +110,10 @@ public class BDataInput implements DataInput {
 
 	@Override
 	public String readUTF() throws IOException {
-		throw new IOException("Not supported");
+		int size = readInt();
+		String v = new String(cb.buffer, cb.start, size);
+		cb.start += size;
+		return v;
 	}
 
 	@Override

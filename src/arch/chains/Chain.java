@@ -10,8 +10,8 @@ import org.slf4j.LoggerFactory;
 
 import arch.ActionContext;
 import arch.actions.Action;
-import arch.actions.ActionFactory;
 import arch.actions.ActionConf;
+import arch.actions.ActionFactory;
 import arch.data.types.Tuple;
 import arch.data.types.bytearray.BDataInput;
 import arch.data.types.bytearray.BDataOutput;
@@ -229,6 +229,12 @@ public class Chain extends Writable {
 	}
 
 	public void addAction(ActionConf params) throws Exception {
+
+		// Validate the action
+		if (!params.validateParameters()) {
+			throw new Exception("Some required parameters for the action "
+					+ params.getClassName() + " are not set.");
+		}
 
 		int totalSize = bufferSize;
 
