@@ -20,10 +20,11 @@ public class ReadFromBucket extends Action {
 	public static final int FORWARD_TUPLES = 2;
 	public static final String S_FORWARD_TUPLES = "forward_tuples";
 
-	static {
-		registerParameter(BUCKET_ID, S_BUCKET_ID, null, true);
-		registerParameter(NODE_ID, S_NODE_ID, null, true);
-		registerParameter(FORWARD_TUPLES, S_FORWARD_TUPLES, false, false);
+	@Override
+	public void setupActionParameters(ActionConf conf) throws Exception {
+		conf.registerParameter(BUCKET_ID, S_BUCKET_ID, null, true);
+		conf.registerParameter(NODE_ID, S_NODE_ID, null, true);
+		conf.registerParameter(FORWARD_TUPLES, S_FORWARD_TUPLES, false, false);
 	}
 
 	@Override

@@ -16,13 +16,15 @@ public class Sample extends Action {
 
 	public static final int SAMPLE_RATE = 0;
 	public static final String S_SAMPLE_RATE = "sample_rate";
-	static {
-		registerParameter(SAMPLE_RATE, S_SAMPLE_RATE, null, true);
-	}
 
 	Tuple tuple = new Tuple();
 	int sampling;
 	Random rand = new Random();
+
+	@Override
+	public void setupActionParameters(ActionConf conf) throws Exception {
+		conf.registerParameter(SAMPLE_RATE, S_SAMPLE_RATE, null, true);
+	}
 
 	@Override
 	public void startProcess(ActionContext context, Chain chain)

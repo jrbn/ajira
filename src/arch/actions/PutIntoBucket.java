@@ -15,12 +15,14 @@ public class PutIntoBucket extends Action {
 
 	public static final int BUCKET_ID = 0;
 	public static final String S_BUCKET_ID = "Bucket ID";
-	static {
-		registerParameter(BUCKET_ID, S_BUCKET_ID, null, true);
-	}
 
 	Bucket bucket = null;
 	int bucketID;
+
+	@Override
+	public void setupActionParameters(ActionConf conf) throws Exception {
+		conf.registerParameter(BUCKET_ID, S_BUCKET_ID, null, true);
+	}
 
 	@Override
 	public void startProcess(ActionContext context, Chain chain)

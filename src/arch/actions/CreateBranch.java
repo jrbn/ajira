@@ -8,15 +8,18 @@ import arch.utils.Consts;
 
 public class CreateBranch extends Action {
 
+	/***** PARAMETERS *****/
 	public static final int INPUT_LAYER = 0;
 	public static final String S_INPUT_LAYER = "input_layer";
-	static {
-		registerParameter(INPUT_LAYER, S_INPUT_LAYER,
-				Consts.DEFAULT_INPUT_LAYER_ID, false);
-	}
 
 	Chain newChain = new Chain();
 	int inputLayer;
+
+	@Override
+	public void setupActionParameters(ActionConf conf) throws Exception {
+		conf.registerParameter(INPUT_LAYER, S_INPUT_LAYER,
+				Consts.DEFAULT_INPUT_LAYER_ID, false);
+	}
 
 	@Override
 	public void startProcess(ActionContext context, Chain chain)

@@ -12,7 +12,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import arch.actions.ActionsProvider;
+import arch.actions.ActionFactory;
 import arch.buckets.Buckets;
 import arch.buckets.CachedFilesMerger;
 import arch.chains.Chain;
@@ -141,7 +141,7 @@ public class Arch {
 			CachedFilesMerger merger = new CachedFilesMerger();
 			Buckets tuplesContainer = new Buckets(stats, bufferFactory, merger,
 					net);
-			ActionsProvider ap = new ActionsProvider();
+			ActionFactory ap = new ActionFactory();
 			DataProvider dp = new DataProvider();
 			Factory<Tuple> defaultTupleFactory = new Factory<Tuple>(
 					Tuple.class, (Object[]) null);

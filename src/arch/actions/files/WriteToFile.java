@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import arch.ActionContext;
 import arch.actions.Action;
+import arch.actions.ActionConf;
 import arch.chains.Chain;
 import arch.data.types.DataProvider;
 import arch.data.types.SimpleData;
@@ -25,11 +26,6 @@ public class WriteToFile extends Action {
 	public static final String S_CUSTOM_WRITER = "custom_writer";
 	public static final int OUTPUT_DIR = 1;
 	public static final String S_OUTPUT_DIR = "output_dir";
-
-	static {
-		registerParameter(CUSTOM_WRITER, S_CUSTOM_WRITER, null, false);
-		registerParameter(OUTPUT_DIR, S_OUTPUT_DIR, null, true);
-	}
 
 	static public class StandardFileWriter {
 
@@ -70,6 +66,12 @@ public class WriteToFile extends Action {
 	StandardFileWriter file = null;
 	String outputDirectory = null;
 	String customWriter = null;
+
+	@Override
+	public void setupActionParameters(ActionConf conf) throws Exception {
+		conf.registerParameter(CUSTOM_WRITER, S_CUSTOM_WRITER, null, false);
+		conf.registerParameter(OUTPUT_DIR, S_OUTPUT_DIR, null, true);
+	}
 
 	@Override
 	public void startProcess(ActionContext context, Chain chain)

@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import arch.Context;
 import arch.StatisticsCollector;
-import arch.actions.ActionsProvider;
+import arch.actions.ActionFactory;
 import arch.buckets.Bucket;
 import arch.buckets.Buckets;
 import arch.chains.Chain;
@@ -30,7 +30,7 @@ public class SubmissionRegistry {
 	Factory<Submission> submissionFactory = new Factory<Submission>(
 			Submission.class);
 
-	ActionsProvider ap;
+	ActionFactory ap;
 	DataProvider dp;
 	StatisticsCollector stats;
 	Buckets buckets;
@@ -43,7 +43,7 @@ public class SubmissionRegistry {
 
 	public SubmissionRegistry(NetworkLayer net, StatisticsCollector stats,
 			Container<Chain> chainsToProcess, Buckets buckets,
-			ActionsProvider ap, DataProvider dp, Configuration conf) {
+			ActionFactory ap, DataProvider dp, Configuration conf) {
 		this.net = net;
 		this.stats = stats;
 		this.chainsToProcess = chainsToProcess;

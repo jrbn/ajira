@@ -3,7 +3,7 @@ package arch;
 import java.io.IOException;
 import java.util.List;
 
-import arch.actions.ActionsProvider;
+import arch.actions.ActionFactory;
 import arch.buckets.Buckets;
 import arch.chains.Chain;
 import arch.data.types.DataProvider;
@@ -91,7 +91,7 @@ public class ActionContext {
 				.getSequenceNumber(name);
 	}
 
-	public ActionsProvider getActionsProvider() {
+	public ActionFactory getActionsProvider() {
 		return context.getActionsProvider();
 	}
 

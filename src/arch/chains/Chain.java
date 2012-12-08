@@ -10,8 +10,8 @@ import org.slf4j.LoggerFactory;
 
 import arch.ActionContext;
 import arch.actions.Action;
+import arch.actions.ActionFactory;
 import arch.actions.ActionConf;
-import arch.actions.ActionsProvider;
 import arch.data.types.Tuple;
 import arch.data.types.bytearray.BDataInput;
 import arch.data.types.bytearray.BDataOutput;
@@ -228,20 +228,20 @@ public class Chain extends Writable {
 		}
 	}
 
-	public void addAction(ActionConf action) throws Exception {
+	public void addAction(ActionConf params) throws Exception {
 
 		int totalSize = bufferSize;
 
 		// Serialize the action configuration
 		cos.setCurrentPosition(bufferSize);
-		action.writeTo(cos);
+		params.writeTo(cos);
 		int sizeAction = cos.cb.end - totalSize;
 		bufferSize += sizeAction;
 		Utils.encodeInt(buffer, bufferSize, sizeAction);
 		bufferSize += 4;
 
 		// Serialize the class name
-		byte[] sAction = action.getClassName().getBytes();
+		byte[] sAction = params.getClassName().getBytes();
 		System.arraycopy(sAction, 0, buffer, bufferSize, sAction.length);
 		bufferSize += sAction.length;
 		Utils.encodeInt(buffer, bufferSize, sAction.length);
@@ -278,7 +278,7 @@ public class Chain extends Writable {
 		setChainChildren(getChainChildren() + 1);
 	}
 
-	public int getActions(Action[] actions, int[] rawSizes, ActionsProvider ap)
+	public int getActions(Action[] actions, int[] rawSizes, ActionFactory ap)
 			throws IOException {
 		// Read the chain and feel the actions
 		int tmpSize = bufferSize;
@@ -288,19 +288,17 @@ public class Chain extends Writable {
 			tmpSize -= 4;
 			int size = Utils.decodeInt(buffer, tmpSize);
 			String sAction = new String(buffer, tmpSize - size, size);
-			Action action = ap.get(sAction);
 
 			// Get size of the action
 			tmpSize -= 4 + size;
 			tmpSize -= Utils.decodeInt(buffer, tmpSize);
 
 			cis.setCurrentPosition(tmpSize);
-			action.readFrom(cis);
+			Action action = ap.getAction(sAction, cis);
 			actions[nactions] = action;
 			rawSizes[nactions] = tmpSize;
 			nactions++;
 		}
 		return nactions;
 	}
-
 }

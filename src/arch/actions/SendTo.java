@@ -32,15 +32,6 @@ public class SendTo extends Action {
 	public static final String S_SORTING_FUNCTION = "sorting_function";
 	// FIXME: sorting params not implemented
 
-	static {
-		registerParameter(NODE_ID, S_NODE_ID, null, true);
-		registerParameter(BUCKET_ID, S_BUCKET_ID, null, true);
-		registerParameter(FORWARD_TUPLES, S_FORWARD_TUPLES, false, false);
-		registerParameter(SEND_CHAIN, S_SEND_CHAIN, true, false);
-		registerParameter(RESPONSIBLE_CHAIN, S_RESPONSIBLE_CHAIN, null, true);
-		registerParameter(SORTING_FUNCTION, S_SORTING_FUNCTION, null, false);
-	}
-
 	static final Logger log = LoggerFactory.getLogger(SendTo.class);
 
 	private int submissionNode;
@@ -71,6 +62,18 @@ public class SendTo extends Action {
 	@Override
 	public boolean blockProcessing() {
 		return sc;
+	}
+
+	@Override
+	public void setupActionParameters(ActionConf conf) throws Exception {
+		conf.registerParameter(NODE_ID, S_NODE_ID, null, true);
+		conf.registerParameter(BUCKET_ID, S_BUCKET_ID, null, true);
+		conf.registerParameter(FORWARD_TUPLES, S_FORWARD_TUPLES, false, false);
+		conf.registerParameter(SEND_CHAIN, S_SEND_CHAIN, true, false);
+		conf.registerParameter(RESPONSIBLE_CHAIN, S_RESPONSIBLE_CHAIN, null,
+				true);
+		conf.registerParameter(SORTING_FUNCTION, S_SORTING_FUNCTION, null,
+				false);
 	}
 
 	@Override

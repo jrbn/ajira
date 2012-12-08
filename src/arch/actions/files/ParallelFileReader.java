@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import arch.ActionContext;
 import arch.actions.Action;
+import arch.actions.ActionConf;
 import arch.chains.Chain;
 import arch.data.types.TInt;
 import arch.data.types.TString;
@@ -23,10 +24,6 @@ public class ParallelFileReader extends Action {
 
 	public static final int CUSTOM_READER = 0;
 	public static final String S_CUSTOM_READER = "custom_reader";
-
-	static {
-		registerParameter(CUSTOM_READER, S_CUSTOM_READER, null, false);
-	}
 
 	static final Logger log = LoggerFactory.getLogger(ParallelFileReader.class);
 
@@ -60,6 +57,11 @@ public class ParallelFileReader extends Action {
 		currentFileSplit = new FileCollection();
 
 		return newChain;
+	}
+
+	@Override
+	public void setupActionParameters(ActionConf conf) throws Exception {
+		conf.registerParameter(CUSTOM_READER, S_CUSTOM_READER, null, false);
 	}
 
 	@Override

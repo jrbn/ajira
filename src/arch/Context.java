@@ -2,7 +2,7 @@ package arch;
 
 import java.util.List;
 
-import arch.actions.ActionsProvider;
+import arch.actions.ActionFactory;
 import arch.buckets.Buckets;
 import arch.buckets.CachedFilesMerger;
 import arch.chains.Chain;
@@ -28,7 +28,7 @@ public class Context {
 	private WritableContainer<Chain> chainsToProcess;
 	private NetworkLayer net;
 	private StatisticsCollector stats;
-	private ActionsProvider actionProvider;
+	private ActionFactory actionProvider;
 	private DataProvider dataProvider;
 	private Factory<Tuple> defaultTupleFactory;
 	private SubmissionCache cache;
@@ -41,7 +41,7 @@ public class Context {
 			WritableContainer<Chain> chainsToProcess,
 			List<ChainHandler> listHandlers, ChainNotifier notifier,
 			CachedFilesMerger merger, NetworkLayer net,
-			StatisticsCollector stats, ActionsProvider actionProvider,
+			StatisticsCollector stats, ActionFactory actionProvider,
 			DataProvider dataProvider, Factory<Tuple> defaultTupleFactory,
 			SubmissionCache cache, Configuration conf) {
 		this.input = input;
@@ -108,7 +108,7 @@ public class Context {
 		return chainNotifier;
 	}
 
-	public ActionsProvider getActionsProvider() {
+	public ActionFactory getActionsProvider() {
 		return actionProvider;
 	}
 

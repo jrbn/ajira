@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import arch.ActionContext;
 import arch.actions.Action;
+import arch.actions.ActionConf;
 import arch.chains.Chain;
 import arch.data.types.TInt;
 import arch.data.types.Tuple;
@@ -18,16 +19,17 @@ abstract public class AbstractPartitioner extends Action {
 	public static final int N_PARTITIONS = 0;
 	public static final String S_N_PARTITIONS = "n_partitions";
 
-	static {
-		registerParameter(N_PARTITIONS, S_N_PARTITIONS, null, true);
-	}
-
 	int partitions = -1;
 
 	Tuple tuple = new Tuple();
 	TInt tnode = new TInt();
 
 	protected abstract int partition(Tuple tuple, int nnodes) throws Exception;
+
+	@Override
+	public final void setupActionParameters(ActionConf conf) throws Exception {
+		conf.registerParameter(N_PARTITIONS, S_N_PARTITIONS, null, true);
+	}
 
 	@Override
 	public void startProcess(ActionContext context, Chain chain)

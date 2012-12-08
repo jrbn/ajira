@@ -11,7 +11,7 @@ import arch.ActionContext;
 import arch.Context;
 import arch.StatisticsCollector;
 import arch.actions.Action;
-import arch.actions.ActionsProvider;
+import arch.actions.ActionFactory;
 import arch.data.types.DataProvider;
 import arch.data.types.Tuple;
 import arch.data.types.bytearray.FDataInput;
@@ -32,7 +32,7 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 	NetworkLayer net = null;
 	Container<Chain> chainsToProcess = null;
 	Context context = null;
-	ActionsProvider ap = null;
+	ActionFactory ap = null;
 	DataProvider dp = null;
 	StatisticsCollector stats = null;
 	WritableContainer<Chain> chainsBuffer = new WritableContainer<Chain>(
