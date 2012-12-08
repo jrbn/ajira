@@ -57,7 +57,7 @@ public class Arch {
 			String tmpDir = System.getProperty("java.io.tmpdir");
 			File tmpFile = new File(tmpDir);
 			if (!tmpFile.exists()) {
-				log.info("Create tmp dir ...");
+				log.info("Create tmp dir at " + tmpDir + " ...");
 				if (!Utils.createRecursevily(tmpFile)) {
 					log.warn("tmp dir not created!");
 				}
