@@ -56,11 +56,15 @@ public class Arch {
 			/***** CREATE TMP DIR IF NOT PRESENT *****/
 			String tmpDir = System.getProperty("java.io.tmpdir");
 			File tmpFile = new File(tmpDir);
+			
 			if (!tmpFile.exists()) {
 				log.info("Create tmp dir at " + tmpDir + " ...");
 				if (!Utils.createRecursevily(tmpFile)) {
 					log.warn("tmp dir not created!");
 				}
+			}
+			else {
+				log.info("Tmp dir at " + tmpDir + " ...");
 			}
 
 			/**** START IBIS IF REQUESTED ****/
