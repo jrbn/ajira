@@ -87,8 +87,7 @@ public class ActionContext {
 	}
 
 	public long getUniqueCounter(String name) throws IOException {
-		return context.getNetworkLayer().ibis.registry()
-				.getSequenceNumber(name);
+		return context.getUniqueCounter(name);
 	}
 
 	public ActionFactory getActionsProvider() {
@@ -148,4 +147,7 @@ public class ActionContext {
 		context.getTuplesBuckets().clearSubmission(submissionId);
 	}
 
+	public Object getMyNodeId() {
+		return context.getNetworkLayer().getMyPartition();
+	}
 }

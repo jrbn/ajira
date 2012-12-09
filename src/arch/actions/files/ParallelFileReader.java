@@ -19,8 +19,8 @@ import arch.utils.Consts;
 
 public class ParallelFileReader extends Action {
 
-	private static final String MINIMUM_SPLIT_SIZE = "splitinput.minimumsize";
-	private static final int MINIMUM_FILE_SPLIT = 4 * 1024 * 1024; // 1 MB
+	public static final String MINIMUM_SPLIT_SIZE = "splitinput.minimumsize";
+	public static final int MINIMUM_FILE_SPLIT = 4 * 1024 * 1024; // 1 MB
 
 	public static final int CUSTOM_READER = 0;
 	public static final String S_CUSTOM_READER = "custom_reader";

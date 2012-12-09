@@ -1,5 +1,6 @@
 package arch;
 
+import java.io.IOException;
 import java.util.List;
 
 import arch.actions.ActionFactory;
@@ -18,9 +19,11 @@ import arch.storage.SubmissionCache;
 import arch.storage.container.WritableContainer;
 import arch.submissions.SubmissionRegistry;
 import arch.utils.Configuration;
+import arch.utils.LocalCounter;
 
 public class Context {
 
+	private boolean localMode;
 	private InputLayerRegistry input;
 	private Configuration conf;
 	private Buckets container;
@@ -36,14 +39,17 @@ public class Context {
 	private List<ChainHandler> handlers;
 	private CachedFilesMerger merger;
 
-	public void init(InputLayerRegistry input, Buckets container,
-			SubmissionRegistry registry,
+	private LocalCounter counter = new LocalCounter();
+
+	public void init(boolean localMode, InputLayerRegistry input,
+			Buckets container, SubmissionRegistry registry,
 			WritableContainer<Chain> chainsToProcess,
 			List<ChainHandler> listHandlers, ChainNotifier notifier,
 			CachedFilesMerger merger, NetworkLayer net,
 			StatisticsCollector stats, ActionFactory actionProvider,
 			DataProvider dataProvider, Factory<Tuple> defaultTupleFactory,
 			SubmissionCache cache, Configuration conf) {
+		this.localMode = localMode;
 		this.input = input;
 		this.conf = conf;
 		this.container = container;
@@ -119,5 +125,19 @@ public class Context {
 	public void cleanupSubmission(int submissionNode, int idSubmission) {
 		// FIXME: Every node receives this.
 		System.exit(1);
+	}
+
+	public long getUniqueCounter(String name) throws IOException {
+		long n = -1;
+		if (localMode) {
+			n = counter.getCounter(name);
+		} else {
+			n = getNetworkLayer().getCounter(name);
+		}
+		return n;
+	}
+
+	public boolean isLocalMode() {
+		return localMode;
 	}
 }

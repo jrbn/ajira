@@ -56,6 +56,7 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 	boolean blockProcessing;
 
 	public boolean active;
+	public boolean localMode;
 
 	public ChainHandler(Context context) {
 		super(0);
@@ -67,13 +68,15 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 		this.dp = context.getDataProvider();
 		ac = new ActionContext(context, dp);
 		try {
-			chainIDCounter = (net.getCounter("chainID") + 1) << 40;
-			bucketIDCounter = ((int) net.getCounter("bucketID") + 1) << 16;
+			chainIDCounter = (context.getUniqueCounter("chainID") + 1) << 40;
+			bucketIDCounter = ((int) context.getUniqueCounter("bucketID") + 1) << 16;
 		} catch (Throwable e) {
 			log.error("Error in initializing chain handler", e);
 		}
 		ac.setStartingChainID(chainIDCounter);
 		ac.setStartingBucketID(bucketIDCounter);
+
+		localMode = context.isLocalMode();
 	}
 
 	@Override
@@ -338,7 +341,11 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 									chain.getSubmissionId(),
 									"Chains Generated From Chains (To Process)",
 									chainsBuffer2.getNElements());
-							net.sendChains(chainsBuffer2);
+							if (localMode) {
+								chainsToProcess.addAll(chainsBuffer2);
+							} else {
+								net.sendChains(chainsBuffer2);
+							}
 							chainsBuffer2.clear();
 						}
 

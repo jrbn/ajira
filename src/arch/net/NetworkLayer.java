@@ -2,7 +2,6 @@ package arch.net;
 
 import ibis.ipl.Ibis;
 import ibis.ipl.IbisCapabilities;
-import ibis.ipl.IbisCreationFailedException;
 import ibis.ipl.IbisFactory;
 import ibis.ipl.IbisIdentifier;
 import ibis.ipl.PortType;
@@ -43,28 +42,28 @@ public class NetworkLayer {
 	public static final String nameBcstReceiverPort = "bcst-receiver-port";
 	public static final String nameReceiverPort = "receiver-port";
 
-	public static final PortType requestPortType = new PortType(
+	static final PortType requestPortType = new PortType(
 			PortType.COMMUNICATION_RELIABLE, PortType.SERIALIZATION_DATA,
 			PortType.CONNECTION_MANY_TO_ONE, PortType.RECEIVE_AUTO_UPCALLS);
 
-	public static final PortType mgmtRequestPortType = new PortType(
+	static final PortType mgmtRequestPortType = new PortType(
 			PortType.COMMUNICATION_RELIABLE, PortType.SERIALIZATION_OBJECT,
 			PortType.CONNECTION_MANY_TO_ONE, PortType.RECEIVE_AUTO_UPCALLS);
 
-	public static final PortType broadcastPortType = new PortType(
+	static final PortType broadcastPortType = new PortType(
 			PortType.COMMUNICATION_RELIABLE, PortType.SERIALIZATION_OBJECT_SUN,
 			PortType.CONNECTION_MANY_TO_MANY, PortType.RECEIVE_AUTO_UPCALLS);
 
-	public static final PortType queryPortType = new PortType(
+	static final PortType queryPortType = new PortType(
 			PortType.COMMUNICATION_RELIABLE, PortType.SERIALIZATION_DATA,
 			PortType.CONNECTION_MANY_TO_ONE, PortType.RECEIVE_EXPLICIT);
 
-	public static final IbisCapabilities ibisCapabilities = new IbisCapabilities(
+	static final IbisCapabilities ibisCapabilities = new IbisCapabilities(
 			IbisCapabilities.ELECTIONS_STRICT,
 			IbisCapabilities.MEMBERSHIP_TOTALLY_ORDERED,
 			IbisCapabilities.SIGNALS, IbisCapabilities.MALLEABLE);
 
-	public Ibis ibis = null;
+	Ibis ibis = null;
 	private int partitionId = 0;
 	private IbisIdentifier[] assignedPartitions = null;
 	private final Map<String, Integer> assignedIds = new HashMap<String, Integer>();
@@ -185,7 +184,7 @@ public class NetworkLayer {
 		return serverMode;
 	}
 
-	public void startIbis() throws IbisCreationFailedException, IOException {
+	public void startIbis() throws Exception {
 
 		if (ibis == null) {
 			ibis = IbisFactory.createIbis(ibisCapabilities, null,
@@ -256,21 +255,25 @@ public class NetworkLayer {
 		stats = context.getStatisticsCollector();
 		try {
 
+			/**** START SUBMISSION MANAGEMENT THREAD ****/
+			log.debug("Starting Termination chains thread...");
+			ChainTerminator terminator = new ChainTerminator(context,
+					chainsTerminated);
+			Thread thread = new Thread(terminator);
+			thread.setName("Chain Terminator");
+			thread.start();
+
+			if (context.isLocalMode()) {
+				return;
+			}
+
 			sender = new ChainSender(context, chainsToSend);
-			Thread thread = new Thread(sender);
+			thread = new Thread(sender);
 			thread.setName("Chain Sender");
 			thread.start();
 
 			tupleRequester = new TupleRequester(context);
 			tupleSender = new TupleSender(context, bufferFactory);
-
-			/**** START SUBMISSION MANAGEMENT THREAD ****/
-			log.debug("Starting Termination chains thread...");
-			ChainTerminator terminator = new ChainTerminator(context,
-					chainsTerminated);
-			thread = new Thread(terminator);
-			thread.setName("Chain Terminator");
-			thread.start();
 
 			receiver = new Receiver(context, bufferFactory);
 			ReceivePort port = ibis.createReceivePort(requestPortType,
@@ -322,7 +325,10 @@ public class NetworkLayer {
 	}
 
 	public int getNumberNodes() {
-		return assignedPartitions.length;
+		if (assignedPartitions == null)
+			return 1;
+		else
+			return assignedPartitions.length;
 	}
 
 	public void stopIbis() throws IOException {

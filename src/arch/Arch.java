@@ -42,6 +42,7 @@ public class Arch {
 	static final Logger log = LoggerFactory.getLogger(Arch.class);
 
 	private Context globalContext;
+	private boolean localMode;
 
 	/**
 	 * Returns whether the current instance was the elected server of the
@@ -49,8 +50,8 @@ public class Arch {
 	 * 
 	 * @return true if it is, false otherwise.
 	 */
-	public boolean isServer() {
-		return globalContext.getNetworkLayer().isServer();
+	public boolean isFirst() {
+		return localMode || globalContext.getNetworkLayer().isServer();
 	}
 
 	/**
@@ -59,13 +60,15 @@ public class Arch {
 	 */
 	public void shutdown() {
 		log.info("Framework is shutting down ...");
-		try {
-			// Send message to everyone that should stop
-			globalContext.getNetworkLayer().signalTermination();
-			globalContext.getNetworkLayer().ibis.end();
-		} catch (IOException e) {
-			log.error("Error in shutting down", e);
-			System.exit(1);
+		if (!localMode) {
+			try {
+				// Send message to everyone that should stop
+				globalContext.getNetworkLayer().signalTermination();
+				globalContext.getNetworkLayer().stopIbis();
+			} catch (IOException e) {
+				log.error("Error in shutting down", e);
+				System.exit(1);
+			}
 		}
 		log.info("...done");
 	}
@@ -93,46 +96,54 @@ public class Arch {
 				}
 			}
 
-			/**** START IBIS IF REQUESTED ****/
-			if (conf.getBoolean(Consts.START_IBIS, false)) {
-				try {
-					TypedProperties properties = new TypedProperties();
-					properties.putAll(System.getProperties());
-					properties.setProperty(ServerProperties.PRINT_EVENTS,
-							"true");
-					new Server(properties);
-				} catch (Exception e) {
-					log.error("Error starting ibis", e);
-				}
-			}
-
-			/***** NET *******/
-			log.debug("Starting the network layer ...");
+			/***** BUFFER FACTORY *****/
 			@SuppressWarnings("unchecked")
 			Class<WritableContainer<Tuple>> clazz = (Class<WritableContainer<Tuple>>) (Class<?>) WritableContainer.class;
 			Factory<WritableContainer<Tuple>> bufferFactory = new Factory<WritableContainer<Tuple>>(
 					clazz, true, false, Consts.TUPLES_CONTAINER_BUFFER_SIZE);
+
+			/***** NET *******/
 			NetworkLayer net = NetworkLayer.getInstance();
-			net.setBufferFactory(bufferFactory);
-			net.startIbis();
+			boolean serverMode = true;
 
-			ArrayList<WritableContainer<Tuple>> l = new ArrayList<WritableContainer<Tuple>>(
-					Consts.STARTING_SIZE_FACTORY);
-			for (int i = 0; i < Consts.STARTING_SIZE_FACTORY; i++) {
-				l.add(bufferFactory.get());
-			}
-			while (l.size() != 0) {
-				bufferFactory.release(l.remove(l.size() - 1));
-			}
+			String ibisPoolSize = System.getProperty("ibis.pool.size");
+			localMode = ibisPoolSize == null || ibisPoolSize.equals("1");
+			if (!localMode) {
+				log.debug("Starting the network layer ...");
 
-			boolean serverMode = net.isServer();
-			log.debug("...done");
+				/**** START IBIS IF REQUESTED ****/
+				if (conf.getBoolean(Consts.START_IBIS, false)) {
+					try {
+						TypedProperties properties = new TypedProperties();
+						properties.putAll(System.getProperties());
+						properties.setProperty(ServerProperties.PRINT_EVENTS,
+								"true");
+						new Server(properties);
+					} catch (Exception e) {
+						log.error("Error starting ibis", e);
+					}
+				}
+
+				net.setBufferFactory(bufferFactory);
+				net.startIbis();
+				ArrayList<WritableContainer<Tuple>> l = new ArrayList<WritableContainer<Tuple>>(
+						Consts.STARTING_SIZE_FACTORY);
+				for (int i = 0; i < Consts.STARTING_SIZE_FACTORY; i++) {
+					l.add(bufferFactory.get());
+				}
+				while (l.size() != 0) {
+					bufferFactory.release(l.remove(l.size() - 1));
+				}
+
+				serverMode = net.isServer();
+				log.debug("...done");
+			}
 
 			if (serverMode) {
 				log.info("Cluster starting up");
 			}
 
-			/**** SHARED DATA STRUCTURES ****/
+			/**** OTHER SHARED DATA STRUCTURES ****/
 			WritableContainer<Chain> chainsToProcess = new CheckedConcurrentWritableContainer<Chain>(
 					Consts.SIZE_BUFFERS_CHAINS_PROCESS);
 			List<ChainHandler> listHandlers = new ArrayList<ChainHandler>();
@@ -148,7 +159,7 @@ public class Arch {
 			SubmissionCache cache = new SubmissionCache(net);
 
 			SubmissionRegistry registry = new SubmissionRegistry(net, stats,
-					chainsToProcess, tuplesContainer, ap, dp, conf);
+					chainsToProcess, tuplesContainer, ap, dp, cache, conf);
 
 			/**** INIT INPUT LAYERS ****/
 			InputLayer input = InputLayer.getImplementation(conf);
@@ -160,9 +171,9 @@ public class Arch {
 			/**** INIT CONTEXT ****/
 			globalContext = new Context();
 			ChainNotifier notifier = new ChainNotifier(globalContext, dp);
-			globalContext.init(inputRegistry, tuplesContainer, registry,
-					chainsToProcess, listHandlers, notifier, merger, net,
-					stats, ap, dp, defaultTupleFactory, cache, conf);
+			globalContext.init(localMode, inputRegistry, tuplesContainer,
+					registry, chainsToProcess, listHandlers, notifier, merger,
+					net, stats, ap, dp, defaultTupleFactory, cache, conf);
 
 			/**** START PROCESSING THREADS ****/
 			int i = conf.getInt(Consts.N_PROC_THREADS, 1);

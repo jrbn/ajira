@@ -19,6 +19,7 @@ import arch.data.types.DataProvider;
 import arch.net.NetworkLayer;
 import arch.storage.Container;
 import arch.storage.Factory;
+import arch.storage.SubmissionCache;
 import arch.utils.Configuration;
 import arch.utils.Consts;
 
@@ -39,11 +40,13 @@ public class SubmissionRegistry {
 
 	Map<Integer, Submission> submissions = new HashMap<Integer, Submission>();
 	Container<Chain> chainsToProcess;
+	SubmissionCache cache;
 	int submissionCounter = 0;
 
 	public SubmissionRegistry(NetworkLayer net, StatisticsCollector stats,
 			Container<Chain> chainsToProcess, Buckets buckets,
-			ActionFactory ap, DataProvider dp, Configuration conf) {
+			ActionFactory ap, DataProvider dp, SubmissionCache cache,
+			Configuration conf) {
 		this.net = net;
 		this.stats = stats;
 		this.chainsToProcess = chainsToProcess;
@@ -51,6 +54,7 @@ public class SubmissionRegistry {
 		this.ap = ap;
 		this.dp = dp;
 		this.conf = conf;
+		this.cache = cache;
 	}
 
 	public void updateCounters(int submissionId, long chainId,
@@ -165,11 +169,15 @@ public class SubmissionRegistry {
 			InterruptedException {
 
 		for (int i = 0; i < net.getNumberNodes(); ++i) {
-			WriteMessage msg = net.getMessageToSend(net.getPeerLocation(i),
-					NetworkLayer.nameMgmtReceiverPort);
-			msg.writeByte((byte) 8);
-			msg.writeInt(submission.getSubmissionId());
-			msg.finish();
+			if (i == net.getMyPartition()) {
+				cache.clearAll(submission.getSubmissionId());
+			} else {
+				WriteMessage msg = net.getMessageToSend(net.getPeerLocation(i),
+						NetworkLayer.nameMgmtReceiverPort);
+				msg.writeByte((byte) 8);
+				msg.writeInt(submission.getSubmissionId());
+				msg.finish();
+			}
 		}
 	}
 
