@@ -414,7 +414,7 @@ public class Bucket {
 	public synchronized boolean removeChunk(WritableContainer<Tuple> tmpBuffer) {
 
 		if (log.isDebugEnabled()) {
-			log.debug("removeChunk: fill tmpBuffer with sorted triples from memory + cachedFiles");
+			log.debug("removeChunk: fill tmpBuffer with sorted triples from bucket " + this.getKey());
 		}
 		
 		gettingData = true;
