@@ -440,12 +440,21 @@ public class Bucket {
 					di.close();
 				} else { // Need to sort
 
-					// Add the first triple from the in-memory ds to the pool
+					if (log.isDebugEnabled()) {
+						log.debug("Add the first triple from the in-memory ds to the pool => " +
+								"tuples.getNElements() = " + tuples.getNElements() + ", " + 
+								"minmumSortedlist.size() = " + minimumSortedList.size());
+					}
+					
+					// Add the first triple from the in-memory ds to the pool					
 					if (tuples.getNElements() > 0
-							&& minimumSortedList.size() == sortedCacheFiles
-									.size()) {
+							&& minimumSortedList.size() == sortedCacheFiles.size()) {
 						byte[] key = tuples.removeRaw(null);
 						minimumSortedList.add(key);
+						
+						if (log.isDebugEnabled()) {
+							log.debug("First triple from the in-memory ds was added to the pool.");
+						}
 					}
 
 					if (log.isDebugEnabled()) {
