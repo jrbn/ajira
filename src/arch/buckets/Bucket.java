@@ -413,6 +413,10 @@ public class Bucket {
 
 	public synchronized boolean removeChunk(WritableContainer<Tuple> tmpBuffer) {
 
+		if (log.isDebugEnabled()) {
+			log.debug("removeChunk: fill tmpBuffer with sorted elements from memory + cachedFiles");
+		}
+		
 		gettingData = true;
 
 		long totTime = System.currentTimeMillis();
