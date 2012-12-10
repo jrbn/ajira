@@ -414,7 +414,7 @@ public class Bucket {
 	public synchronized boolean removeChunk(WritableContainer<Tuple> tmpBuffer) {
 
 		if (log.isDebugEnabled()) {
-			log.debug("removeChunk: fill tmpBuffer with sorted elements from memory + cachedFiles");
+			log.debug("removeChunk: fill tmpBuffer with sorted triples from memory + cachedFiles");
 		}
 		
 		gettingData = true;
@@ -445,7 +445,7 @@ public class Bucket {
 				} else { // Need to sort
 
 					if (log.isDebugEnabled()) {
-						log.debug("Add the first triple from the in-memory ds to the pool => " +
+						log.debug("Try add the first triple from the in-memory ds to the pool => " +
 								"tuples.getNElements() = " + tuples.getNElements() + ", " + 
 								"minmumSortedlist.size() = " + minimumSortedList.size());
 					}
@@ -458,6 +458,11 @@ public class Bucket {
 						
 						if (log.isDebugEnabled()) {
 							log.debug("First triple from the in-memory ds was added to the pool.");
+						}
+					}
+					else {
+						if (log.isDebugEnabled()) {
+							log.debug("First triple from the in-memory ds was NOT added to the pool.");
 						}
 					}
 
