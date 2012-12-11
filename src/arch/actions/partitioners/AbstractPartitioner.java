@@ -28,7 +28,7 @@ abstract public class AbstractPartitioner extends Action {
 
 	@Override
 	public final void setupActionParameters(ActionConf conf) throws Exception {
-		conf.registerParameter(N_PARTITIONS, S_N_PARTITIONS, null, true);
+		conf.registerParameter(N_PARTITIONS, S_N_PARTITIONS, -1, false);
 	}
 
 	@Override

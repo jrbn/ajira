@@ -2,6 +2,7 @@ package arch.actions;
 
 import java.io.DataInput;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,6 +31,9 @@ public class ActionFactory {
 				ActionConf conf = new ActionConf(className, null);
 				action.setupActionParameters(conf);
 				params = conf.getListAllowedParameters();
+				if (params == null) {
+					params = new ArrayList<>();
+				}
 			} catch (Exception e) {
 				log.error("Failed in retrieving the parameter list for class"
 						+ className);
