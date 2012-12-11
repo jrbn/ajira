@@ -19,12 +19,7 @@ public class ActionFactory {
 	private final static Map<String, List<ParamItem>> actionParameters = new ConcurrentHashMap<String, List<ParamItem>>();
 	private final Map<String, Factory<Action>> listFactories = new ConcurrentHashMap<String, Factory<Action>>();
 
-	public static ActionConf getActionConf(
-			Class<? extends Action> clazz) {
-		if (clazz == null)
-			return null;
-
-		String className = clazz.getName();
+	public static ActionConf getActionConf(String className) {
 		if (!actionParameters.containsKey(className)) {
 			// Setup the list of parameters
 			List<ParamItem> params = null;
@@ -42,7 +37,13 @@ public class ActionFactory {
 			actionParameters.put(className, params);
 		}
 
-		return new ActionConf(className, actionParameters.get(clazz.getName()));
+		return new ActionConf(className, actionParameters.get(className));
+	}
+
+	public static ActionConf getActionConf(Class<? extends Action> clazz) {
+		if (clazz == null)
+			return null;
+		return getActionConf(clazz.getName());
 	}
 
 	public Action getAction(String className, DataInput rawParams)

@@ -233,6 +233,19 @@ public class Arch {
 	}
 
 	/**
+	 * This methods returns the node ID of the machine in the cluster. For
+	 * example, if there are three machines, then it will return 0, 1, or 2.
+	 * 
+	 * @return The node ID of the current machine
+	 */
+	public int getMyNodeID() {
+		if (localMode)
+			return 0;
+		else
+			return globalContext.getNetworkLayer().getMyPartition();
+	}
+
+	/**
 	 * This method is used to launch a job in the cluster. It waits until the
 	 * job is terminated (or has failed).
 	 * 
