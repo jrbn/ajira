@@ -102,17 +102,12 @@ public class SendTo extends Action {
 			WritableContainer<Tuple> outputTuples,
 			WritableContainer<Chain> chainsToProcess) {
 		try {
-
 			int nodeId = this.nodeId;
 			if (nodeId == -1) {
 				// Node to send is tuple's last record. Must remove it
 				inputTuple.get(tnode, inputTuple.getNElements() - 1);
 				nodeId = tnode.getValue();
 				inputTuple.removeLast();
-			}
-
-			if (ft) {
-				outputTuples.add(inputTuple);
 			}
 
 			if (nodeId >= 0) {
@@ -125,7 +120,6 @@ public class SendTo extends Action {
 				}
 				b.add(inputTuple);
 			} else { // Send it to all the nodes
-
 				for (int i = 0; i < net.getNumberNodes(); ++i) {
 					Bucket b = bucketsCache[i];
 					if (b == null) {
@@ -136,7 +130,10 @@ public class SendTo extends Action {
 					}
 					b.add(inputTuple);
 				}
+			}
 
+			if (ft) {
+				outputTuples.add(inputTuple);
 			}
 
 		} catch (Exception e) {

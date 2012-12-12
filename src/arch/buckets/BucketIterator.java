@@ -22,8 +22,6 @@ public class BucketIterator extends TupleIterator {
 	Buckets buckets;
 	boolean isUsed;
 
-	// boolean removeDuplicates;
-
 	public void init(Bucket bucket, int idSubmission, int idBucket,
 			Buckets buckets/* , boolean removeDuplicates */) {
 		tuples.clear();
@@ -32,7 +30,6 @@ public class BucketIterator extends TupleIterator {
 		this.idBucket = idBucket;
 		this.buckets = buckets;
 		this.isUsed = false;
-		// this.removeDuplicates = removeDuplicates;
 	}
 
 	@Override
@@ -60,7 +57,8 @@ public class BucketIterator extends TupleIterator {
 
 	@Override
 	public void getTuple(Tuple tuple) throws Exception {
-		tuples.remove(tuple);
+		if (!tuples.remove(tuple))
+			throw new Exception("error");
 	}
 
 	@Override

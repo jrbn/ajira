@@ -46,7 +46,6 @@ abstract public class AbstractPartitioner extends Action {
 			WritableContainer<Tuple> output,
 			WritableContainer<Chain> chainsToProcess) throws Exception {
 		inputTuple.copyTo(inputTuple);
-
 		tnode.setValue(partition(inputTuple, partitions));
 		inputTuple.add(tnode);
 		output.add(inputTuple);

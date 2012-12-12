@@ -2,7 +2,6 @@ package arch.actions;
 
 import arch.ActionContext;
 import arch.chains.Chain;
-import arch.data.types.DataProvider;
 import arch.data.types.Tuple;
 import arch.storage.container.WritableContainer;
 
@@ -26,14 +25,8 @@ public class RemoveDuplicates extends Action {
 			output.add(inputTuple);
 			first = false;
 		} else if (inputTuple.compareTo(tuple) != 0) {
-			if (tuple.toString(new DataProvider()).equals(
-					inputTuple.toString(new DataProvider()))) {
-				System.out.println("Problem");
-			}
 			inputTuple.copyTo(tuple);
 			output.add(inputTuple);
-		} else {
-			System.out.println("Found duplicates");
 		}
 	}
 }
