@@ -514,11 +514,13 @@ public class WritableContainer<K extends Writable> extends Writable implements
 	int i = 0;
 	while (nElements > 0) {
 	    int length = input.readInt();
+            /*
             if (log.isDebugEnabled()) {
                 if (length > 256) {
                     log.debug("OOPS, length = " + length);
                 }
             }
+            */
 	    coordinates[l] = cb.start;
 	    coordinates[l + 1] = length;
 	    cb.start = (coordinates[l] + coordinates[l + 1]) % cb.buffer.length;
@@ -563,7 +565,6 @@ public class WritableContainer<K extends Writable> extends Writable implements
 	    newArray.clear();
 	    newArray.grow((int) size);
 	    for (int index : indexes) {
-                try {
                     newArray.output.writeInt(coordinates[index + 1]);
                     if (coordinates[index] + coordinates[index + 1] > cb.buffer.length) {
                         // Note, newArray cannot wrap, since it is new ...
@@ -580,22 +581,13 @@ public class WritableContainer<K extends Writable> extends Writable implements
                     }
                     newArray.cb.end += coordinates[index + 1];
                     newArray.nElements++;
-                } catch(ArrayIndexOutOfBoundsException e) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("coordinates[index] = " + coordinates[index]
-                                + ", coordinates[index + 1] = " + coordinates[index+1]
-                                + ", cb.buffer.length = " + cb.buffer.length
-                                + ", newArray.cb.buffer.length = " + newArray.cb.buffer.length
-                                + ", newArray.cb.end = " + newArray.cb.end);
-                    }
-                    throw e;
-                }
 	    }
 	    newArray.copyTo(this);
 	    // fb.release(newArray);
 
 	}
 
+        /*
         // Consystency check
         if (log.isDebugEnabled()) {
             int savedStart = cb.start;
@@ -608,6 +600,7 @@ public class WritableContainer<K extends Writable> extends Writable implements
             }
             cb.start = savedStart;
 	}
+        */
 
 	log.debug("Time repopulate (\t" + indexes.length + "\t):\t"
 		+ (System.currentTimeMillis() - time) + "\tT:"
@@ -623,6 +616,8 @@ public class WritableContainer<K extends Writable> extends Writable implements
 
     public void writeElementsTo(DataOutput cacheOutputStream)
 	    throws IOException {
+        /*
+        // Consistency check.
         if (log.isDebugEnabled()) {
             int savedStart = cb.start;
             for (int j = 0; j < nElements; j++) {
@@ -637,6 +632,7 @@ public class WritableContainer<K extends Writable> extends Writable implements
             }
             cb.start = savedStart;
 	}
+        */
 
 	if (cb.end > cb.start) {
 	    cacheOutputStream

@@ -707,9 +707,11 @@ public class Bucket {
 
 					cacheOutputStream.close();
 
+                                        /*
 					if (log.isDebugEnabled()) {
 					    checkFile(cacheFile);
 					}
+                                        */
 
 					// Register file in the list of cachedBuffers
 					FDataInput is = new FDataInput(new BufferedInputStream(
