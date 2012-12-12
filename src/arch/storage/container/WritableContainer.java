@@ -26,7 +26,7 @@ public class WritableContainer<K extends Writable> extends Writable implements
 
 	static final Logger log = LoggerFactory.getLogger(WritableContainer.class);
 
-	public ByteArray cb = new ByteArray();
+	protected ByteArray cb = new ByteArray();
 	protected int nElements = 0;
 	private int pointerLastElement;
 	private int lengthLastElement;
@@ -92,6 +92,11 @@ public class WritableContainer<K extends Writable> extends Writable implements
 
 	private boolean grow(int sz) {
 		if (remainingCapacity(maxSize) < sz) {
+			if (log.isDebugEnabled()) {
+				log.debug("Grow() fails! maxSize = " + maxSize + ", sz = " + sz
+						+ ", remaining capacity = "
+						+ remainingCapacity(maxSize));
+			}
 			return false;
 		}
 		int currentSize;
@@ -506,11 +511,15 @@ public class WritableContainer<K extends Writable> extends Writable implements
 		final int[] coordinates = new int[(nElements * 2)];
 		Integer[] indexes = new Integer[nElements];
 
-		long bytesToStore = bytesToStore();
+		long size = getRawElementsSize();
 
 		int i = 0;
 		while (nElements > 0) {
 			int length = input.readInt();
+			/*
+			 * if (log.isDebugEnabled()) { if (length > 256) {
+			 * log.debug("OOPS, length = " + length); } }
+			 */
 			coordinates[l] = cb.start;
 			coordinates[l + 1] = length;
 			cb.start = (coordinates[l] + coordinates[l + 1]) % cb.buffer.length;
@@ -544,7 +553,7 @@ public class WritableContainer<K extends Writable> extends Writable implements
 
 		// 3) Repopulate
 		time = System.currentTimeMillis();
-		if (bytesToStore < cb.buffer.length / 2) {
+		if (size < cb.buffer.length / 2) {
 			for (int index : indexes) {
 				output.writeInt(coordinates[index + 1]);
 				copyRegion(coordinates[index], coordinates[index + 1]);
@@ -553,7 +562,7 @@ public class WritableContainer<K extends Writable> extends Writable implements
 		} else { // It's too big. Must use another array
 			WritableContainer<K> newArray = fb.get();
 			newArray.clear();
-			newArray.grow((int) bytesToStore);
+			newArray.grow((int) size);
 			for (int index : indexes) {
 				newArray.output.writeInt(coordinates[index + 1]);
 				if (coordinates[index] + coordinates[index + 1] > cb.buffer.length) {
@@ -576,6 +585,16 @@ public class WritableContainer<K extends Writable> extends Writable implements
 			// fb.release(newArray);
 
 		}
+
+		/*
+		 * // Consystency check if (log.isDebugEnabled()) { int savedStart =
+		 * cb.start; for (int j = 0; j < nElements; j++) { int length =
+		 * input.readInt(); if (length != coordinates[indexes[j]+1]) {
+		 * log.debug("OOPS: consistency error: length = " + length +
+		 * ", should be " + coordinates[indexes[j]+1]); } cb.start = (cb.start +
+		 * length) % cb.buffer.length; } cb.start = savedStart; }
+		 */
+
 		log.debug("Time repopulate (\t" + indexes.length + "\t):\t"
 				+ (System.currentTimeMillis() - time) + "\tT:"
 				+ Thread.currentThread().getId());
@@ -590,6 +609,16 @@ public class WritableContainer<K extends Writable> extends Writable implements
 
 	public void writeElementsTo(DataOutput cacheOutputStream)
 			throws IOException {
+		/*
+		 * // Consistency check. if (log.isDebugEnabled()) { int savedStart =
+		 * cb.start; for (int j = 0; j < nElements; j++) { int length =
+		 * input.readInt(); if (length > 256) { log.debug("OOPS: length = " +
+		 * length); } cb.start = (cb.start + length) % cb.buffer.length; } if
+		 * (cb.end != cb.start) {
+		 * log.debug("Something wrong with this container! cb.end = " + cb.end +
+		 * ", but found end " + cb.start); } cb.start = savedStart; }
+		 */
+
 		if (cb.end > cb.start) {
 			cacheOutputStream
 					.write(this.cb.buffer, cb.start, cb.end - cb.start);

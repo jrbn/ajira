@@ -102,7 +102,7 @@ public class ActionConf extends Writable {
 			if (value != null) {
 				if (value instanceof Integer) {
 					output.writeByte(0);
-					output.writeInt((int) value);
+					output.writeInt(((Integer) value).intValue());
 				} else if (value instanceof String) {
 					output.writeByte(1);
 					output.writeUTF((String) value);
@@ -111,7 +111,7 @@ public class ActionConf extends Writable {
 					output.writeLong((Long) value);
 				} else if (value instanceof Boolean) {
 					output.writeByte(3);
-					output.writeBoolean((boolean) value);
+					output.writeBoolean(((Boolean) value).booleanValue());
 				} else {
 					throw new IOException(
 							"Format of one parameter is not recognized");

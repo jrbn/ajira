@@ -48,7 +48,15 @@ public class FDataInput implements DataInput {
 
 	@Override
 	public void readFully(byte[] b, int off, int len) throws IOException {
-		is.read(b, off, len);		
+                int remaining = len;
+                while (remaining > 0) {
+                    int rd = is.read(b, off, remaining);
+                    if (rd < 0) {
+                        throw new IOException("EOF encountered in readFully");
+                    }
+                    remaining -= rd;
+                    off += rd;
+                }
 	}
 
 	@Override
