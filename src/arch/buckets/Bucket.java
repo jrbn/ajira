@@ -646,12 +646,10 @@ public class Bucket {
 	}
 
 	private void checkFile(File name) throws IOException {
-		/*
 		FDataInput is = new FDataInput(new BufferedInputStream(
 			new SnappyInputStream(
 				new FileInputStream(name)), 65536));
-		*/
-		FDataInput is = new FDataInput(new BufferedInputStream(new FileInputStream(name), 65536));
+		// FDataInput is = new FDataInput(new BufferedInputStream(new FileInputStream(name), 65536));
 
 		int length;
 		while ((length = is.readInt()) > 0) {
@@ -689,12 +687,10 @@ public class Bucket {
 					File cacheFile = File.createTempFile("cache", "tmp");
 					cacheFile.deleteOnExit();
 
-					/*
 					BufferedOutputStream fout = new BufferedOutputStream(
 							new SnappyOutputStream(new FileOutputStream(
-									cacheFile)));
-									*/
-					BufferedOutputStream fout = new BufferedOutputStream(new FileOutputStream(cacheFile), 65536);
+									cacheFile)), 65536);
+					// BufferedOutputStream fout = new BufferedOutputStream(new FileOutputStream(cacheFile), 65536);
 					FDataOutput cacheOutputStream = new FDataOutput(fout);
 
 					long time = System.currentTimeMillis();
@@ -716,13 +712,11 @@ public class Bucket {
 					}
 
 					// Register file in the list of cachedBuffers
-					/*
 					FDataInput is = new FDataInput(new BufferedInputStream(
 							new SnappyInputStream(
 									new FileInputStream(cacheFile)), 65536));
-					*/
-					FDataInput is = new FDataInput(new BufferedInputStream(
-									new FileInputStream(cacheFile), 65536));
+					// FDataInput is = new FDataInput(new BufferedInputStream(
+					//				new FileInputStream(cacheFile), 65536));
 
 					synchronized (Bucket.this) {
 						if (comparator == null) {
