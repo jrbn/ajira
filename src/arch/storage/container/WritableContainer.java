@@ -514,6 +514,11 @@ public class WritableContainer<K extends Writable> extends Writable implements
 	int i = 0;
 	while (nElements > 0) {
 	    int length = input.readInt();
+            if (log.isDebugEnabled()) {
+                if (length > 256) {
+                    log.debug("OOPS, length = " + length);
+                }
+            }
 	    coordinates[l] = cb.start;
 	    coordinates[l + 1] = length;
 	    cb.start = (coordinates[l] + coordinates[l + 1]) % cb.buffer.length;
@@ -590,6 +595,20 @@ public class WritableContainer<K extends Writable> extends Writable implements
 	    // fb.release(newArray);
 
 	}
+
+        // Consystency check
+        if (log.isDebugEnabled()) {
+            int savedStart = cb.start;
+            for (int j = 0; j < nElements; j++) {
+                int length = input.readInt();
+                if (length != coordinates[indexes[j]+1]) {
+                    log.debug("OOPS: consistency error: length = " + length + ", should be " + coordinates[indexes[j]+1]);
+                }
+                cb.start = (cb.start + length) % cb.buffer.length;
+            }
+            cb.start = savedStart;
+	}
+
 	log.debug("Time repopulate (\t" + indexes.length + "\t):\t"
 		+ (System.currentTimeMillis() - time) + "\tT:"
 		+ Thread.currentThread().getId());
@@ -604,6 +623,21 @@ public class WritableContainer<K extends Writable> extends Writable implements
 
     public void writeElementsTo(DataOutput cacheOutputStream)
 	    throws IOException {
+        if (log.isDebugEnabled()) {
+            int savedStart = cb.start;
+            for (int j = 0; j < nElements; j++) {
+                int length = input.readInt();
+                if (length > 256) {
+                    log.debug("OOPS: length = " + length);
+                }
+                cb.start = (cb.start + length) % cb.buffer.length;
+            }
+            if (cb.end != cb.start) {
+                log.debug("Something wrong with this container! cb.end = " + cb.end + ", but found end " + cb.start);
+            }
+            cb.start = savedStart;
+	}
+
 	if (cb.end > cb.start) {
 	    cacheOutputStream
 		    .write(this.cb.buffer, cb.start, cb.end - cb.start);
