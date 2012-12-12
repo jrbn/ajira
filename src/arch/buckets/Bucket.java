@@ -70,6 +70,14 @@ public class Bucket {
 			super.add(index, e);
 			return true;
 		}
+		
+		public T removeLastElement() {
+			return remove(size()-1);
+		}
+		
+		public T getLastElement() {
+			return get(size()-1);
+		}
 	}
 
 	static final Logger log = LoggerFactory.getLogger(Bucket.class);
@@ -94,13 +102,14 @@ public class Bucket {
 
 	boolean gettingData;
 
-	private int elementsInCache = 0;
+	private long elementsInCache = 0;
 	Factory<WritableContainer<Tuple>> fb = null;
 
 	CachedFilesMerger merger;
 
-	// Used for not sorted streams
+	// Used for unsorted streams.
 	private final List<FDataInput> cacheFiles = new ArrayList<FDataInput>();
+	
 	Map<byte[], FileMetaData> sortedCacheFiles = new HashMap<byte[], FileMetaData>();
 	SortedList<byte[]> minimumSortedList = new SortedList<byte[]>(100,
 			new Comparator<byte[]>() {
@@ -398,6 +407,37 @@ public class Bucket {
 		return true;
 	}
 
+	private boolean compareWithSortedList(byte[] element) {
+		return minimumSortedList.size() == 0
+				|| (element != null
+				    && minimumSortedList.comparator.compare(element,
+								minimumSortedList.getLastElement()) >= 0);
+	}
+	
+	private boolean copyFullFile(FileMetaData meta, WritableContainer<Tuple> tmpBuffer, byte[] minimum) throws Exception {
+		// Check whether the last element is smaller than the second minimum.
+		// If it is, then we can copy the entire file in the buffer.
+		if (compareWithSortedList(meta.lastElement)) {
+			// Copy the entire file in the buffer
+			if (tmpBuffer.addAll(meta.stream,
+					meta.lastElement, meta.nElements,
+					meta.remainingSize)) {
+				elementsInCache -= meta.nElements;
+				
+				meta.stream.close();
+				sortedCacheFiles.remove(minimum);
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	private void readFrom(FileMetaData meta, byte[] buf) throws IOException {
+		meta.stream.readFully(buf);
+		meta.remainingSize -= buf.length + 4;
+		meta.nElements--;
+	}
+	
 	public synchronized boolean removeChunk(WritableContainer<Tuple> tmpBuffer) {
 
 		gettingData = true;
@@ -443,113 +483,56 @@ public class Bucket {
 					int tuplesFromStream = 0;
 					long time = System.currentTimeMillis();
 					do {
-						// Remove the minimum of the tuples
-						byte[] minimum = minimumSortedList
-								.remove(minimumSortedList.size() - 1);
-
-						// Add it to the buffer
+						// Remove the minimum of the tuples and try to add it to the buffer.
+						byte[] minimum = minimumSortedList.removeLastElement();
 						insertResponse = tmpBuffer.addRaw(minimum);
-
+						
 						if (insertResponse) {
-							// If the stream comes from a stream replace it
 							if (sortedCacheFiles.containsKey(minimum)) {
 								tuplesFromStream++;
 								elementsInCache--;
-
-								FileMetaData meta = sortedCacheFiles
-										.get(minimum);
-
-								// Check whether the last element is smaller
-								// than the second minimum. If it is, then we
-								// can copy the entire file in the buffer.
-								// Ceriel: minimumSortedList can be empty here
-								// ...
-								if (minimumSortedList.size() == 0
-										|| (meta.lastElement != null && minimumSortedList.comparator
-												.compare(
-														meta.lastElement,
-														minimumSortedList
-																.get(minimumSortedList
-																		.size() - 1)) >= 0)) {
-									// Copy the entire file in the buffer
-									if (tmpBuffer.addAll(meta.stream,
-											meta.lastElement, meta.nElements,
-											meta.remainingSize)) {
-										elementsInCache -= meta.nElements;
-										meta.stream.close();
-										sortedCacheFiles.remove(minimum);
-										return true;
-									}
+								// The minimum came from a file. Check if the file can be copied completely.
+								FileMetaData meta = sortedCacheFiles.get(minimum);
+								if (copyFullFile(meta, tmpBuffer, minimum)) {
+									tuplesFromStream += meta.nElements;
+									continue;
 								}
-
+								// No, it could not. Now try to stay with this file as long as we can.
 								try {
-									int length = meta.stream.readInt();
-									if (length == minimum.length) {
+									int length;
+									while ((length = meta.stream.readInt()) == minimum.length) {
+										// log.debug("Read length " + length + ", filename = " + meta.filename);
 										// Reuse minimum
-										meta.stream.readFully(minimum);
-										meta.remainingSize -= length + 4;
-										meta.nElements--;
-
-										for (;;) {
-											// Create a "fast path": sometimes,
-											// a single cache file has
-											// tuples that are all smaller than
-											// the next file.
-											if (minimumSortedList.size() == 0
-													|| minimumSortedList.comparator
-															.compare(
-																	minimum,
-																	minimumSortedList
-																			.get(minimumSortedList
-																					.size() - 1)) >= 0) {
-												// Add it to the buffer
-												insertResponse = tmpBuffer
-														.addRaw(minimum);
-												if (!insertResponse) {
-													minimumSortedList
-															.add(minimum);
-													break;
-												}
-												tuplesFromStream++;
-												elementsInCache--;
-												length = meta.stream.readInt();
-												// FIXME this if is not correct!
-												if (length != minimum.length) {
-													break;
-												}
-												meta.stream.readFully(minimum);
-												meta.remainingSize -= length + 4;
-												meta.nElements--;
-											} else {
-												minimumSortedList.add(minimum);
-												break;
-											}
+										readFrom(meta, minimum);
+										if (compareWithSortedList(minimum) && (insertResponse = tmpBuffer.addRaw(minimum))) {
+											tuplesFromStream++;
+											elementsInCache--;
+										} else {
+											minimumSortedList.add(minimum);
+											break;
 										}
-									} else if (length != minimum.length
-											&& length > 0) {
-										log.warn("The buffer is resized! New length="
-												+ length);
-										// Replace it
+									}
+									// We get here if the length is different (in which case we still have to read
+									// the tuple, in a new buffer), or when the order was wrong.
+									if (length != minimum.length) {
+										// log.debug("Read new length " + length + ", filename = " + meta.filename);
 										sortedCacheFiles.remove(minimum);
-										byte[] rawValue = new byte[length];
-										meta.stream.readFully(rawValue);
-										meta.remainingSize -= length + 4;
-										meta.nElements--;
-
-										minimumSortedList.add(rawValue);
-										sortedCacheFiles.put(rawValue, meta);
-									} else if (length <= 0) { // File is
-										// finished
-										sortedCacheFiles.remove(minimum);
-										meta.stream.close();
+										if (length > 0) {
+											// log.warn("The buffer is resized! New length = "	+ length);
+											byte[] rawValue = new byte[length];
+											readFrom(meta, rawValue);
+											minimumSortedList.add(rawValue);
+											sortedCacheFiles.put(rawValue, meta);
+										} else { // File is finished.
+											meta.stream.close();
+										}
 									}
 								} catch (Exception e) {
 									log.warn("Here it should never come!");
 									sortedCacheFiles.remove(minimum);
 									meta.stream.close();
 								}
-
-							} else { // It was coming from inmemory container.
+							} else { // It came from the in-memory container.
 								if (tuples.getNElements() > 0
 										&& elementsInCache > 0) {
 									byte[] key = tuples.removeRaw(minimum);
@@ -583,8 +566,7 @@ public class Bucket {
 				}
 
 				if (tuples != null && tuples.getNElements() > 0) {
-					boolean response = tmpBuffer.addAll(tuples);
-					if (response) {
+					if (tmpBuffer.addAll(tuples)) {
 						tuples.clear();
 					}
 				}
@@ -626,6 +608,23 @@ public class Bucket {
 		}
 	}
 
+	private void checkFile(File name) throws IOException {
+		FDataInput is = new FDataInput(new BufferedInputStream(
+			new SnappyInputStream(
+				new FileInputStream(name)), 65536));
+		// FDataInput is = new FDataInput(new BufferedInputStream(new FileInputStream(name), 65536));
+
+		int length;
+		while ((length = is.readInt()) > 0) {
+		    if (length > 256) {
+			log.debug("OOPS: length = " + length);
+		    }
+		    byte[] rawValue = new byte[length];
+		    is.readFully(rawValue);
+		}
+		is.close();
+	}
+
 	private void cacheBuffer(final WritableContainer<Tuple> buffer,
 			final boolean sorted, final Factory<WritableContainer<Tuple>> fb)
 			throws IOException {
@@ -653,7 +652,8 @@ public class Bucket {
 
 					BufferedOutputStream fout = new BufferedOutputStream(
 							new SnappyOutputStream(new FileOutputStream(
-									cacheFile)));
+									cacheFile)), 65536);
+					// BufferedOutputStream fout = new BufferedOutputStream(new FileOutputStream(cacheFile), 65536);
 					FDataOutput cacheOutputStream = new FDataOutput(fout);
 
 					long time = System.currentTimeMillis();
@@ -661,6 +661,7 @@ public class Bucket {
 						buffer.writeTo(cacheOutputStream);
 					} else {
 						buffer.writeElementsTo(cacheOutputStream);
+						cacheOutputStream.writeInt(0);
 					}
 
 					stats.addCounter(submissionNode, submissionId,
@@ -669,10 +670,18 @@ public class Bucket {
 
 					cacheOutputStream.close();
 
+                                        /*
+					if (log.isDebugEnabled()) {
+					    checkFile(cacheFile);
+					}
+                                        */
+
 					// Register file in the list of cachedBuffers
 					FDataInput is = new FDataInput(new BufferedInputStream(
 							new SnappyInputStream(
 									new FileInputStream(cacheFile)), 65536));
+					// FDataInput is = new FDataInput(new BufferedInputStream(
+					//				new FileInputStream(cacheFile), 65536));
 
 					synchronized (Bucket.this) {
 						if (comparator == null) {
@@ -689,6 +698,9 @@ public class Bucket {
 								meta.stream = is;
 								meta.nElements = buffer.getNElements() - 1;
 								meta.lastElement = buffer.returnLastElement();
+								if (log.isDebugEnabled()) {
+								    log.debug("Size of first element is " + length + ", size of last element is " + meta.lastElement.length);
+								}
 								meta.remainingSize = buffer
 										.getRawElementsSize() - 4 - length;
 
