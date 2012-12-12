@@ -92,6 +92,9 @@ public class WritableContainer<K extends Writable> extends Writable implements
     
     private boolean grow(int sz) {
         if (remainingCapacity(maxSize) < sz) {
+            if (log.isDebugEnabled()) {
+                log.debug("Grow() fails! maxSize = " + maxSize + ", sz = " + sz + ", remaining capacity = " + remainingCapacity(maxSize));
+            }
             return false;
         }
         int currentSize;
@@ -506,7 +509,7 @@ public class WritableContainer<K extends Writable> extends Writable implements
 	final int[] coordinates = new int[(nElements * 2)];
 	Integer[] indexes = new Integer[nElements];
 
-	long bytesToStore = bytesToStore();
+	long size = getRawElementsSize();
 
 	int i = 0;
 	while (nElements > 0) {
@@ -544,7 +547,7 @@ public class WritableContainer<K extends Writable> extends Writable implements
 
 	// 3) Repopulate
 	time = System.currentTimeMillis();
-	if (bytesToStore < cb.buffer.length / 2) {
+	if (size < cb.buffer.length / 2) {
 	    for (int index : indexes) {
 		output.writeInt(coordinates[index + 1]);
 		copyRegion(coordinates[index], coordinates[index + 1]);
@@ -553,24 +556,35 @@ public class WritableContainer<K extends Writable> extends Writable implements
 	} else { // It's too big. Must use another array
 	    WritableContainer<K> newArray = fb.get();
 	    newArray.clear();
-	    newArray.grow((int) bytesToStore);
+	    newArray.grow((int) size);
 	    for (int index : indexes) {
-		newArray.output.writeInt(coordinates[index + 1]);
-		if (coordinates[index] + coordinates[index + 1] > cb.buffer.length) {
-		    // Note, newArray cannot wrap, since it is new ...
-		    int len1 = cb.buffer.length - coordinates[index];
-		    System.arraycopy(cb.buffer, coordinates[index],
-			    newArray.cb.buffer, newArray.cb.end, len1);
-		    System.arraycopy(cb.buffer, 0, newArray.cb.buffer,
-			    newArray.cb.end + len1, coordinates[index + 1]
-				    - len1);
-		} else {
-		    System.arraycopy(cb.buffer, coordinates[index],
-			    newArray.cb.buffer, newArray.cb.end,
-			    coordinates[index + 1]);
-		}
-		newArray.cb.end += coordinates[index + 1];
-		newArray.nElements++;
+                try {
+                    newArray.output.writeInt(coordinates[index + 1]);
+                    if (coordinates[index] + coordinates[index + 1] > cb.buffer.length) {
+                        // Note, newArray cannot wrap, since it is new ...
+                        int len1 = cb.buffer.length - coordinates[index];
+                        System.arraycopy(cb.buffer, coordinates[index],
+                                newArray.cb.buffer, newArray.cb.end, len1);
+                        System.arraycopy(cb.buffer, 0, newArray.cb.buffer,
+                                newArray.cb.end + len1, coordinates[index + 1]
+                                        - len1);
+                    } else {
+                        System.arraycopy(cb.buffer, coordinates[index],
+                                newArray.cb.buffer, newArray.cb.end,
+                                coordinates[index + 1]);
+                    }
+                    newArray.cb.end += coordinates[index + 1];
+                    newArray.nElements++;
+                } catch(ArrayIndexOutOfBoundsException e) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("coordinates[index] = " + coordinates[index]
+                                + ", coordinates[index + 1] = " + coordinates[index+1]
+                                + ", cb.buffer.length = " + cb.buffer.length
+                                + ", newArray.cb.buffer.length = " + newArray.cb.buffer.length
+                                + ", newArray.cb.end = " + newArray.cb.end);
+                    }
+                    throw e;
+                }
 	    }
 	    newArray.copyTo(this);
 	    // fb.release(newArray);

@@ -706,6 +706,9 @@ public class Bucket {
 								meta.stream = is;
 								meta.nElements = buffer.getNElements() - 1;
 								meta.lastElement = buffer.returnLastElement();
+                                                                if (log.isDebugEnabled()) {
+                                                                    log.debug("Size of first element is " + length + ", size of last element is " + meta.lastElement.length);
+                                                                }
 								meta.remainingSize = buffer
 										.getRawElementsSize() - 4 - length;
 
