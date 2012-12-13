@@ -333,7 +333,11 @@ public class NetworkLayer {
 
 	public void stopIbis() throws IOException {
 		for (ReceivePort rp : receivePorts) {
-			rp.close();
+                        try {
+                            rp.close(-1);
+                        } catch(Throwable e) {
+                            // ignore
+                        }
 		}
 
 		ibis.end();
