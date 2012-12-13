@@ -65,6 +65,8 @@ public class ActionFactory {
 								.asSubclass(Action.class);
 						factory = new Factory<Action>(cRule);
 						listFactories.put(className, factory);
+					} else {
+						factory = listFactories.get(className);
 					}
 				}
 			}

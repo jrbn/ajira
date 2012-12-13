@@ -6,7 +6,7 @@ import java.io.IOException;
 
 import arch.storage.Writable;
 
-class TupleInfo extends Writable {
+public class TupleInfo extends Writable {
 
 	public long bucketKey;
 

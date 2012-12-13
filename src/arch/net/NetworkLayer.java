@@ -350,17 +350,22 @@ public class NetworkLayer {
 		try {
 			String nameSenderPort = receiverPort + receiver.name();
 			if (!senderPorts.containsKey(nameSenderPort)) {
-				PortType type = null;
-				if (receiverPort.equals(queryReceiverPort)) {
-					type = queryPortType;
-				} else if (receiverPort.equals(nameMgmtReceiverPort)) {
-					type = mgmtRequestPortType;
-				} else if (receiverPort.equals(nameBcstReceiverPort)) {
-					type = broadcastPortType;
-				} else {
-					type = requestPortType;
+				synchronized (NetworkLayer.class) {
+					if (!senderPorts.containsKey(nameSenderPort)) {
+						PortType type = null;
+						if (receiverPort.equals(queryReceiverPort)) {
+							type = queryPortType;
+						} else if (receiverPort.equals(nameMgmtReceiverPort)) {
+							type = mgmtRequestPortType;
+						} else if (receiverPort.equals(nameBcstReceiverPort)) {
+							type = broadcastPortType;
+						} else {
+							type = requestPortType;
+						}
+						startSenderPort(type, nameSenderPort, receiver,
+								receiverPort);
+					}
 				}
-				startSenderPort(type, nameSenderPort, receiver, receiverPort);
 			}
 			port = senderPorts.get(nameSenderPort);
 			WriteMessage w = port.newMessage();
