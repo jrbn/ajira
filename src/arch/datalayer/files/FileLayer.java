@@ -116,8 +116,8 @@ public class FileLayer extends InputLayer {
 			if (operation.getValue() == OP_LS) {
 				return ChainLocation.THIS_NODE;
 			} else {
-				int index = Integer.valueOf(value.toString().substring(
-						value.toString().indexOf('-')));
+                                String s = value.toString();
+				int index = Integer.valueOf(s.substring(s.indexOf('-')+1));
 				return new ChainLocation(index % numberNodes);
 			}
 
