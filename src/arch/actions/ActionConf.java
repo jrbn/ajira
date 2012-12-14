@@ -6,6 +6,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import arch.ActionContext;
 import arch.data.types.bytearray.BDataOutput;
 import arch.storage.Writable;
@@ -13,24 +16,37 @@ import arch.utils.Consts;
 
 public class ActionConf extends Writable {
 
+	public static abstract class RuntimeParameterProcessor {
+		public void process(ActionConf conf, ActionContext context) {
+			processParameters(conf.valuesParameters, context);
+		}
+
+		abstract void processParameters(Object[] params, ActionContext context);
+	}
+
 	static class ParamItem {
 		String name;
 		boolean required;
 		Object defaultValue;
 	}
 
+	static final Logger log = LoggerFactory.getLogger(ActionConf.class);
+
 	private static final int MAX_PARAM_SIZE = 20;
 
 	private List<ParamItem> allowedParameters = null;
 	private Object[] valuesParameters = null;
 	private String className = null;
+	private RuntimeParameterProcessor proc = null;
 
-	ActionConf(String className, List<ParamItem> allowedParameters) {
+	ActionConf(String className, List<ParamItem> allowedParameters,
+			RuntimeParameterProcessor proc) {
 		this.className = className;
 		this.allowedParameters = allowedParameters;
 		if (allowedParameters != null) {
 			valuesParameters = new Object[allowedParameters.size()];
 		}
+		this.proc = proc;
 	}
 
 	final static Object[] readValuesFromStream(DataInput input)
@@ -92,6 +108,15 @@ public class ActionConf extends Writable {
 		item.required = isRequired;
 		item.defaultValue = defaultValue;
 		allowedParameters.add(id, item);
+	}
+
+	void registerRuntimeParameterProcessor(
+			Class<? extends RuntimeParameterProcessor> proc) {
+		try {
+			this.proc = proc.newInstance();
+		} catch (Exception e) {
+			log.error("Failed in creating the RuntimeParameterProcessor");
+		}
 	}
 
 	List<ParamItem> getListAllowedParameters() {
@@ -162,9 +187,6 @@ public class ActionConf extends Writable {
 		return className;
 	}
 
-	protected void addRuntimeInfoToParameters(ActionContext context) {
-	}
-
 	public final boolean validateParameters() {
 		if (allowedParameters != null) {
 			for (int i = 0; i < allowedParameters.size(); ++i) {
@@ -179,5 +201,13 @@ public class ActionConf extends Writable {
 			}
 		}
 		return true;
+	}
+
+	public boolean isParProcessorDefined() {
+		return proc != null;
+	}
+
+	public RuntimeParameterProcessor getRuntimeParametersProcessor() {
+		return proc;
 	}
 }

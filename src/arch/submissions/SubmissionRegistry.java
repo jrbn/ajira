@@ -9,6 +9,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import arch.ActionContext;
 import arch.Context;
 import arch.StatisticsCollector;
 import arch.actions.ActionFactory;
@@ -127,11 +128,13 @@ public class SubmissionRegistry {
 		return submissions.get(submissionId);
 	}
 
-	private Submission submitNewJob(Context context, JobDescriptor job)
-			throws Exception {
+	private Submission submitNewJob(Context context, Job job) throws Exception {
 
-		Chain chain = job.getMainChain();
+		Chain chain = new Chain();
+		chain.setActionContext(new ActionContext(context, context
+				.getDataProvider()));
 		chain.setParentChainId(-1);
+		chain.addActions(job.getActions());
 
 		Submission sub = submissionFactory.get();
 		sub.init();
@@ -142,8 +145,6 @@ public class SubmissionRegistry {
 		sub.state = Consts.STATE_OPEN;
 		sub.finalStatsReceived = 0;
 		sub.rootChainsReceived = -1;
-		// sub.printIntermediateStats = job.getPrintIntermediateStatistics();
-		// sub.printStats = job.getPrintIntermediateStatistics();
 		sub.assignedBucket = job.getAssignedOutputBucket();
 
 		submissions.put(sub.submissionId, sub);
@@ -151,7 +152,6 @@ public class SubmissionRegistry {
 		chain.setSubmissionId(sub.submissionId);
 
 		chainsToProcess.add(chain);
-		chainFactory.release(chain);
 
 		return sub;
 	}
@@ -181,7 +181,7 @@ public class SubmissionRegistry {
 		}
 	}
 
-	public Submission waitForCompletion(Context context, JobDescriptor job)
+	public Submission waitForCompletion(Context context, Job job)
 			throws Exception {
 
 		Submission submission = submitNewJob(context, job);
@@ -204,7 +204,7 @@ public class SubmissionRegistry {
 		return submission;
 	}
 
-	public void getStatistics(JobDescriptor job, Submission submission)
+	public void getStatistics(Job job, Submission submission)
 			throws InterruptedException {
 		// if (job.getWaitForStatistics()) {
 		// try {

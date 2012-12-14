@@ -11,37 +11,46 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import arch.actions.ActionConf.ParamItem;
+import arch.actions.ActionConf.RuntimeParameterProcessor;
 import arch.storage.Factory;
 
 public class ActionFactory {
 
+	private static class ParamsInfo {
+		List<ParamItem> params;
+		RuntimeParameterProcessor proc;
+	}
+
 	static final Logger log = LoggerFactory.getLogger(ActionFactory.class);
 
-	private final static Map<String, List<ParamItem>> actionParameters = new ConcurrentHashMap<String, List<ParamItem>>();
+	private final static Map<String, ParamsInfo> actionParameters = new ConcurrentHashMap<String, ParamsInfo>();
 	private final Map<String, Factory<Action>> listFactories = new ConcurrentHashMap<String, Factory<Action>>();
 
 	public static ActionConf getActionConf(String className) {
 		if (!actionParameters.containsKey(className)) {
 			// Setup the list of parameters
-			List<ParamItem> params = null;
 			try {
 				Class<? extends Action> a = Class.forName(className)
 						.asSubclass(Action.class);
 				Action action = a.newInstance();
-				ActionConf conf = new ActionConf(className, null);
+				ActionConf conf = new ActionConf(className, null, null);
 				action.setupActionParameters(conf);
-				params = conf.getListAllowedParameters();
-				if (params == null) {
-					params = new ArrayList<>();
+
+				ParamsInfo info = new ParamsInfo();
+				info.params = conf.getListAllowedParameters();
+				if (info.params == null) {
+					info.params = new ArrayList<>();
 				}
+				info.proc = conf.getRuntimeParametersProcessor();
+				actionParameters.put(className, info);
 			} catch (Exception e) {
 				log.error("Failed in retrieving the parameter list for class"
 						+ className);
 			}
-			actionParameters.put(className, params);
 		}
 
-		return new ActionConf(className, actionParameters.get(className));
+		ParamsInfo i = actionParameters.get(className);
+		return new ActionConf(className, i.params, i.proc);
 	}
 
 	public static ActionConf getActionConf(Class<? extends Action> clazz) {

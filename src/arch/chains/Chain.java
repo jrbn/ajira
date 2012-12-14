@@ -82,7 +82,7 @@ public class Chain extends Writable {
 		return size;
 	}
 
-	void setActionContext(ActionContext context) {
+	public void setActionContext(ActionContext context) {
 		this.context = context;
 	}
 
@@ -169,6 +169,10 @@ public class Chain extends Writable {
 	}
 
 	public void addAction(ActionConf params) throws Exception {
+
+		if (params.isParProcessorDefined()) {
+			params.getRuntimeParametersProcessor().process(params, context);
+		}
 
 		// Validate the action
 		if (!params.validateParameters()) {

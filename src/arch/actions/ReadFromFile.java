@@ -15,7 +15,7 @@ import arch.datalayer.files.FileLayer;
 import arch.storage.container.WritableContainer;
 import arch.utils.Consts;
 
-public class ReadFromFiles extends Action {
+public class ReadFromFile extends Action {
 
 	public static final String MINIMUM_SPLIT_SIZE = "splitinput.minimumsize";
 	public static final int MINIMUM_FILE_SPLIT = 4 * 1024 * 1024; // 1 MB
@@ -23,7 +23,7 @@ public class ReadFromFiles extends Action {
 	public static final int CUSTOM_READER = 0;
 	public static final String S_CUSTOM_READER = "custom_reader";
 
-	static final Logger log = LoggerFactory.getLogger(ReadFromFiles.class);
+	static final Logger log = LoggerFactory.getLogger(ReadFromFile.class);
 
 	private final Tuple tuple = new Tuple();
 	private int minimumFileSplitSize;

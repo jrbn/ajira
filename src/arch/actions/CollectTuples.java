@@ -18,6 +18,8 @@ public class CollectTuples extends Action {
 	/* PARAMETERS */
 	public static final int NODE_ID = 0;
 	public static final String S_NODE_ID = "node_id";
+	private static final int BUCKET_ID = 1;
+	private static final String S_BUCKET_ID = "bucket_id";
 	public static final int SORTING_FUNCTION = 2;
 	public static final String S_SORTING_FUNCTION = "sorting_function";
 
@@ -31,11 +33,26 @@ public class CollectTuples extends Action {
 		return true;
 	}
 
+	static class ParametersProcessor extends
+			ActionConf.RuntimeParameterProcessor {
+		@Override
+		public void processParameters(Object[] params, ActionContext context) {
+			if (params[NODE_ID] == null) {
+				params[NODE_ID] = context.getMyNodeId();
+			}
+			if (params[BUCKET_ID] == null) {
+				params[BUCKET_ID] = context.getNewBucketID();
+			}
+		}
+	}
+
 	@Override
 	public void setupActionParameters(ActionConf conf) throws Exception {
-		conf.registerParameter(NODE_ID, S_NODE_ID, -1, false);
+		conf.registerParameter(NODE_ID, S_NODE_ID, null, true);
+		conf.registerParameter(BUCKET_ID, S_BUCKET_ID, null, true);
 		conf.registerParameter(SORTING_FUNCTION, S_SORTING_FUNCTION, null,
 				false);
+		conf.registerRuntimeParameterProcessor(ParametersProcessor.class);
 	}
 
 	@Override

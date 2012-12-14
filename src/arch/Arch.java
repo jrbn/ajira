@@ -29,7 +29,7 @@ import arch.storage.Factory;
 import arch.storage.SubmissionCache;
 import arch.storage.container.CheckedConcurrentWritableContainer;
 import arch.storage.container.WritableContainer;
-import arch.submissions.JobDescriptor;
+import arch.submissions.Job;
 import arch.submissions.Submission;
 import arch.submissions.SubmissionRegistry;
 import arch.utils.Configuration;
@@ -255,11 +255,10 @@ public class Arch {
 	 *         and statistics about the processed job.
 	 * @throws Exception
 	 */
-	public Submission waitForCompletion(JobDescriptor job) throws Exception {
+	public Submission waitForCompletion(Job job) throws Exception {
 		Submission sub = globalContext.getSubmissionsRegistry()
 				.waitForCompletion(globalContext, job);
 		globalContext.getSubmissionsRegistry().getStatistics(job, sub);
 		return sub;
 	}
-
 }

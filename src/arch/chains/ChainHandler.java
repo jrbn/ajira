@@ -247,7 +247,8 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 			}
 
 			try {
-				ac.setCurrentChain(chain);
+				ac.setCurrentChainInfo(chain);
+				chain.setActionContext(ac);
 
 				// Start the process
 				numberActions = chain.getActions(actions, rawSizes, roots, ap);

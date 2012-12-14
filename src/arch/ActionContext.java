@@ -16,8 +16,8 @@ import arch.utils.Configuration;
 
 public class ActionContext {
 
-	long chainIDCounter;
-	int bucketIDCounter;
+	long chainIDCounter = 100;
+	int bucketIDCounter = 100;
 	Context context;
 	DataProvider dp;
 
@@ -38,7 +38,7 @@ public class ActionContext {
 		this.submissionId = submissionId;
 	}
 
-	public void setCurrentChain(Chain chain) {
+	public void setCurrentChainInfo(Chain chain) {
 		nodeId = chain.getSubmissionNode();
 		submissionId = chain.getSubmissionId();
 	}

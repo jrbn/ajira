@@ -24,6 +24,8 @@ public class DistributeTuples extends Action {
 	public static final String S_SORTING_FUNCTION = "sorting_function";
 	public static final int PARTITIONER = 1;
 	public static final String S_PARTITIONER = "partitioner";
+	private static final int BUCKET_ID = 2;
+	private static final String S_BUCKET_ID = "bucket_id";
 
 	static final Logger log = LoggerFactory.getLogger(DistributeTuples.class);
 
@@ -33,6 +35,16 @@ public class DistributeTuples extends Action {
 	private int nPartitions;
 	private String sPartitioner = null;
 	private Partitioner partitioner = null;
+
+	static class ParametersProcessor extends
+			ActionConf.RuntimeParameterProcessor {
+		@Override
+		public void processParameters(Object[] params, ActionContext context) {
+			if (params[BUCKET_ID] == null) {
+				params[BUCKET_ID] = context.getNewBucketID();
+			}
+		}
+	}
 
 	@Override
 	public boolean blockProcessing() {
@@ -45,6 +57,8 @@ public class DistributeTuples extends Action {
 				false);
 		conf.registerParameter(PARTITIONER, S_PARTITIONER,
 				HashPartitioner.class.getName(), false);
+		conf.registerParameter(BUCKET_ID, S_BUCKET_ID, null, true);
+		conf.registerRuntimeParameterProcessor(ParametersProcessor.class);
 	}
 
 	@Override

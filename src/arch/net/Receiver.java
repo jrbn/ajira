@@ -20,7 +20,7 @@ import arch.data.types.Tuple;
 import arch.storage.Container;
 import arch.storage.Factory;
 import arch.storage.container.WritableContainer;
-import arch.submissions.JobDescriptor;
+import arch.submissions.Job;
 import arch.submissions.Submission;
 
 class Receiver implements MessageUpcall {
@@ -225,7 +225,7 @@ class Receiver implements MessageUpcall {
 			break;
 		case 7:
 			// New job to submit
-			JobDescriptor job = new JobDescriptor();
+			Job job = new Job();
 			job.readFrom(new ReadMessageWrapper(message));
 			message.finish();
 			net.startMonitorCounters();
