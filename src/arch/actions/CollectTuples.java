@@ -36,7 +36,8 @@ public class CollectTuples extends Action {
 	static class ParametersProcessor extends
 			ActionConf.RuntimeParameterProcessor {
 		@Override
-		public void processParameters(Object[] params, ActionContext context) {
+		public void processParameters(Chain chain, Object[] params,
+				ActionContext context) {
 			if (params[NODE_ID] == null) {
 				params[NODE_ID] = context.getMyNodeId();
 			}

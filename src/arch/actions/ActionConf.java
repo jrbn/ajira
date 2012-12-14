@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import arch.ActionContext;
+import arch.chains.Chain;
 import arch.data.types.bytearray.BDataOutput;
 import arch.storage.Writable;
 import arch.utils.Consts;
@@ -17,11 +18,12 @@ import arch.utils.Consts;
 public class ActionConf extends Writable {
 
 	public static abstract class RuntimeParameterProcessor {
-		public void process(ActionConf conf, ActionContext context) {
-			processParameters(conf.valuesParameters, context);
+		public void process(Chain chain, ActionConf conf, ActionContext context) {
+			processParameters(chain, conf.valuesParameters, context);
 		}
 
-		abstract void processParameters(Object[] params, ActionContext context);
+		abstract void processParameters(Chain chain, Object[] params,
+				ActionContext context);
 	}
 
 	static class ParamItem {

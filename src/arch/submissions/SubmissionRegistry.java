@@ -151,7 +151,12 @@ public class SubmissionRegistry {
 		chain.setSubmissionNode(context.getNetworkLayer().getMyPartition());
 		chain.setSubmissionId(sub.submissionId);
 
-		chainsToProcess.add(chain);
+		// If local
+		if (context.isLocalMode()) {
+			chainsToProcess.add(chain);
+		} else {
+			context.getNetworkLayer().sendChain(chain);
+		}
 
 		return sub;
 	}

@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import arch.ActionContext;
+import arch.actions.support.FilterHiddenFiles;
 import arch.chains.Chain;
 import arch.data.types.TInt;
 import arch.data.types.TString;
@@ -20,7 +21,9 @@ public class ReadFromFile extends Action {
 	public static final String MINIMUM_SPLIT_SIZE = "splitinput.minimumsize";
 	public static final int MINIMUM_FILE_SPLIT = 4 * 1024 * 1024; // 1 MB
 
-	public static final int CUSTOM_READER = 0;
+	public static final int PATH = 0;
+	public static final String S_PATH = "path";
+	public static final int CUSTOM_READER = 1;
 	public static final String S_CUSTOM_READER = "custom_reader";
 
 	static final Logger log = LoggerFactory.getLogger(ReadFromFile.class);
@@ -30,6 +33,19 @@ public class ReadFromFile extends Action {
 	private FileCollection currentFileSplit;
 	private int splitId;
 	private String customReader = null;
+
+	static class ParametersProcessor extends
+			ActionConf.RuntimeParameterProcessor {
+		@Override
+		void processParameters(Chain chain, Object[] params,
+				ActionContext context) {
+			if (params[PATH] != null) {
+				chain.setInputTuple(new Tuple(new TInt(FileLayer.OP_LS),
+						new TString((String) params[PATH]), new TString(
+								FilterHiddenFiles.class.getName())));
+			}
+		}
+	}
 
 	private Chain processSplit(ActionContext context, Chain chain,
 			WritableContainer<Chain> chainsToProcess) throws Exception {
@@ -59,7 +75,9 @@ public class ReadFromFile extends Action {
 
 	@Override
 	public void setupActionParameters(ActionConf conf) throws Exception {
+		conf.registerParameter(PATH, S_PATH, null, true);
 		conf.registerParameter(CUSTOM_READER, S_CUSTOM_READER, null, false);
+		conf.registerRuntimeParameterProcessor(ParametersProcessor.class);
 	}
 
 	@Override

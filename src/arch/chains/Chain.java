@@ -171,7 +171,8 @@ public class Chain extends Writable {
 	public void addAction(ActionConf params) throws Exception {
 
 		if (params.isParProcessorDefined()) {
-			params.getRuntimeParametersProcessor().process(params, context);
+			params.getRuntimeParametersProcessor().process(this, params,
+					context);
 		}
 
 		// Validate the action

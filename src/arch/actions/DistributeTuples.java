@@ -39,7 +39,8 @@ public class DistributeTuples extends Action {
 	static class ParametersProcessor extends
 			ActionConf.RuntimeParameterProcessor {
 		@Override
-		public void processParameters(Object[] params, ActionContext context) {
+		public void processParameters(Chain chain, Object[] params,
+				ActionContext context) {
 			if (params[BUCKET_ID] == null) {
 				params[BUCKET_ID] = context.getNewBucketID();
 			}
