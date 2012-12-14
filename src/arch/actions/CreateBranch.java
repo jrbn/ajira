@@ -9,8 +9,6 @@ import java.util.List;
 import arch.ActionContext;
 import arch.chains.Chain;
 import arch.data.types.Tuple;
-import arch.data.types.bytearray.BDataInput;
-import arch.data.types.bytearray.BDataOutput;
 import arch.storage.Writable;
 import arch.storage.container.WritableContainer;
 import arch.utils.Consts;
@@ -21,10 +19,7 @@ public class CreateBranch extends Action {
 
 		private int inputLayer = Consts.DEFAULT_INPUT_LAYER_ID;
 		private Tuple inputTuple = new Tuple();
-
 		private List<ActionConf> actions;
-		private byte[] rawActions;
-		private boolean parsedActions;
 
 		public void setInputLayer(int inputLayer) {
 			this.inputLayer = inputLayer;
@@ -39,18 +34,6 @@ public class CreateBranch extends Action {
 		}
 
 		protected List<ActionConf> getActions() throws IOException {
-			if (!parsedActions) {
-				BDataInput input = new BDataInput(rawActions);
-				int nActions = input.readByte();
-				actions = new ArrayList<>();
-				for (int i = 0; i < nActions; ++i) {
-					String sAction = input.readUTF();
-					ActionConf a = ActionFactory.getActionConf(sAction);
-					a.readFrom(input);
-					actions.add(a);
-				}
-				parsedActions = true;
-			}
 			return actions;
 		}
 
@@ -59,10 +42,14 @@ public class CreateBranch extends Action {
 			inputLayer = input.readByte();
 			inputTuple.readFrom(input);
 
-			int s = input.readInt();
-			byte[] b = new byte[s];
-			input.readFully(b);
-			parsedActions = false;
+			int nActions = input.readByte();
+			actions = new ArrayList<>();
+			for (int i = 0; i < nActions; ++i) {
+				String sAction = input.readUTF();
+				ActionConf a = ActionFactory.getActionConf(sAction);
+				a.readFrom(input);
+				actions.add(a);
+			}
 		}
 
 		@Override
@@ -71,15 +58,11 @@ public class CreateBranch extends Action {
 			inputTuple.writeTo(output);
 
 			// Write the actions
-			byte[] tmpBuffer = new byte[Consts.CHAIN_SIZE];
-			BDataOutput o = new BDataOutput(tmpBuffer);
-			o.writeByte(actions.size());
+			output.writeByte(actions.size());
 			for (ActionConf action : actions) {
-				o.writeUTF(action.getClassName());
-				action.writeTo(o);
+				output.writeUTF(action.getClassName());
+				action.writeTo(output);
 			}
-			output.writeInt(o.cb.end); // Size of the buffer
-			output.write(tmpBuffer, 0, o.cb.end);
 		}
 
 		@Override
@@ -93,9 +76,6 @@ public class CreateBranch extends Action {
 	public static final int BRANCH = 0;
 	public static final String S_BRANCH = "branch";
 
-	Chain newChain = new Chain();
-	Branch branch;
-
 	@Override
 	public void setupActionParameters(ActionConf conf) throws Exception {
 		conf.registerParameter(BRANCH, S_BRANCH, null, true);
@@ -104,7 +84,6 @@ public class CreateBranch extends Action {
 	@Override
 	public void startProcess(ActionContext context, Chain chain)
 			throws Exception {
-		branch = (Branch) getParam(BRANCH);
 	}
 
 	@Override
@@ -118,7 +97,11 @@ public class CreateBranch extends Action {
 			WritableContainer<Tuple> output,
 			WritableContainer<Chain> chainsToSend) throws Exception {
 
-		chain.createBranch(context, newChain);
+		Chain newChain = new Chain();
+		Branch branch = new Branch();
+		getParamWritable(branch, BRANCH);
+
+		chain.branch(newChain);
 		// Compile the chain using the instructions in the branch
 		newChain.setInputLayerId(branch.inputLayer);
 		newChain.setInputTuple(branch.inputTuple);

@@ -91,19 +91,6 @@ public class JobDescriptor extends Writable {
 		return assignedBucket;
 	}
 
-	public Chain getNewChain() {
-		Chain chain = new Chain();
-		chain.setParentChainId(-1);
-		chain.setReplicatedFactor(1);
-		chain.setInputLayerId(Consts.DEFAULT_INPUT_LAYER_ID);
-		chain.setExcludeExecution(false);
-		return chain;
-	}
-
-	public void setMainChain(Chain chain) {
-		chain.copyTo(this.chain);
-	}
-
 	public Chain getMainChain() {
 		return chain;
 	}

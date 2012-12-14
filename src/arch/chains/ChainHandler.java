@@ -46,11 +46,10 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 	String[] actionNames = new String[Consts.MAX_N_ACTIONS];
 	int[] rawSizes = new int[Consts.MAX_N_ACTIONS];
 	Action[] actions = new Action[Consts.MAX_N_ACTIONS];
+	boolean[] roots = new boolean[Consts.MAX_N_ACTIONS];
 	Object[][] params = new Object[Consts.MAX_N_ACTIONS][Consts.MAX_N_PARAMS];
 
 	ActionContext ac;
-	long chainIDCounter;
-	int bucketIDCounter;
 	int numberActions;
 	int indexAction;
 	boolean blockProcessing;
@@ -68,14 +67,11 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 		this.dp = context.getDataProvider();
 		ac = new ActionContext(context, dp);
 		try {
-			chainIDCounter = (context.getUniqueCounter("chainID") + 1) << 40;
-			bucketIDCounter = ((int) context.getUniqueCounter("bucketID") + 1) << 16;
+			ac.setStartingChainID((context.getUniqueCounter("chainID") + 2) << 40);
+			ac.setStartingBucketID(((int) context.getUniqueCounter("bucketID") + 2) << 16);
 		} catch (Throwable e) {
 			log.error("Error in initializing chain handler", e);
 		}
-		ac.setStartingChainID(chainIDCounter);
-		ac.setStartingBucketID(bucketIDCounter);
-
 		localMode = context.isLocalMode();
 	}
 
@@ -254,7 +250,7 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 				ac.setCurrentChain(chain);
 
 				// Start the process
-				numberActions = chain.getActions(actions, rawSizes, ap);
+				numberActions = chain.getActions(actions, rawSizes, roots, ap);
 				blockProcessing = false;
 
 				if (numberActions != 0) {
@@ -274,6 +270,7 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 					long timeCycle = System.currentTimeMillis();
 					int sizeChain = chain.getRawSize();
 					for (int i = 0; i < numberActions && !blockProcessing; i++) {
+						ac.setCurrentChainRoot(roots[i]);
 						chain.setRawSize(rawSizes[i]);
 						actions[i].startProcess(ac, chain);
 						blockProcessing = actions[i].blockProcessing();
@@ -290,7 +287,7 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 						chainsBuffer.clear();
 						chainsBuffer2.clear();
 
-						eof = !itr.next() || chain.getExcludeExecution();
+						eof = !itr.next();
 						if (!eof) {
 							nRecords++;
 							if (nRecords == 10000) {
@@ -312,6 +309,7 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 							indexAction = 0;
 							while (indexAction < numberActions) {
 								chain.setRawSize(rawSizes[indexAction]);
+								ac.setCurrentChainRoot(roots[indexAction]);
 
 								actions[indexAction].stopProcess(ac, chain,
 										this, chainsBuffer2);

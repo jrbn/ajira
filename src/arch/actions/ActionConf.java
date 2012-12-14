@@ -6,7 +6,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import arch.ActionContext;
+import arch.data.types.bytearray.BDataOutput;
 import arch.storage.Writable;
+import arch.utils.Consts;
 
 public class ActionConf extends Writable {
 
@@ -49,6 +52,11 @@ public class ActionConf extends Writable {
 			case 3:
 				valuesParameters[i] = input.readBoolean();
 				break;
+			case 4:
+				byte[] b = new byte[input.readInt()];
+				input.readFully(b);
+				valuesParameters[i] = b;
+				break;
 			}
 		}
 		return valuesParameters;
@@ -56,7 +64,8 @@ public class ActionConf extends Writable {
 
 	private static boolean checkAllowedTypes(Object value) {
 		if (value == null || value instanceof Integer || value instanceof Long
-				|| value instanceof String || value instanceof Boolean) {
+				|| value instanceof String || value instanceof Boolean
+				|| value instanceof Writable) {
 			return true;
 		} else {
 			return false;
@@ -112,6 +121,12 @@ public class ActionConf extends Writable {
 				} else if (value instanceof Boolean) {
 					output.writeByte(3);
 					output.writeBoolean(((Boolean) value).booleanValue());
+				} else if (value instanceof Writable) {
+					output.writeByte(4);
+					BDataOutput o = new BDataOutput(new byte[Consts.CHAIN_SIZE]);
+					((Writable) value).writeTo(o);
+					output.writeInt(o.cb.end);
+					output.write(o.cb.buffer, 0, o.cb.end);
 				} else {
 					throw new IOException(
 							"Format of one parameter is not recognized");
@@ -147,7 +162,10 @@ public class ActionConf extends Writable {
 		return className;
 	}
 
-	public boolean validateParameters() {
+	protected void addRuntimeInfoToParameters(ActionContext context) {
+	}
+
+	public final boolean validateParameters() {
 		if (allowedParameters != null) {
 			for (int i = 0; i < allowedParameters.size(); ++i) {
 				ParamItem item = allowedParameters.get(i);

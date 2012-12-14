@@ -39,7 +39,7 @@ public class ParallelFileReader extends Action {
 		context.putObjectInCache(key, currentFileSplit);
 
 		Chain newChain = new Chain();
-		chain.createBranch(context, newChain);
+		chain.branch(newChain);
 
 		if (customReader == null) {
 			tuple.set(new TInt(FileLayer.OP_READ), new TString(key), new TInt(

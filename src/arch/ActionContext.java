@@ -24,6 +24,8 @@ public class ActionContext {
 	int nodeId;
 	int submissionId;
 
+	boolean isChainRoot;
+
 	public ActionContext(Context context, DataProvider dp) {
 		this.context = context;
 		this.dp = dp;
@@ -149,5 +151,13 @@ public class ActionContext {
 
 	public Object getMyNodeId() {
 		return context.getNetworkLayer().getMyPartition();
+	}
+
+	public void setCurrentChainRoot(boolean value) {
+		isChainRoot = value;
+	}
+
+	public boolean isCurrentChainRoot() {
+		return isChainRoot;
 	}
 }

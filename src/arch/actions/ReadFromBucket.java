@@ -49,7 +49,7 @@ public class ReadFromBucket extends Action {
 			WritableContainer<Chain> chainsToSend) throws Exception {
 		// Generate a new chain and send it.
 		Chain newChain = new Chain();
-		chain.createBranch(context, newChain);
+		chain.branch(newChain);
 
 		newChain.setInputLayerId(Consts.BUCKET_INPUT_LAYER_ID);
 		newChain.setInputTuple(new Tuple(new TInt(newChain.getSubmissionId()),

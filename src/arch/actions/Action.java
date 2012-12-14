@@ -3,6 +3,8 @@ package arch.actions;
 import arch.ActionContext;
 import arch.chains.Chain;
 import arch.data.types.Tuple;
+import arch.data.types.bytearray.BDataInput;
+import arch.storage.Writable;
 import arch.storage.container.WritableContainer;
 
 public abstract class Action {
@@ -74,7 +76,24 @@ public abstract class Action {
 		if (pos < 0 || pos >= valuesParameters.length) {
 			throw new Exception("Position not valid (" + pos + ")");
 		}
+
+		if (valuesParameters[pos] instanceof byte[])
+			throw new Exception(
+					"This parameter is of type Writable. Should be invoked using getParamWritable");
 		return valuesParameters[pos];
+	}
+
+	protected final void getParamWritable(Writable b, int pos) throws Exception {
+		if (valuesParameters == null) {
+			throw new Exception(
+					"The parameters are not specified. Was this action created incorrectly?");
+		}
+
+		if (pos < 0 || pos >= valuesParameters.length) {
+			throw new Exception("Position not valid (" + pos + ")");
+		}
+
+		b.readFrom(new BDataInput((byte[]) valuesParameters[pos]));
 	}
 
 }

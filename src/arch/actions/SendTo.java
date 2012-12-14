@@ -18,6 +18,7 @@ public class SendTo extends Action {
 	public static final int MULTIPLE = -1;
 	public static final int ALL = -2;
 
+	/* PARAMETERS */
 	public static final int NODE_ID = 0;
 	public static final String S_NODE_ID = "node_id";
 	public static final int BUCKET_ID = 1;
@@ -26,11 +27,8 @@ public class SendTo extends Action {
 	public static final String S_FORWARD_TUPLES = "forward_tuples";
 	public static final int SEND_CHAIN = 3;
 	public static final String S_SEND_CHAIN = "send_chain";
-	public static final int RESPONSIBLE_CHAIN = 4;
-	public static final String S_RESPONSIBLE_CHAIN = "resp_chain";
-	public static final int SORTING_FUNCTION = 5;
+	public static final int SORTING_FUNCTION = 4;
 	public static final String S_SORTING_FUNCTION = "sorting_function";
-	// FIXME: sorting params not implemented
 
 	static final Logger log = LoggerFactory.getLogger(SendTo.class);
 
@@ -40,7 +38,6 @@ public class SendTo extends Action {
 	private long parentChainId;
 	private int nchildren;
 	private int replicatedFactor;
-	private long responsibleChain;
 
 	private int nodeId;
 	private int bucket = -1;
@@ -70,8 +67,6 @@ public class SendTo extends Action {
 		conf.registerParameter(BUCKET_ID, S_BUCKET_ID, null, true);
 		conf.registerParameter(FORWARD_TUPLES, S_FORWARD_TUPLES, false, false);
 		conf.registerParameter(SEND_CHAIN, S_SEND_CHAIN, true, false);
-		conf.registerParameter(RESPONSIBLE_CHAIN, S_RESPONSIBLE_CHAIN, null,
-				true);
 		conf.registerParameter(SORTING_FUNCTION, S_SORTING_FUNCTION, null,
 				false);
 	}
@@ -83,7 +78,6 @@ public class SendTo extends Action {
 		bucket = getParamInt(BUCKET_ID);
 		ft = getParamBoolean(FORWARD_TUPLES);
 		sc = getParamBoolean(SEND_CHAIN);
-		responsibleChain = getParamLong(RESPONSIBLE_CHAIN);
 		sortingFunction = getParamString(SORTING_FUNCTION);
 
 		// Init variables
@@ -151,11 +145,10 @@ public class SendTo extends Action {
 
 			// Send the chains to process the buckets to all the nodes that
 			// will host the buckets
-			if (sc && chainId == responsibleChain && replicatedFactor > 0) {
+			if (sc && context.isCurrentChainRoot() && replicatedFactor > 0) {
 				/*** AT FIRST SEND THE CHAINS ***/
 				Chain newChain = new Chain();
 				chain.copyTo(newChain);
-				newChain.setExcludeExecution(false);
 				newChain.setChainChildren(0);
 				newChain.setReplicatedFactor(1);
 				newChain.setInputLayerId(Consts.BUCKET_INPUT_LAYER_ID);
@@ -188,7 +181,7 @@ public class SendTo extends Action {
 				buckets.finishTransfer(submissionNode, idSubmission, startNode,
 						this.bucket, this.chainId, this.parentChainId,
 						this.nchildren, this.replicatedFactor,
-						this.responsibleChain == this.chainId, sortingFunction,
+						context.isCurrentChainRoot(), sortingFunction,
 						sortingParams, bucketsCache[startNode] != null);
 				++startNode;
 			}

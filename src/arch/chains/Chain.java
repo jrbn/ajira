@@ -36,69 +36,13 @@ public class Chain extends Writable {
 
 	private int startingPosition = Consts.CHAIN_RESERVED_SPACE;
 	private int bufferSize = Consts.CHAIN_RESERVED_SPACE;
-	private static byte[] zeroBuf = new byte[Consts.CHAIN_RESERVED_SPACE];
 
 	private final byte[] buffer = new byte[Consts.CHAIN_SIZE];
 	private Tuple inputTuple = null;
+	private ActionContext context;
 
 	private final BDataOutput cos = new BDataOutput(buffer);
 	private final BDataInput cis = new BDataInput(buffer);
-
-	public void init(String[] availableControllers) {
-		System.arraycopy(zeroBuf, 0, buffer, 0, Consts.CHAIN_RESERVED_SPACE);
-		startingPosition = Consts.CHAIN_RESERVED_SPACE;
-		// if (availableControllers == null) {
-		Utils.encodeInt(buffer, 35, 0);
-		// } else {
-		// // Sort the strings to save space
-		// String list = "";
-		//
-		// Arrays.sort(availableControllers);
-		// String nameLastPackage = "";
-		// for (String action : availableControllers) {
-		// String packageName = action.substring(0,
-		// action.lastIndexOf('.'));
-		// if (packageName.equals(nameLastPackage)) {
-		// list += "," + action.substring(action.lastIndexOf('.') + 1);
-		// } else {
-		// list += ":" + action;
-		// nameLastPackage = packageName;
-		// }
-		// }
-		//
-		// if (list.startsWith(",") || list.startsWith(":")) {
-		// list = list.substring(1);
-		// }
-		//
-		// byte[] toArray = list.getBytes();
-		// Utils.encodeInt(buffer, 35, toArray.length);
-		// System.arraycopy(toArray, 0, buffer, 39, toArray.length);
-		// startingPosition += toArray.length;
-		// }
-		bufferSize = startingPosition;
-		inputTuple = null;
-	}
-
-	// public String[] getAvailableControllers() {
-	// int size = Utils.decodeInt(buffer, 35);
-	//
-	// if (size != 0) {
-	// ArrayList<String> classes = new ArrayList<String>();
-	// String list = new String(buffer, 39, size);
-	// String[] blocks = list.split(":");
-	// for (String block : blocks) {
-	// String[] names = block.split(",");
-	// String packageName = names[0].substring(0,
-	// names[0].lastIndexOf("."));
-	// classes.add(names[0]);
-	// for (int i = 1; i < names.length; ++i) {
-	// classes.add(packageName + "." + names[i]);
-	// }
-	// }
-	// return classes.toArray(new String[classes.size()]);
-	// }
-	// return null;
-	// }
 
 	@Override
 	public void readFrom(DataInput input) throws IOException {
@@ -138,6 +82,10 @@ public class Chain extends Writable {
 		return size;
 	}
 
+	void setActionContext(ActionContext context) {
+		this.context = context;
+	}
+
 	public void setSubmissionNode(int nodeId) {
 		Utils.encodeInt(buffer, 0, nodeId);
 	}
@@ -154,7 +102,7 @@ public class Chain extends Writable {
 		return Utils.decodeInt(buffer, 4);
 	}
 
-	public void setChainId(long chainId) {
+	void setChainId(long chainId) {
 		Utils.encodeLong(buffer, 8, chainId);
 	}
 
@@ -192,14 +140,6 @@ public class Chain extends Writable {
 
 	public int getInputLayerId() {
 		return buffer[32];
-	}
-
-	public void setExcludeExecution(boolean value) {
-		buffer[33] = (byte) (value ? 1 : 0);
-	}
-
-	public boolean getExcludeExecution() {
-		return buffer[33] == 1 ? true : false;
 	}
 
 	public void setCustomFlag(byte value) {
@@ -246,6 +186,10 @@ public class Chain extends Writable {
 		Utils.encodeInt(buffer, bufferSize, sizeAction);
 		bufferSize += 4;
 
+		// Serialize the chain id of this chain
+		Utils.encodeLong(buffer, bufferSize, getChainId());
+		bufferSize += 8;
+
 		// Serialize the class name
 		byte[] sAction = params.getClassName().getBytes();
 		System.arraycopy(sAction, 0, buffer, bufferSize, sAction.length);
@@ -254,11 +198,11 @@ public class Chain extends Writable {
 		bufferSize += 4;
 	}
 
-	public int getRawSize() {
+	int getRawSize() {
 		return bufferSize;
 	}
 
-	public void setRawSize(int size) {
+	void setRawSize(int size) {
 		bufferSize = size;
 	}
 
@@ -276,7 +220,7 @@ public class Chain extends Writable {
 		}
 	}
 
-	public void createBranch(ActionContext context, Chain newChain) {
+	public void branch(Chain newChain) {
 		copyTo(newChain);
 		newChain.setParentChainId(this.getChainId());
 		newChain.setChainId(context.getNewChainID());
@@ -284,21 +228,25 @@ public class Chain extends Writable {
 		setChainChildren(getChainChildren() + 1);
 	}
 
-	public int getActions(Action[] actions, int[] rawSizes, ActionFactory ap)
-			throws IOException {
+	int getActions(Action[] actions, int[] rawSizes, boolean[] rootChain,
+			ActionFactory ap) throws IOException {
 		// Read the chain and feel the actions
 		int tmpSize = bufferSize;
 		int nactions = 0;
+		long currentChainId = getChainId();
 
 		while (tmpSize > startingPosition) {
 			tmpSize -= 4;
 			int size = Utils.decodeInt(buffer, tmpSize);
 			String sAction = new String(buffer, tmpSize - size, size);
 
-			// Get size of the action
-			tmpSize -= 4 + size;
-			tmpSize -= Utils.decodeInt(buffer, tmpSize);
+			tmpSize -= 8 + size;
+			long chainId = Utils.decodeLong(buffer, tmpSize);
+			rootChain[nactions] = chainId == currentChainId;
 
+			// Get size of the action
+			tmpSize -= 4;
+			tmpSize -= Utils.decodeInt(buffer, tmpSize);
 			cis.setCurrentPosition(tmpSize);
 			Action action = ap.getAction(sAction, cis);
 			actions[nactions] = action;
