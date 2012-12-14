@@ -227,6 +227,7 @@ public class Chain extends Writable {
 
 	public void branch(Chain newChain) {
 		copyTo(newChain);
+		newChain.setActionContext(context);
 		newChain.setParentChainId(this.getChainId());
 		newChain.setChainId(context.getNewChainID());
 		newChain.setChainChildren(0);

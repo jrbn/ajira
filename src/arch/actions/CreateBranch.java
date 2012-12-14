@@ -11,23 +11,12 @@ import arch.chains.Chain;
 import arch.data.types.Tuple;
 import arch.storage.Writable;
 import arch.storage.container.WritableContainer;
-import arch.utils.Consts;
 
 public class CreateBranch extends Action {
 
 	public static class Branch extends Writable {
 
-		private int inputLayer = Consts.DEFAULT_INPUT_LAYER_ID;
-		private Tuple inputTuple = new Tuple();
 		private List<ActionConf> actions;
-
-		public void setInputLayer(int inputLayer) {
-			this.inputLayer = inputLayer;
-		}
-
-		public void setInputTuple(Tuple inputTuple) {
-			this.inputTuple = inputTuple;
-		}
 
 		public void setActions(List<ActionConf> actions) {
 			this.actions = actions;
@@ -39,9 +28,6 @@ public class CreateBranch extends Action {
 
 		@Override
 		public void readFrom(DataInput input) throws IOException {
-			inputLayer = input.readByte();
-			inputTuple.readFrom(input);
-
 			int nActions = input.readByte();
 			actions = new ArrayList<>();
 			for (int i = 0; i < nActions; ++i) {
@@ -54,9 +40,6 @@ public class CreateBranch extends Action {
 
 		@Override
 		public void writeTo(DataOutput output) throws IOException {
-			output.writeByte(inputLayer);
-			inputTuple.writeTo(output);
-
 			// Write the actions
 			output.writeByte(actions.size());
 			for (ActionConf action : actions) {
@@ -103,8 +86,6 @@ public class CreateBranch extends Action {
 
 		chain.branch(newChain);
 		// Compile the chain using the instructions in the branch
-		newChain.setInputLayerId(branch.inputLayer);
-		newChain.setInputTuple(branch.inputTuple);
 		newChain.addActions(branch.getActions());
 
 		chainsToSend.add(newChain);

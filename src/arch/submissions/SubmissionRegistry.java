@@ -134,6 +134,8 @@ public class SubmissionRegistry {
 		chain.setActionContext(new ActionContext(context, context
 				.getDataProvider()));
 		chain.setParentChainId(-1);
+		chain.setReplicatedFactor(1);
+		chain.setInputLayerId(Consts.DEFAULT_INPUT_LAYER_ID);
 		chain.addActions(job.getActions());
 
 		Submission sub = submissionFactory.get();
