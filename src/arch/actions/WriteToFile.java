@@ -1,4 +1,4 @@
-package arch.actions.files;
+package arch.actions;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -10,8 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import arch.ActionContext;
-import arch.actions.Action;
-import arch.actions.ActionConf;
 import arch.chains.Chain;
 import arch.data.types.DataProvider;
 import arch.data.types.SimpleData;

@@ -1,4 +1,4 @@
-package arch.actions.files;
+package arch.actions;
 
 import java.io.File;
 
@@ -6,8 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import arch.ActionContext;
-import arch.actions.Action;
-import arch.actions.ActionConf;
 import arch.chains.Chain;
 import arch.data.types.TInt;
 import arch.data.types.TString;
@@ -17,7 +15,7 @@ import arch.datalayer.files.FileLayer;
 import arch.storage.container.WritableContainer;
 import arch.utils.Consts;
 
-public class ParallelFileReader extends Action {
+public class ReadFromFiles extends Action {
 
 	public static final String MINIMUM_SPLIT_SIZE = "splitinput.minimumsize";
 	public static final int MINIMUM_FILE_SPLIT = 4 * 1024 * 1024; // 1 MB
@@ -25,7 +23,7 @@ public class ParallelFileReader extends Action {
 	public static final int CUSTOM_READER = 0;
 	public static final String S_CUSTOM_READER = "custom_reader";
 
-	static final Logger log = LoggerFactory.getLogger(ParallelFileReader.class);
+	static final Logger log = LoggerFactory.getLogger(ReadFromFiles.class);
 
 	private final Tuple tuple = new Tuple();
 	private int minimumFileSplitSize;

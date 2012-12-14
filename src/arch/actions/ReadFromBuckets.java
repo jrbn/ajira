@@ -7,7 +7,7 @@ import arch.data.types.Tuple;
 import arch.storage.container.WritableContainer;
 import arch.utils.Consts;
 
-public class ReadFromBucket extends Action {
+public class ReadFromBuckets extends Action {
 
 	int node;
 	int bucketId;
