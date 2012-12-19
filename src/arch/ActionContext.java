@@ -1,6 +1,5 @@
 package arch;
 
-import java.io.IOException;
 import java.util.List;
 
 import arch.actions.ActionFactory;
@@ -10,8 +9,6 @@ import arch.utils.Configuration;
 
 public class ActionContext {
 
-	long chainIDCounter = 100;
-	int bucketIDCounter = 100;
 	Context context;
 	DataProvider dp;
 
@@ -53,7 +50,7 @@ public class ActionContext {
 		context.getSubmissionCache().putObjectInCache(submissionId, key, value);
 	}
 
-	public long getUniqueCounter(String name) throws IOException {
+	public long getUniqueCounter(String name) {
 		return context.getUniqueCounter(name);
 	}
 
@@ -67,11 +64,11 @@ public class ActionContext {
 	}
 
 	public long getNewChainID() {
-		return chainIDCounter++;
+		return getUniqueCounter("ChainCounter");
 	}
 
 	public int getNewBucketID() {
-		return ++bucketIDCounter;
+		return (int) getUniqueCounter("BucketCounter");
 	}
 
 	public DataProvider getDataProvider() {

@@ -1,6 +1,5 @@
 package arch;
 
-import java.io.IOException;
 import java.util.List;
 
 import arch.actions.ActionFactory;
@@ -19,7 +18,7 @@ import arch.storage.SubmissionCache;
 import arch.storage.container.WritableContainer;
 import arch.submissions.SubmissionRegistry;
 import arch.utils.Configuration;
-import arch.utils.LocalCounter;
+import arch.utils.UniqueCounter;
 
 public class Context {
 
@@ -39,7 +38,7 @@ public class Context {
 	private List<ChainHandler> handlers;
 	private CachedFilesMerger merger;
 
-	private LocalCounter counter = new LocalCounter();
+	private UniqueCounter counter;
 
 	public void init(boolean localMode, InputLayerRegistry input,
 			Buckets container, SubmissionRegistry registry,
@@ -49,6 +48,7 @@ public class Context {
 			StatisticsCollector stats, ActionFactory actionProvider,
 			DataProvider dataProvider, Factory<Tuple> defaultTupleFactory,
 			SubmissionCache cache, Configuration conf) {
+		counter = localMode ? new UniqueCounter() : new UniqueCounter(net.getMyPartition(), net.getNumberNodes());
 		this.localMode = localMode;
 		this.input = input;
 		this.conf = conf;
@@ -127,14 +127,8 @@ public class Context {
 		System.exit(1);
 	}
 
-	public long getUniqueCounter(String name) throws IOException {
-		long n = -1;
-		if (localMode) {
-			n = counter.getCounter(name);
-		} else {
-			n = getNetworkLayer().getCounter(name);
-		}
-		return n;
+	public long getUniqueCounter(String name) {
+		 return counter.getCounter(name);
 	}
 
 	public boolean isLocalMode() {

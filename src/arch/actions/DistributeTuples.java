@@ -24,25 +24,57 @@ public class DistributeTuples extends Action {
 	public static final String S_SORTING_FUNCTION = "sorting_function";
 	public static final int PARTITIONER = 1;
 	public static final String S_PARTITIONER = "partitioner";
-	private static final int BUCKET_ID = 2;
-	private static final String S_BUCKET_ID = "bucket_id";
+	public static final int NPARTITIONS_PER_NODE = 2;
+	public static final String S_NPARTITIONS_PER_NODE = "npartitions_per_node";
+	private static final int BUCKET_IDS = 3;
+	private static final String S_BUCKET_IDS = "bucket_ids";
+	
 
 	static final Logger log = LoggerFactory.getLogger(DistributeTuples.class);
 
-	private int bucketId = -1;
+	private int[] partitionIds;
 	private String sortingFunction = null;
 	private Bucket[] bucketsCache;
-	private int nPartitions;
+    private int nPartitionsPerNode;
 	private String sPartitioner = null;
 	private Partitioner partitioner = null;
+	private int nPartitions;
+	private int[] bucketIds;
 
-	static class ParametersProcessor extends
+    class ParametersProcessor extends
 			ActionConf.RuntimeParameterProcessor {
 		@Override
 		public void processParameters(Chain chain, Object[] params,
 				ActionContext context) {
-			if (params[BUCKET_ID] == null) {
-				params[BUCKET_ID] = context.getNewBucketID();
+			// TODO: Should processParameters be allowed to throw an exception?
+			// For instance, for inconsistencies.
+			if (params[NPARTITIONS_PER_NODE] == null) {
+				if (params[BUCKET_IDS] == null) {
+					params[NPARTITIONS_PER_NODE] = 1;
+				} else {
+					Tuple t = (Tuple) params[BUCKET_IDS];
+					params[NPARTITIONS_PER_NODE] = t.getNElements();
+				}
+			}
+			if (params[BUCKET_IDS] == null) {
+				int np = (Integer) params[NPARTITIONS_PER_NODE];
+				Tuple p = new Tuple();
+				TInt v = new TInt();
+				for (int i = 0; i < np; i++) {
+					v.setValue(context.getNewBucketID());
+					try {
+						p.add(v);
+					} catch (Exception e) {
+						log.error("Oops: could not add bucket id for partition");
+						throw new Error("Could not add bucket id to tuple");
+					}
+				}
+				params[BUCKET_IDS] = p;
+			}
+			Tuple t = (Tuple) params[BUCKET_IDS];
+			if (t.getNElements() != (Integer) params[NPARTITIONS_PER_NODE]) {
+				log.error("Oops: inconsistency in number of partitions");
+				throw new Error("inconsistency in number of partitions");
 			}
 		}
 	}
@@ -58,20 +90,29 @@ public class DistributeTuples extends Action {
 				false);
 		conf.registerParameter(PARTITIONER, S_PARTITIONER,
 				HashPartitioner.class.getName(), false);
-		conf.registerParameter(BUCKET_ID, S_BUCKET_ID, null, true);
+		conf.registerParameter(NPARTITIONS_PER_NODE, S_NPARTITIONS_PER_NODE, null, false);
+		conf.registerParameter(BUCKET_IDS, S_BUCKET_IDS, null, false);
 		conf.registerRuntimeParameterProcessor(ParametersProcessor.class);
 	}
 
 	@Override
 	public void startProcess(ActionContext context, Chain chain)
 			throws Exception {
-		bucketId = getParamInt(BUCKET_ID);
 		sortingFunction = getParamString(SORTING_FUNCTION);
 		sPartitioner = getParamString(PARTITIONER);
+		nPartitionsPerNode = getParamInt(NPARTITIONS_PER_NODE);
+		Tuple buckets = new Tuple();
+		getParamWritable(buckets, BUCKET_IDS);
+		TInt v = new TInt();
+		bucketIds = new int[buckets.getNElements()];
+		for (int i = 0; i < bucketIds.length; i++) {
+			buckets.get(v, i);
+			bucketIds[i] = v.getValue();
+		}
+		nPartitions = nPartitionsPerNode * context.getNumberNodes();
 
 		// Init variables
-		nPartitions = context.getNumberNodes();
-		bucketsCache = new Bucket[context.getNumberNodes()];
+		bucketsCache = new Bucket[nPartitions];
 		partitioner = null;
 	}
 
@@ -88,14 +129,16 @@ public class DistributeTuples extends Action {
 				partitioner.init(context);
 			}
 
-			int nodeId = partitioner.partition(inputTuple, nPartitions);
+			int partition = partitioner.partition(inputTuple, nPartitions);
 
-			Bucket b = bucketsCache[nodeId];
+			Bucket b = bucketsCache[partition];
 			if (b == null) {
+				int nodeNo = partition / nPartitionsPerNode;
+				int bucketNo = bucketIds[partition % nPartitionsPerNode];
 				b = context.getBuckets().startTransfer(
 						chain.getSubmissionNode(), chain.getSubmissionId(),
-						nodeId % nPartitions, bucketId, sortingFunction, null);
-				bucketsCache[nodeId] = b;
+						nodeNo, bucketNo, sortingFunction, null);
+				bucketsCache[partition] = b;
 			}
 			b.add(inputTuple);
 		} catch (Exception e) {
@@ -117,22 +160,26 @@ public class DistributeTuples extends Action {
 			long parentChainId = chain.getParentChainId();
 			int nchildren = chain.getChainChildren();
 
-			if (context.isCurrentChainRoot() && replicatedFactor > 0) {
-				/*** AT FIRST SEND THE CHAINS ***/
-				Chain newChain = new Chain();
-				chain.copyTo(newChain);
-				newChain.setChainChildren(0);
-				newChain.setReplicatedFactor(1);
-				newChain.setInputLayerId(Consts.BUCKET_INPUT_LAYER_ID);
-				newChain.setInputTuple(new Tuple(new TInt(idSubmission),
-						new TInt(bucketId), new TInt(-1)));
-				chainsToSend.add(newChain);
+			for (int i = 0; i < nPartitionsPerNode; i++) {
+				if (context.isCurrentChainRoot() && replicatedFactor > 0) {
+					/*** AT FIRST SEND THE CHAINS ***/
+					Chain newChain = new Chain();
+					chain.copyTo(newChain);
+					newChain.setChainChildren(0);
+					newChain.setReplicatedFactor(1);
+					newChain.setInputLayerId(Consts.BUCKET_INPUT_LAYER_ID);
+					newChain.setInputTuple(new Tuple(new TInt(idSubmission),
+							new TInt(bucketIds[i]), new TInt(-1)));
+					chainsToSend.add(newChain);
+				}
 			}
 
 			Buckets buckets = context.getBuckets();
-			for (int i = 0; i < bucketsCache.length; ++i) {
-				buckets.finishTransfer(submissionNode, idSubmission, i,
-						this.bucketId, chainId, parentChainId, nchildren,
+			for (int i = 0; i < nPartitions; ++i) {
+				int nodeNo = i / nPartitionsPerNode;
+				int bucketNo = bucketIds[i % nPartitionsPerNode];
+				buckets.finishTransfer(submissionNode, idSubmission, nodeNo,
+						bucketNo, chainId, parentChainId, nchildren,
 						replicatedFactor, context.isCurrentChainRoot(),
 						sortingFunction, null, bucketsCache[i] != null);
 			}

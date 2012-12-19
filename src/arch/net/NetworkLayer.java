@@ -436,10 +436,6 @@ public class NetworkLayer {
 		}
 	}
 
-	public long getCounter(String string) throws IOException {
-		return ibis.registry().getSequenceNumber(string);
-	}
-
 	public long getSentBytes() {
 		try {
 			return Long.parseLong(ibis.getManagementProperty("bytesSent"));
