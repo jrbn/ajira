@@ -24,7 +24,7 @@ public class Job extends Writable {
 		printIntermediateStats = input.readBoolean();
 		printStatistics = input.readBoolean();
 		assignedBucket = input.readInt();
-		actions = new ArrayList<>();
+		actions = new ArrayList<ActionConf>();
 		int n = input.readInt();
 		for (int i = 0; i < n; ++i) {
 			String className = input.readUTF();

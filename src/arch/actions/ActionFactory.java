@@ -39,7 +39,7 @@ public class ActionFactory {
 				ParamsInfo info = new ParamsInfo();
 				info.params = conf.getListAllowedParameters();
 				if (info.params == null) {
-					info.params = new ArrayList<>();
+					info.params = new ArrayList<ParamItem>();
 				}
 				info.proc = conf.getRuntimeParametersProcessor();
 				actionParameters.put(className, info);
