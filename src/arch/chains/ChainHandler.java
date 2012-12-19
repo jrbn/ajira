@@ -241,7 +241,6 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 
 			try {
 				ac = new ActionContext(context, chain);
-				chain.setActionContext(ac);
 
 				// Start the process
 				numberActions = chain.getActions(actions, rawSizes, roots, ap);

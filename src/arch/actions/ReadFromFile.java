@@ -53,7 +53,7 @@ public class ReadFromFile extends Action {
 		context.putObjectInCache(key, currentFileSplit);
 
 		Chain newChain = new Chain();
-		chain.branch(newChain);
+		chain.branch(newChain, context);
 
 		if (customReader == null) {
 			tuple.set(new TInt(FileLayer.OP_READ), new TString(key), new TInt(

@@ -69,7 +69,7 @@ public class ReadFromBucket extends Action {
 			WritableContainer<Chain> chainsToSend) throws Exception {
 		if (branch) {
 			Chain newChain = new Chain();
-			chain.branch(newChain);
+			chain.branch(newChain, context);
 			newChain.setInputLayerId(Consts.BUCKET_INPUT_LAYER_ID);
 			newChain.setInputTuple(new Tuple(new TInt(newChain
 					.getSubmissionId()), new TInt(bucketId), new TInt(node)));
