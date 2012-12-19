@@ -32,7 +32,7 @@ public class ActionFactory {
 				action.setupActionParameters(conf);
 				params = conf.getListAllowedParameters();
 				if (params == null) {
-					params = new ArrayList<>();
+					params = new ArrayList<ParamItem>();
 				}
 			} catch (Exception e) {
 				log.error("Failed in retrieving the parameter list for class"

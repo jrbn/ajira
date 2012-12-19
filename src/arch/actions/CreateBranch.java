@@ -42,7 +42,7 @@ public class CreateBranch extends Action {
 			if (!parsedActions) {
 				BDataInput input = new BDataInput(rawActions);
 				int nActions = input.readByte();
-				actions = new ArrayList<>();
+				actions = new ArrayList<ActionConf>();
 				for (int i = 0; i < nActions; ++i) {
 					String sAction = input.readUTF();
 					ActionConf a = ActionFactory.getActionConf(sAction);

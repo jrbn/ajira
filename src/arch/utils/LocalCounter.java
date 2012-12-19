@@ -5,7 +5,7 @@ import java.util.Map;
 
 public class LocalCounter {
 
-	private Map<String, Long> counters = new HashMap<>();
+	private Map<String, Long> counters = new HashMap<String, Long>();
 
 	public synchronized long getCounter(String name) {
 		long n = 0;
