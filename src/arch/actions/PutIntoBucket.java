@@ -15,22 +15,29 @@ public class PutIntoBucket extends Action {
 
 	public static final int BUCKET_ID = 0;
 	public static final String S_BUCKET_ID = "Bucket ID";
+	public static final int SORTING_FUNCTION = 1;
+	public static final String S_SORTING_FUNCTION = "sorting_function";
 
 	Bucket bucket = null;
 	int bucketID;
+	String sortingFunction;
 
 	@Override
 	public void setupActionParameters(ActionConf conf) throws Exception {
 		conf.registerParameter(BUCKET_ID, S_BUCKET_ID, null, true);
+		conf.registerParameter(SORTING_FUNCTION, S_SORTING_FUNCTION, null,
+				false);
 	}
 
 	@Override
 	public void startProcess(ActionContext context, Chain chain)
 			throws Exception {
 		bucketID = getParamInt(BUCKET_ID);
-		bucket = context.getTuplesBuckets().getOrCreateBucket(
+		sortingFunction = getParamString(SORTING_FUNCTION);
+
+		bucket = context.getBuckets().getOrCreateBucket(
 				chain.getSubmissionNode(), chain.getSubmissionId(), bucketID,
-				null, null);
+				sortingFunction, null);
 	}
 
 	@Override

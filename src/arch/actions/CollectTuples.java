@@ -70,7 +70,7 @@ public class CollectTuples extends Action {
 			WritableContainer<Chain> chainsToProcess) {
 		try {
 			if (bucket == null) {
-				bucket = context.getTuplesBuckets().startTransfer(
+				bucket = context.getBuckets().startTransfer(
 						chain.getSubmissionNode(), chain.getSubmissionId(),
 						nodeId, bucketId, sortingFunction, null);
 			}
@@ -97,11 +97,11 @@ public class CollectTuples extends Action {
 				newChain.setReplicatedFactor(1);
 				newChain.setInputLayerId(Consts.BUCKET_INPUT_LAYER_ID);
 				newChain.setInputTuple(new Tuple(new TInt(idSubmission),
-						new TInt(nodeId), new TInt(bucketId)));
+						new TInt(bucketId), new TInt(nodeId)));
 				chainsToSend.add(newChain);
 			}
 
-			context.getTuplesBuckets().finishTransfer(
+			context.getBuckets().finishTransfer(
 					chain.getSubmissionNode(), idSubmission, nodeId,
 					this.bucketId, chain.getChainId(),
 					chain.getParentChainId(), chain.getChainChildren(),

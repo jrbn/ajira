@@ -65,12 +65,13 @@ public class DistributeTuples extends Action {
 	@Override
 	public void startProcess(ActionContext context, Chain chain)
 			throws Exception {
+		bucketId = getParamInt(BUCKET_ID);
 		sortingFunction = getParamString(SORTING_FUNCTION);
 		sPartitioner = getParamString(PARTITIONER);
 
 		// Init variables
-		nPartitions = context.getNetworkLayer().getNumberNodes();
-		bucketsCache = new Bucket[context.getNetworkLayer().getNumberNodes()];
+		nPartitions = context.getNumberNodes();
+		bucketsCache = new Bucket[context.getNumberNodes()];
 		partitioner = null;
 	}
 
@@ -91,7 +92,7 @@ public class DistributeTuples extends Action {
 
 			Bucket b = bucketsCache[nodeId];
 			if (b == null) {
-				b = context.getTuplesBuckets().startTransfer(
+				b = context.getBuckets().startTransfer(
 						chain.getSubmissionNode(), chain.getSubmissionId(),
 						nodeId % nPartitions, bucketId, sortingFunction, null);
 				bucketsCache[nodeId] = b;
@@ -124,11 +125,11 @@ public class DistributeTuples extends Action {
 				newChain.setReplicatedFactor(1);
 				newChain.setInputLayerId(Consts.BUCKET_INPUT_LAYER_ID);
 				newChain.setInputTuple(new Tuple(new TInt(idSubmission),
-						new TInt(-1), new TInt(bucketId)));
+						new TInt(bucketId), new TInt(-1)));
 				chainsToSend.add(newChain);
 			}
 
-			Buckets buckets = context.getTuplesBuckets();
+			Buckets buckets = context.getBuckets();
 			for (int i = 0; i < bucketsCache.length; ++i) {
 				buckets.finishTransfer(submissionNode, idSubmission, i,
 						this.bucketId, chainId, parentChainId, nchildren,

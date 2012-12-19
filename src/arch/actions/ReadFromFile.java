@@ -57,11 +57,10 @@ public class ReadFromFile extends Action {
 
 		if (customReader == null) {
 			tuple.set(new TInt(FileLayer.OP_READ), new TString(key), new TInt(
-					context.getNetworkLayer().getMyPartition()));
+					context.getMyNodeId()));
 		} else {
 			tuple.set(new TInt(FileLayer.OP_READ), new TString(key), new TInt(
-					context.getNetworkLayer().getMyPartition()), new TString(
-					customReader));
+					context.getMyNodeId()), new TString(customReader));
 		}
 
 		newChain.setInputTuple(tuple);

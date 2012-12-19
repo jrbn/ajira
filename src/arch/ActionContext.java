@@ -5,13 +5,7 @@ import java.util.List;
 
 import arch.actions.ActionFactory;
 import arch.buckets.Buckets;
-import arch.chains.Chain;
 import arch.data.types.DataProvider;
-import arch.data.types.Tuple;
-import arch.datalayer.InputLayer;
-import arch.net.NetworkLayer;
-import arch.storage.Factory;
-import arch.submissions.SubmissionRegistry;
 import arch.utils.Configuration;
 
 public class ActionContext {
@@ -34,33 +28,16 @@ public class ActionContext {
 	public ActionContext(Context context, DataProvider dp, int nodeId,
 			int submissionId) {
 		this(context, dp);
+		setCurrentChainInfo(nodeId, submissionId);
+	}
+
+	public void setCurrentChainInfo(int nodeId, int submissionId) {
 		this.nodeId = nodeId;
 		this.submissionId = submissionId;
 	}
 
-	public void setCurrentChainInfo(Chain chain) {
-		nodeId = chain.getSubmissionNode();
-		submissionId = chain.getSubmissionId();
-	}
-
-	public void setStartingChainID(long chainIDCounter) {
-		this.chainIDCounter = chainIDCounter;
-	}
-
-	public void setStartingBucketID(int bucketIDCounter) {
-		this.bucketIDCounter = bucketIDCounter;
-	}
-
-	public Factory<Tuple> getDeFaultTupleFactory() {
-		return context.getDeFaultTupleFactory();
-	}
-
 	public Configuration getConfiguration() {
 		return context.getConfiguration();
-	}
-
-	public SubmissionRegistry getSubmissionsRegistry() {
-		return context.getSubmissionsRegistry();
 	}
 
 	public Object getObjectFromCache(Object key) {
@@ -68,28 +45,21 @@ public class ActionContext {
 				key);
 	}
 
+	public Buckets getBuckets() {
+		return context.getTuplesBuckets();
+	}
+
 	public void putObjectInCache(Object key, Object value) {
 		context.getSubmissionCache().putObjectInCache(submissionId, key, value);
 	}
 
-	public Context getGlobalContext() {
-		return context;
-	}
-
-	public NetworkLayer getNetworkLayer() {
-		return context.getNetworkLayer();
-	}
-
-	public Buckets getTuplesBuckets() {
-		return context.getTuplesBuckets();
-	}
-
-	public InputLayer getInputLayer(int i) {
-		return context.getInputLayer(i);
-	}
-
 	public long getUniqueCounter(String name) throws IOException {
 		return context.getUniqueCounter(name);
+	}
+
+	public void incrCounter(String counterId, long value) {
+		context.getStatisticsCollector().addCounter(nodeId, submissionId,
+				counterId, value);
 	}
 
 	public ActionFactory getActionsProvider() {
@@ -108,28 +78,15 @@ public class ActionContext {
 		return dp;
 	}
 
-	public StatisticsCollector getStatisticsCollector() {
-		return context.getStatisticsCollector();
-	}
-
-	public void incrCounter(String counterId, long value) {
-		context.getStatisticsCollector().addCounter(nodeId, submissionId,
-				counterId, value);
-	}
-
-	public int getSubmissionID() {
-		return submissionId;
-	}
-
 	public void broadcastCacheObjects(Object... keys) {
-		if (getNetworkLayer().getNumberNodes() > 1) {
+		if (context.getNetworkLayer().getNumberNodes() > 1) {
 			context.getSubmissionCache().broadcastCacheObjects(submissionId,
 					keys);
 		}
 	}
 
 	public List<Object[]> retrieveRemoteCacheObjects(Object... keys) {
-		if (getNetworkLayer().getNumberNodes() > 1) {
+		if (context.getNetworkLayer().getNumberNodes() > 1) {
 			return context.getSubmissionCache().retrieveCacheObjects(
 					submissionId, keys);
 		}
@@ -137,7 +94,8 @@ public class ActionContext {
 	}
 
 	public boolean executeRemoteCode(String code) {
-		return getNetworkLayer().executeRemoteCode(nodeId, submissionId, code);
+		return context.getNetworkLayer().executeRemoteCode(nodeId,
+				submissionId, code);
 	}
 
 	public void sendCacheObject(int node, Object key, Object value) {
@@ -149,8 +107,12 @@ public class ActionContext {
 		context.getTuplesBuckets().clearSubmission(submissionId);
 	}
 
-	public Object getMyNodeId() {
+	public int getMyNodeId() {
 		return context.getNetworkLayer().getMyPartition();
+	}
+
+	public boolean isLocalMode() {
+		return context.isLocalMode();
 	}
 
 	public void setCurrentChainRoot(boolean value) {
@@ -159,5 +121,9 @@ public class ActionContext {
 
 	public boolean isCurrentChainRoot() {
 		return isChainRoot;
+	}
+
+	public int getNumberNodes() {
+		return context.getNetworkLayer().getNumberNodes();
 	}
 }

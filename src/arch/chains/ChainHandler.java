@@ -66,12 +66,6 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 		this.ap = context.getActionsProvider();
 		this.dp = context.getDataProvider();
 		ac = new ActionContext(context, dp);
-		try {
-			ac.setStartingChainID((context.getUniqueCounter("chainID") + 2) << 40);
-			ac.setStartingBucketID(((int) context.getUniqueCounter("bucketID") + 2) << 16);
-		} catch (Throwable e) {
-			log.error("Error in initializing chain handler", e);
-		}
 		localMode = context.isLocalMode();
 	}
 
@@ -247,7 +241,8 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 			}
 
 			try {
-				ac.setCurrentChainInfo(chain);
+				ac.setCurrentChainInfo(chain.getSubmissionNode(),
+						chain.getSubmissionId());
 				chain.setActionContext(ac);
 
 				// Start the process

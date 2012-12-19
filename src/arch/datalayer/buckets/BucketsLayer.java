@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import arch.ActionContext;
 import arch.Context;
 import arch.buckets.BucketIterator;
+import arch.buckets.Buckets;
 import arch.chains.Chain;
 import arch.chains.ChainLocation;
 import arch.data.types.TInt;
@@ -22,10 +23,11 @@ public class BucketsLayer extends InputLayer {
 
 	Factory<TInt> intFactory = new Factory<TInt>(TInt.class);
 
-	// Factory<TBoolean> booleanFactory = new Factory<TBoolean>(TBoolean.class);
+	Buckets buckets;
 
 	@Override
 	protected void load(Context context) throws IOException {
+		buckets = context.getTuplesBuckets();
 	}
 
 	@Override
@@ -38,14 +40,8 @@ public class BucketsLayer extends InputLayer {
 
 			tuple.get(submissionBucket, numberBucket/* , removeDuplicates */);
 
-			itr = context.getTuplesBuckets().getIterator(
-					submissionBucket.getValue(), numberBucket.getValue()/*
-																		 * ,
-																		 * removeDuplicates
-																		 * .
-																		 * getValue
-																		 * ()
-																		 */);
+			itr = buckets.getIterator(submissionBucket.getValue(),
+					numberBucket.getValue());
 
 			intFactory.release(submissionBucket);
 			intFactory.release(numberBucket);
@@ -79,6 +75,6 @@ public class BucketsLayer extends InputLayer {
 
 	@Override
 	public void releaseIterator(TupleIterator itr, ActionContext context) {
-		context.getTuplesBuckets().releaseIterator((BucketIterator) itr, false);
+		buckets.releaseIterator((BucketIterator) itr, false);
 	}
 }
