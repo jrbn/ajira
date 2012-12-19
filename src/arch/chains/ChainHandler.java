@@ -49,13 +49,13 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 	boolean[] roots = new boolean[Consts.MAX_N_ACTIONS];
 	Object[][] params = new Object[Consts.MAX_N_ACTIONS][Consts.MAX_N_PARAMS];
 
-	ActionContext ac;
 	int numberActions;
 	int indexAction;
 	boolean blockProcessing;
 
 	public boolean active;
 	public boolean localMode;
+	private ActionContext ac;
 
 	public ChainHandler(Context context) {
 		super(0);
@@ -65,7 +65,6 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 		this.stats = context.getStatisticsCollector();
 		this.ap = context.getActionsProvider();
 		this.dp = context.getDataProvider();
-		ac = new ActionContext(context, dp);
 		localMode = context.isLocalMode();
 	}
 
@@ -241,8 +240,7 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 			}
 
 			try {
-				ac.setCurrentChainInfo(chain.getSubmissionNode(),
-						chain.getSubmissionId());
+				ac = new ActionContext(context, chain);
 				chain.setActionContext(ac);
 
 				// Start the process

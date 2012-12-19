@@ -131,8 +131,7 @@ public class SubmissionRegistry {
 	private Submission submitNewJob(Context context, Job job) throws Exception {
 
 		Chain chain = new Chain();
-		chain.setActionContext(new ActionContext(context, context
-				.getDataProvider()));
+		chain.setActionContext(new ActionContext(context, chain));
 		chain.setParentChainId(-1);
 		chain.setReplicatedFactor(1);
 		chain.setInputLayerId(Consts.DEFAULT_INPUT_LAYER_ID);
