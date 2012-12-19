@@ -26,7 +26,7 @@ public class DistributeTuples extends Action {
 	public static final String S_PARTITIONER = "partitioner";
 	public static final int NPARTITIONS_PER_NODE = 2;
 	public static final String S_NPARTITIONS_PER_NODE = "npartitions_per_node";
-	private static final int BUCKET_IDS = 3;
+	public static final int BUCKET_IDS = 3;
 	private static final String S_BUCKET_IDS = "bucket_ids";
 	
 
