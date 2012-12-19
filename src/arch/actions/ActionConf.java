@@ -97,7 +97,7 @@ public class ActionConf extends Writable {
 		}
 
 		if (allowedParameters == null) {
-			allowedParameters = new ArrayList<>();
+			allowedParameters = new ArrayList<ParamItem>();
 		}
 
 		if (allowedParameters.size() >= MAX_PARAM_SIZE) {
