@@ -34,10 +34,7 @@ public class PutIntoBucket extends Action {
 			throws Exception {
 		bucketID = getParamInt(BUCKET_ID);
 		sortingFunction = getParamString(SORTING_FUNCTION);
-
-		bucket = context.getBuckets().getOrCreateBucket(
-				chain.getSubmissionNode(), chain.getSubmissionId(), bucketID,
-				sortingFunction, null);
+		bucket = context.getBucket(bucketID, sortingFunction);
 	}
 
 	@Override

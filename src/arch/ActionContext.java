@@ -1,49 +1,44 @@
 package arch;
 
+import java.io.IOException;
 import java.util.List;
 
-import arch.actions.ActionFactory;
-import arch.buckets.Buckets;
-import arch.data.types.DataProvider;
-import arch.utils.Configuration;
+import arch.buckets.Bucket;
+import arch.chains.Chain;
 
 public class ActionContext {
 
 	Context context;
-	DataProvider dp;
 
 	int nodeId;
 	int submissionId;
-
 	boolean isChainRoot;
+	Chain currentChain;
 
-	public ActionContext(Context context, DataProvider dp) {
+	public ActionContext(Context context) {
 		this.context = context;
-		this.dp = dp;
 	}
 
-	public ActionContext(Context context, DataProvider dp, int nodeId,
-			int submissionId) {
-		this(context, dp);
-		setCurrentChainInfo(nodeId, submissionId);
+	public ActionContext(Context context, Chain chain) {
+		this(context);
+		nodeId = chain.getSubmissionNode();
+		submissionId = chain.getSubmissionId();
+		currentChain = chain;
 	}
 
-	public void setCurrentChainInfo(int nodeId, int submissionId) {
-		this.nodeId = nodeId;
+	public ActionContext(Context context, int submissionNode, int submissionId) {
+		this(context);
+		this.nodeId = submissionNode;
 		this.submissionId = submissionId;
 	}
 
-	public Configuration getConfiguration() {
-		return context.getConfiguration();
+	public void setCurrentChainRoot(boolean value) {
+		isChainRoot = value;
 	}
 
 	public Object getObjectFromCache(Object key) {
 		return context.getSubmissionCache().getObjectFromCache(submissionId,
 				key);
-	}
-
-	public Buckets getBuckets() {
-		return context.getTuplesBuckets();
 	}
 
 	public void putObjectInCache(Object key, Object value) {
@@ -59,27 +54,12 @@ public class ActionContext {
 				counterId, value);
 	}
 
-	public ActionFactory getActionsProvider() {
-		return context.getActionsProvider();
-	}
-
 	public long getNewChainID() {
 		return getUniqueCounter("ChainCounter");
 	}
 
 	public int getNewBucketID() {
 		return (int) getUniqueCounter("BucketCounter");
-	}
-
-	public DataProvider getDataProvider() {
-		return dp;
-	}
-
-	public void broadcastCacheObjects(Object... keys) {
-		if (context.getNetworkLayer().getNumberNodes() > 1) {
-			context.getSubmissionCache().broadcastCacheObjects(submissionId,
-					keys);
-		}
 	}
 
 	public List<Object[]> retrieveRemoteCacheObjects(Object... keys) {
@@ -90,9 +70,16 @@ public class ActionContext {
 		return null;
 	}
 
-	public boolean executeRemoteCode(String code) {
-		return context.getNetworkLayer().executeRemoteCode(nodeId,
-				submissionId, code);
+	// public boolean executeRemoteCode(String code) {
+	// return context.getNetworkLayer().executeRemoteCode(nodeId,
+	// submissionId, code);
+	// }
+
+	public void broadcastCacheObjects(Object... keys) {
+		if (context.getNetworkLayer().getNumberNodes() > 1) {
+			context.getSubmissionCache().broadcastCacheObjects(submissionId,
+					keys);
+		}
 	}
 
 	public void sendCacheObject(int node, Object key, Object value) {
@@ -112,15 +99,35 @@ public class ActionContext {
 		return context.isLocalMode();
 	}
 
-	public void setCurrentChainRoot(boolean value) {
-		isChainRoot = value;
-	}
-
 	public boolean isCurrentChainRoot() {
 		return isChainRoot;
 	}
 
 	public int getNumberNodes() {
 		return context.getNetworkLayer().getNumberNodes();
+	}
+
+	public int getParamInt(String prop, int defaultValue) {
+		return context.getConfiguration().getInt(prop, defaultValue);
+	}
+
+	public Bucket getBucket(int bucketId, String sortingFunction) {
+		return context.getTuplesBuckets().getOrCreateBucket(nodeId,
+				submissionId, sortingFunction, null);
+	}
+
+	public Bucket startTransfer(int nodeId, int bucketId, String sortingFunction) {
+		return context.getTuplesBuckets().startTransfer(this.nodeId,
+				submissionId, nodeId, bucketId, sortingFunction, null);
+	}
+
+	public void finishTransfer(int nodeId, int bucketId,
+			String sortingFunction, boolean decreaseCounter) throws IOException {
+		context.getTuplesBuckets().finishTransfer(this.nodeId, submissionId,
+				nodeId, bucketId, currentChain.getChainId(),
+				currentChain.getParentChainId(),
+				currentChain.getChainChildren(),
+				currentChain.getReplicatedFactor(), isChainRoot,
+				sortingFunction, null, decreaseCounter);
 	}
 }

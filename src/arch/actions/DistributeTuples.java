@@ -7,7 +7,6 @@ import arch.ActionContext;
 import arch.actions.support.HashPartitioner;
 import arch.actions.support.Partitioner;
 import arch.buckets.Bucket;
-import arch.buckets.Buckets;
 import arch.chains.Chain;
 import arch.data.types.TInt;
 import arch.data.types.Tuple;
@@ -28,21 +27,18 @@ public class DistributeTuples extends Action {
 	public static final String S_NPARTITIONS_PER_NODE = "npartitions_per_node";
 	public static final int BUCKET_IDS = 3;
 	private static final String S_BUCKET_IDS = "bucket_ids";
-	
 
 	static final Logger log = LoggerFactory.getLogger(DistributeTuples.class);
 
-	private int[] partitionIds;
 	private String sortingFunction = null;
 	private Bucket[] bucketsCache;
-    private int nPartitionsPerNode;
+	private int nPartitionsPerNode;
 	private String sPartitioner = null;
 	private Partitioner partitioner = null;
 	private int nPartitions;
 	private int[] bucketIds;
 
-    class ParametersProcessor extends
-			ActionConf.RuntimeParameterProcessor {
+	class ParametersProcessor extends ActionConf.RuntimeParameterProcessor {
 		@Override
 		public void processParameters(Chain chain, Object[] params,
 				ActionContext context) {
@@ -90,7 +86,8 @@ public class DistributeTuples extends Action {
 				false);
 		conf.registerParameter(PARTITIONER, S_PARTITIONER,
 				HashPartitioner.class.getName(), false);
-		conf.registerParameter(NPARTITIONS_PER_NODE, S_NPARTITIONS_PER_NODE, null, false);
+		conf.registerParameter(NPARTITIONS_PER_NODE, S_NPARTITIONS_PER_NODE,
+				null, false);
 		conf.registerParameter(BUCKET_IDS, S_BUCKET_IDS, null, false);
 		conf.registerRuntimeParameterProcessor(ParametersProcessor.class);
 	}
@@ -135,9 +132,7 @@ public class DistributeTuples extends Action {
 			if (b == null) {
 				int nodeNo = partition / nPartitionsPerNode;
 				int bucketNo = bucketIds[partition % nPartitionsPerNode];
-				b = context.getBuckets().startTransfer(
-						chain.getSubmissionNode(), chain.getSubmissionId(),
-						nodeNo, bucketNo, sortingFunction, null);
+				b = context.startTransfer(nodeNo, bucketNo, sortingFunction);
 				bucketsCache[partition] = b;
 			}
 			b.add(inputTuple);
@@ -154,11 +149,6 @@ public class DistributeTuples extends Action {
 			// Send the chains to process the buckets to all the nodes that
 			// will host the buckets
 			int replicatedFactor = chain.getReplicatedFactor();
-			int idSubmission = chain.getSubmissionId();
-			int submissionNode = chain.getSubmissionNode();
-			long chainId = chain.getChainId();
-			long parentChainId = chain.getParentChainId();
-			int nchildren = chain.getChainChildren();
 
 			for (int i = 0; i < nPartitionsPerNode; i++) {
 				if (context.isCurrentChainRoot() && replicatedFactor > 0) {
@@ -168,20 +158,17 @@ public class DistributeTuples extends Action {
 					newChain.setChainChildren(0);
 					newChain.setReplicatedFactor(1);
 					newChain.setInputLayerId(Consts.BUCKET_INPUT_LAYER_ID);
-					newChain.setInputTuple(new Tuple(new TInt(idSubmission),
-							new TInt(bucketIds[i]), new TInt(-1)));
+					newChain.setInputTuple(new Tuple(new TInt(chain
+							.getSubmissionId()), new TInt(bucketIds[i]),
+							new TInt(-1)));
 					chainsToSend.add(newChain);
 				}
 			}
 
-			Buckets buckets = context.getBuckets();
 			for (int i = 0; i < nPartitions; ++i) {
 				int nodeNo = i / nPartitionsPerNode;
-				int bucketNo = bucketIds[i % nPartitionsPerNode];
-				buckets.finishTransfer(submissionNode, idSubmission, nodeNo,
-						bucketNo, chainId, parentChainId, nchildren,
-						replicatedFactor, context.isCurrentChainRoot(),
-						sortingFunction, null, bucketsCache[i] != null);
+				context.finishTransfer(nodeNo, bucketIds[i], sortingFunction,
+						bucketsCache[i] != null);
 			}
 		} catch (Exception e) {
 			log.error("Error", e);

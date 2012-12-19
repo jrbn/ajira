@@ -170,7 +170,7 @@ public class Arch {
 
 			/**** INIT CONTEXT ****/
 			globalContext = new Context();
-			ChainNotifier notifier = new ChainNotifier(globalContext, dp);
+			ChainNotifier notifier = new ChainNotifier(globalContext);
 			globalContext.init(localMode, inputRegistry, tuplesContainer,
 					registry, chainsToProcess, listHandlers, notifier, merger,
 					net, stats, ap, dp, defaultTupleFactory, cache, conf);

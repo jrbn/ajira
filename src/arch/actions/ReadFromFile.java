@@ -53,7 +53,7 @@ public class ReadFromFile extends Action {
 		context.putObjectInCache(key, currentFileSplit);
 
 		Chain newChain = new Chain();
-		chain.branch(newChain);
+		chain.branch(newChain, context);
 
 		if (customReader == null) {
 			tuple.set(new TInt(FileLayer.OP_READ), new TString(key), new TInt(
@@ -83,8 +83,8 @@ public class ReadFromFile extends Action {
 	public void startProcess(ActionContext context, Chain chain)
 			throws Exception {
 		customReader = getParamString(CUSTOM_READER);
-		minimumFileSplitSize = context.getConfiguration().getInt(
-				MINIMUM_SPLIT_SIZE, MINIMUM_FILE_SPLIT);
+		minimumFileSplitSize = context.getParamInt(MINIMUM_SPLIT_SIZE,
+				MINIMUM_FILE_SPLIT);
 		currentFileSplit = new FileCollection();
 		splitId = 0;
 	}

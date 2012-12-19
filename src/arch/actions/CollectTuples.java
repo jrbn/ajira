@@ -70,9 +70,8 @@ public class CollectTuples extends Action {
 			WritableContainer<Chain> chainsToProcess) {
 		try {
 			if (bucket == null) {
-				bucket = context.getBuckets().startTransfer(
-						chain.getSubmissionNode(), chain.getSubmissionId(),
-						nodeId, bucketId, sortingFunction, null);
+				bucket = context.startTransfer(nodeId, bucketId,
+						sortingFunction);
 			}
 			bucket.add(inputTuple);
 		} catch (Exception e) {
@@ -101,12 +100,8 @@ public class CollectTuples extends Action {
 				chainsToSend.add(newChain);
 			}
 
-			context.getBuckets().finishTransfer(
-					chain.getSubmissionNode(), idSubmission, nodeId,
-					this.bucketId, chain.getChainId(),
-					chain.getParentChainId(), chain.getChainChildren(),
-					replicatedFactor, context.isCurrentChainRoot(),
-					sortingFunction, null, bucket != null);
+			context.finishTransfer(nodeId, bucketId, sortingFunction,
+					bucket != null);
 
 		} catch (Exception e) {
 			log.error("Error", e);

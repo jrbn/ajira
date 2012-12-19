@@ -39,7 +39,7 @@ public class Chain extends Writable {
 
 	private final byte[] buffer = new byte[Consts.CHAIN_SIZE];
 	private Tuple inputTuple = null;
-	private ActionContext context;
+	// private ActionContext context;
 
 	private final BDataOutput cos = new BDataOutput(buffer);
 	private final BDataInput cis = new BDataInput(buffer);
@@ -80,10 +80,6 @@ public class Chain extends Writable {
 			size += inputTuple.bytesToStore();
 		}
 		return size;
-	}
-
-	public void setActionContext(ActionContext context) {
-		this.context = context;
 	}
 
 	public void setSubmissionNode(int nodeId) {
@@ -158,17 +154,19 @@ public class Chain extends Writable {
 		inputTuple.copyTo(tuple);
 	}
 
-	public void addActions(List<ActionConf> actions) throws Exception {
+	public void addActions(List<ActionConf> actions, ActionContext context)
+			throws Exception {
 		if (actions != null) {
 			for (int i = actions.size() - 1; i >= 0; i--) {
-				addAction(actions.get(i));
+				addAction(actions.get(i), context);
 			}
 		} else {
 			throw new Exception("actions is null");
 		}
 	}
 
-	public void addAction(ActionConf params) throws Exception {
+	public void addAction(ActionConf params, ActionContext context)
+			throws Exception {
 
 		if (params.isParProcessorDefined()) {
 			params.getRuntimeParametersProcessor().process(this, params,
@@ -225,9 +223,8 @@ public class Chain extends Writable {
 		}
 	}
 
-	public void branch(Chain newChain) {
+	public void branch(Chain newChain, ActionContext context) {
 		copyTo(newChain);
-		newChain.setActionContext(context);
 		newChain.setParentChainId(this.getChainId());
 		newChain.setChainId(context.getNewChainID());
 		newChain.setChainChildren(0);

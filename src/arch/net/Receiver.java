@@ -419,8 +419,8 @@ class Receiver implements MessageUpcall {
 				Class<? extends RemoteCodeExecutor> clazz = (Class<? extends RemoteCodeExecutor>) Class
 						.forName(code);
 				RemoteCodeExecutor rm = clazz.newInstance();
-				ActionContext ac = new ActionContext(context,
-						context.getDataProvider(), nodeId, submissionId);
+				ActionContext ac = new ActionContext(context, nodeId,
+						submissionId);
 				rm.execute(ac);
 			} catch (Exception e) {
 				log.error("Failed in running the code", e);

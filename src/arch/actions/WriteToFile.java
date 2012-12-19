@@ -28,13 +28,11 @@ public class WriteToFile extends Action {
 	static public class StandardFileWriter {
 
 		FileWriter writer = null;
-		DataProvider dp = null;
 		SimpleData[] array = null;
 
 		public StandardFileWriter(ActionContext context, File file)
 				throws IOException {
 			writer = new FileWriter(file);
-			dp = context.getDataProvider();
 		}
 
 		public StandardFileWriter() {
@@ -44,7 +42,7 @@ public class WriteToFile extends Action {
 			if (array == null) {
 				array = new SimpleData[tuple.getNElements()];
 				for (int i = 0; i < tuple.getNElements(); ++i) {
-					array[i] = dp.get(tuple.getType(i));
+					array[i] = DataProvider.getInstance().get(tuple.getType(i));
 				}
 			}
 

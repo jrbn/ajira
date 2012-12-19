@@ -84,9 +84,9 @@ public class CreateBranch extends Action {
 		Branch branch = new Branch();
 		getParamWritable(branch, BRANCH);
 
-		chain.branch(newChain);
+		chain.branch(newChain, context);
 		// Compile the chain using the instructions in the branch
-		newChain.addActions(branch.getActions());
+		newChain.addActions(branch.getActions(), context);
 
 		chainsToSend.add(newChain);
 	}
