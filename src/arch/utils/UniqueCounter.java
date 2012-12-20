@@ -33,4 +33,9 @@ public class UniqueCounter {
 		counters.put(name, n);
 		return n;
 	}
+
+	public void init(String name, long init) {
+		long n = ((init + nNodes - 1) / nNodes) * nNodes + myNode;
+		counters.put(name, n);
+	}
 }

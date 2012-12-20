@@ -7,6 +7,12 @@ import arch.buckets.Bucket;
 import arch.chains.Chain;
 
 public class ActionContext {
+	
+	private static final String BUCKETCOUNTER_NAME = "BucketCounter";
+	private static final String CHAINCOUNTER_NAME = "ChainCounter";
+	
+	private static final long BUCKET_INIT = 100;
+	private static final long CHAIN_INIT = 100;
 
 	Context context;
 
@@ -17,6 +23,7 @@ public class ActionContext {
 
 	public ActionContext(Context context) {
 		this.context = context;
+		initializeCounters();
 	}
 
 	public ActionContext(Context context, Chain chain) {
@@ -55,13 +62,18 @@ public class ActionContext {
 	}
 
 	public long getNewChainID() {
-		return getUniqueCounter("ChainCounter");
+		return getUniqueCounter(CHAINCOUNTER_NAME);
 	}
 
 	public int getNewBucketID() {
-		return (int) getUniqueCounter("BucketCounter");
+		return (int) getUniqueCounter(BUCKETCOUNTER_NAME);
 	}
-
+	
+	private void initializeCounters() {
+		context.initializeCounter(CHAINCOUNTER_NAME, CHAIN_INIT);
+		context.initializeCounter(BUCKETCOUNTER_NAME, BUCKET_INIT);
+	}
+	
 	public List<Object[]> retrieveRemoteCacheObjects(Object... keys) {
 		if (context.getNetworkLayer().getNumberNodes() > 1) {
 			return context.getSubmissionCache().retrieveCacheObjects(

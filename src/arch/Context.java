@@ -134,4 +134,8 @@ public class Context {
 	public boolean isLocalMode() {
 		return localMode;
 	}
+
+	public void initializeCounter(String name, long init) {
+		counter.init(name, init);
+	}
 }
