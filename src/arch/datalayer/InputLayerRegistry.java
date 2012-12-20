@@ -1,5 +1,6 @@
 package arch.datalayer;
 
+import arch.Context;
 import arch.utils.Consts;
 
 public class InputLayerRegistry {
@@ -12,6 +13,14 @@ public class InputLayerRegistry {
 
 	public void add(int bucketInputLayerId, InputLayer bucketInput) {
 		registry[bucketInputLayerId] = bucketInput;
+	}
+
+	public void startup(Context globalContext) throws Exception {
+		for (InputLayer i : registry) {
+			if (i != null) {
+				i.startup(globalContext);
+			}
+		}
 	}
 
 }

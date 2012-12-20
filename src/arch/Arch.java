@@ -207,8 +207,8 @@ public class Arch {
 			thread.start();
 
 			/***** LOAD STORAGE *****/
-			log.debug("Starting Data Layer ...");
-			input.startup(globalContext);
+			log.debug("Starting registered input layers ...");
+			inputRegistry.startup(globalContext);
 
 			/***** LOAD WEB INTERFACE *****/
 			if (conf.getBoolean(WebServer.WEBSERVER_START, false)) {
