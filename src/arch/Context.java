@@ -22,6 +22,12 @@ import arch.utils.UniqueCounter;
 
 public class Context {
 
+	static final String BUCKETCOUNTER_NAME = "BucketCounter";
+	static final String CHAINCOUNTER_NAME = "ChainCounter";
+	
+	private static final long BUCKET_INIT = 100;
+	private static final long CHAIN_INIT = 100;
+
 	private boolean localMode;
 	private InputLayerRegistry input;
 	private Configuration conf;
@@ -48,7 +54,8 @@ public class Context {
 			StatisticsCollector stats, ActionFactory actionProvider,
 			DataProvider dataProvider, Factory<Tuple> defaultTupleFactory,
 			SubmissionCache cache, Configuration conf) {
-		counter = localMode ? new UniqueCounter() : new UniqueCounter(net.getMyPartition(), net.getNumberNodes());
+		counter = localMode ? new UniqueCounter() : new UniqueCounter(net.getNumberNodes(), net.getMyPartition());
+	
 		this.localMode = localMode;
 		this.input = input;
 		this.conf = conf;
@@ -64,6 +71,9 @@ public class Context {
 		this.cache = cache;
 		this.merger = merger;
 		this.handlers = listHandlers;
+
+		initializeCounter(CHAINCOUNTER_NAME, CHAIN_INIT);
+		initializeCounter(BUCKETCOUNTER_NAME, BUCKET_INIT);
 	}
 
 	public CachedFilesMerger getMergeSortThreadsInfo() {
