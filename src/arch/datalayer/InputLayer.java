@@ -42,7 +42,7 @@ public abstract class InputLayer {
 	public void startup(Context context) throws Exception {
 		long time = System.currentTimeMillis();
 		load(context);
-		log.debug("Time to load the storage (ms): "
+		log.debug("Time to load inputLayer " + this.getClass().getName() + " (ms): "
 				+ (System.currentTimeMillis() - time));
 	}
 
