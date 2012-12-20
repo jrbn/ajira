@@ -173,7 +173,8 @@ public class DistributeTuples extends Action {
 
 			for (int i = 0; i < nPartitions; ++i) {
 				int nodeNo = i / nPartitionsPerNode;
-				context.finishTransfer(nodeNo, bucketIds[i], sortingFunction,
+				int bucketNo = bucketIds[i % nPartitionsPerNode];
+				context.finishTransfer(nodeNo, bucketNo, sortingFunction,
 						bucketsCache[i] != null);
 			}
 		} catch (Exception e) {
