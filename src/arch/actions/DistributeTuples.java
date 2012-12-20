@@ -38,7 +38,7 @@ public class DistributeTuples extends Action {
 	private int nPartitions;
 	private int[] bucketIds;
 
-	class ParametersProcessor extends ActionConf.RuntimeParameterProcessor {
+	public static class ParametersProcessor extends ActionConf.RuntimeParameterProcessor {
 		@Override
 		public void processParameters(Chain chain, Object[] params,
 				ActionContext context) {
@@ -85,6 +85,9 @@ public class DistributeTuples extends Action {
 
 	@Override
 	public void setupActionParameters(ActionConf conf) throws Exception {
+		if (log.isDebugEnabled()) {
+			log.debug("Setting up action parameters for DistributeTuples: " + conf);
+		}
 		conf.registerParameter(SORTING_FUNCTION, S_SORTING_FUNCTION, null,
 				false);
 		conf.registerParameter(PARTITIONER, S_PARTITIONER,

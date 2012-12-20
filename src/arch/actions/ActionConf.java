@@ -117,7 +117,7 @@ public class ActionConf extends Writable {
 		try {
 			this.proc = proc.newInstance();
 		} catch (Exception e) {
-			log.error("Failed in creating the RuntimeParameterProcessor");
+			log.error("Failed in creating the RuntimeParameterProcessor", e);
 		}
 	}
 
