@@ -1,5 +1,0 @@
-	private void initializeCounters() {
-		context.initializeCounter(CHAINCOUNTER_NAME, CHAIN_INIT);
-		context.initializeCounter(BUCKETCOUNTER_NAME, BUCKET_INIT);
-	}
-	

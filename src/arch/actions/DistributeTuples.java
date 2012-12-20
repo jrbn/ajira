@@ -42,6 +42,9 @@ public class DistributeTuples extends Action {
 		@Override
 		public void processParameters(Chain chain, Object[] params,
 				ActionContext context) {
+			if (log.isDebugEnabled()) {
+				log.debug("DistributeTuples.processParameters() called");
+			}
 			// TODO: Should processParameters be allowed to throw an exception?
 			// For instance, for inconsistencies.
 			if (params[NPARTITIONS_PER_NODE] == null) {
