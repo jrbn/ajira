@@ -278,11 +278,6 @@ public class Bucket {
 		boolean response = tuples.addAll(newTuplesContainer);
 		isBufferSorted = (response && isBufferEmpty)
 				|| (isBufferSorted && !response);
-		if (tuples.getNElements() > 10000000) {
-			log.warn("Adding a bucket with "
-					+ newTuplesContainer.getNElements() + " to a bucket with "
-					+ tuples.getNElements() + " elements");
-		}
 		if (!response) {
 
 			if (tuples.getNElements() > newTuplesContainer.getNElements()) {
@@ -608,11 +603,9 @@ public class Bucket {
 	private void cacheCurrentBuffer() throws IOException {
 
 		if (tuples.getNElements() > 0) {
-			log.warn(
-					"Caching buffer, tuples.getNElements = "
-							+ tuples.getNElements(), new Throwable());
-			if (log.isDebugEnabled()) {
-				log.debug("Caching buffer");
+			if (log.isInfoEnabled()) {
+                            log.info("Caching buffer, tuples.getNElements = "
+                                    + tuples.getNElements(), new Throwable());
 			}
 			cacheBuffer(tuples, isBufferSorted, fb);
 			tuples = fb.get();
