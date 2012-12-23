@@ -5,7 +5,6 @@ import java.io.File;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import arch.ActionContext;
 import arch.actions.support.FilterHiddenFiles;
 import arch.chains.Chain;
 import arch.data.types.TInt;
@@ -13,7 +12,6 @@ import arch.data.types.TString;
 import arch.data.types.Tuple;
 import arch.datalayer.files.FileCollection;
 import arch.datalayer.files.FileLayer;
-import arch.storage.container.WritableContainer;
 import arch.utils.Consts;
 
 public class ReadFromFile extends Action {
@@ -47,8 +45,7 @@ public class ReadFromFile extends Action {
 		}
 	}
 
-	private Chain processSplit(ActionContext context, Chain chain,
-			WritableContainer<Chain> chainsToProcess) throws Exception {
+	private Chain processSplit(ActionContext context) throws Exception {
 		String key = "split-" + splitId++;
 		context.putObjectInCache(key, currentFileSplit);
 
@@ -80,19 +77,16 @@ public class ReadFromFile extends Action {
 	}
 
 	@Override
-	public void startProcess(ActionContext context, Chain chain)
-			throws Exception {
+	public void startProcess(ActionContext context) throws Exception {
 		customReader = getParamString(CUSTOM_READER);
-		minimumFileSplitSize = context.getParamInt(MINIMUM_SPLIT_SIZE,
+		minimumFileSplitSize = context.getSystemParamInt(MINIMUM_SPLIT_SIZE,
 				MINIMUM_FILE_SPLIT);
 		currentFileSplit = new FileCollection();
 		splitId = 0;
 	}
 
 	@Override
-	public void process(ActionContext context, Chain chain, Tuple inputTuple,
-			WritableContainer<Tuple> output,
-			WritableContainer<Chain> chainsToProcess) throws Exception {
+	public void process(Tuple inputTuple, ActionContext context, Output output) throws Exception {
 
 		// In input I receive a list of files
 		TString path = new TString();
@@ -101,17 +95,15 @@ public class ReadFromFile extends Action {
 
 		long sizeFile = file.length();
 		if (currentFileSplit.getSize() + sizeFile >= minimumFileSplitSize) {
-			processSplit(context, chain, chainsToProcess);
+			processSplit(context);
 		}
 		currentFileSplit.addFile(file);
 	}
 
 	@Override
-	public void stopProcess(ActionContext context, Chain chain,
-			WritableContainer<Tuple> output,
-			WritableContainer<Chain> chainsToSend) throws Exception {
+	public void stopProcess(ActionContext context, Output output) throws Exception {
 		if (currentFileSplit.getSize() > 0) {
-			processSplit(context, chain, chainsToSend);
+			processSplit(context);
 		}
 		context.incrCounter("# file splits", splitId);
 	}

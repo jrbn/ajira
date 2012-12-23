@@ -23,10 +23,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import arch.Context;
-import arch.StatisticsCollector;
 import arch.chains.Chain;
 import arch.chains.ChainLocation;
 import arch.data.types.Tuple;
+import arch.statistics.StatisticsCollector;
 import arch.storage.Container;
 import arch.storage.Factory;
 import arch.storage.container.CheckedConcurrentWritableContainer;

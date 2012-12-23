@@ -1,6 +1,6 @@
 package arch.actions.support;
 
-import arch.ActionContext;
+import arch.actions.ActionContext;
 import arch.data.types.Tuple;
 
 public abstract class Partitioner {

@@ -8,9 +8,9 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import arch.ActionContext;
 import arch.actions.Action;
 import arch.actions.ActionConf;
+import arch.actions.ActionContext;
 import arch.actions.ActionFactory;
 import arch.data.types.Tuple;
 import arch.data.types.bytearray.BDataInput;
@@ -209,7 +209,7 @@ public class Chain extends Writable {
 		bufferSize = size;
 	}
 
-	public void copyTo(Chain newChain) {
+	void copyTo(Chain newChain) {
 		newChain.startingPosition = startingPosition;
 		newChain.bufferSize = bufferSize;
 		System.arraycopy(buffer, 0, newChain.buffer, 0, bufferSize);
@@ -223,39 +223,36 @@ public class Chain extends Writable {
 		}
 	}
 
-	public void branch(Chain newChain, ActionContext context) {
+	void branch(Chain newChain, long newChainId) {
 		copyTo(newChain);
 		newChain.setParentChainId(this.getChainId());
-		newChain.setChainId(context.getNewChainID());
+		newChain.setChainId(newChainId);
 		newChain.setChainChildren(0);
 		setChainChildren(getChainChildren() + 1);
 	}
 
-	int getActions(Action[] actions, int[] rawSizes, boolean[] rootChain,
-			ActionFactory ap) throws IOException {
+	void getActions(ActionsExecutor actions, ActionFactory ap)
+			throws IOException {
+		actions.init();
+
 		// Read the chain and feel the actions
 		int tmpSize = bufferSize;
-		int nactions = 0;
 		long currentChainId = getChainId();
 
 		while (tmpSize > startingPosition) {
 			tmpSize -= 4;
 			int size = Utils.decodeInt(buffer, tmpSize);
 			String sAction = new String(buffer, tmpSize - size, size);
-
 			tmpSize -= 8 + size;
 			long chainId = Utils.decodeLong(buffer, tmpSize);
-			rootChain[nactions] = chainId == currentChainId;
 
 			// Get size of the action
 			tmpSize -= 4;
 			tmpSize -= Utils.decodeInt(buffer, tmpSize);
 			cis.setCurrentPosition(tmpSize);
 			Action action = ap.getAction(sAction, cis);
-			actions[nactions] = action;
-			rawSizes[nactions] = tmpSize;
-			nactions++;
+
+			actions.addAction(action, chainId == currentChainId, tmpSize);
 		}
-		return nactions;
 	}
 }

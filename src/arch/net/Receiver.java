@@ -9,14 +9,12 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import arch.ActionContext;
 import arch.Context;
-import arch.RemoteCodeExecutor;
-import arch.StatisticsCollector;
 import arch.buckets.Bucket;
 import arch.buckets.Buckets;
 import arch.chains.Chain;
 import arch.data.types.Tuple;
+import arch.statistics.StatisticsCollector;
 import arch.storage.Container;
 import arch.storage.Factory;
 import arch.storage.container.WritableContainer;
@@ -407,51 +405,52 @@ class Receiver implements MessageUpcall {
 			}
 			break;
 		case 14: // Request to execute custom code on every node
-			sequence = message.readInt();
-			int nodeId = message.readInt();
-			submissionId = message.readInt();
-			String code = message.readString();
-			message.finish();
-
-			boolean response = true;
-			try {
-				@SuppressWarnings("unchecked")
-				Class<? extends RemoteCodeExecutor> clazz = (Class<? extends RemoteCodeExecutor>) Class
-						.forName(code);
-				RemoteCodeExecutor rm = clazz.newInstance();
-				ActionContext ac = new ActionContext(context, nodeId,
-						submissionId);
-				rm.execute(ac);
-			} catch (Exception e) {
-				log.error("Failed in running the code", e);
-				response = false;
-			}
+			// sequence = message.readInt();
+			// int nodeId = message.readInt();
+			// submissionId = message.readInt();
+			// String code = message.readString();
+			// message.finish();
+			//
+			// boolean response = true;
+			// try {
+			// @SuppressWarnings("unchecked")
+			// Class<? extends RemoteCodeExecutor> clazz = (Class<? extends
+			// RemoteCodeExecutor>) Class
+			// .forName(code);
+			// RemoteCodeExecutor rm = clazz.newInstance();
+			// ActionContext ac = new ActionContext(context, nodeId,
+			// submissionId);
+			// rm.execute(ac);
+			// } catch (Exception e) {
+			// log.error("Failed in running the code", e);
+			// response = false;
+			// }
 
 			// Return value
-			msg = net.getMessageToSend(message.origin().ibisIdentifier());
-			msg.writeByte((byte) 15);
-			msg.writeInt(sequence);
-			msg.writeBoolean(response);
-			msg.finish();
+			// msg = net.getMessageToSend(message.origin().ibisIdentifier());
+			// msg.writeByte((byte) 15);
+			// msg.writeInt(sequence);
+			// msg.writeBoolean(response);
+			// msg.finish();
 			break;
 		case 15: // Acknowledgment of the execution
-			sequence = message.readInt();
-			response = message.readBoolean();
-			message.finish();
-
-			// Update the counter
-			NetworkLayer.CountInfo counter;
-			synchronized (net.activeCodeExecutions) {
-				counter = net.activeCodeExecutions.get(sequence);
-			}
-
-			synchronized (counter) {
-				counter.count--;
-				counter.success &= response;
-				if (counter.count == 0) {
-					counter.notify();
-				}
-			}
+			// sequence = message.readInt();
+			// boolean response = message.readBoolean();
+			// message.finish();
+			//
+			// // Update the counter
+			// NetworkLayer.CountInfo counter;
+			// synchronized (net.activeCodeExecutions) {
+			// counter = net.activeCodeExecutions.get(sequence);
+			// }
+			//
+			// synchronized (counter) {
+			// counter.count--;
+			// counter.success &= response;
+			// if (counter.count == 0) {
+			// counter.notify();
+			// }
+			// }
 
 			break;
 		case 16:

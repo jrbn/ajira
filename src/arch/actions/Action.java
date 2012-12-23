@@ -1,11 +1,8 @@
 package arch.actions;
 
-import arch.ActionContext;
-import arch.chains.Chain;
 import arch.data.types.Tuple;
 import arch.data.types.bytearray.BDataInput;
 import arch.storage.Writable;
-import arch.storage.container.WritableContainer;
 
 public abstract class Action {
 
@@ -20,17 +17,13 @@ public abstract class Action {
 		return false;
 	}
 
-	public void startProcess(ActionContext context, Chain chain)
+	public void startProcess(ActionContext context)
 			throws Exception {
 	}
 
-	public abstract void process(ActionContext context, Chain chain,
-			Tuple inputTuple, WritableContainer<Tuple> output,
-			WritableContainer<Chain> chainsToProcess) throws Exception;
+	public abstract void process(Tuple tuple, ActionContext context, Output output) throws Exception;
 
-	public void stopProcess(ActionContext context, Chain chain,
-			WritableContainer<Tuple> output,
-			WritableContainer<Chain> chainsToProcess) throws Exception {
+	public void stopProcess(ActionContext context, Output output) throws Exception {
 	}
 
 	/***** PARAMETERS MANAGEMENT ******/

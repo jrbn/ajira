@@ -3,12 +3,10 @@ package arch.actions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import arch.ActionContext;
 import arch.buckets.Bucket;
 import arch.chains.Chain;
 import arch.data.types.TInt;
 import arch.data.types.Tuple;
-import arch.storage.container.WritableContainer;
 import arch.utils.Consts;
 
 public class CollectTuples extends Action {
@@ -57,17 +55,14 @@ public class CollectTuples extends Action {
 	}
 
 	@Override
-	public void startProcess(ActionContext context, Chain chain)
-			throws Exception {
+	public void startProcess(ActionContext context) throws Exception {
 		nodeId = getParamInt(NODE_ID);
 		sortingFunction = getParamString(SORTING_FUNCTION);
 		bucket = null;
 	}
 
 	@Override
-	public void process(ActionContext context, Chain chain, Tuple inputTuple,
-			WritableContainer<Tuple> outputTuples,
-			WritableContainer<Chain> chainsToProcess) {
+	public void process(Tuple inputTuple, ActionContext context, Output output) {
 		try {
 			if (bucket == null) {
 				bucket = context.startTransfer(nodeId, bucketId,
@@ -75,21 +70,16 @@ public class CollectTuples extends Action {
 			}
 			bucket.add(inputTuple);
 		} catch (Exception e) {
-			log.error("Failed processing tuple. Chain=" + chain.toString(), e);
+			log.error("Failed processing tuple.");
 		}
 	}
 
 	@Override
-	public void stopProcess(ActionContext context, Chain chain,
-			WritableContainer<Tuple> outputTuples,
-			WritableContainer<Chain> chainsToSend) {
+	public void stopProcess(ActionContext context, Output output) {
 		try {
 			// Send the chains to process the buckets to all the nodes that
 			// will host the buckets
-			int replicatedFactor = chain.getReplicatedFactor();
-			int idSubmission = chain.getSubmissionId();
-			if (context.isCurrentChainRoot() && replicatedFactor > 0) {
-				/*** AT FIRST SEND THE CHAINS ***/
+			if (output.isBranchingAllowed()) {
 				Chain newChain = new Chain();
 				chain.copyTo(newChain);
 				newChain.setChainChildren(0);

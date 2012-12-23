@@ -9,10 +9,10 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import arch.StatisticsCollector;
 import arch.data.types.Tuple;
 import arch.datalayer.TupleIterator;
 import arch.net.NetworkLayer;
+import arch.statistics.StatisticsCollector;
 import arch.storage.Factory;
 import arch.storage.container.WritableContainer;
 

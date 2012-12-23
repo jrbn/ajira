@@ -3,14 +3,12 @@ package arch.actions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import arch.ActionContext;
 import arch.actions.support.HashPartitioner;
 import arch.actions.support.Partitioner;
 import arch.buckets.Bucket;
 import arch.chains.Chain;
 import arch.data.types.TInt;
 import arch.data.types.Tuple;
-import arch.storage.container.WritableContainer;
 import arch.utils.Consts;
 
 public class DistributeTuples extends Action {
@@ -99,7 +97,7 @@ public class DistributeTuples extends Action {
 	}
 
 	@Override
-	public void startProcess(ActionContext context, Chain chain)
+	public void startProcess(ActionContext context)
 			throws Exception {
 		sortingFunction = getParamString(SORTING_FUNCTION);
 		sPartitioner = getParamString(PARTITIONER);
@@ -120,9 +118,7 @@ public class DistributeTuples extends Action {
 	}
 
 	@Override
-	public void process(ActionContext context, Chain chain, Tuple inputTuple,
-			WritableContainer<Tuple> outputTuples,
-			WritableContainer<Chain> chainsToProcess) {
+	public void process(Tuple inputTuple, ActionContext context, Output output) {
 		try {
 
 			// First partition the data
@@ -148,9 +144,7 @@ public class DistributeTuples extends Action {
 	}
 
 	@Override
-	public void stopProcess(ActionContext context, Chain chain,
-			WritableContainer<Tuple> outputTuples,
-			WritableContainer<Chain> chainsToSend) {
+	public void stopProcess(ActionContext context, Output output) {
 		try {
 			// Send the chains to process the buckets to all the nodes that
 			// will host the buckets

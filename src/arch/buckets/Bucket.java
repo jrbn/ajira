@@ -20,12 +20,12 @@ import org.slf4j.LoggerFactory;
 import org.xerial.snappy.SnappyInputStream;
 import org.xerial.snappy.SnappyOutputStream;
 
-import arch.StatisticsCollector;
 import arch.chains.ChainNotifier;
 import arch.data.types.Tuple;
 import arch.data.types.bytearray.FDataInput;
 import arch.data.types.bytearray.FDataOutput;
 import arch.datalayer.TupleIterator;
+import arch.statistics.StatisticsCollector;
 import arch.storage.Factory;
 import arch.storage.RawComparator;
 import arch.storage.container.WritableContainer;

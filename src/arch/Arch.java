@@ -25,6 +25,7 @@ import arch.datalayer.InputLayerRegistry;
 import arch.datalayer.buckets.BucketsLayer;
 import arch.dummylayer.DummyLayer;
 import arch.net.NetworkLayer;
+import arch.statistics.StatisticsCollector;
 import arch.storage.Factory;
 import arch.storage.SubmissionCache;
 import arch.storage.container.CheckedConcurrentWritableContainer;
@@ -147,8 +148,7 @@ public class Arch {
 			WritableContainer<Chain> chainsToProcess = new CheckedConcurrentWritableContainer<Chain>(
 					Consts.SIZE_BUFFERS_CHAINS_PROCESS);
 			List<ChainHandler> listHandlers = new ArrayList<ChainHandler>();
-			StatisticsCollector stats = new StatisticsCollector(conf, net,
-					chainsToProcess);
+			StatisticsCollector stats = new StatisticsCollector(conf, net);
 			CachedFilesMerger merger = new CachedFilesMerger();
 			Buckets tuplesContainer = new Buckets(stats, bufferFactory, merger,
 					net);

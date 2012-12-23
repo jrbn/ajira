@@ -6,8 +6,8 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import arch.ActionContext;
 import arch.Context;
+import arch.actions.ActionContext;
 import arch.datalayer.InputLayer;
 import arch.datalayer.TupleIterator;
 
@@ -21,7 +21,7 @@ public class ChainNotifier {
 
 	public ChainNotifier(Context context) {
 		this.context = context;
-		ac = new ActionContext(context);
+		ac = new ActionsExecutor(context);
 	}
 
 	public synchronized void addWaiter(TupleIterator iter, Chain chain) {

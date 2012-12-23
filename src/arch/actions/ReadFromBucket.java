@@ -1,10 +1,8 @@
 package arch.actions;
 
-import arch.ActionContext;
 import arch.chains.Chain;
 import arch.data.types.TInt;
 import arch.data.types.Tuple;
-import arch.storage.container.WritableContainer;
 import arch.utils.Consts;
 
 public class ReadFromBucket extends Action {
@@ -48,25 +46,22 @@ public class ReadFromBucket extends Action {
 	}
 
 	@Override
-	public void startProcess(ActionContext context, Chain chain)
-			throws Exception {
+	public void startProcess(ActionContext context) throws Exception {
 		bucketId = getParamInt(BUCKET_ID);
 		node = getParamInt(NODE_ID);
 		branch = getParamBoolean(BRANCH);
 	}
 
 	@Override
-	public void process(ActionContext context, Chain chain, Tuple inputTuple,
-			WritableContainer<Tuple> output,
-			WritableContainer<Chain> chainsToProcess) throws Exception {
+	public void process(Tuple inputTuple, ActionContext context, Output output)
+			throws Exception {
 		if (!branch)
-			output.add(inputTuple);
+			output.output(inputTuple);
 	}
 
 	@Override
-	public void stopProcess(ActionContext context, Chain chain,
-			WritableContainer<Tuple> output,
-			WritableContainer<Chain> chainsToSend) throws Exception {
+	public void stopProcess(ActionContext context, Output output)
+			throws Exception {
 		if (branch) {
 			Chain newChain = new Chain();
 			chain.branch(newChain, context);

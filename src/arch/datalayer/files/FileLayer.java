@@ -6,8 +6,8 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import arch.ActionContext;
 import arch.Context;
+import arch.actions.ActionContext;
 import arch.chains.Chain;
 import arch.chains.ChainLocation;
 import arch.data.types.TInt;
@@ -62,7 +62,7 @@ public class FileLayer extends InputLayer {
 					// Get it remotely. Operation will contain the node id.
 					tuple.get(operation, 2);
 					List<Object[]> files = context
-							.retrieveRemoteCacheObjects(value.getValue());
+							.retrieveCacheObjects(value.getValue());
 					if (files == null || files.size() == 0) {
 						throw new Exception("Failed retrieving the iterator");
 					}

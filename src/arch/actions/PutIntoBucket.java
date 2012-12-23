@@ -3,11 +3,8 @@ package arch.actions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import arch.ActionContext;
 import arch.buckets.Bucket;
-import arch.chains.Chain;
 import arch.data.types.Tuple;
-import arch.storage.container.WritableContainer;
 
 public class PutIntoBucket extends Action {
 
@@ -30,25 +27,22 @@ public class PutIntoBucket extends Action {
 	}
 
 	@Override
-	public void startProcess(ActionContext context, Chain chain)
-			throws Exception {
+	public void startProcess(ActionContext context) throws Exception {
 		bucketID = getParamInt(BUCKET_ID);
 		sortingFunction = getParamString(SORTING_FUNCTION);
 		bucket = context.getBucket(bucketID, sortingFunction);
 	}
 
 	@Override
-	public void process(ActionContext context, Chain chain, Tuple inputTuple,
-			WritableContainer<Tuple> output,
-			WritableContainer<Chain> chainsToProcess) throws Exception {
+	public void process(Tuple inputTuple, ActionContext context, Output output)
+			throws Exception {
 		bucket.add(inputTuple);
-		output.add(inputTuple);
+		output.output(inputTuple);
 	}
 
 	@Override
-	public void stopProcess(ActionContext context, Chain chain,
-			WritableContainer<Tuple> output,
-			WritableContainer<Chain> chainsToSend) throws Exception {
+	public void stopProcess(ActionContext context, Output output)
+			throws Exception {
 		bucket.setFinished(true);
 	}
 }

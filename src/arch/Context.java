@@ -13,20 +13,18 @@ import arch.data.types.Tuple;
 import arch.datalayer.InputLayer;
 import arch.datalayer.InputLayerRegistry;
 import arch.net.NetworkLayer;
+import arch.statistics.StatisticsCollector;
 import arch.storage.Factory;
 import arch.storage.SubmissionCache;
 import arch.storage.container.WritableContainer;
 import arch.submissions.SubmissionRegistry;
 import arch.utils.Configuration;
+import arch.utils.Consts;
 import arch.utils.UniqueCounter;
 
 public class Context {
 
-	static final String BUCKETCOUNTER_NAME = "BucketCounter";
-	static final String CHAINCOUNTER_NAME = "ChainCounter";
-	
 	private static final long BUCKET_INIT = 100;
-	private static final long CHAIN_INIT = 100;
 
 	private boolean localMode;
 	private InputLayerRegistry input;
@@ -54,8 +52,9 @@ public class Context {
 			StatisticsCollector stats, ActionFactory actionProvider,
 			DataProvider dataProvider, Factory<Tuple> defaultTupleFactory,
 			SubmissionCache cache, Configuration conf) {
-		counter = localMode ? new UniqueCounter() : new UniqueCounter(net.getNumberNodes(), net.getMyPartition());
-	
+		counter = localMode ? new UniqueCounter() : new UniqueCounter(
+				net.getNumberNodes(), net.getMyPartition());
+
 		this.localMode = localMode;
 		this.input = input;
 		this.conf = conf;
@@ -72,8 +71,7 @@ public class Context {
 		this.merger = merger;
 		this.handlers = listHandlers;
 
-		initializeCounter(CHAINCOUNTER_NAME, CHAIN_INIT);
-		initializeCounter(BUCKETCOUNTER_NAME, BUCKET_INIT);
+		initializeCounter(Consts.BUCKETCOUNTER_NAME, BUCKET_INIT);
 	}
 
 	public CachedFilesMerger getMergeSortThreadsInfo() {
@@ -138,7 +136,7 @@ public class Context {
 	}
 
 	public long getUniqueCounter(String name) {
-		 return counter.getCounter(name);
+		return counter.getCounter(name);
 	}
 
 	public boolean isLocalMode() {

@@ -5,10 +5,7 @@ import java.util.Random;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import arch.ActionContext;
-import arch.chains.Chain;
 import arch.data.types.Tuple;
-import arch.storage.container.WritableContainer;
 
 public class Sample extends Action {
 
@@ -27,17 +24,15 @@ public class Sample extends Action {
 	}
 
 	@Override
-	public void startProcess(ActionContext context, Chain chain)
-			throws Exception {
+	public void startProcess(ActionContext context) throws Exception {
 		sampling = getParamInt(SAMPLE_RATE);
 	}
 
 	@Override
-	public void process(ActionContext context, Chain chain, Tuple inputTuple,
-			WritableContainer<Tuple> output,
-			WritableContainer<Chain> chainsToProcess) throws Exception {
+	public void process(Tuple inputTuple, ActionContext context, Output output)
+			throws Exception {
 		if (rand.nextInt(100) < sampling) {
-			output.add(inputTuple);
+			output.output(inputTuple);
 		}
 	}
 }

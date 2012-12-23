@@ -9,12 +9,9 @@ import java.text.NumberFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import arch.ActionContext;
-import arch.chains.Chain;
 import arch.data.types.DataProvider;
 import arch.data.types.SimpleData;
 import arch.data.types.Tuple;
-import arch.storage.container.WritableContainer;
 
 public class WriteToFile extends Action {
 
@@ -70,7 +67,7 @@ public class WriteToFile extends Action {
 	}
 
 	@Override
-	public void startProcess(ActionContext context, Chain chain)
+	public void startProcess(ActionContext context)
 			throws Exception {
 		outputDirectory = getParamString(OUTPUT_DIR);
 		customWriter = getParamString(CUSTOM_WRITER);
@@ -90,7 +87,7 @@ public class WriteToFile extends Action {
 		}
 
 		f = new File(f, "part-"
-				+ nf.format(context.getUniqueCounter("OutputFile")) + "_"
+				+ nf.format(context.getCounter("OutputFile")) + "_"
 				+ nf.format(0));
 
 		try {
@@ -112,9 +109,7 @@ public class WriteToFile extends Action {
 	}
 
 	@Override
-	public void process(ActionContext context, Chain chain, Tuple inputTuple,
-			WritableContainer<Tuple> output,
-			WritableContainer<Chain> chainsToProcess) throws Exception {
+	public void process(Tuple inputTuple, ActionContext context, Output output) throws Exception {
 		if (file == null) {
 			openFile(context);
 		}
@@ -122,9 +117,7 @@ public class WriteToFile extends Action {
 	}
 
 	@Override
-	public void stopProcess(ActionContext context, Chain chain,
-			WritableContainer<Tuple> output,
-			WritableContainer<Chain> chainsToSend) throws Exception {
+	public void stopProcess(ActionContext context, Output output) throws Exception {
 		if (file != null) {
 			file.close();
 		}

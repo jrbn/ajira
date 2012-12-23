@@ -6,11 +6,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import arch.ActionContext;
-import arch.chains.Chain;
 import arch.data.types.Tuple;
 import arch.storage.Writable;
-import arch.storage.container.WritableContainer;
 
 public class CreateBranch extends Action {
 
@@ -65,29 +62,21 @@ public class CreateBranch extends Action {
 	}
 
 	@Override
-	public void startProcess(ActionContext context, Chain chain)
+	public void startProcess(ActionContext context) throws Exception {
+	}
+
+	@Override
+	public void process(Tuple inputTuple, ActionContext context, Output output)
 			throws Exception {
 	}
 
 	@Override
-	public void process(ActionContext context, Chain chain, Tuple inputTuple,
-			WritableContainer<Tuple> output,
-			WritableContainer<Chain> chainsToProcess) throws Exception {
-	}
-
-	@Override
-	public void stopProcess(ActionContext context, Chain chain,
-			WritableContainer<Tuple> output,
-			WritableContainer<Chain> chainsToSend) throws Exception {
-
-		Chain newChain = new Chain();
-		Branch branch = new Branch();
-		getParamWritable(branch, BRANCH);
-
-		chain.branch(newChain, context);
-		// Compile the chain using the instructions in the branch
-		newChain.addActions(branch.getActions(), context);
-
-		chainsToSend.add(newChain);
+	public void stopProcess(ActionContext context, Output output)
+			throws Exception {
+		if (output.isBranchingAllowed()) {
+			Branch branch = new Branch();
+			getParamWritable(branch, BRANCH);
+			output.branch(branch.getActions());
+		}
 	}
 }
