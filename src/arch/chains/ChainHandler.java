@@ -61,7 +61,7 @@ public class ChainHandler implements Runnable {
 					// Read the input tuple from the knowledge base
 					chain.getInputTuple(tuple);
 					InputLayer input = context.getInputLayer(chain
-							.getInputLayerId());
+							.getInputLayer());
 					TupleIterator itr = input.getIterator(tuple, actions);
 					if (!itr.isReady()) {
 						context.getChainNotifier().addWaiter(itr, chain);
@@ -72,7 +72,7 @@ public class ChainHandler implements Runnable {
 					/***** START CHAIN *****/
 					long timeCycle = System.currentTimeMillis();
 					actions.startProcess();
-					String counter = "Records input " + chain.getInputLayerId();
+					String counter = "Records input " + chain.getInputLayer();
 
 					// Process the data on the chain
 					boolean eof = false;

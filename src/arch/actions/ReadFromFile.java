@@ -10,6 +10,7 @@ import arch.chains.Chain;
 import arch.data.types.TInt;
 import arch.data.types.TString;
 import arch.data.types.Tuple;
+import arch.datalayer.Query;
 import arch.datalayer.files.FileCollection;
 import arch.datalayer.files.FileLayer;
 import arch.utils.Consts;
@@ -35,10 +36,11 @@ public class ReadFromFile extends Action {
 	static class ParametersProcessor extends
 			ActionConf.RuntimeParameterProcessor {
 		@Override
-		void processParameters(Chain chain, Object[] params,
-				ActionContext context) {
+		void processParameters(Query query, Object[] params,
+				ActionContext context) throws Exception {
 			if (params[PATH] != null) {
-				chain.setInputTuple(new Tuple(new TInt(FileLayer.OP_LS),
+				query.setInputLayer(Consts.DEFAULT_INPUT_LAYER_ID);
+				query.setInputTuple(new Tuple(new TInt(FileLayer.OP_LS),
 						new TString((String) params[PATH]), new TString(
 								FilterHiddenFiles.class.getName())));
 			}
@@ -86,7 +88,8 @@ public class ReadFromFile extends Action {
 	}
 
 	@Override
-	public void process(Tuple inputTuple, ActionContext context, Output output) throws Exception {
+	public void process(Tuple inputTuple, ActionContext context, Output output)
+			throws Exception {
 
 		// In input I receive a list of files
 		TString path = new TString();
@@ -101,7 +104,8 @@ public class ReadFromFile extends Action {
 	}
 
 	@Override
-	public void stopProcess(ActionContext context, Output output) throws Exception {
+	public void stopProcess(ActionContext context, Output output)
+			throws Exception {
 		if (currentFileSplit.getSize() > 0) {
 			processSplit(context);
 		}

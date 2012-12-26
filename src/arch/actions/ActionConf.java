@@ -9,20 +9,21 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import arch.chains.Chain;
 import arch.data.types.bytearray.BDataOutput;
+import arch.datalayer.Query;
 import arch.storage.Writable;
 import arch.utils.Consts;
 
 public class ActionConf extends Writable {
 
 	public static abstract class RuntimeParameterProcessor {
-		public void process(Chain chain, ActionConf conf, ActionContext context) {
-			processParameters(chain, conf.valuesParameters, context);
+		public void process(Query query, ActionConf conf, ActionContext context)
+				throws Exception {
+			processParameters(query, conf.valuesParameters, context);
 		}
 
-		abstract void processParameters(Chain chain, Object[] params,
-				ActionContext context);
+		abstract void processParameters(Query query, Object[] params,
+				ActionContext context) throws Exception;
 	}
 
 	static class ParamItem {

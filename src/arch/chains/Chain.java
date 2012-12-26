@@ -15,6 +15,7 @@ import arch.actions.ActionFactory;
 import arch.data.types.Tuple;
 import arch.data.types.bytearray.BDataInput;
 import arch.data.types.bytearray.BDataOutput;
+import arch.datalayer.Query;
 import arch.storage.Writable;
 import arch.utils.Consts;
 import arch.utils.Utils;
@@ -30,7 +31,7 @@ import arch.utils.Utils;
  * 
  */
 
-public class Chain extends Writable {
+public class Chain extends Writable implements Query {
 
 	static final Logger log = LoggerFactory.getLogger(Chain.class);
 
@@ -39,7 +40,6 @@ public class Chain extends Writable {
 
 	private final byte[] buffer = new byte[Consts.CHAIN_SIZE];
 	private Tuple inputTuple = null;
-	// private ActionContext context;
 
 	private final BDataOutput cos = new BDataOutput(buffer);
 	private final BDataInput cis = new BDataInput(buffer);
@@ -130,11 +130,13 @@ public class Chain extends Writable {
 		Utils.encodeInt(buffer, 28, factor);
 	}
 
-	public void setInputLayerId(int id) {
+	@Override
+	public void setInputLayer(int id) {
 		buffer[32] = (byte) id;
 	}
 
-	public int getInputLayerId() {
+	@Override
+	public int getInputLayer() {
 		return buffer[32];
 	}
 
@@ -146,11 +148,13 @@ public class Chain extends Writable {
 		return buffer[34];
 	}
 
+	@Override
 	public void setInputTuple(Tuple tuple) {
 		inputTuple = tuple;
 	}
 
-	public void getInputTuple(Tuple tuple) throws Exception {
+	@Override
+	public void getInputTuple(Tuple tuple) {
 		inputTuple.copyTo(tuple);
 	}
 
@@ -233,7 +237,7 @@ public class Chain extends Writable {
 
 	void getActions(ActionsExecutor actions, ActionFactory ap)
 			throws IOException {
-		actions.init();
+		actions.init(getSubmissionNode(), getSubmissionId());
 
 		// Read the chain and feel the actions
 		int tmpSize = bufferSize;

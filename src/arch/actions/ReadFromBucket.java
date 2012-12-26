@@ -3,6 +3,7 @@ package arch.actions;
 import arch.chains.Chain;
 import arch.data.types.TInt;
 import arch.data.types.Tuple;
+import arch.datalayer.Query;
 import arch.utils.Consts;
 
 public class ReadFromBucket extends Action {
@@ -21,18 +22,17 @@ public class ReadFromBucket extends Action {
 	static class ParametersProcessor extends
 			ActionConf.RuntimeParameterProcessor {
 		@Override
-		void processParameters(Chain chain, Object[] params,
+		void processParameters(Query query, Object[] params,
 				ActionContext context) {
 			if (params[NODE_ID] == null) {
 				params[NODE_ID] = -1;
 			}
 
 			if (params[BRANCH] == null || (Boolean) params[BRANCH] == false) {
-				chain.setInputLayerId(Consts.BUCKET_INPUT_LAYER_ID);
-				chain.setInputTuple(new Tuple(
-						new TInt(chain.getSubmissionId()), new TInt(
-								(Integer) params[BUCKET_ID]), new TInt(
-								(Integer) params[NODE_ID])));
+				query.setInputLayer(Consts.BUCKET_INPUT_LAYER_ID);
+				query.setInputTuple(new Tuple(new TInt(
+						(Integer) params[BUCKET_ID]), new TInt(
+						(Integer) params[NODE_ID])));
 			}
 		}
 	}

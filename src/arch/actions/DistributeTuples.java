@@ -9,6 +9,7 @@ import arch.buckets.Bucket;
 import arch.chains.Chain;
 import arch.data.types.TInt;
 import arch.data.types.Tuple;
+import arch.datalayer.Query;
 import arch.utils.Consts;
 
 public class DistributeTuples extends Action {
@@ -36,9 +37,10 @@ public class DistributeTuples extends Action {
 	private int nPartitions;
 	private int[] bucketIds;
 
-	public static class ParametersProcessor extends ActionConf.RuntimeParameterProcessor {
+	public static class ParametersProcessor extends
+			ActionConf.RuntimeParameterProcessor {
 		@Override
-		public void processParameters(Chain chain, Object[] params,
+		public void processParameters(Query query, Object[] params,
 				ActionContext context) {
 			if (log.isDebugEnabled()) {
 				log.debug("DistributeTuples.processParameters() called");
@@ -84,7 +86,8 @@ public class DistributeTuples extends Action {
 	@Override
 	public void setupActionParameters(ActionConf conf) throws Exception {
 		if (log.isDebugEnabled()) {
-			log.debug("Setting up action parameters for DistributeTuples: " + conf);
+			log.debug("Setting up action parameters for DistributeTuples: "
+					+ conf);
 		}
 		conf.registerParameter(SORTING_FUNCTION, S_SORTING_FUNCTION, null,
 				false);
@@ -97,8 +100,7 @@ public class DistributeTuples extends Action {
 	}
 
 	@Override
-	public void startProcess(ActionContext context)
-			throws Exception {
+	public void startProcess(ActionContext context) throws Exception {
 		sortingFunction = getParamString(SORTING_FUNCTION);
 		sPartitioner = getParamString(PARTITIONER);
 		nPartitionsPerNode = getParamInt(NPARTITIONS_PER_NODE);

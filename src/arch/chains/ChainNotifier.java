@@ -47,7 +47,7 @@ public class ChainNotifier {
 			}
 			waiters.remove(iter);
 		}
-		InputLayer input = context.getInputLayer(chain.getInputLayerId());
+		InputLayer input = context.getInputLayer(chain.getInputLayer());
 		input.releaseIterator(iter, ac);
 		try {
 			context.getChainsToProcess().add(chain);

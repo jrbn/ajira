@@ -40,8 +40,9 @@ class ChainSender implements Runnable {
 				chainsToSend.remove(chain);
 				chain.getInputTuple(tuple);
 
-				ChainLocation loc = context.getInputLayer(chain.getInputLayerId())
-						.getLocations(tuple, chain, context);
+				ChainLocation loc = context
+						.getInputLayer(chain.getInputLayer()).getLocations(
+								tuple, chain, context);
 
 				NetworkLayer ibis = context.getNetworkLayer();
 				IbisIdentifier[] nodes = ibis.getPeersLocation(loc);

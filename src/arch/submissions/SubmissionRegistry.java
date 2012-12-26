@@ -10,10 +10,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import arch.Context;
-import arch.actions.ActionContext;
 import arch.actions.ActionFactory;
 import arch.buckets.Bucket;
 import arch.buckets.Buckets;
+import arch.chains.ActionsExecutor;
 import arch.chains.Chain;
 import arch.data.types.DataProvider;
 import arch.net.NetworkLayer;
@@ -133,8 +133,11 @@ public class SubmissionRegistry {
 		Chain chain = new Chain();
 		chain.setParentChainId(-1);
 		chain.setReplicatedFactor(1);
-		chain.setInputLayerId(Consts.DEFAULT_INPUT_LAYER_ID);
-		chain.addActions(job.getActions(), new ActionContext(context, chain));
+		chain.setInputLayer(Consts.DEFAULT_INPUT_LAYER_ID);
+		chain.addActions(
+				job.getActions(),
+				new ActionsExecutor(context, chain.getSubmissionNode(), chain
+						.getSubmissionId()));
 
 		Submission sub = submissionFactory.get();
 		sub.init();

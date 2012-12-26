@@ -10,7 +10,7 @@ import arch.actions.Output;
 import arch.data.types.Tuple;
 import arch.utils.Consts;
 
-class ActionsExecutor implements ActionContext, Output {
+public class ActionsExecutor implements ActionContext, Output {
 
 	private Context context;
 
@@ -26,6 +26,11 @@ class ActionsExecutor implements ActionContext, Output {
 
 	public ActionsExecutor(Context context) {
 		this.context = context;
+	}
+
+	public ActionsExecutor(Context context, int submissionNode, int submissionId) {
+		this(context);
+		init(submissionNode, submissionId);
 	}
 
 	@Override
@@ -107,9 +112,11 @@ class ActionsExecutor implements ActionContext, Output {
 		return context.getConfiguration().get(prop, defaultValue);
 	}
 
-	void init() {
+	void init(int submissionNode, int submissionId) {
 		blockProcessing = false;
 		currentAction = 0;
+		this.submissionNode = submissionNode;
+		this.submissionId = submissionId;
 	}
 
 	void addAction(Action action, boolean root, int chainRawSize) {
