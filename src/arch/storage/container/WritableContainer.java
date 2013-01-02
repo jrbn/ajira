@@ -87,7 +87,9 @@ public class WritableContainer<K extends Writable> extends Writable implements
 		} else {
 			currentSize = cb.buffer.length - cb.start + cb.end;
 		}
-		return maxSize - currentSize;
+                // Since we assume that the buffer is empty if cb.end == cb.start,
+                // we cannot fill the buffer completely, hence -1. --Ceriel
+		return maxSize - currentSize - 1;
 	}
 
 	private boolean grow(int sz) {
