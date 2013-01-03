@@ -29,7 +29,7 @@ public class Sample extends Action {
 	}
 
 	@Override
-	public void process(Tuple inputTuple, ActionContext context, Output output)
+	public void process(Tuple inputTuple, ActionContext context, ActionOutput output)
 			throws Exception {
 		if (rand.nextInt(100) < sampling) {
 			output.output(inputTuple);

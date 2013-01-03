@@ -55,7 +55,10 @@ public class ChainHandler implements Runnable {
 			}
 
 			try {
+				// Init the environment
+				actions.init(chain);
 				chain.getActions(actions, ap);
+
 				if (actions.getNActions() > 0) {
 
 					// Read the input tuple from the knowledge base
@@ -133,9 +136,9 @@ public class ChainHandler implements Runnable {
 				// Send the termination signal to the node responsible of
 				// the
 				// submission
-				if (!actions.getBlockProcessing()) {
-					net.signalChainTerminated(chain);
-				}
+				// if (!actions.getBlockProcessing()) {
+				net.signalChainTerminated(chain);
+				// }
 
 				stats.addCounter(chain.getSubmissionNode(),
 						chain.getSubmissionId(), "Chains Processed", 1);

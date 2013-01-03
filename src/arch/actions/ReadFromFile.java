@@ -6,7 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import arch.actions.support.FilterHiddenFiles;
-import arch.chains.Chain;
 import arch.data.types.TInt;
 import arch.data.types.TString;
 import arch.data.types.Tuple;
@@ -27,7 +26,6 @@ public class ReadFromFile extends Action {
 
 	static final Logger log = LoggerFactory.getLogger(ReadFromFile.class);
 
-	private final Tuple tuple = new Tuple();
 	private int minimumFileSplitSize;
 	private FileCollection currentFileSplit;
 	private int splitId;
@@ -47,13 +45,12 @@ public class ReadFromFile extends Action {
 		}
 	}
 
-	private Chain processSplit(ActionContext context) throws Exception {
+	private void processSplit(ActionContext context, ActionOutput output)
+			throws Exception {
 		String key = "split-" + splitId++;
 		context.putObjectInCache(key, currentFileSplit);
 
-		Chain newChain = new Chain();
-		chain.branch(newChain, context);
-
+		Tuple tuple = new Tuple();
 		if (customReader == null) {
 			tuple.set(new TInt(FileLayer.OP_READ), new TString(key), new TInt(
 					context.getMyNodeId()));
@@ -62,13 +59,11 @@ public class ReadFromFile extends Action {
 					context.getMyNodeId()), new TString(customReader));
 		}
 
-		newChain.setInputTuple(tuple);
-		newChain.setInputLayerId(Consts.DEFAULT_INPUT_LAYER_ID);
+		ActionConf c = ActionFactory.getActionConf(QueryInput.class);
+		c.setParam(QueryInput.TUPLE, tuple);
+		output.branch(c);
 
-		chainsToProcess.add(newChain);
 		currentFileSplit = new FileCollection();
-
-		return newChain;
 	}
 
 	@Override
@@ -88,8 +83,8 @@ public class ReadFromFile extends Action {
 	}
 
 	@Override
-	public void process(Tuple inputTuple, ActionContext context, Output output)
-			throws Exception {
+	public void process(Tuple inputTuple, ActionContext context,
+			ActionOutput output) throws Exception {
 
 		// In input I receive a list of files
 		TString path = new TString();
@@ -98,16 +93,16 @@ public class ReadFromFile extends Action {
 
 		long sizeFile = file.length();
 		if (currentFileSplit.getSize() + sizeFile >= minimumFileSplitSize) {
-			processSplit(context);
+			processSplit(context, output);
 		}
 		currentFileSplit.addFile(file);
 	}
 
 	@Override
-	public void stopProcess(ActionContext context, Output output)
+	public void stopProcess(ActionContext context, ActionOutput output)
 			throws Exception {
 		if (currentFileSplit.getSize() > 0) {
-			processSplit(context);
+			processSplit(context, output);
 		}
 		context.incrCounter("# file splits", splitId);
 	}

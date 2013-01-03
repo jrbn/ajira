@@ -34,14 +34,14 @@ public class PutIntoBucket extends Action {
 	}
 
 	@Override
-	public void process(Tuple inputTuple, ActionContext context, Output output)
+	public void process(Tuple inputTuple, ActionContext context, ActionOutput output)
 			throws Exception {
 		bucket.add(inputTuple);
 		output.output(inputTuple);
 	}
 
 	@Override
-	public void stopProcess(ActionContext context, Output output)
+	public void stopProcess(ActionContext context, ActionOutput output)
 			throws Exception {
 		bucket.setFinished(true);
 	}

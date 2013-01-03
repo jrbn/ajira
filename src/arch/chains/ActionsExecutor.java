@@ -1,16 +1,18 @@
 package arch.chains;
 
+import java.io.IOException;
 import java.util.List;
 
 import arch.Context;
 import arch.actions.Action;
 import arch.actions.ActionConf;
 import arch.actions.ActionContext;
-import arch.actions.Output;
+import arch.actions.ActionOutput;
+import arch.buckets.Bucket;
 import arch.data.types.Tuple;
 import arch.utils.Consts;
 
-public class ActionsExecutor implements ActionContext, Output {
+public class ActionsExecutor implements ActionContext, ActionOutput {
 
 	private Context context;
 
@@ -20,17 +22,18 @@ public class ActionsExecutor implements ActionContext, Output {
 	private int nActions;
 
 	private int currentAction;
-	private boolean blockProcessing;
+	// private boolean blockProcessing;
 	private int submissionNode;
 	private int submissionId;
+	private Chain chain;
 
 	public ActionsExecutor(Context context) {
 		this.context = context;
 	}
 
-	public ActionsExecutor(Context context, int submissionNode, int submissionId) {
+	public ActionsExecutor(Context context, Chain chain) {
 		this(context);
-		init(submissionNode, submissionId);
+		init(chain);
 	}
 
 	@Override
@@ -112,11 +115,13 @@ public class ActionsExecutor implements ActionContext, Output {
 		return context.getConfiguration().get(prop, defaultValue);
 	}
 
-	void init(int submissionNode, int submissionId) {
-		blockProcessing = false;
+	void init(Chain chain) {
+		// blockProcessing = false;
 		currentAction = 0;
-		this.submissionNode = submissionNode;
-		this.submissionId = submissionId;
+		this.chain = chain;
+		this.submissionNode = chain.getSubmissionNode();
+		this.submissionId = chain.getSubmissionId();
+
 	}
 
 	void addAction(Action action, boolean root, int chainRawSize) {
@@ -128,9 +133,9 @@ public class ActionsExecutor implements ActionContext, Output {
 
 	void startProcess() throws Exception {
 		currentAction = 0;
-		while (currentAction < nActions && !blockProcessing) {
+		while (currentAction < nActions /* && !blockProcessing */) {
 			actions[currentAction++].startProcess(this);
-			blockProcessing = actions[currentAction].blockProcessing();
+			// blockProcessing = actions[currentAction].interruptProcessing();
 		}
 	}
 
@@ -148,14 +153,14 @@ public class ActionsExecutor implements ActionContext, Output {
 	void stopProcess() throws Exception {
 		currentAction = 0;
 		while (currentAction < nActions
-				&& !actions[currentAction].blockProcessing()) {
+		/* && !actions[currentAction].interruptProcessing() */) {
 			actions[currentAction++].stopProcess(this, null);
 		}
 	}
 
 	@Override
 	public boolean isBranchingAllowed() {
-		return roots[currentAction];
+		return roots[currentAction] && chain.getReplicatedFactor() > 0;
 	}
 
 	@Override
@@ -167,31 +172,37 @@ public class ActionsExecutor implements ActionContext, Output {
 		}
 	}
 
-	/***** TODO: TO CHANGE ******/
+	@Override
+	public void branch(ActionConf action) throws Exception {
+		// TODO Auto-generated method stub
 
-	// public Bucket getBucket(int bucketId, String sortingFunction) {
-	// return context.getTuplesBuckets().getOrCreateBucket(submissionNode,
-	// submissionId, sortingFunction, null);
-	// }
-	//
-	// public Bucket startTransfer(int nodeId, int bucketId, String
-	// sortingFunction) {
-	// return context.getTuplesBuckets().startTransfer(this.submissionNode,
-	// submissionId, nodeId, bucketId, sortingFunction, null);
-	// }
-	//
-	// public void finishTransfer(int nodeId, int bucketId,
-	// String sortingFunction, boolean decreaseCounter) throws IOException {
-	// context.getTuplesBuckets().finishTransfer(this.submissionNode,
-	// submissionId, nodeId, bucketId, chain.getChainId(),
-	// chain.getParentChainId(), chain.getChainChildren(),
-	// chain.getReplicatedFactor(), isChainRoot, sortingFunction,
-	// null, decreaseCounter);
-	// }
-
-	boolean getBlockProcessing() {
-		return blockProcessing;
 	}
+
+	@Override
+	public Bucket getBucket(final int bucketId, final String sortingFunction) {
+		return context.getTuplesBuckets().getOrCreateBucket(submissionNode,
+				submissionId, sortingFunction, null);
+	}
+
+	@Override
+	public Bucket startTransfer(int nodeId, int bucketId, String sortingFunction) {
+		return context.getTuplesBuckets().startTransfer(this.submissionNode,
+				submissionId, nodeId, bucketId, sortingFunction, null);
+	}
+
+	@Override
+	public void finishTransfer(int nodeId, int bucketId,
+			String sortingFunction, boolean decreaseCounter) throws IOException {
+		context.getTuplesBuckets().finishTransfer(this.submissionNode,
+				submissionId, nodeId, bucketId, chain.getChainId(),
+				chain.getParentChainId(), chain.getChainChildren(),
+				chain.getReplicatedFactor(), roots[currentAction],
+				sortingFunction, null, decreaseCounter);
+	}
+
+	// boolean getBlockProcessing() {
+	// return blockProcessing;
+	// }
 
 	int getNActions() {
 		return nActions;

@@ -13,17 +13,18 @@ public abstract class Action {
 	public void setupActionParameters(ActionConf conf) throws Exception {
 	}
 
-	public boolean blockProcessing() {
-		return false;
+	// public boolean interruptProcessing() {
+	// return false;
+	// }
+
+	public void startProcess(ActionContext context) throws Exception {
 	}
 
-	public void startProcess(ActionContext context)
+	public abstract void process(Tuple tuple, ActionContext context,
+			ActionOutput output) throws Exception;
+
+	public void stopProcess(ActionContext context, ActionOutput output)
 			throws Exception {
-	}
-
-	public abstract void process(Tuple tuple, ActionContext context, Output output) throws Exception;
-
-	public void stopProcess(ActionContext context, Output output) throws Exception {
 	}
 
 	/***** PARAMETERS MANAGEMENT ******/

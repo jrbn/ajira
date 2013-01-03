@@ -237,7 +237,6 @@ public class Chain extends Writable implements Query {
 
 	void getActions(ActionsExecutor actions, ActionFactory ap)
 			throws IOException {
-		actions.init(getSubmissionNode(), getSubmissionId());
 
 		// Read the chain and feel the actions
 		int tmpSize = bufferSize;

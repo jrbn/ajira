@@ -6,11 +6,9 @@ import org.slf4j.LoggerFactory;
 import arch.actions.support.HashPartitioner;
 import arch.actions.support.Partitioner;
 import arch.buckets.Bucket;
-import arch.chains.Chain;
 import arch.data.types.TInt;
 import arch.data.types.Tuple;
 import arch.datalayer.Query;
-import arch.utils.Consts;
 
 public class DistributeTuples extends Action {
 
@@ -79,11 +77,6 @@ public class DistributeTuples extends Action {
 	}
 
 	@Override
-	public boolean blockProcessing() {
-		return true;
-	}
-
-	@Override
 	public void setupActionParameters(ActionConf conf) throws Exception {
 		if (log.isDebugEnabled()) {
 			log.debug("Setting up action parameters for DistributeTuples: "
@@ -120,7 +113,8 @@ public class DistributeTuples extends Action {
 	}
 
 	@Override
-	public void process(Tuple inputTuple, ActionContext context, Output output) {
+	public void process(Tuple inputTuple, ActionContext context,
+			ActionOutput output) {
 		try {
 
 			// First partition the data
@@ -141,29 +135,22 @@ public class DistributeTuples extends Action {
 			}
 			b.add(inputTuple);
 		} catch (Exception e) {
-			log.error("Failed processing tuple. Chain=" + chain.toString(), e);
+			log.error("Failed processing tuple.", e);
 		}
 	}
 
 	@Override
-	public void stopProcess(ActionContext context, Output output) {
+	public void stopProcess(ActionContext context, ActionOutput output) {
 		try {
 			// Send the chains to process the buckets to all the nodes that
 			// will host the buckets
-			int replicatedFactor = chain.getReplicatedFactor();
-
-			for (int i = 0; i < nPartitionsPerNode; i++) {
-				if (context.isCurrentChainRoot() && replicatedFactor > 0) {
-					/*** AT FIRST SEND THE CHAINS ***/
-					Chain newChain = new Chain();
-					chain.copyTo(newChain);
-					newChain.setChainChildren(0);
-					newChain.setReplicatedFactor(1);
-					newChain.setInputLayerId(Consts.BUCKET_INPUT_LAYER_ID);
-					newChain.setInputTuple(new Tuple(new TInt(chain
-							.getSubmissionId()), new TInt(bucketIds[i]),
-							new TInt(-1)));
-					chainsToSend.add(newChain);
+			if (output.isBranchingAllowed()) {
+				for (int i = 0; i < nPartitionsPerNode; i++) {
+					ActionConf c = ActionFactory
+							.getActionConf(ReadFromBucket.class);
+					c.setParam(ReadFromBucket.BUCKET_ID, bucketIds[i]);
+					c.setParam(ReadFromBucket.NODE_ID, -1);
+					output.branch(c);
 				}
 			}
 

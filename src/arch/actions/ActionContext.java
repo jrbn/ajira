@@ -1,14 +1,15 @@
 package arch.actions;
 
+import java.io.IOException;
 import java.util.List;
+
+import arch.buckets.Bucket;
 
 public interface ActionContext {
 
 	public long getCounter(String counterId);
 
 	public void incrCounter(String counterId, long value);
-
-	public int getNewBucketID();
 
 	public boolean isLocalMode();
 
@@ -32,4 +33,13 @@ public interface ActionContext {
 
 	public void broadcastCacheObjects(Object... keys);
 
+	public int getNewBucketID();
+
+	// TODO: To remove in something safer
+	Bucket getBucket(int bucketId, String sortingFunction);
+
+	Bucket startTransfer(int nodeId, int bucketId, String sortingFunction);
+
+	void finishTransfer(int nodeId, int bucketId, String sortingFunction,
+			boolean decreaseCounter) throws IOException;
 }

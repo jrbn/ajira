@@ -4,7 +4,7 @@ import java.util.List;
 
 import arch.data.types.Tuple;
 
-public interface Output {
+public interface ActionOutput {
 
 	public void output(Tuple tuple) throws Exception;
 
@@ -12,4 +12,5 @@ public interface Output {
 
 	public void branch(List<ActionConf> actions) throws Exception;
 
+	public void branch(ActionConf action) throws Exception;
 }

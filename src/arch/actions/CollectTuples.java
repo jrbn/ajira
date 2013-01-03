@@ -4,10 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import arch.buckets.Bucket;
-import arch.chains.Chain;
-import arch.data.types.TInt;
 import arch.data.types.Tuple;
-import arch.utils.Consts;
+import arch.datalayer.Query;
 
 public class CollectTuples extends Action {
 
@@ -26,15 +24,10 @@ public class CollectTuples extends Action {
 	private String sortingFunction = null;
 	private Bucket bucket;
 
-	@Override
-	public boolean blockProcessing() {
-		return true;
-	}
-
 	static class ParametersProcessor extends
 			ActionConf.RuntimeParameterProcessor {
 		@Override
-		public void processParameters(Tuple inputTuple, Object[] params,
+		public void processParameters(Query query, Object[] params,
 				ActionContext context) {
 			if (params[NODE_ID] == null) {
 				params[NODE_ID] = context.getMyNodeId();
@@ -62,7 +55,8 @@ public class CollectTuples extends Action {
 	}
 
 	@Override
-	public void process(Tuple inputTuple, ActionContext context, Output output) {
+	public void process(Tuple inputTuple, ActionContext context,
+			ActionOutput output) {
 		try {
 			if (bucket == null) {
 				bucket = context.startTransfer(nodeId, bucketId,
@@ -75,19 +69,16 @@ public class CollectTuples extends Action {
 	}
 
 	@Override
-	public void stopProcess(ActionContext context, Output output) {
+	public void stopProcess(ActionContext context, ActionOutput output) {
 		try {
 			// Send the chains to process the buckets to all the nodes that
 			// will host the buckets
 			if (output.isBranchingAllowed()) {
-				Chain newChain = new Chain();
-				chain.copyTo(newChain);
-				newChain.setChainChildren(0);
-				newChain.setReplicatedFactor(1);
-				newChain.setInputLayerId(Consts.BUCKET_INPUT_LAYER_ID);
-				newChain.setInputTuple(new Tuple(new TInt(idSubmission),
-						new TInt(bucketId), new TInt(nodeId)));
-				chainsToSend.add(newChain);
+				ActionConf c = ActionFactory
+						.getActionConf(ReadFromBucket.class);
+				c.setParam(ReadFromBucket.BUCKET_ID, bucketId);
+				c.setParam(ReadFromBucket.NODE_ID, nodeId);
+				output.branch(c);
 			}
 
 			context.finishTransfer(nodeId, bucketId, sortingFunction,

@@ -109,7 +109,7 @@ public class WriteToFile extends Action {
 	}
 
 	@Override
-	public void process(Tuple inputTuple, ActionContext context, Output output) throws Exception {
+	public void process(Tuple inputTuple, ActionContext context, ActionOutput output) throws Exception {
 		if (file == null) {
 			openFile(context);
 		}
@@ -117,7 +117,7 @@ public class WriteToFile extends Action {
 	}
 
 	@Override
-	public void stopProcess(ActionContext context, Output output) throws Exception {
+	public void stopProcess(ActionContext context, ActionOutput output) throws Exception {
 		if (file != null) {
 			file.close();
 		}

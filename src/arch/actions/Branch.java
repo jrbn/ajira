@@ -9,9 +9,9 @@ import java.util.List;
 import arch.data.types.Tuple;
 import arch.storage.Writable;
 
-public class CreateBranch extends Action {
+public class Branch extends Action {
 
-	public static class Branch extends Writable {
+	public static class BranchContent extends Writable {
 
 		private List<ActionConf> actions;
 
@@ -66,15 +66,15 @@ public class CreateBranch extends Action {
 	}
 
 	@Override
-	public void process(Tuple inputTuple, ActionContext context, Output output)
+	public void process(Tuple inputTuple, ActionContext context, ActionOutput output)
 			throws Exception {
 	}
 
 	@Override
-	public void stopProcess(ActionContext context, Output output)
+	public void stopProcess(ActionContext context, ActionOutput output)
 			throws Exception {
 		if (output.isBranchingAllowed()) {
-			Branch branch = new Branch();
+			BranchContent branch = new BranchContent();
 			getParamWritable(branch, BRANCH);
 			output.branch(branch.getActions());
 		}
