@@ -35,8 +35,8 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 	ActionFactory ap = null;
 	DataProvider dp = null;
 	StatisticsCollector stats = null;
-	WritableContainer<Chain> chainsBuffer = new WritableContainer<Chain>(
-			Consts.SIZE_BUFFERS_CHILDREN_CHAIN_PROCESS);
+	// WritableContainer<Chain> chainsBuffer = new WritableContainer<Chain>(
+	// 		Consts.SIZE_BUFFERS_CHILDREN_CHAIN_PROCESS);
 	WritableContainer<Chain> chainsBuffer2 = new WritableContainer<Chain>(
 			Consts.SIZE_BUFFERS_CHILDREN_CHAIN_PROCESS);
 
@@ -277,7 +277,7 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 
 					do {
 						// Init
-						chainsBuffer.clear();
+						// chainsBuffer.clear();
 						chainsBuffer2.clear();
 
 						eof = !itr.next();
@@ -317,13 +317,13 @@ public class ChainHandler extends WritableContainer<Tuple> implements
 						}
 
 						// Update the children generated in this action
-						if (chainsBuffer.getNElements() > 0) {
-							stats.addCounter(chain.getSubmissionNode(),
-									chain.getSubmissionId(),
-									"Chains Generated From Chains",
-									chainsBuffer.getNElements());
-							chainsBuffer.clear();
-						}
+//						if (chainsBuffer.getNElements() > 0) {
+//							stats.addCounter(chain.getSubmissionNode(),
+//									chain.getSubmissionId(),
+//									"Chains Generated From Chains",
+//									chainsBuffer.getNElements());
+//							chainsBuffer.clear();
+//						}
 
 						// Update the children generated in this action
 						if (chainsBuffer2.getNElements() > 0) {
