@@ -120,6 +120,7 @@ public class CachedFilesMerger implements Runnable {
 				try {
 					totalelements = stream1.nElements + stream2.nElements + 2;
 					cacheFile = File.createTempFile("merged_files", "tmp");
+                                        cacheFile.deleteOnExit();
 
 					BufferedOutputStream fout = new BufferedOutputStream(
 							new SnappyOutputStream(new FileOutputStream(
