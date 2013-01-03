@@ -67,5 +67,6 @@ public class Consts {
 	public static final String STATS_ENABLED = "arch.stats.enabled";
 	public static final String DICT_DIR = "dictionary.dir";
 	public static final String BUCKETCOUNTER_NAME = "BucketCounter";
+	public static final String CHAINCOUNTER_NAME = "ChainCounter";
 
 }

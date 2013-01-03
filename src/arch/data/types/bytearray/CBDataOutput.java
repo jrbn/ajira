@@ -32,7 +32,7 @@ public class CBDataOutput extends BDataOutput {
 
 	@Override
 	public void writeInt(int value) throws IOException {
-		if (cb.end + 4 < cb.buffer.length) {
+		if (cb.end + 4 <= cb.buffer.length) {
 			super.writeInt(value);
 		} else {
 			for (int i = 3; i >= 0; i--) {
@@ -47,7 +47,7 @@ public class CBDataOutput extends BDataOutput {
 
 	@Override
 	public void writeShort(int value) throws IOException {
-		if (cb.end + 2 < cb.buffer.length) {
+		if (cb.end + 2 <= cb.buffer.length) {
 			super.writeShort(value);
 		} else {
 			if (cb.end >= cb.buffer.length) {
@@ -63,7 +63,7 @@ public class CBDataOutput extends BDataOutput {
 
 	@Override
 	public void writeLong(long value) throws IOException {
-		if (cb.end + 8 < cb.buffer.length) {
+		if (cb.end + 8 <= cb.buffer.length) {
 			super.writeLong(value);
 		} else {
 			for (int i = 7; i >= 0; i--) {

@@ -146,7 +146,7 @@ public class ChainHandler implements Runnable {
 			} catch (Exception e) {
 				// Broadcast all the nodes that a chain part of a job has
 				// failed.
-				log.error("Chain is failed. Cancelling the job ...", e);
+				log.error("Chain failed. Cancelling the job ...", e);
 				try {
 
 					context.cleanupSubmission(chain.getSubmissionNode(),

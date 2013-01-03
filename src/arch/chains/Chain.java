@@ -140,11 +140,11 @@ public class Chain extends Writable implements Query {
 		return buffer[32];
 	}
 
-	public void setCustomFlag(byte value) {
+	void setCustomFlag(byte value) {
 		buffer[34] = value;
 	}
 
-	public int getCustomFlag() {
+	int getCustomFlag() {
 		return buffer[34];
 	}
 
@@ -169,8 +169,7 @@ public class Chain extends Writable implements Query {
 		}
 	}
 
-	public void addAction(ActionConf params, ActionContext context)
-			throws Exception {
+	void addAction(ActionConf params, ActionContext context) throws Exception {
 
 		if (params.isParProcessorDefined()) {
 			params.getRuntimeParametersProcessor().process(this, params,

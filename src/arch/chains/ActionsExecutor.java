@@ -22,10 +22,11 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 	private int nActions;
 
 	private int currentAction;
-	// private boolean blockProcessing;
 	private int submissionNode;
 	private int submissionId;
 	private Chain chain;
+
+	private final Chain supportChain = new Chain();
 
 	public ActionsExecutor(Context context) {
 		this.context = context;
@@ -116,7 +117,6 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 	}
 
 	void init(Chain chain) {
-		// blockProcessing = false;
 		currentAction = 0;
 		this.chain = chain;
 		this.submissionNode = chain.getSubmissionNode();
@@ -133,9 +133,8 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 
 	void startProcess() throws Exception {
 		currentAction = 0;
-		while (currentAction < nActions /* && !blockProcessing */) {
+		while (currentAction < nActions) {
 			actions[currentAction++].startProcess(this);
-			// blockProcessing = actions[currentAction].interruptProcessing();
 		}
 	}
 
@@ -152,8 +151,7 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 
 	void stopProcess() throws Exception {
 		currentAction = 0;
-		while (currentAction < nActions
-		/* && !actions[currentAction].interruptProcessing() */) {
+		while (currentAction < nActions) {
 			actions[currentAction++].stopProcess(this, null);
 		}
 	}
@@ -166,7 +164,8 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 	@Override
 	public void branch(List<ActionConf> actions) throws Exception {
 		if (isBranchingAllowed()) {
-			// TODO:
+			chain.branch(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
+			supportChain.addActions(actions, this);
 		} else {
 			throw new Exception("Branching is not allowed");
 		}
@@ -174,8 +173,12 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 
 	@Override
 	public void branch(ActionConf action) throws Exception {
-		// TODO Auto-generated method stub
-
+		if (isBranchingAllowed()) {
+			chain.branch(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
+			supportChain.addAction(action, this);
+		} else {
+			throw new Exception("Branching is not allowed");
+		}
 	}
 
 	@Override
@@ -199,10 +202,6 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 				chain.getReplicatedFactor(), roots[currentAction],
 				sortingFunction, null, decreaseCounter);
 	}
-
-	// boolean getBlockProcessing() {
-	// return blockProcessing;
-	// }
 
 	int getNActions() {
 		return nActions;

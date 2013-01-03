@@ -28,6 +28,7 @@ public class CachedFilesMerger implements Runnable {
 	List<Bucket> requests = new ArrayList<Bucket>();
 	public int threads = 0;
 	public int activeThreads = 0;
+	private Random random = new Random();
 
 	public synchronized void newRequest(Bucket bucket) {
 		requests.add(bucket);
@@ -47,19 +48,19 @@ public class CachedFilesMerger implements Runnable {
 		while (true) {
 			Bucket bucket = null;
 			synchronized (this) {
-				activeThreads--;
 				// Wait until there is a new request
 				while (requests.size() == 0) {
+					activeThreads--;
 					try {
 						this.wait();
 					} catch (InterruptedException e) {
 					}
+					activeThreads++;
 				}
 				bucket = requests.remove(0);
 				if (bucket.gettingData) {
 					continue;
 				}
-				activeThreads++;
 			}
 
 			// Check if bucket is eligible for merging
@@ -75,8 +76,7 @@ public class CachedFilesMerger implements Runnable {
 					// Take one random stream
 					int index1, index2;
 					do {
-						index1 = new Random().nextInt(bucket.minimumSortedList
-								.size());
+						index1 = nextInt(bucket.minimumSortedList.size());
 						min1 = bucket.minimumSortedList.get(index1);
 					} while (!bucket.sortedCacheFiles.containsKey(min1));
 
@@ -84,8 +84,7 @@ public class CachedFilesMerger implements Runnable {
 					stream1 = bucket.sortedCacheFiles.remove(min1);
 
 					do {
-						index2 = new Random().nextInt(bucket.minimumSortedList
-								.size());
+						index2 = nextInt(bucket.minimumSortedList.size());
 						min2 = bucket.minimumSortedList.get(index2);
 					} while (min1 == min2
 							|| !bucket.sortedCacheFiles.containsKey(min2));
@@ -120,6 +119,7 @@ public class CachedFilesMerger implements Runnable {
 				try {
 					totalelements = stream1.nElements + stream2.nElements + 2;
 					cacheFile = File.createTempFile("merged_files", "tmp");
+                                        cacheFile.deleteOnExit();
 
 					BufferedOutputStream fout = new BufferedOutputStream(
 							new SnappyOutputStream(new FileOutputStream(
@@ -259,6 +259,10 @@ public class CachedFilesMerger implements Runnable {
 				}
 			}
 		}
+	}
+
+	private synchronized int nextInt(int size) {
+		return random.nextInt(size);
 	}
 
 	private long finishStream(FileMetaData stream, byte[] min,

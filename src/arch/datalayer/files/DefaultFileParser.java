@@ -22,7 +22,9 @@ public class DefaultFileParser {
 
 	public DefaultFileParser(File file) {
 		try {
-			log.debug("Reading file " + file.getPath());
+			if (log.isDebugEnabled()) {
+				log.debug("Reading file " + file.getPath());
+			}
 			InputStream input = new FileInputStream(file);
 			if (file.getName().endsWith(".gz")) {
 				input = new GZIPInputStream(input);

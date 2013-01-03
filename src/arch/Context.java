@@ -25,6 +25,7 @@ import arch.utils.UniqueCounter;
 public class Context {
 
 	private static final long BUCKET_INIT = 100;
+	private static final long CHAIN_INIT = 1;
 
 	private boolean localMode;
 	private InputLayerRegistry input;
@@ -72,6 +73,7 @@ public class Context {
 		this.handlers = listHandlers;
 
 		initializeCounter(Consts.BUCKETCOUNTER_NAME, BUCKET_INIT);
+		initializeCounter(Consts.CHAINCOUNTER_NAME, CHAIN_INIT);
 	}
 
 	public CachedFilesMerger getMergeSortThreadsInfo() {
