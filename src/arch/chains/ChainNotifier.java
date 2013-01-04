@@ -21,7 +21,7 @@ public class ChainNotifier {
 
 	public ChainNotifier(Context context) {
 		this.context = context;
-		ac = new ActionsExecutor(context);
+		ac = new ActionsExecutor(context, null);
 	}
 
 	public synchronized void addWaiter(TupleIterator iter, Chain chain) {

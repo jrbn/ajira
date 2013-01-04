@@ -10,6 +10,7 @@ import arch.actions.ActionContext;
 import arch.actions.ActionOutput;
 import arch.buckets.Bucket;
 import arch.data.types.Tuple;
+import arch.storage.container.WritableContainer;
 import arch.utils.Consts;
 
 public class ActionsExecutor implements ActionContext, ActionOutput {
@@ -25,15 +26,19 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 	private int submissionNode;
 	private int submissionId;
 	private Chain chain;
+	private WritableContainer<Chain> chainsBuffer;
 
 	private final Chain supportChain = new Chain();
 
-	public ActionsExecutor(Context context) {
+	public ActionsExecutor(Context context,
+			WritableContainer<Chain> chainsBuffer) {
 		this.context = context;
+		this.chainsBuffer = chainsBuffer;
 	}
 
-	public ActionsExecutor(Context context, Chain chain) {
-		this(context);
+	public ActionsExecutor(Context context,
+			WritableContainer<Chain> chainsBuffer, Chain chain) {
+		this(context, chainsBuffer);
 		init(chain);
 	}
 
@@ -117,7 +122,7 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 	}
 
 	void init(Chain chain) {
-		currentAction = 0;
+		nActions = currentAction = 0;
 		this.chain = chain;
 		this.submissionNode = chain.getSubmissionNode();
 		this.submissionId = chain.getSubmissionId();
@@ -132,10 +137,10 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 	}
 
 	void startProcess() throws Exception {
-		currentAction = 0;
 		while (currentAction < nActions) {
 			actions[currentAction++].startProcess(this);
 		}
+		currentAction = 0;
 	}
 
 	@Override
@@ -152,7 +157,8 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 	void stopProcess() throws Exception {
 		currentAction = 0;
 		while (currentAction < nActions) {
-			actions[currentAction++].stopProcess(this, null);
+			actions[currentAction].stopProcess(this, this);
+			currentAction++;
 		}
 	}
 
@@ -164,8 +170,10 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 	@Override
 	public void branch(List<ActionConf> actions) throws Exception {
 		if (isBranchingAllowed()) {
+			chain.setRawSize(rawSizes[currentAction]);
 			chain.branch(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
 			supportChain.addActions(actions, this);
+			chainsBuffer.add(supportChain);
 		} else {
 			throw new Exception("Branching is not allowed");
 		}
@@ -174,8 +182,10 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 	@Override
 	public void branch(ActionConf action) throws Exception {
 		if (isBranchingAllowed()) {
+			chain.setRawSize(rawSizes[currentAction]);
 			chain.branch(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
 			supportChain.addAction(action, this);
+			chainsBuffer.add(supportChain);
 		} else {
 			throw new Exception("Branching is not allowed");
 		}

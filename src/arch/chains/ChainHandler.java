@@ -41,7 +41,7 @@ public class ChainHandler implements Runnable {
 		Tuple tuple = new Tuple();
 		WritableContainer<Chain> chainsBuffer = new WritableContainer<Chain>(
 				Consts.SIZE_BUFFERS_CHILDREN_CHAIN_PROCESS);
-		ActionsExecutor actions = new ActionsExecutor(context);
+		ActionsExecutor actions = new ActionsExecutor(context, chainsBuffer);
 
 		while (true) {
 
@@ -82,9 +82,6 @@ public class ChainHandler implements Runnable {
 					long nRecords = 0;
 
 					do {
-						// Init
-						chainsBuffer.clear();
-
 						eof = !itr.next();
 						if (!eof) {
 							nRecords++;
@@ -134,12 +131,8 @@ public class ChainHandler implements Runnable {
 				}
 
 				// Send the termination signal to the node responsible of
-				// the
-				// submission
-				// if (!actions.getBlockProcessing()) {
+				// the submission
 				net.signalChainTerminated(chain);
-				// }
-
 				stats.addCounter(chain.getSubmissionNode(),
 						chain.getSubmissionId(), "Chains Processed", 1);
 

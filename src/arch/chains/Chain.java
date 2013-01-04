@@ -171,15 +171,15 @@ public class Chain extends Writable implements Query {
 
 	void addAction(ActionConf params, ActionContext context) throws Exception {
 
-		if (params.isParProcessorDefined()) {
-			params.getRuntimeParametersProcessor().process(this, params,
-					context);
-		}
-
 		// Validate the action
 		if (!params.validateParameters()) {
 			throw new Exception("Some required parameters for the action "
 					+ params.getClassName() + " are not set.");
+		}
+
+		if (params.isParProcessorDefined()) {
+			params.getRuntimeParametersProcessor().process(this, params,
+					context);
 		}
 
 		int totalSize = bufferSize;
