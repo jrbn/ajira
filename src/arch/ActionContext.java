@@ -51,11 +51,11 @@ public class ActionContext {
 	}
 
 	public long getNewChainID() {
-		return context.getSubmission(submissionId).getNewChainID();
+		return context.getChainCounter(submissionId);
 	}
 
 	public int getNewBucketID() {
-		return (int) context.getSubmission(submissionId).getNewBucketID();
+		return context.getBucketCounter(submissionId);
 	}
 	
 	public List<Object[]> retrieveRemoteCacheObjects(Object... keys) {

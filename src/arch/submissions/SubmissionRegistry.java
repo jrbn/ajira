@@ -131,7 +131,7 @@ public class SubmissionRegistry {
 		synchronized (this) {
 			submissionId = submissionCounter++;
 		}
-		Submission sub = new Submission(submissionId, job.getAssignedOutputBucket(), context);
+		Submission sub = new Submission(submissionId, job.getAssignedOutputBucket());
 
 		submissions.put(submissionId, sub);
 		

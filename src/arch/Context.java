@@ -22,6 +22,12 @@ import arch.utils.Configuration;
 import arch.utils.UniqueCounter;
 
 public class Context {
+	
+	private static final String BUCKETCOUNTER_NAME = "BucketCounter";
+	private static final String CHAINCOUNTER_NAME = "ChainCounter";
+	
+	private static final long BUCKET_INIT = 100;
+	private static final long CHAIN_INIT = 100;
 
 	private boolean localMode;
 	private InputLayerRegistry input;
@@ -147,5 +153,25 @@ public class Context {
 
 	public void deleteCounter(String name) {
 		counter.removeCounter(name);
+	}
+	
+	public int getBucketCounter(int submissionId) {
+		String name = BUCKETCOUNTER_NAME + submissionId;
+		synchronized(counter) {
+			if (! counter.hasCounter(name)) {
+				initializeCounter(name, BUCKET_INIT);
+			}
+		}
+		return (int) getUniqueCounter(name);
+	}
+	
+	public long getChainCounter(int submissionId) {
+		String name = CHAINCOUNTER_NAME + submissionId;
+		synchronized(counter) {
+			if (! counter.hasCounter(name)) {
+				initializeCounter(name, CHAIN_INIT);
+			}
+		}
+		return getUniqueCounter(name);
 	}
 }
