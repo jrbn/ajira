@@ -16,17 +16,12 @@ import arch.net.NetworkLayer;
 import arch.storage.Factory;
 import arch.storage.SubmissionCache;
 import arch.storage.container.WritableContainer;
+import arch.submissions.Submission;
 import arch.submissions.SubmissionRegistry;
 import arch.utils.Configuration;
 import arch.utils.UniqueCounter;
 
 public class Context {
-
-	static final String BUCKETCOUNTER_NAME = "BucketCounter";
-	static final String CHAINCOUNTER_NAME = "ChainCounter";
-	
-	private static final long BUCKET_INIT = 100;
-	private static final long CHAIN_INIT = 100;
 
 	private boolean localMode;
 	private InputLayerRegistry input;
@@ -71,9 +66,6 @@ public class Context {
 		this.cache = cache;
 		this.merger = merger;
 		this.handlers = listHandlers;
-
-		initializeCounter(CHAINCOUNTER_NAME, CHAIN_INIT);
-		initializeCounter(BUCKETCOUNTER_NAME, BUCKET_INIT);
 	}
 
 	public CachedFilesMerger getMergeSortThreadsInfo() {
@@ -115,6 +107,10 @@ public class Context {
 	public SubmissionRegistry getSubmissionsRegistry() {
 		return registry;
 	}
+	
+	public Submission getSubmission(int submissionId) {
+		return registry.getSubmission(submissionId);
+	}
 
 	public WritableContainer<Chain> getChainsToProcess() {
 		return chainsToProcess;
@@ -147,5 +143,9 @@ public class Context {
 
 	public void initializeCounter(String name, long init) {
 		counter.init(name, init);
+	}
+
+	public void deleteCounter(String name) {
+		counter.removeCounter(name);
 	}
 }

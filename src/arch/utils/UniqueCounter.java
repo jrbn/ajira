@@ -19,8 +19,6 @@ public class UniqueCounter {
 		this(1, 0);
 	}
 
-	// TODO: This class should consider the submission ID when it returns a
-	// counter
 	public synchronized long getCounter(String name) {
 
 		long n;
@@ -37,5 +35,9 @@ public class UniqueCounter {
 	public void init(String name, long init) {
 		long n = ((init + nNodes - 1) / nNodes) * nNodes + myNode;
 		counters.put(name, n);
+	}
+	
+	public void removeCounter(String name) {
+		counters.remove(name);
 	}
 }

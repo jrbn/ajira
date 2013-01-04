@@ -45,21 +45,17 @@ public class ActionContext {
 		context.getSubmissionCache().putObjectInCache(submissionId, key, value);
 	}
 
-	public long getUniqueCounter(String name) {
-		return context.getUniqueCounter(name);
-	}
-
 	public void incrCounter(String counterId, long value) {
 		context.getStatisticsCollector().addCounter(nodeId, submissionId,
 				counterId, value);
 	}
 
 	public long getNewChainID() {
-		return getUniqueCounter(Context.CHAINCOUNTER_NAME);
+		return context.getSubmission(submissionId).getNewChainID();
 	}
 
 	public int getNewBucketID() {
-		return (int) getUniqueCounter(Context.BUCKETCOUNTER_NAME);
+		return (int) context.getSubmission(submissionId).getNewBucketID();
 	}
 	
 	public List<Object[]> retrieveRemoteCacheObjects(Object... keys) {
@@ -113,12 +109,12 @@ public class ActionContext {
 
 	public Bucket getBucket(int bucketId, String sortingFunction) {
 		return context.getTuplesBuckets().getOrCreateBucket(nodeId,
-				submissionId, sortingFunction, null);
+				submissionId, bucketId, sortingFunction, null);
 	}
 
 	public Bucket startTransfer(int nodeId, int bucketId, String sortingFunction) {
 		return context.getTuplesBuckets().startTransfer(this.nodeId,
-				submissionId, nodeId, bucketId, sortingFunction, null);
+				submissionId, nodeId, bucketId, sortingFunction, null, this);
 	}
 
 	public void finishTransfer(int nodeId, int bucketId,
@@ -129,5 +125,9 @@ public class ActionContext {
 				currentChain.getChainChildren(),
 				currentChain.getReplicatedFactor(), isChainRoot,
 				sortingFunction, null, decreaseCounter);
+	}
+
+	public int getUniqueCounter(String name) {
+		return (int) context.getUniqueCounter(name);
 	}
 }

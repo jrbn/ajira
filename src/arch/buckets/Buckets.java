@@ -9,6 +9,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import arch.ActionContext;
 import arch.StatisticsCollector;
 import arch.data.types.Tuple;
 import arch.datalayer.TupleIterator;
@@ -29,7 +30,6 @@ public class Buckets {
 
 	StatisticsCollector stats;
 
-	int internalCounter = Integer.MAX_VALUE;
 	int myPartition = 0;
 
 	@SuppressWarnings("unchecked")
@@ -96,9 +96,9 @@ public class Buckets {
 	}
 
 	public synchronized Bucket getOrCreateBucket(int submissionNode,
-			int idSubmission, String sortingFunction, byte[] sortingParams) {
+			int idSubmission, String sortingFunction, byte[] sortingParams, ActionContext context) {
 		return getOrCreateBucket(submissionNode, idSubmission,
-				internalCounter++, sortingFunction, sortingParams);
+				context.getNewBucketID(), sortingFunction, sortingParams);
 	}
 
 	public synchronized void releaseBucket(Bucket bucket) {
@@ -189,7 +189,7 @@ public class Buckets {
 	}
 
 	public Bucket startTransfer(int submissionNode, int submission, int node,
-			int bucketID, String sortingFunction, byte[] sortingParams) {
+			int bucketID, String sortingFunction, byte[] sortingParams, ActionContext context) {
 
 		if (node == myPartition || net.getNumberNodes() == 1) {
 			// return directly the node
@@ -205,10 +205,10 @@ public class Buckets {
 		synchronized (map) {
 			info = map.get(key);
 			if (info == null) {
-				// There is any transfer active. Create one
+				// There is no transfer active. Create one.
 				info = new TransferInfo();
 				info.bucket = getOrCreateBucket(submissionNode, submission,
-						sortingFunction, sortingParams);
+						sortingFunction, sortingParams, context);
 				map.put(key, info);
 			} else {
 				info.count++;

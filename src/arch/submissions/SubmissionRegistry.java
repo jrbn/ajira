@@ -29,8 +29,6 @@ public class SubmissionRegistry {
 	static final Logger log = LoggerFactory.getLogger(SubmissionRegistry.class);
 
 	Factory<Chain> chainFactory = new Factory<Chain>(Chain.class);
-	Factory<Submission> submissionFactory = new Factory<Submission>(
-			Submission.class);
 
 	ActionFactory ap;
 	DataProvider dp;
@@ -111,8 +109,7 @@ public class SubmissionRegistry {
 					bucket.waitUntilFinished();
 				}
 
-				sub.state = Consts.STATE_FINISHED;
-				sub.endTime = System.nanoTime();
+				sub.setFinished();
 				sub.notifyAll();
 			}
 		}
@@ -136,20 +133,15 @@ public class SubmissionRegistry {
 		chain.setInputLayerId(Consts.DEFAULT_INPUT_LAYER_ID);
 		chain.addActions(job.getActions(), new ActionContext(context, chain));
 
-		Submission sub = submissionFactory.get();
-		sub.init();
-		sub.startupTime = System.nanoTime();
+		int submissionId;
 		synchronized (this) {
-			sub.submissionId = submissionCounter++;
+			submissionId = submissionCounter++;
 		}
-		sub.state = Consts.STATE_OPEN;
-		sub.finalStatsReceived = 0;
-		sub.rootChainsReceived = -1;
-		sub.assignedBucket = job.getAssignedOutputBucket();
+		Submission sub = new Submission(submissionId, job.getAssignedOutputBucket(), context);
 
-		submissions.put(sub.submissionId, sub);
+		submissions.put(submissionId, sub);
 		chain.setSubmissionNode(context.getNetworkLayer().getMyPartition());
-		chain.setSubmissionId(sub.submissionId);
+		chain.setSubmissionId(submissionId);
 
 		// If local
 		if (context.isLocalMode()) {
@@ -162,12 +154,11 @@ public class SubmissionRegistry {
 	}
 
 	public void releaseSubmission(Submission submission) {
-		submissions.remove(submission.submissionId);
-		submissionFactory.release(submission);
+		submissions.remove(submission.getSubmissionId());
 	}
 
 	public void setState(int submissionId, String state) {
-		submissions.get(submissionId).state = state;
+		submissions.get(submissionId).setState(state);
 	}
 
 	public void cleanupSubmission(Submission submission) throws IOException,
