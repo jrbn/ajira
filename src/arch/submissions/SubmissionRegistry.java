@@ -59,49 +59,40 @@ public class SubmissionRegistry {
 	}
 
 	public void updateCounters(int submissionId, long chainId,
-			long parentChainId, int nchildren, int repFactor) {
+			long parentChainId, int nchildren) {
 		Submission sub = getSubmission(submissionId);
-		if (log.isDebugEnabled()) {
-			log.debug("updateCounters: submissionId = " + submissionId
-					+ ", chainId = " + chainId + ", parentChainId = "
-					+ parentChainId + ", nchildren = " + nchildren
-					+ ", repFactor = " + repFactor);
-		}
 
 		synchronized (sub) {
 			if (nchildren > 0) { // Set the expected children in the
 				// map
-				int[] c = sub.monitors.get(chainId);
+				Integer c = sub.monitors.get(chainId);
 				if (c == null) {
-					c = new int[2];
+					c = nchildren;
+				} else {
+					c += nchildren;
+				}
+				if (c == 0) {
+					sub.monitors.remove(chainId);
+				} else {
 					sub.monitors.put(chainId, c);
 				}
-				c[0] += nchildren;
-
-				if (c[0] == c[1] && c[0] == 0)
-					sub.monitors.remove(chainId);
 			}
 
 			if (parentChainId == -1) { // It is one of the root chains
-				sub.rootChainsReceived += repFactor;
-				if (repFactor == 0)
-					sub.rootChainsReceived--;
+				sub.rootChainsReceived = 0;
 			} else {
 				// Change the children field of the parent chain
-				int[] c = sub.monitors.get(parentChainId);
+				Integer c = sub.monitors.get(parentChainId);
 				if (c == null) {
-					c = new int[2];
-					sub.monitors.put(parentChainId, c);
-				}
-
-				if (repFactor > 0) {
-					c[0]--; // Got a child
-					c[1] += repFactor - 1;
+					sub.monitors.put(parentChainId, -1);
 				} else {
-					c[1]--;
+					c--;
+					if (c == 0) {
+						sub.monitors.remove(parentChainId);
+					} else {
+						sub.monitors.put(parentChainId, c);
+					}
 				}
-				if (c[0] == c[1] && c[0] == 0)
-					sub.monitors.remove(parentChainId);
 			}
 
 			if (sub.rootChainsReceived == 0 && sub.monitors.size() == 0) {
@@ -116,12 +107,6 @@ public class SubmissionRegistry {
 				sub.notifyAll();
 			}
 		}
-
-		if (log.isDebugEnabled())
-			log.debug("Updated after chain " + chainId + "(" + parentChainId
-					+ ") c=" + nchildren + " r=" + repFactor
-					+ " finished: rcr: " + sub.rootChainsReceived + " cs: "
-					+ sub.monitors.size());
 	}
 
 	public Submission getSubmission(int submissionId) {
@@ -132,7 +117,6 @@ public class SubmissionRegistry {
 
 		Chain chain = new Chain();
 		chain.setParentChainId(-1);
-		chain.setReplicatedFactor(1);
 		chain.setInputLayer(Consts.DEFAULT_INPUT_LAYER_ID);
 		chain.addActions(job.getActions(), new ActionsExecutor(context, null,
 				chain));

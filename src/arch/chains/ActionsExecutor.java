@@ -140,18 +140,16 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 		while (currentAction < nActions) {
 			actions[currentAction++].startProcess(this);
 		}
-		currentAction = 0;
+		currentAction = -1;
 	}
 
 	@Override
 	public void output(Tuple tuple) throws Exception {
-		actions[currentAction].process(tuple, this, this);
 		if (currentAction < nActions - 1) {
 			currentAction++;
-			output(tuple);
+			actions[currentAction].process(tuple, this, this);
 			currentAction--;
 		}
-
 	}
 
 	void stopProcess() throws Exception {
@@ -164,7 +162,7 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 
 	@Override
 	public boolean isBranchingAllowed() {
-		return roots[currentAction] && chain.getReplicatedFactor() > 0;
+		return roots[currentAction]/* && chain.getReplicatedFactor() > 0 */;
 	}
 
 	@Override
@@ -209,11 +207,15 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 		context.getTuplesBuckets().finishTransfer(this.submissionNode,
 				submissionId, nodeId, bucketId, chain.getChainId(),
 				chain.getParentChainId(), chain.getChainChildren(),
-				chain.getReplicatedFactor(), roots[currentAction],
-				sortingFunction, null, decreaseCounter);
+				roots[currentAction], sortingFunction, null, decreaseCounter);
 	}
 
 	int getNActions() {
 		return nActions;
+	}
+
+	@Override
+	public int getSubmissionId() {
+		return submissionId;
 	}
 }

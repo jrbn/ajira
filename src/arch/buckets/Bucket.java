@@ -90,10 +90,9 @@ public class Bucket {
 
 	private final byte[] sequencesReceived = new byte[Consts.MAX_SEGMENTS_RECEIVED];
 	private int highestSequence;
-	private final Map<Long, int[]> childrens = new HashMap<Long, int[]>();
+	private final Map<Long, Integer> childrens = new HashMap<Long, Integer>();
 	private boolean isFinished;
 
-	private int rootChainsReplication = 0;
 	private boolean receivedMainChain;
 
 	private int submissionNode;
@@ -132,7 +131,6 @@ public class Bucket {
 
 		isFinished = false;
 		receivedMainChain = false;
-		rootChainsReplication = 0;
 		nChainsReceived = 0;
 		nBucketReceived = 0;
 		highestSequence = -1;
@@ -165,43 +163,44 @@ public class Bucket {
 	}
 
 	public synchronized void updateCounters(long idChain, long idParentChain,
-			int children, int replicatedFactor, boolean isResponsible)
-			throws IOException {
+			int children, boolean isResponsible) throws IOException {
 
 		if (log.isDebugEnabled()) {
 			log.debug("Update counters of bucket " + this.key + ": ic "
-					+ idChain + " p " + idParentChain + " c " + children
-					+ " r " + replicatedFactor + " " + isResponsible);
+					+ idChain + " p " + idParentChain + " c " + children + " "
+					+ isResponsible);
 		}
 
 		if (children > 0) { // Set the expected children in the
 			// map
-			int[] c = childrens.get(idChain);
+			Integer c = childrens.get(idChain);
 			if (c == null) {
-				c = new int[2];
-				childrens.put(idChain, c);
+				childrens.put(idChain, children);
+			} else {
+				c += children;
+				if (c == 0) {
+					childrens.remove(idChain);
+				} else {
+					childrens.put(idChain, c);
+				}
 			}
-			c[0] += children;
-			if (c[0] == 0 && c[1] == 0)
-				childrens.remove(idChain);
+
 		}
 
 		if (isResponsible) { // It is a root chain
-			rootChainsReplication += replicatedFactor - 1;
 			receivedMainChain = true;
 		} else {
-			int[] c = childrens.get(idParentChain);
+			Integer c = childrens.get(idParentChain);
 			if (c == null) {
-				c = new int[2];
-				childrens.put(idParentChain, c);
+				childrens.put(idParentChain, -1);
+			} else {
+				c--;
+				if (c == 0) {
+					childrens.remove(idParentChain);
+				} else {
+					childrens.put(idParentChain, c);
+				}
 			}
-
-			if (replicatedFactor > 0) { // It is an original chain
-				c[0]--;
-			}
-			c[1] += replicatedFactor - 1;
-			if (c[0] == 0 && c[1] == 0)
-				childrens.remove(idParentChain);
 		}
 
 		nChainsReceived++;
@@ -240,8 +239,7 @@ public class Bucket {
 		 * ", receivedMainChain = " + receivedMainChain); }
 		 */
 		if (nChainsReceived == nBucketReceived && highestSequence != -1
-				&& rootChainsReplication == 0 && childrens.size() == 0
-				&& receivedMainChain) {
+				&& childrens.size() == 0 && receivedMainChain) {
 			for (int i = 0; i < highestSequence + 1; ++i)
 				if (sequencesReceived[i] != 0) {
 					return;
@@ -604,8 +602,9 @@ public class Bucket {
 
 		if (tuples.getNElements() > 0) {
 			if (log.isInfoEnabled()) {
-                            log.info("Caching buffer, tuples.getNElements = "
-                                    + tuples.getNElements(), new Throwable());
+				log.info(
+						"Caching buffer, tuples.getNElements = "
+								+ tuples.getNElements(), new Throwable());
 			}
 			cacheBuffer(tuples, isBufferSorted, fb);
 			tuples = fb.get();

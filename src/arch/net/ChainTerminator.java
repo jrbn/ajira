@@ -22,7 +22,7 @@ class ChainTerminator implements Runnable {
 		public int submissionId;
 		public long chainId;
 		public long parentChainId;
-		public int repFactor;
+		// public int repFactor;
 		public int nchildrens;
 		public boolean failed;
 
@@ -36,7 +36,7 @@ class ChainTerminator implements Runnable {
 			submissionId = input.readInt();
 			chainId = input.readLong();
 			parentChainId = input.readLong();
-			repFactor = input.readInt();
+			// repFactor = input.readInt();
 			nchildrens = input.readInt();
 			failed = input.readBoolean();
 		}
@@ -47,7 +47,7 @@ class ChainTerminator implements Runnable {
 			output.writeInt(submissionId);
 			output.writeLong(chainId);
 			output.writeLong(parentChainId);
-			output.writeInt(repFactor);
+			// output.writeInt(repFactor);
 			output.writeInt(nchildrens);
 			output.writeBoolean(failed);
 		}
@@ -84,8 +84,12 @@ class ChainTerminator implements Runnable {
 					if (localMode) {
 						context.getSubmissionsRegistry().updateCounters(
 								header.submissionId, header.chainId,
-								header.parentChainId, header.nchildrens,
-								header.repFactor);
+								header.parentChainId, header.nchildrens/*
+																		 * ,
+																		 * header
+																		 * .
+																		 * repFactor
+																		 */);
 					} else {
 						IbisIdentifier identifier = ibis
 								.getPeerLocation(header.nodeId);
@@ -96,7 +100,7 @@ class ChainTerminator implements Runnable {
 						msg.writeInt(header.submissionId);
 						msg.writeLong(header.chainId);
 						msg.writeLong(header.parentChainId);
-						msg.writeInt(header.repFactor);
+						// msg.writeInt(header.repFactor);
 						msg.writeInt(header.nchildrens);
 						ibis.finishMessage(msg, header.submissionId);
 						if (log.isDebugEnabled()) {

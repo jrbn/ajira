@@ -219,15 +219,15 @@ public class Buckets {
 
 	public void finishTransfer(int submissionNode, int submission, int node,
 			int bucketID, long chainId, long parentChainId, int nchildren,
-			int replicatedFactor, boolean responsible, String sortingFunction,
-			byte[] sortingParams, boolean decreaseCounter) throws IOException {
+			boolean responsible, String sortingFunction, byte[] sortingParams,
+			boolean decreaseCounter) throws IOException {
 
 		if (node == myPartition || net.getNumberNodes() == 1) {
 			Bucket bucket = getOrCreateBucket(submissionNode, submission,
 					bucketID, sortingFunction, sortingParams);
 
 			bucket.updateCounters(chainId, parentChainId, nchildren,
-					replicatedFactor, responsible);
+					responsible);
 			bucket.updateCounters(0, true);
 			return;
 		}
@@ -247,7 +247,7 @@ public class Buckets {
 		message.writeLong(chainId);
 		message.writeLong(parentChainId);
 		message.writeInt(nchildren);
-		message.writeInt(replicatedFactor);
+		// message.writeInt(replicatedFactor);
 		message.writeBoolean(responsible);
 		if (sortingFunction == null || sortingFunction.equals("")) {
 			message.writeBoolean(false);

@@ -14,10 +14,7 @@ public class Submission {
 	int assignedBucket = -1;
 	int rootChainsReceived = -1;
 
-	// boolean printStats;
-	// boolean printIntermediateStats;
-
-	Map<Long, int[]> monitors = new HashMap<Long, int[]>();
+	Map<Long, Integer> monitors = new HashMap<Long, Integer>();
 
 	public double getExecutionTimeInMs() {
 		return (double) (endTime - startupTime) / 1000 / 1000;

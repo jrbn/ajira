@@ -122,14 +122,6 @@ public class Chain extends Writable implements Query {
 		return Utils.decodeInt(buffer, 24);
 	}
 
-	public int getReplicatedFactor() {
-		return Utils.decodeInt(buffer, 28);
-	}
-
-	public void setReplicatedFactor(int factor) {
-		Utils.encodeInt(buffer, 28, factor);
-	}
-
 	@Override
 	public void setInputLayer(int id) {
 		buffer[32] = (byte) id;
@@ -226,11 +218,13 @@ public class Chain extends Writable implements Query {
 		}
 	}
 
-	void branch(Chain newChain, long newChainId) {
+	public void branch(Chain newChain, long newChainId) {
 		copyTo(newChain);
 		newChain.setParentChainId(this.getChainId());
 		newChain.setChainId(newChainId);
+
 		newChain.setChainChildren(0);
+
 		setChainChildren(getChainChildren() + 1);
 	}
 

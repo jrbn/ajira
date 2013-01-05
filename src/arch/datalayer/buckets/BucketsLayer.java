@@ -34,18 +34,11 @@ public class BucketsLayer extends InputLayer {
 	public TupleIterator getIterator(Tuple tuple, ActionContext context) {
 		TupleIterator itr = null;
 		try {
-			TInt submissionBucket = intFactory.get();
 			TInt numberBucket = intFactory.get();
-			// TBoolean removeDuplicates = booleanFactory.get();
-
-			tuple.get(submissionBucket, numberBucket/* , removeDuplicates */);
-
-			itr = buckets.getIterator(submissionBucket.getValue(),
+			tuple.get(numberBucket);
+			itr = buckets.getIterator(context.getSubmissionId(),
 					numberBucket.getValue());
-
-			intFactory.release(submissionBucket);
 			intFactory.release(numberBucket);
-			// booleanFactory.release(removeDuplicates);
 		} catch (Exception e) {
 			log.error("Error retrieving the tuple iterator", e);
 		}

@@ -17,6 +17,8 @@ public interface ActionContext {
 
 	public int getNumberNodes();
 
+	public int getSubmissionId();
+
 	public int getSystemParamInt(String prop, int defaultValue);
 
 	public boolean getSystemParamBoolean(String prop, boolean defaultValue);
@@ -42,4 +44,5 @@ public interface ActionContext {
 
 	void finishTransfer(int nodeId, int bucketId, String sortingFunction,
 			boolean decreaseCounter) throws IOException;
+
 }

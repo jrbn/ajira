@@ -35,6 +35,7 @@ class ChainSender implements Runnable {
 		try {
 			Tuple tuple = new Tuple();
 			Chain chain = new Chain();
+			Chain supportChain = new Chain();
 
 			while (true) {
 				chainsToSend.remove(chain);
@@ -47,24 +48,40 @@ class ChainSender implements Runnable {
 				NetworkLayer ibis = context.getNetworkLayer();
 				IbisIdentifier[] nodes = ibis.getPeersLocation(loc);
 
-				chain.setReplicatedFactor(Math.max(nodes.length, 1));
 				if (nodes.length == 0) { // Put it directly in the queue
 					chainsToProcess.add(chain);
 				} else { // Send the chains
 					for (int i = 0; i < nodes.length; ++i) {
 						IbisIdentifier node = nodes[i];
+
 						if (i > 0) {
-							chain.setChainChildren(0);
-							chain.setReplicatedFactor(0);
-						}
-						if (node.compareTo(ibis.ibis.identifier()) == 0) {
-							chainsToProcess.add(chain);
+							// TODO: add new chain id
+							chain.branch(supportChain, -1);
+
+							if (node.compareTo(ibis.ibis.identifier()) == 0) {
+								chainsToProcess.add(supportChain);
+							} else {
+								WriteMessage msg = ibis.getMessageToSend(node,
+										NetworkLayer.nameMgmtReceiverPort);
+								msg.writeByte((byte) 0);
+								supportChain.writeTo(new WriteMessageWrapper(
+										msg));
+								ibis.finishMessage(msg,
+										supportChain.getSubmissionId());
+							}
+
 						} else {
-							WriteMessage msg = ibis.getMessageToSend(node,
-									NetworkLayer.nameMgmtReceiverPort);
-							msg.writeByte((byte) 0);
-							chain.writeTo(new WriteMessageWrapper(msg));
-							ibis.finishMessage(msg, chain.getSubmissionId());
+
+							if (node.compareTo(ibis.ibis.identifier()) == 0) {
+								chainsToProcess.add(chain);
+							} else {
+								WriteMessage msg = ibis.getMessageToSend(node,
+										NetworkLayer.nameMgmtReceiverPort);
+								msg.writeByte((byte) 0);
+								chain.writeTo(new WriteMessageWrapper(msg));
+								ibis.finishMessage(msg, chain.getSubmissionId());
+							}
+
 						}
 					}
 				}

@@ -81,7 +81,6 @@ class Receiver implements MessageUpcall {
 			long idChain = message.readLong();
 			long idParentChain = message.readLong();
 			int children = message.readInt();
-			int replicatedFactor = message.readInt();
 			boolean isResponsible = message.readBoolean();
 			boolean isSorted = message.readBoolean();
 			String cf = null;
@@ -98,7 +97,7 @@ class Receiver implements MessageUpcall {
 			Bucket bucket = buckets.getOrCreateBucket(submissionNode,
 					idSubmission, idBucket, cf, cfParams);
 			bucket.updateCounters(idChain, idParentChain, children,
-					replicatedFactor, isResponsible);
+					isResponsible);
 
 			if (bufferKey != -1) {
 				finishMessage(message, time, idSubmission);
@@ -119,11 +118,10 @@ class Receiver implements MessageUpcall {
 			if (!isChainFailed) {
 				idChain = message.readLong();
 				idParentChain = message.readLong();
-				replicatedFactor = message.readInt();
 				children = message.readInt();
 				finishMessage(message, time, idSubmission);
 				context.getSubmissionsRegistry().updateCounters(idSubmission,
-						idChain, idParentChain, children, replicatedFactor);
+						idChain, idParentChain, children);
 			} else {
 				// Cleanup submission
 				submissionNode = message.readInt();

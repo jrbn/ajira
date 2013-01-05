@@ -130,7 +130,6 @@ public class NetworkLayer {
 		ch.chainId = chain.getChainId();
 		ch.parentChainId = chain.getParentChainId();
 		ch.nchildrens = chain.getChainChildren();
-		ch.repFactor = chain.getReplicatedFactor();
 		ch.failed = false;
 		chainsTerminated.add(ch);
 		chFactory.release(ch);
@@ -333,11 +332,11 @@ public class NetworkLayer {
 
 	public void stopIbis() throws IOException {
 		for (ReceivePort rp : receivePorts) {
-                        try {
-                            rp.close(-1);
-                        } catch(Throwable e) {
-                            // ignore
-                        }
+			try {
+				rp.close(-1);
+			} catch (Throwable e) {
+				// ignore
+			}
 		}
 
 		ibis.end();
