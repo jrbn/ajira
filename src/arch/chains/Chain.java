@@ -114,11 +114,11 @@ public class Chain extends Writable implements Query {
 		return Utils.decodeLong(buffer, 16);
 	}
 
-	public void setChainChildren(int chainChildren) {
+	public void setTotalChainChildren(int chainChildren) {
 		Utils.encodeInt(buffer, 24, chainChildren);
 	}
 
-	public int getChainChildren() {
+	public int getTotalChainChildren() {
 		return Utils.decodeInt(buffer, 24);
 	}
 
@@ -223,9 +223,9 @@ public class Chain extends Writable implements Query {
 		newChain.setParentChainId(this.getChainId());
 		newChain.setChainId(newChainId);
 
-		newChain.setChainChildren(0);
+		newChain.setTotalChainChildren(0);
 
-		setChainChildren(getChainChildren() + 1);
+		setTotalChainChildren(getTotalChainChildren() + 1);
 	}
 
 	void getActions(ActionsExecutor actions, ActionFactory ap)

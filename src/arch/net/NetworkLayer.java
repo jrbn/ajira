@@ -129,7 +129,7 @@ public class NetworkLayer {
 		ch.submissionId = chain.getSubmissionId();
 		ch.chainId = chain.getChainId();
 		ch.parentChainId = chain.getParentChainId();
-		ch.nchildrens = chain.getChainChildren();
+		ch.nchildrens = chain.getTotalChainChildren();
 		ch.failed = false;
 		chainsTerminated.add(ch);
 		chFactory.release(ch);

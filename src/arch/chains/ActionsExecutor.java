@@ -206,7 +206,7 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 			String sortingFunction, boolean decreaseCounter) throws IOException {
 		context.getTuplesBuckets().finishTransfer(this.submissionNode,
 				submissionId, nodeId, bucketId, chain.getChainId(),
-				chain.getParentChainId(), chain.getChainChildren(),
+				chain.getParentChainId(), chain.getTotalChainChildren(),
 				roots[currentAction], sortingFunction, null, decreaseCounter);
 	}
 
