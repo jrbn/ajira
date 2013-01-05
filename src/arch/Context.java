@@ -17,6 +17,7 @@ import arch.statistics.StatisticsCollector;
 import arch.storage.Factory;
 import arch.storage.SubmissionCache;
 import arch.storage.container.WritableContainer;
+import arch.submissions.Submission;
 import arch.submissions.SubmissionRegistry;
 import arch.utils.Configuration;
 import arch.utils.Consts;
@@ -116,6 +117,10 @@ public class Context {
 		return registry;
 	}
 
+	public Submission getSubmission(int submissionId) {
+		return registry.getSubmission(submissionId);
+	}
+
 	public WritableContainer<Chain> getChainsToProcess() {
 		return chainsToProcess;
 	}
@@ -147,5 +152,29 @@ public class Context {
 
 	public void initializeCounter(String name, long init) {
 		counter.init(name, init);
+	}
+
+	public void deleteCounter(String name) {
+		counter.removeCounter(name);
+	}
+
+	public int getBucketCounter(int submissionId) {
+		String name = Consts.BUCKETCOUNTER_NAME + submissionId;
+		synchronized (counter) {
+			if (!counter.hasCounter(name)) {
+				initializeCounter(name, BUCKET_INIT);
+			}
+		}
+		return (int) getUniqueCounter(name);
+	}
+
+	public long getChainCounter(int submissionId) {
+		String name = Consts.CHAINCOUNTER_NAME + submissionId;
+		synchronized (counter) {
+			if (!counter.hasCounter(name)) {
+				initializeCounter(name, CHAIN_INIT);
+			}
+		}
+		return getUniqueCounter(name);
 	}
 }

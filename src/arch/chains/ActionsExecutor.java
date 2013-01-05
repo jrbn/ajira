@@ -66,7 +66,7 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 
 	@Override
 	public int getNewBucketID() {
-		return (int) getCounter(Consts.BUCKETCOUNTER_NAME);
+		return context.getBucketCounter(submissionId);
 	}
 
 	@Override
@@ -192,13 +192,13 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 	@Override
 	public Bucket getBucket(final int bucketId, final String sortingFunction) {
 		return context.getTuplesBuckets().getOrCreateBucket(submissionNode,
-				submissionId, sortingFunction, null);
+				submissionId, bucketId, sortingFunction, null);
 	}
 
 	@Override
 	public Bucket startTransfer(int nodeId, int bucketId, String sortingFunction) {
-		return context.getTuplesBuckets().startTransfer(this.submissionNode,
-				submissionId, nodeId, bucketId, sortingFunction, null);
+		return context.getTuplesBuckets().startTransfer(submissionNode,
+				submissionId, nodeId, bucketId, sortingFunction, null, this);
 	}
 
 	@Override
