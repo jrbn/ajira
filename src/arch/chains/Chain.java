@@ -196,15 +196,11 @@ public class Chain extends Writable implements Query {
 		bufferSize += 4;
 	}
 
-	int getRawSize() {
-		return bufferSize;
-	}
-
 	void setRawSize(int size) {
 		bufferSize = size;
 	}
 
-	void copyTo(Chain newChain) {
+	private void copyTo(Chain newChain) {
 		newChain.startingPosition = startingPosition;
 		newChain.bufferSize = bufferSize;
 		System.arraycopy(buffer, 0, newChain.buffer, 0, bufferSize);

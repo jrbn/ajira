@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 
 import arch.Context;
 import arch.actions.ActionContext;
-import arch.chains.Chain;
 import arch.chains.ChainLocation;
 import arch.data.types.Tuple;
 import arch.utils.Configuration;
@@ -53,6 +52,5 @@ public abstract class InputLayer {
 	public abstract void releaseIterator(TupleIterator itr,
 			ActionContext context);
 
-	public abstract ChainLocation getLocations(Tuple tuple, Chain chain,
-			Context context);
+	public abstract ChainLocation getLocations(Tuple tuple, ActionContext context);
 }

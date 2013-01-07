@@ -9,7 +9,6 @@ import arch.Context;
 import arch.actions.ActionContext;
 import arch.buckets.BucketIterator;
 import arch.buckets.Buckets;
-import arch.chains.Chain;
 import arch.chains.ChainLocation;
 import arch.data.types.TInt;
 import arch.data.types.Tuple;
@@ -47,7 +46,7 @@ public class BucketsLayer extends InputLayer {
 	}
 
 	@Override
-	public ChainLocation getLocations(Tuple tuple, Chain chain, Context context) {
+	public ChainLocation getLocations(Tuple tuple, ActionContext context) {
 		try {
 			TInt locationBucket = intFactory.get();
 			tuple.get(locationBucket, tuple.getNElements() - 1);

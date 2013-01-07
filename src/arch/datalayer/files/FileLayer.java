@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 
 import arch.Context;
 import arch.actions.ActionContext;
-import arch.chains.Chain;
 import arch.chains.ChainLocation;
 import arch.data.types.TInt;
 import arch.data.types.TString;
@@ -108,7 +107,7 @@ public class FileLayer extends InputLayer {
 	}
 
 	@Override
-	public ChainLocation getLocations(Tuple tuple, Chain chain, Context context) {
+	public ChainLocation getLocations(Tuple tuple, ActionContext context) {
 		TInt operation = factoryInt.get();
 		TString value = factory.get();
 		try {

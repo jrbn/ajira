@@ -7,6 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import arch.Context;
+import arch.actions.ActionContext;
+import arch.chains.ActionsExecutor;
 import arch.chains.Chain;
 import arch.chains.ChainLocation;
 import arch.data.types.Tuple;
@@ -36,6 +38,7 @@ class ChainSender implements Runnable {
 			Tuple tuple = new Tuple();
 			Chain chain = new Chain();
 			Chain supportChain = new Chain();
+			ActionContext ac = new ActionsExecutor(context, null);
 
 			while (true) {
 				chainsToSend.remove(chain);
@@ -43,7 +46,7 @@ class ChainSender implements Runnable {
 
 				ChainLocation loc = context
 						.getInputLayer(chain.getInputLayer()).getLocations(
-								tuple, chain, context);
+								tuple, ac);
 
 				NetworkLayer ibis = context.getNetworkLayer();
 				IbisIdentifier[] nodes = ibis.getPeersLocation(loc);
