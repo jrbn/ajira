@@ -22,6 +22,11 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 	private boolean[] roots = new boolean[Consts.MAX_N_ACTIONS];
 	private int nActions;
 
+	// Used for branching
+	private int[] cRuntimeBranching = new int[Consts.MAX_N_ACTIONS];
+	private int smallestRuntimeAction;
+	private boolean stopProcess;
+
 	private int currentAction;
 	private int submissionNode;
 	private int submissionId;
@@ -127,6 +132,8 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 		this.submissionNode = chain.getSubmissionNode();
 		this.submissionId = chain.getSubmissionId();
 
+		this.smallestRuntimeAction = -1;
+		this.stopProcess = false;
 	}
 
 	void addAction(Action action, boolean root, int chainRawSize) {
@@ -154,15 +161,17 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 
 	void stopProcess() throws Exception {
 		currentAction = 0;
+		stopProcess = true;
 		while (currentAction < nActions) {
 			actions[currentAction].stopProcess(this, this);
+			cRuntimeBranching[currentAction] = 0;
 			currentAction++;
 		}
 	}
 
 	@Override
 	public boolean isBranchingAllowed() {
-		return roots[currentAction]/* && chain.getReplicatedFactor() > 0 */;
+		return roots[currentAction];
 	}
 
 	@Override
@@ -171,6 +180,12 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 			chain.setRawSize(rawSizes[currentAction]);
 			chain.branch(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
 			supportChain.addActions(actions, this);
+			if (!stopProcess && currentAction < nActions - 1) {
+				cRuntimeBranching[currentAction]++;
+				if (currentAction > smallestRuntimeAction) {
+					smallestRuntimeAction = currentAction;
+				}
+			}
 			chainsBuffer.add(supportChain);
 		} else {
 			throw new Exception("Branching is not allowed");
@@ -183,6 +198,12 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 			chain.setRawSize(rawSizes[currentAction]);
 			chain.branch(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
 			supportChain.addAction(action, this);
+			if (!stopProcess && currentAction < nActions - 1) {
+				cRuntimeBranching[currentAction]++;
+				if (currentAction > smallestRuntimeAction) {
+					smallestRuntimeAction = currentAction;
+				}
+			}
 			chainsBuffer.add(supportChain);
 		} else {
 			throw new Exception("Branching is not allowed");
@@ -204,10 +225,22 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 	@Override
 	public void finishTransfer(int nodeId, int bucketId,
 			String sortingFunction, boolean decreaseCounter) throws IOException {
+
+		int children = chain.getTotalChainChildren();
+		if (children != 0 && currentAction < smallestRuntimeAction) {
+			// Check whether some intermediate nodes after have derived some
+			// info. If they do, we need to decrease the counter.
+			for (int i = smallestRuntimeAction; i < nActions; ++i) {
+				if (currentAction > cRuntimeBranching[i]) {
+					children -= cRuntimeBranching[i];
+				}
+			}
+		}
+
 		context.getTuplesBuckets().finishTransfer(this.submissionNode,
 				submissionId, nodeId, bucketId, chain.getChainId(),
-				chain.getParentChainId(), chain.getTotalChainChildren(),
-				roots[currentAction], sortingFunction, null, decreaseCounter);
+				chain.getParentChainId(), children, roots[currentAction],
+				sortingFunction, null, decreaseCounter);
 	}
 
 	int getNActions() {

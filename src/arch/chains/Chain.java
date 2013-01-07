@@ -37,7 +37,6 @@ public class Chain extends Writable implements Query {
 
 	private int startingPosition = Consts.CHAIN_RESERVED_SPACE;
 	private int bufferSize = Consts.CHAIN_RESERVED_SPACE;
-
 	private final byte[] buffer = new byte[Consts.CHAIN_SIZE];
 	private Tuple inputTuple = null;
 
@@ -216,11 +215,12 @@ public class Chain extends Writable implements Query {
 
 	public void branch(Chain newChain, long newChainId) {
 		copyTo(newChain);
+		// Set up the new chain
 		newChain.setParentChainId(this.getChainId());
 		newChain.setChainId(newChainId);
-
 		newChain.setTotalChainChildren(0);
 
+		// Update counters of the new chain.
 		setTotalChainChildren(getTotalChainChildren() + 1);
 	}
 
@@ -235,6 +235,7 @@ public class Chain extends Writable implements Query {
 			tmpSize -= 4;
 			int size = Utils.decodeInt(buffer, tmpSize);
 			String sAction = new String(buffer, tmpSize - size, size);
+
 			tmpSize -= 8 + size;
 			long chainId = Utils.decodeLong(buffer, tmpSize);
 
