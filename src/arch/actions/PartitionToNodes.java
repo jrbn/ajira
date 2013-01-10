@@ -10,7 +10,7 @@ import arch.data.types.TInt;
 import arch.data.types.Tuple;
 import arch.datalayer.Query;
 
-public class PartitionMultipleNodes extends Action {
+public class PartitionToNodes extends Action {
 
 	public static final int MULTIPLE = -1;
 	public static final int ALL = -2;
@@ -25,7 +25,7 @@ public class PartitionMultipleNodes extends Action {
 	public static final int BUCKET_IDS = 3;
 	private static final String S_BUCKET_IDS = "bucket_ids";
 
-	static final Logger log = LoggerFactory.getLogger(PartitionMultipleNodes.class);
+	static final Logger log = LoggerFactory.getLogger(PartitionToNodes.class);
 
 	private String sortingFunction = null;
 	private Bucket[] bucketsCache;

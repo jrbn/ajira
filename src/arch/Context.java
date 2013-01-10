@@ -138,7 +138,6 @@ public class Context {
 	}
 
 	public void cleanupSubmission(int submissionNode, int idSubmission) {
-		// FIXME: Every node receives this.
 		System.exit(1);
 	}
 

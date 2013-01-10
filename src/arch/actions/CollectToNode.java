@@ -7,9 +7,9 @@ import arch.buckets.Bucket;
 import arch.data.types.Tuple;
 import arch.datalayer.Query;
 
-public class CollectSingleNode extends Action {
+public class CollectToNode extends Action {
 
-	static final Logger log = LoggerFactory.getLogger(CollectSingleNode.class);
+	static final Logger log = LoggerFactory.getLogger(CollectToNode.class);
 
 	/* PARAMETERS */
 	public static final int NODE_ID = 0;

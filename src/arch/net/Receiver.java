@@ -236,8 +236,6 @@ class Receiver implements MessageUpcall {
 				bucket = buckets.getExistingBucket(
 						submission.getSubmissionId(),
 						submission.getAssignedBucket());
-				// Not needed: already done when waitForCompletion returns.
-				// bucket.waitUntilFinished();
 
 				net.stopMonitorCounters();
 				net.broadcastStopMonitoring();
@@ -263,7 +261,6 @@ class Receiver implements MessageUpcall {
 
 				context.getSubmissionsRegistry().getStatistics(job, submission);
 
-				// bufferFactory.release(tmpBuffer);
 				tmpBuffer = null;
 				if (isFinished) {
 					buckets.clearSubmission(submission.getSubmissionId());

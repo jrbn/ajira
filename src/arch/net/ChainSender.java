@@ -14,6 +14,7 @@ import arch.chains.ChainLocation;
 import arch.data.types.Tuple;
 import arch.statistics.StatisticsCollector;
 import arch.storage.Container;
+import arch.utils.Consts;
 
 class ChainSender implements Runnable {
 
@@ -54,38 +55,33 @@ class ChainSender implements Runnable {
 				if (nodes.length == 0) { // Put it directly in the queue
 					chainsToProcess.add(chain);
 				} else { // Send the chains
-					for (int i = 0; i < nodes.length; ++i) {
-						IbisIdentifier node = nodes[i];
 
-						if (i > 0) {
-							// TODO: add new chain id
-							chain.branch(supportChain, -1);
+					int i = nodes.length - 1;
+					while (i != 0) {
+						chain.branch(supportChain, context
+								.getUniqueCounter(Consts.CHAINCOUNTER_NAME));
 
-							if (node.compareTo(ibis.ibis.identifier()) == 0) {
-								chainsToProcess.add(supportChain);
-							} else {
-								WriteMessage msg = ibis.getMessageToSend(node,
-										NetworkLayer.nameMgmtReceiverPort);
-								msg.writeByte((byte) 0);
-								supportChain.writeTo(new WriteMessageWrapper(
-										msg));
-								ibis.finishMessage(msg,
-										supportChain.getSubmissionId());
-							}
-
+						if (nodes[i].compareTo(ibis.ibis.identifier()) == 0) {
+							chainsToProcess.add(supportChain);
 						} else {
-
-							if (node.compareTo(ibis.ibis.identifier()) == 0) {
-								chainsToProcess.add(chain);
-							} else {
-								WriteMessage msg = ibis.getMessageToSend(node,
-										NetworkLayer.nameMgmtReceiverPort);
-								msg.writeByte((byte) 0);
-								chain.writeTo(new WriteMessageWrapper(msg));
-								ibis.finishMessage(msg, chain.getSubmissionId());
-							}
-
+							WriteMessage msg = ibis.getMessageToSend(nodes[i],
+									NetworkLayer.nameMgmtReceiverPort);
+							msg.writeByte((byte) 0);
+							supportChain.writeTo(new WriteMessageWrapper(msg));
+							ibis.finishMessage(msg,
+									supportChain.getSubmissionId());
 						}
+						i--;
+					}
+
+					if (nodes[0].compareTo(ibis.ibis.identifier()) == 0) {
+						chainsToProcess.add(chain);
+					} else {
+						WriteMessage msg = ibis.getMessageToSend(nodes[0],
+								NetworkLayer.nameMgmtReceiverPort);
+						msg.writeByte((byte) 0);
+						chain.writeTo(new WriteMessageWrapper(msg));
+						ibis.finishMessage(msg, chain.getSubmissionId());
 					}
 				}
 			}

@@ -116,10 +116,11 @@ public class SubmissionRegistry {
 		synchronized (this) {
 			submissionId = submissionCounter++;
 		}
-		Submission sub = new Submission(submissionId, job.getAssignedOutputBucket());
+		Submission sub = new Submission(submissionId,
+				job.getAssignedOutputBucket());
 
 		submissions.put(submissionId, sub);
-		
+
 		Chain chain = new Chain();
 		chain.setParentChainId(-1);
 		chain.setInputLayer(Consts.DEFAULT_INPUT_LAYER_ID);
@@ -174,10 +175,6 @@ public class SubmissionRegistry {
 			while (!submission.getState().equalsIgnoreCase(
 					Consts.STATE_FINISHED)) {
 				submission.wait(waitInterval);
-				// if (submission.printIntermediateStats
-				// && !submission.getState().equalsIgnoreCase(
-				// Consts.STATE_FINISHED))
-				// stats.printStatistics(submission.getSubmissionId());
 			}
 		}
 
@@ -188,20 +185,11 @@ public class SubmissionRegistry {
 
 	public void getStatistics(Job job, Submission submission)
 			throws InterruptedException {
-		// if (job.getWaitForStatistics()) {
-		// try {
-		// log.info("Waiting for statistics...");
 		Thread.sleep(500);
-		// } catch (InterruptedException e) {
-		// // ignore
-		// }
-		// }
-
 		submission.counters = stats.removeCountersSubmission(submission
 				.getSubmissionId());
 
 		// Print the counters
-		// if (submission.printStats) {
 		String stats = "Final statistics for job "
 				+ submission.getSubmissionId() + ":\n";
 		if (submission.counters != null) {
@@ -210,7 +198,5 @@ public class SubmissionRegistry {
 			}
 		}
 		log.info(stats);
-		// System.out.println(stats);
-		// }
 	}
 }
