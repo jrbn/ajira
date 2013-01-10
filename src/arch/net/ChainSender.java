@@ -7,14 +7,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import arch.Context;
-import arch.actions.ActionContext;
 import arch.chains.ActionsExecutor;
 import arch.chains.Chain;
 import arch.chains.ChainLocation;
 import arch.data.types.Tuple;
 import arch.statistics.StatisticsCollector;
 import arch.storage.Container;
-import arch.utils.Consts;
 
 class ChainSender implements Runnable {
 
@@ -39,12 +37,12 @@ class ChainSender implements Runnable {
 			Tuple tuple = new Tuple();
 			Chain chain = new Chain();
 			Chain supportChain = new Chain();
-			ActionContext ac = new ActionsExecutor(context, null);
 
 			while (true) {
 				chainsToSend.remove(chain);
-				chain.getInputTuple(tuple);
+				ActionsExecutor ac = new ActionsExecutor(context, null, chain);
 
+				chain.getInputTuple(tuple);
 				ChainLocation loc = context
 						.getInputLayer(chain.getInputLayer()).getLocations(
 								tuple, ac);
@@ -58,8 +56,8 @@ class ChainSender implements Runnable {
 
 					int i = nodes.length - 1;
 					while (i != 0) {
-						chain.branch(supportChain, context
-								.getUniqueCounter(Consts.CHAINCOUNTER_NAME));
+						chain.branch(supportChain,
+								context.getChainCounter(ac.getSubmissionId()));
 
 						if (nodes[i].compareTo(ibis.ibis.identifier()) == 0) {
 							chainsToProcess.add(supportChain);
