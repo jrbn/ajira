@@ -69,4 +69,9 @@ public class BucketsLayer extends InputLayer {
 	public void releaseIterator(TupleIterator itr, ActionContext context) {
 		buckets.releaseIterator((BucketIterator) itr, false);
 	}
+
+	@Override
+	public String getName() {
+		return "BucketsLayer";
+	}
 }

@@ -60,8 +60,8 @@ public class FileLayer extends InputLayer {
 				if (col == null) {
 					// Get it remotely. Operation will contain the node id.
 					tuple.get(operation, 2);
-					List<Object[]> files = context
-							.retrieveCacheObjects(value.getValue());
+					List<Object[]> files = context.retrieveCacheObjects(value
+							.getValue());
 					if (files == null || files.size() == 0) {
 						throw new Exception("Failed retrieving the iterator");
 					}
@@ -115,8 +115,8 @@ public class FileLayer extends InputLayer {
 			if (operation.getValue() == OP_LS) {
 				return ChainLocation.THIS_NODE;
 			} else {
-                                String s = value.toString();
-				int index = Integer.valueOf(s.substring(s.indexOf('-')+1));
+				String s = value.toString();
+				int index = Integer.valueOf(s.substring(s.indexOf('-') + 1));
 				return new ChainLocation(index % numberNodes);
 			}
 
@@ -131,6 +131,11 @@ public class FileLayer extends InputLayer {
 
 	@Override
 	public void releaseIterator(TupleIterator itr, ActionContext context) {
+	}
+
+	@Override
+	public String getName() {
+		return "FilesLayer";
 	}
 
 }

@@ -75,7 +75,8 @@ public class ChainHandler implements Runnable {
 					/***** START CHAIN *****/
 					long timeCycle = System.currentTimeMillis();
 					actions.startProcess();
-					String counter = "Records input " + chain.getInputLayer();
+					String counter = "Records Read From Input "
+							+ input.getName();
 
 					// Process the data on the chain
 					boolean eof = false;
@@ -101,10 +102,9 @@ public class ChainHandler implements Runnable {
 
 						// Update the children generated in this action
 						if (chainsBuffer.getNElements() > 0) {
-							stats.addCounter(
-									chain.getSubmissionNode(),
+							stats.addCounter(chain.getSubmissionNode(),
 									chain.getSubmissionId(),
-									"Chains Generated From Chains (To Process)",
+									"Chains Dinamically Generated",
 									chainsBuffer.getNElements());
 							if (localMode) {
 								chainsToProcess.addAll(chainsBuffer);

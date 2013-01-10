@@ -59,6 +59,7 @@ public class WriteToFile extends Action {
 	StandardFileWriter file = null;
 	String outputDirectory = null;
 	String customWriter = null;
+	long count;
 
 	@Override
 	public void setupActionParameters(ActionConf conf) throws Exception {
@@ -67,11 +68,11 @@ public class WriteToFile extends Action {
 	}
 
 	@Override
-	public void startProcess(ActionContext context)
-			throws Exception {
+	public void startProcess(ActionContext context) throws Exception {
 		outputDirectory = getParamString(OUTPUT_DIR);
 		customWriter = getParamString(CUSTOM_WRITER);
 		file = null;
+		count = 0;
 	}
 
 	private void openFile(ActionContext context) throws IOException {
@@ -86,9 +87,8 @@ public class WriteToFile extends Action {
 			f.mkdir();
 		}
 
-		f = new File(f, "part-"
-				+ nf.format(context.getCounter("OutputFile")) + "_"
-				+ nf.format(0));
+		f = new File(f, "part-" + nf.format(context.getCounter("OutputFile"))
+				+ "_" + nf.format(0));
 
 		try {
 			if (customWriter != null) {
@@ -109,7 +109,9 @@ public class WriteToFile extends Action {
 	}
 
 	@Override
-	public void process(Tuple inputTuple, ActionContext context, ActionOutput output) throws Exception {
+	public void process(Tuple inputTuple, ActionContext context,
+			ActionOutput output) throws Exception {
+		++count;
 		if (file == null) {
 			openFile(context);
 		}
@@ -117,11 +119,13 @@ public class WriteToFile extends Action {
 	}
 
 	@Override
-	public void stopProcess(ActionContext context, ActionOutput output) throws Exception {
+	public void stopProcess(ActionContext context, ActionOutput output)
+			throws Exception {
 		if (file != null) {
 			file.close();
 		}
 		file = null;
+		context.incrCounter("Records Written To Files", count);
 	}
 
 }

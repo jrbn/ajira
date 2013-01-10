@@ -65,4 +65,9 @@ public class DummyLayer extends InputLayer {
 	@Override
 	public void releaseIterator(TupleIterator itr, ActionContext context) {
 	}
+
+	@Override
+	public String getName() {
+		return "DummyLayer";
+	}
 }

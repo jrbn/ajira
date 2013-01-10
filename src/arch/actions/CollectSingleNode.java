@@ -7,9 +7,9 @@ import arch.buckets.Bucket;
 import arch.data.types.Tuple;
 import arch.datalayer.Query;
 
-public class CollectTuples extends Action {
+public class CollectSingleNode extends Action {
 
-	static final Logger log = LoggerFactory.getLogger(CollectTuples.class);
+	static final Logger log = LoggerFactory.getLogger(CollectSingleNode.class);
 
 	/* PARAMETERS */
 	public static final int NODE_ID = 0;
@@ -71,6 +71,9 @@ public class CollectTuples extends Action {
 	@Override
 	public void stopProcess(ActionContext context, ActionOutput output) {
 		try {
+			context.finishTransfer(nodeId, bucketId, sortingFunction,
+					bucket != null);
+
 			// Send the chains to process the buckets to all the nodes that
 			// will host the buckets
 			if (output.isBranchingAllowed()) {
@@ -80,10 +83,6 @@ public class CollectTuples extends Action {
 				c.setParam(ReadFromBucket.NODE_ID, nodeId);
 				output.branch(c);
 			}
-
-			context.finishTransfer(nodeId, bucketId, sortingFunction,
-					bucket != null);
-
 		} catch (Exception e) {
 			log.error("Error", e);
 		}

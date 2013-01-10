@@ -14,7 +14,7 @@ import arch.datalayer.files.FileCollection;
 import arch.datalayer.files.FileLayer;
 import arch.utils.Consts;
 
-public class ReadFromFile extends Action {
+public class ReadFromFiles extends Action {
 
 	public static final String MINIMUM_SPLIT_SIZE = "splitinput.minimumsize";
 	public static final int MINIMUM_FILE_SPLIT = 4 * 1024 * 1024; // 1 MB
@@ -24,7 +24,7 @@ public class ReadFromFile extends Action {
 	public static final int CUSTOM_READER = 1;
 	public static final String S_CUSTOM_READER = "custom_reader";
 
-	static final Logger log = LoggerFactory.getLogger(ReadFromFile.class);
+	static final Logger log = LoggerFactory.getLogger(ReadFromFiles.class);
 
 	private int minimumFileSplitSize;
 	private FileCollection currentFileSplit;

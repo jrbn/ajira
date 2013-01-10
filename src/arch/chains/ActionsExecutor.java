@@ -180,7 +180,7 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 			chain.setRawSize(rawSizes[currentAction]);
 			chain.branch(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
 			supportChain.addActions(actions, this);
-			if (!stopProcess && currentAction < nActions - 1) {
+			if (!stopProcess && currentAction > 0) {
 				cRuntimeBranching[currentAction]++;
 				if (currentAction > smallestRuntimeAction) {
 					smallestRuntimeAction = currentAction;
@@ -198,7 +198,7 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 			chain.setRawSize(rawSizes[currentAction]);
 			chain.branch(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
 			supportChain.addAction(action, this);
-			if (!stopProcess && currentAction < nActions - 1) {
+			if (!stopProcess && currentAction > 0) {
 				cRuntimeBranching[currentAction]++;
 				if (currentAction > smallestRuntimeAction) {
 					smallestRuntimeAction = currentAction;

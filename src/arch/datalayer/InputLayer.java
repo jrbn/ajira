@@ -41,8 +41,8 @@ public abstract class InputLayer {
 	public void startup(Context context) throws Exception {
 		long time = System.currentTimeMillis();
 		load(context);
-		log.debug("Time to load inputLayer " + this.getClass().getName() + " (ms): "
-				+ (System.currentTimeMillis() - time));
+		log.debug("Time to load inputLayer " + this.getClass().getName()
+				+ " (ms): " + (System.currentTimeMillis() - time));
 	}
 
 	protected abstract void load(Context context) throws Exception;
@@ -52,5 +52,8 @@ public abstract class InputLayer {
 	public abstract void releaseIterator(TupleIterator itr,
 			ActionContext context);
 
-	public abstract ChainLocation getLocations(Tuple tuple, ActionContext context);
+	public abstract ChainLocation getLocations(Tuple tuple,
+			ActionContext context);
+
+	public abstract String getName();
 }

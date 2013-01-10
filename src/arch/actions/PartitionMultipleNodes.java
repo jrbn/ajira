@@ -10,7 +10,7 @@ import arch.data.types.TInt;
 import arch.data.types.Tuple;
 import arch.datalayer.Query;
 
-public class DistributeTuples extends Action {
+public class PartitionMultipleNodes extends Action {
 
 	public static final int MULTIPLE = -1;
 	public static final int ALL = -2;
@@ -25,7 +25,7 @@ public class DistributeTuples extends Action {
 	public static final int BUCKET_IDS = 3;
 	private static final String S_BUCKET_IDS = "bucket_ids";
 
-	static final Logger log = LoggerFactory.getLogger(DistributeTuples.class);
+	static final Logger log = LoggerFactory.getLogger(PartitionMultipleNodes.class);
 
 	private String sortingFunction = null;
 	private Bucket[] bucketsCache;
@@ -142,6 +142,14 @@ public class DistributeTuples extends Action {
 	@Override
 	public void stopProcess(ActionContext context, ActionOutput output) {
 		try {
+
+			for (int i = 0; i < nPartitions; ++i) {
+				int nodeNo = i / nPartitionsPerNode;
+				int bucketNo = bucketIds[i % nPartitionsPerNode];
+				context.finishTransfer(nodeNo, bucketNo, sortingFunction,
+						bucketsCache[i] != null);
+			}
+
 			// Send the chains to process the buckets to all the nodes that
 			// will host the buckets
 			if (output.isBranchingAllowed()) {
@@ -152,13 +160,6 @@ public class DistributeTuples extends Action {
 					c.setParam(ReadFromBucket.NODE_ID, -1);
 					output.branch(c);
 				}
-			}
-
-			for (int i = 0; i < nPartitions; ++i) {
-				int nodeNo = i / nPartitionsPerNode;
-				int bucketNo = bucketIds[i % nPartitionsPerNode];
-				context.finishTransfer(nodeNo, bucketNo, sortingFunction,
-						bucketsCache[i] != null);
 			}
 		} catch (Exception e) {
 			log.error("Error", e);
