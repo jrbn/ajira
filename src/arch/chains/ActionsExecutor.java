@@ -9,6 +9,7 @@ import arch.actions.ActionConf;
 import arch.actions.ActionContext;
 import arch.actions.ActionOutput;
 import arch.buckets.Bucket;
+import arch.data.types.TInt;
 import arch.data.types.Tuple;
 import arch.storage.container.WritableContainer;
 import arch.utils.Consts;
@@ -34,6 +35,11 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 	private WritableContainer<Chain> chainsBuffer;
 
 	private final Chain supportChain = new Chain();
+	private final Tuple supportTuple = new Tuple();
+
+	private boolean transferComputation = false;
+	private int transferNodeId;
+	private int transferBucketId;
 
 	public ActionsExecutor(Context context,
 			WritableContainer<Chain> chainsBuffer) {
@@ -134,6 +140,7 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 
 		this.smallestRuntimeAction = -1;
 		this.stopProcess = false;
+		this.transferComputation = false;
 	}
 
 	void addAction(Action action, boolean root, int chainRawSize) {
@@ -141,6 +148,12 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 		roots[nActions] = root;
 		rawSizes[nActions] = chainRawSize;
 		nActions++;
+	}
+
+	void moveComputation(int nodeId, int bucketId) {
+		this.transferComputation = true;
+		this.transferNodeId = nodeId;
+		this.transferBucketId = bucketId;
 	}
 
 	void startProcess() throws Exception {
@@ -167,47 +180,50 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 			cRuntimeBranching[currentAction] = 0;
 			currentAction++;
 		}
+
+		if (transferComputation && roots[nActions - 1]) {
+			chain.setRawSize(rawSizes[nActions - 1]);
+			chain.copyTo(supportChain);
+			supportChain.setTotalChainChildren(0);
+			supportChain.setInputLayer(Consts.BUCKET_INPUT_LAYER_ID);
+			supportTuple.set(new TInt(transferBucketId), new TInt(
+					transferNodeId));
+			supportChain.setInputTuple(supportTuple);
+			chainsBuffer.add(supportChain);
+		}
 	}
 
 	@Override
-	public boolean isBranchingAllowed() {
+	public boolean isRootBranch() {
 		return roots[currentAction];
 	}
 
 	@Override
 	public void branch(List<ActionConf> actions) throws Exception {
-		if (isBranchingAllowed()) {
-			chain.setRawSize(rawSizes[currentAction]);
-			chain.branch(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
-			supportChain.addActions(actions, this);
-			if (!stopProcess && currentAction > 0) {
-				cRuntimeBranching[currentAction]++;
-				if (currentAction > smallestRuntimeAction) {
-					smallestRuntimeAction = currentAction;
-				}
+		chain.setRawSize(rawSizes[currentAction]);
+		chain.branch(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
+		supportChain.addActions(actions, this);
+		if (!stopProcess && currentAction > 0) {
+			cRuntimeBranching[currentAction]++;
+			if (currentAction > smallestRuntimeAction) {
+				smallestRuntimeAction = currentAction;
 			}
-			chainsBuffer.add(supportChain);
-		} else {
-			throw new Exception("Branching is not allowed");
 		}
+		chainsBuffer.add(supportChain);
 	}
 
 	@Override
 	public void branch(ActionConf action) throws Exception {
-		if (isBranchingAllowed()) {
-			chain.setRawSize(rawSizes[currentAction]);
-			chain.branch(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
-			supportChain.addAction(action, this);
-			if (!stopProcess && currentAction > 0) {
-				cRuntimeBranching[currentAction]++;
-				if (currentAction > smallestRuntimeAction) {
-					smallestRuntimeAction = currentAction;
-				}
+		chain.setRawSize(rawSizes[currentAction]);
+		chain.branch(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
+		supportChain.addAction(action, this);
+		if (!stopProcess && currentAction > 0) {
+			cRuntimeBranching[currentAction]++;
+			if (currentAction > smallestRuntimeAction) {
+				smallestRuntimeAction = currentAction;
 			}
-			chainsBuffer.add(supportChain);
-		} else {
-			throw new Exception("Branching is not allowed");
 		}
+		chainsBuffer.add(supportChain);
 	}
 
 	@Override
@@ -250,5 +266,9 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 	@Override
 	public int getSubmissionId() {
 		return submissionId;
+	}
+
+	boolean isChainFullyExecuted() {
+		return !transferComputation;
 	}
 }

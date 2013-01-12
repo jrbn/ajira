@@ -10,15 +10,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import arch.actions.ActionConf.Configurator;
 import arch.actions.ActionConf.ParamItem;
-import arch.actions.ActionConf.RuntimeParameterProcessor;
 import arch.storage.Factory;
 
 public class ActionFactory {
 
 	private static class ParamsInfo {
 		List<ParamItem> params;
-		RuntimeParameterProcessor proc;
+		Configurator proc;
 	}
 
 	static final Logger log = LoggerFactory.getLogger(ActionFactory.class);
@@ -33,15 +33,15 @@ public class ActionFactory {
 				Class<? extends Action> a = Class.forName(className)
 						.asSubclass(Action.class);
 				Action action = a.newInstance();
-				ActionConf conf = new ActionConf(className, null, null);
-				action.setupActionParameters(conf);
+				ActionConf conf = new ActionConf(className);
+				action.registerActionParameters(conf);
 
 				ParamsInfo info = new ParamsInfo();
 				info.params = conf.getListAllowedParameters();
 				if (info.params == null) {
 					info.params = new ArrayList<ParamItem>();
 				}
-				info.proc = conf.getRuntimeParametersProcessor();
+				info.proc = conf.getConfigurator();
 				actionParameters.put(className, info);
 			} catch (Exception e) {
 				log.error("Failed in retrieving the parameter list for class"

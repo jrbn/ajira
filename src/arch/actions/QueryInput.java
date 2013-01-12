@@ -11,22 +11,22 @@ public class QueryInput extends Action {
 	public static final int INPUT_LAYER = 1;
 	public static final String S_INPUT_LAYER = "input_layer";
 
-	static class ParametersProcessor extends
-			ActionConf.RuntimeParameterProcessor {
+	static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
-		void processParameters(Query query, Object[] params,
-				ActionContext context) {
+		void setupConfiguration(Query query, Object[] params,
+				ActionController controller, ActionContext context) {
 			query.setInputLayer((int) params[INPUT_LAYER]);
 			query.setInputTuple((Tuple) params[TUPLE]);
+			controller.doNotAddAction();
 		}
 	}
 
 	@Override
-	public void setupActionParameters(ActionConf conf) throws Exception {
+	public void registerActionParameters(ActionConf conf) throws Exception {
 		conf.registerParameter(TUPLE, S_TUPLE, null, true);
 		conf.registerParameter(INPUT_LAYER, S_INPUT_LAYER,
 				Consts.DEFAULT_INPUT_LAYER_ID, false);
-		conf.registerRuntimeParameterProcessor(ParametersProcessor.class);
+		conf.registerCustomConfigurator(ParametersProcessor.class);
 	}
 
 	@Override

@@ -31,11 +31,11 @@ public class ReadFromFiles extends Action {
 	private int splitId;
 	private String customReader = null;
 
-	static class ParametersProcessor extends
-			ActionConf.RuntimeParameterProcessor {
+	static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
-		void processParameters(Query query, Object[] params,
-				ActionContext context) throws Exception {
+		void setupConfiguration(Query query, Object[] params,
+				ActionController controller, ActionContext context)
+				throws Exception {
 			if (params[PATH] != null) {
 				query.setInputLayer(Consts.DEFAULT_INPUT_LAYER_ID);
 				query.setInputTuple(new Tuple(new TInt(FileLayer.OP_LS),
@@ -67,10 +67,10 @@ public class ReadFromFiles extends Action {
 	}
 
 	@Override
-	public void setupActionParameters(ActionConf conf) throws Exception {
+	public void registerActionParameters(ActionConf conf) throws Exception {
 		conf.registerParameter(PATH, S_PATH, null, true);
 		conf.registerParameter(CUSTOM_READER, S_CUSTOM_READER, null, false);
-		conf.registerRuntimeParameterProcessor(ParametersProcessor.class);
+		conf.registerCustomConfigurator(ParametersProcessor.class);
 	}
 
 	@Override

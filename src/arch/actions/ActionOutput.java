@@ -8,7 +8,7 @@ public interface ActionOutput {
 
 	public void output(Tuple tuple) throws Exception;
 
-	public boolean isBranchingAllowed();
+	public boolean isRootBranch();
 
 	public void branch(List<ActionConf> actions) throws Exception;
 

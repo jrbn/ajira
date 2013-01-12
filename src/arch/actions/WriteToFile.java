@@ -62,7 +62,7 @@ public class WriteToFile extends Action {
 	long count;
 
 	@Override
-	public void setupActionParameters(ActionConf conf) throws Exception {
+	public void registerActionParameters(ActionConf conf) throws Exception {
 		conf.registerParameter(CUSTOM_WRITER, S_CUSTOM_WRITER, null, false);
 		conf.registerParameter(OUTPUT_DIR, S_OUTPUT_DIR, null, true);
 	}

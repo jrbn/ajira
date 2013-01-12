@@ -35,16 +35,10 @@ public class PartitionToNodes extends Action {
 	private int nPartitions;
 	private int[] bucketIds;
 
-	public static class ParametersProcessor extends
-			ActionConf.RuntimeParameterProcessor {
+	public static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
-		public void processParameters(Query query, Object[] params,
-				ActionContext context) {
-			if (log.isDebugEnabled()) {
-				log.debug("DistributeTuples.processParameters() called");
-			}
-			// TODO: Should processParameters be allowed to throw an exception?
-			// For instance, for inconsistencies.
+		public void setupConfiguration(Query query, Object[] params,
+				ActionController controller, ActionContext context) {
 			if (params[NPARTITIONS_PER_NODE] == null) {
 				if (params[BUCKET_IDS] == null) {
 					params[NPARTITIONS_PER_NODE] = 1;
@@ -53,6 +47,7 @@ public class PartitionToNodes extends Action {
 					params[NPARTITIONS_PER_NODE] = t.getNElements();
 				}
 			}
+
 			if (params[BUCKET_IDS] == null) {
 				int np = (Integer) params[NPARTITIONS_PER_NODE];
 				Tuple p = new Tuple();
@@ -73,15 +68,20 @@ public class PartitionToNodes extends Action {
 				log.error("Oops: inconsistency in number of partitions");
 				throw new Error("inconsistency in number of partitions");
 			}
+
+			TInt v = new TInt();
+			try {
+				t.get(v, 0);
+			} catch (Exception e) {
+				log.error("Oops: could not retrieve first bucketID");
+				throw new Error("Could not retrieve first bucketID");
+			}
+			controller.continueComputationOn(-1, v.getValue());
 		}
 	}
 
 	@Override
-	public void setupActionParameters(ActionConf conf) throws Exception {
-		if (log.isDebugEnabled()) {
-			log.debug("Setting up action parameters for DistributeTuples: "
-					+ conf);
-		}
+	public void registerActionParameters(ActionConf conf) throws Exception {
 		conf.registerParameter(SORTING_FUNCTION, S_SORTING_FUNCTION, null,
 				false);
 		conf.registerParameter(PARTITIONER, S_PARTITIONER,
@@ -89,7 +89,7 @@ public class PartitionToNodes extends Action {
 		conf.registerParameter(NPARTITIONS_PER_NODE, S_NPARTITIONS_PER_NODE,
 				null, false);
 		conf.registerParameter(BUCKET_IDS, S_BUCKET_IDS, null, false);
-		conf.registerRuntimeParameterProcessor(ParametersProcessor.class);
+		conf.registerCustomConfigurator(ParametersProcessor.class);
 	}
 
 	@Override
@@ -152,8 +152,8 @@ public class PartitionToNodes extends Action {
 
 			// Send the chains to process the buckets to all the nodes that
 			// will host the buckets
-			if (output.isBranchingAllowed()) {
-				for (int i = 0; i < nPartitionsPerNode; i++) {
+			if (output.isRootBranch()) {
+				for (int i = 1; i < nPartitionsPerNode; i++) {
 					ActionConf c = ActionFactory
 							.getActionConf(ReadFromBucket.class);
 					c.setParam(ReadFromBucket.BUCKET_ID, bucketIds[i]);

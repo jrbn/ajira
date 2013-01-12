@@ -24,27 +24,29 @@ public class CollectToNode extends Action {
 	private String sortingFunction = null;
 	private Bucket bucket;
 
-	static class ParametersProcessor extends
-			ActionConf.RuntimeParameterProcessor {
+	static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
-		public void processParameters(Query query, Object[] params,
-				ActionContext context) {
+		public void setupConfiguration(Query query, Object[] params,
+				ActionController controller, ActionContext context) {
 			if (params[NODE_ID] == null) {
 				params[NODE_ID] = context.getMyNodeId();
 			}
 			if (params[BUCKET_ID] == null) {
 				params[BUCKET_ID] = context.getNewBucketID();
 			}
+
+			controller.continueComputationOn((int) params[NODE_ID],
+					(int) params[BUCKET_ID]);
 		}
 	}
 
 	@Override
-	public void setupActionParameters(ActionConf conf) throws Exception {
+	public void registerActionParameters(ActionConf conf) throws Exception {
 		conf.registerParameter(NODE_ID, S_NODE_ID, null, false);
 		conf.registerParameter(BUCKET_ID, S_BUCKET_ID, null, false);
 		conf.registerParameter(SORTING_FUNCTION, S_SORTING_FUNCTION, null,
 				false);
-		conf.registerRuntimeParameterProcessor(ParametersProcessor.class);
+		conf.registerCustomConfigurator(ParametersProcessor.class);
 	}
 
 	@Override
@@ -74,15 +76,15 @@ public class CollectToNode extends Action {
 			context.finishTransfer(nodeId, bucketId, sortingFunction,
 					bucket != null);
 
-			// Send the chains to process the buckets to all the nodes that
-			// will host the buckets
-			if (output.isBranchingAllowed()) {
-				ActionConf c = ActionFactory
-						.getActionConf(ReadFromBucket.class);
-				c.setParam(ReadFromBucket.BUCKET_ID, bucketId);
-				c.setParam(ReadFromBucket.NODE_ID, nodeId);
-				output.branch(c);
-			}
+			// // Send the chains to process the buckets to all the nodes that
+			// // will host the buckets
+			// if (output.isRootBranch()) {
+			// ActionConf c = ActionFactory
+			// .getActionConf(ReadFromBucket.class);
+			// c.setParam(ReadFromBucket.BUCKET_ID, bucketId);
+			// c.setParam(ReadFromBucket.NODE_ID, nodeId);
+			// output.branch(c);
+			// }
 		} catch (Exception e) {
 			log.error("Error", e);
 		}

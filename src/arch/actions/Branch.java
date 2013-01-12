@@ -57,7 +57,7 @@ public class Branch extends Action {
 	public static final String S_BRANCH = "branch";
 
 	@Override
-	public void setupActionParameters(ActionConf conf) throws Exception {
+	public void registerActionParameters(ActionConf conf) throws Exception {
 		conf.registerParameter(BRANCH, S_BRANCH, null, true);
 	}
 
@@ -73,7 +73,7 @@ public class Branch extends Action {
 	@Override
 	public void stopProcess(ActionContext context, ActionOutput output)
 			throws Exception {
-		if (output.isBranchingAllowed()) {
+		if (output.isRootBranch()) {
 			BranchContent branch = new BranchContent();
 			getParamWritable(branch, BRANCH);
 			output.branch(branch.getActions());

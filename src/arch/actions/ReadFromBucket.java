@@ -16,11 +16,10 @@ public class ReadFromBucket extends Action {
 	public static final int NODE_ID = 1;
 	public static final String S_NODE_ID = "node_id";
 
-	static class ParametersProcessor extends
-			ActionConf.RuntimeParameterProcessor {
+	static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
-		void processParameters(Query query, Object[] params,
-				ActionContext context) {
+		void setupConfiguration(Query query, Object[] params,
+				ActionController controller, ActionContext context) {
 			if (params[NODE_ID] == null) {
 				params[NODE_ID] = -1;
 			}
@@ -29,14 +28,16 @@ public class ReadFromBucket extends Action {
 			query.setInputTuple(new Tuple(
 					new TInt((Integer) params[BUCKET_ID]), new TInt(
 							(Integer) params[NODE_ID])));
+
+			controller.doNotAddAction();
 		}
 	}
 
 	@Override
-	public void setupActionParameters(ActionConf conf) throws Exception {
+	public void registerActionParameters(ActionConf conf) throws Exception {
 		conf.registerParameter(BUCKET_ID, S_BUCKET_ID, null, true);
 		conf.registerParameter(NODE_ID, S_NODE_ID, -1, false);
-		conf.registerRuntimeParameterProcessor(ParametersProcessor.class);
+		conf.registerCustomConfigurator(ParametersProcessor.class);
 	}
 
 	@Override

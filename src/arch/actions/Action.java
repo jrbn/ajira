@@ -10,12 +10,8 @@ public abstract class Action {
 
 	/***** ACTION PROCESSING ******/
 
-	public void setupActionParameters(ActionConf conf) throws Exception {
+	public void registerActionParameters(ActionConf conf) throws Exception {
 	}
-
-	// public boolean interruptProcessing() {
-	// return false;
-	// }
 
 	public void startProcess(ActionContext context) throws Exception {
 	}

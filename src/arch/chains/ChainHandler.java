@@ -132,7 +132,8 @@ public class ChainHandler implements Runnable {
 
 				// Send the termination signal to the node responsible of
 				// the submission
-				net.signalChainTerminated(chain);
+				if (actions.isChainFullyExecuted())
+					net.signalChainTerminated(chain);
 				stats.addCounter(chain.getSubmissionNode(),
 						chain.getSubmissionId(), "Chains Processed", 1);
 

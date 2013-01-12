@@ -20,7 +20,7 @@ public class PutIntoBucket extends Action {
 	String sortingFunction;
 
 	@Override
-	public void setupActionParameters(ActionConf conf) throws Exception {
+	public void registerActionParameters(ActionConf conf) throws Exception {
 		conf.registerParameter(BUCKET_ID, S_BUCKET_ID, null, true);
 		conf.registerParameter(SORTING_FUNCTION, S_SORTING_FUNCTION, null,
 				false);
@@ -34,8 +34,8 @@ public class PutIntoBucket extends Action {
 	}
 
 	@Override
-	public void process(Tuple inputTuple, ActionContext context, ActionOutput output)
-			throws Exception {
+	public void process(Tuple inputTuple, ActionContext context,
+			ActionOutput output) throws Exception {
 		bucket.add(inputTuple);
 		output.output(inputTuple);
 	}

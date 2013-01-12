@@ -44,5 +44,4 @@ public interface ActionContext {
 
 	void finishTransfer(int nodeId, int bucketId, String sortingFunction,
 			boolean decreaseCounter) throws IOException;
-
 }

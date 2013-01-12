@@ -16,14 +16,18 @@ import arch.utils.Consts;
 
 public class ActionConf extends Writable {
 
-	public static abstract class RuntimeParameterProcessor {
-		public void process(Query query, ActionConf conf, ActionContext context)
+	public static abstract class Configurator {
+
+		public void process(Query query, ActionConf conf,
+				ActionController controller, ActionContext context)
 				throws Exception {
-			processParameters(query, conf.valuesParameters, context);
+			setupConfiguration(query, conf.valuesParameters, controller,
+					context);
 		}
 
-		abstract void processParameters(Query query, Object[] params,
-				ActionContext context) throws Exception;
+		abstract void setupConfiguration(Query query, Object[] params,
+				ActionController controller, ActionContext context)
+				throws Exception;
 	}
 
 	static class ParamItem {
@@ -39,11 +43,15 @@ public class ActionConf extends Writable {
 	private List<ParamItem> allowedParameters = null;
 	private Object[] valuesParameters = null;
 	private String className = null;
-	private RuntimeParameterProcessor proc = null;
+	private Configurator proc = null;
+
+	ActionConf(String className) {
+		this.className = className;
+	}
 
 	ActionConf(String className, List<ParamItem> allowedParameters,
-			RuntimeParameterProcessor proc) {
-		this.className = className;
+			Configurator proc) {
+		this(className);
 		this.allowedParameters = allowedParameters;
 		if (allowedParameters != null) {
 			valuesParameters = new Object[allowedParameters.size()];
@@ -112,12 +120,11 @@ public class ActionConf extends Writable {
 		allowedParameters.add(id, item);
 	}
 
-	void registerRuntimeParameterProcessor(
-			Class<? extends RuntimeParameterProcessor> proc) {
+	public void registerCustomConfigurator(Class<? extends Configurator> proc) {
 		try {
 			this.proc = proc.newInstance();
 		} catch (Exception e) {
-			log.error("Failed in creating the RuntimeParameterProcessor", e);
+			log.error("Failed in creating the Configurator", e);
 		}
 	}
 
@@ -205,11 +212,7 @@ public class ActionConf extends Writable {
 		return true;
 	}
 
-	public boolean isParProcessorDefined() {
-		return proc != null;
-	}
-
-	public RuntimeParameterProcessor getRuntimeParametersProcessor() {
+	public Configurator getConfigurator() {
 		return proc;
 	}
 }

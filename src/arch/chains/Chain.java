@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import arch.actions.Action;
 import arch.actions.ActionConf;
 import arch.actions.ActionContext;
+import arch.actions.ActionController;
 import arch.actions.ActionFactory;
 import arch.data.types.Tuple;
 import arch.data.types.bytearray.BDataInput;
@@ -20,25 +21,40 @@ import arch.storage.Writable;
 import arch.utils.Consts;
 import arch.utils.Utils;
 
-/**
- * 
- * 8 bytes: submission ID the chain belongs to 8 bytes: chain ID 8 bytes: parent
- * chain ID 4 bytes: n children 4 bytes: replicated factor 1 byte: input layer
- * to consider (0 is the default) 1 byte: flag to exclude the execution of the
- * fixed chain
- * 
- * @author jacopo
- * 
- */
-
 public class Chain extends Writable implements Query {
 
 	static final Logger log = LoggerFactory.getLogger(Chain.class);
+
+	private static class FlowController implements ActionController {
+
+		public boolean doNotAddAction;
+		public boolean stopProcessing;
+		public int destination;
+		public int bucketId;
+
+		public void init() {
+			stopProcessing = doNotAddAction = false;
+		}
+
+		@Override
+		public void continueComputationOn(int destination, int bucketId) {
+			stopProcessing = true;
+			this.destination = destination;
+			this.bucketId = bucketId;
+		}
+
+		@Override
+		public void doNotAddAction() {
+			doNotAddAction = true;
+		}
+	}
 
 	private int startingPosition = Consts.CHAIN_RESERVED_SPACE;
 	private int bufferSize = Consts.CHAIN_RESERVED_SPACE;
 	private final byte[] buffer = new byte[Consts.CHAIN_SIZE];
 	private Tuple inputTuple = null;
+
+	private FlowController controller = new FlowController();
 
 	private final BDataOutput cos = new BDataOutput(buffer);
 	private final BDataInput cis = new BDataInput(buffer);
@@ -168,14 +184,33 @@ public class Chain extends Writable implements Query {
 					+ params.getClassName() + " are not set.");
 		}
 
-		if (params.isParProcessorDefined()) {
-			params.getRuntimeParametersProcessor().process(this, params,
-					context);
+		// Process the parameters and possibly insert instructions to control
+		// the flow.
+		if (params.getConfigurator() != null) {
+			controller.init();
+			params.getConfigurator().process(this, params, controller, context);
+
+			if (controller.doNotAddAction) {
+				return;
+			}
+
+			if (controller.stopProcessing) {
+				cos.setCurrentPosition(bufferSize);
+				cos.writeInt(controller.bucketId);
+				cos.writeInt(controller.destination);
+				cos.writeBoolean(true);
+				bufferSize += 9;
+			} else {
+				cos.writeBoolean(false);
+				bufferSize++;
+			}
+		} else {
+			cos.writeBoolean(false);
+			bufferSize++;
 		}
 
-		int totalSize = bufferSize;
-
 		// Serialize the action configuration
+		int totalSize = bufferSize;
 		cos.setCurrentPosition(bufferSize);
 		params.writeTo(cos);
 		int sizeAction = cos.cb.end - totalSize;
@@ -199,7 +234,7 @@ public class Chain extends Writable implements Query {
 		bufferSize = size;
 	}
 
-	private void copyTo(Chain newChain) {
+	void copyTo(Chain newChain) {
 		newChain.startingPosition = startingPosition;
 		newChain.bufferSize = bufferSize;
 		System.arraycopy(buffer, 0, newChain.buffer, 0, bufferSize);
@@ -230,8 +265,11 @@ public class Chain extends Writable implements Query {
 		// Read the chain and feel the actions
 		int tmpSize = bufferSize;
 		long currentChainId = getChainId();
+		boolean stopProcessing = false;
+		int nodeId = 0;
+		int bucketId = 0;
 
-		while (tmpSize > startingPosition) {
+		while (tmpSize > startingPosition && !stopProcessing) {
 			tmpSize -= 4;
 			int size = Utils.decodeInt(buffer, tmpSize);
 			String sAction = new String(buffer, tmpSize - size, size);
@@ -245,7 +283,19 @@ public class Chain extends Writable implements Query {
 			cis.setCurrentPosition(tmpSize);
 			Action action = ap.getAction(sAction, cis);
 
+			stopProcessing = buffer[--tmpSize] == 1;
+			if (stopProcessing) {
+				tmpSize -= 4;
+				nodeId = Utils.decodeInt(buffer, tmpSize);
+				tmpSize -= 4;
+				bucketId = Utils.decodeInt(buffer, tmpSize);
+			}
+
 			actions.addAction(action, chainId == currentChainId, tmpSize);
+		}
+
+		if (stopProcessing) {
+			actions.moveComputation(nodeId, bucketId);
 		}
 	}
 }
