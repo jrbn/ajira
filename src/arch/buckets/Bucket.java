@@ -353,16 +353,37 @@ public class Bucket {
 				throw new Exception("combineInExBuffers: bucket is not yet finished!!");
 			}
 
-			boolean response = inBuffer.addAll(exBuffer);
-
-			if (!response) {
-				// Cache exBuffer to make space
-				cacheBuffer(exBuffer, isExBufferSorted);
-				exBuffer = fb.get();
-				exBuffer.clear();
+			boolean response = false; 
+			
+			if (exBuffer.getNElements() > inBuffer.getNElements()) {
+				response = exBuffer.addAll(inBuffer);
+				
+				if (response) {
+					releaseInBuffer();
+					inBuffer = exBuffer;
+					isInBufferSorted = isInBufferSorted && isExBufferSorted;
+				}
+				else {
+					// Cache inBuffer to make space
+					cacheBuffer(inBuffer, isInBufferSorted);
+					releaseInBuffer();
+					inBuffer = exBuffer;
+					isInBufferSorted = isExBufferSorted;
+				}
 			}
 			else {
-				isInBufferSorted = isInBufferSorted && isExBufferSorted;
+				response = inBuffer.addAll(exBuffer);
+				
+				if (response) {
+					releaseExBuffer();
+					isInBufferSorted = isInBufferSorted && isExBufferSorted;
+				}
+				else {
+					// Cache exBuffer to make space
+					cacheBuffer(exBuffer, isExBufferSorted);
+					releaseExBuffer();
+					isInBufferSorted = isExBufferSorted;
+				}
 			}
 
 			stats.addCounter(submissionNode, submissionId,
