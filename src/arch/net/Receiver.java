@@ -9,18 +9,16 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import arch.ActionContext;
 import arch.Context;
-import arch.RemoteCodeExecutor;
-import arch.StatisticsCollector;
 import arch.buckets.Bucket;
 import arch.buckets.Buckets;
 import arch.chains.Chain;
 import arch.data.types.Tuple;
+import arch.statistics.StatisticsCollector;
 import arch.storage.Container;
 import arch.storage.Factory;
 import arch.storage.container.WritableContainer;
-import arch.submissions.JobDescriptor;
+import arch.submissions.Job;
 import arch.submissions.Submission;
 
 class Receiver implements MessageUpcall {
@@ -83,7 +81,6 @@ class Receiver implements MessageUpcall {
 			long idChain = message.readLong();
 			long idParentChain = message.readLong();
 			int children = message.readInt();
-			int replicatedFactor = message.readInt();
 			boolean isResponsible = message.readBoolean();
 			boolean isSorted = message.readBoolean();
 			String cf = null;
@@ -100,7 +97,7 @@ class Receiver implements MessageUpcall {
 			Bucket bucket = buckets.getOrCreateBucket(submissionNode,
 					idSubmission, idBucket, cf, cfParams);
 			bucket.updateCounters(idChain, idParentChain, children,
-					replicatedFactor, isResponsible);
+					isResponsible);
 
 			if (bufferKey != -1) {
 				finishMessage(message, time, idSubmission);
@@ -121,11 +118,10 @@ class Receiver implements MessageUpcall {
 			if (!isChainFailed) {
 				idChain = message.readLong();
 				idParentChain = message.readLong();
-				replicatedFactor = message.readInt();
 				children = message.readInt();
 				finishMessage(message, time, idSubmission);
 				context.getSubmissionsRegistry().updateCounters(idSubmission,
-						idChain, idParentChain, children, replicatedFactor);
+						idChain, idParentChain, children);
 			} else {
 				// Cleanup submission
 				submissionNode = message.readInt();
@@ -225,7 +221,7 @@ class Receiver implements MessageUpcall {
 			break;
 		case 7:
 			// New job to submit
-			JobDescriptor job = new JobDescriptor();
+			Job job = new Job();
 			job.readFrom(new ReadMessageWrapper(message));
 			message.finish();
 			net.startMonitorCounters();
@@ -240,8 +236,6 @@ class Receiver implements MessageUpcall {
 				bucket = buckets.getExistingBucket(
 						submission.getSubmissionId(),
 						submission.getAssignedBucket());
-				// Not needed: already done when waitForCompletion returns.
-				// bucket.waitUntilFinished();
 
 				net.stopMonitorCounters();
 				net.broadcastStopMonitoring();
@@ -267,7 +261,6 @@ class Receiver implements MessageUpcall {
 
 				context.getSubmissionsRegistry().getStatistics(job, submission);
 
-				// bufferFactory.release(tmpBuffer);
 				tmpBuffer = null;
 				if (isFinished) {
 					buckets.clearSubmission(submission.getSubmissionId());
@@ -407,51 +400,52 @@ class Receiver implements MessageUpcall {
 			}
 			break;
 		case 14: // Request to execute custom code on every node
-			sequence = message.readInt();
-			int nodeId = message.readInt();
-			submissionId = message.readInt();
-			String code = message.readString();
-			message.finish();
-
-			boolean response = true;
-			try {
-				@SuppressWarnings("unchecked")
-				Class<? extends RemoteCodeExecutor> clazz = (Class<? extends RemoteCodeExecutor>) Class
-						.forName(code);
-				RemoteCodeExecutor rm = clazz.newInstance();
-				ActionContext ac = new ActionContext(context,
-						context.getDataProvider(), nodeId, submissionId);
-				rm.execute(ac);
-			} catch (Exception e) {
-				log.error("Failed in running the code", e);
-				response = false;
-			}
+			// sequence = message.readInt();
+			// int nodeId = message.readInt();
+			// submissionId = message.readInt();
+			// String code = message.readString();
+			// message.finish();
+			//
+			// boolean response = true;
+			// try {
+			// @SuppressWarnings("unchecked")
+			// Class<? extends RemoteCodeExecutor> clazz = (Class<? extends
+			// RemoteCodeExecutor>) Class
+			// .forName(code);
+			// RemoteCodeExecutor rm = clazz.newInstance();
+			// ActionContext ac = new ActionContext(context, nodeId,
+			// submissionId);
+			// rm.execute(ac);
+			// } catch (Exception e) {
+			// log.error("Failed in running the code", e);
+			// response = false;
+			// }
 
 			// Return value
-			msg = net.getMessageToSend(message.origin().ibisIdentifier());
-			msg.writeByte((byte) 15);
-			msg.writeInt(sequence);
-			msg.writeBoolean(response);
-			msg.finish();
+			// msg = net.getMessageToSend(message.origin().ibisIdentifier());
+			// msg.writeByte((byte) 15);
+			// msg.writeInt(sequence);
+			// msg.writeBoolean(response);
+			// msg.finish();
 			break;
 		case 15: // Acknowledgment of the execution
-			sequence = message.readInt();
-			response = message.readBoolean();
-			message.finish();
-
-			// Update the counter
-			NetworkLayer.CountInfo counter;
-			synchronized (net.activeCodeExecutions) {
-				counter = net.activeCodeExecutions.get(sequence);
-			}
-
-			synchronized (counter) {
-				counter.count--;
-				counter.success &= response;
-				if (counter.count == 0) {
-					counter.notify();
-				}
-			}
+			// sequence = message.readInt();
+			// boolean response = message.readBoolean();
+			// message.finish();
+			//
+			// // Update the counter
+			// NetworkLayer.CountInfo counter;
+			// synchronized (net.activeCodeExecutions) {
+			// counter = net.activeCodeExecutions.get(sequence);
+			// }
+			//
+			// synchronized (counter) {
+			// counter.count--;
+			// counter.success &= response;
+			// if (counter.count == 0) {
+			// counter.notify();
+			// }
+			// }
 
 			break;
 		case 16:

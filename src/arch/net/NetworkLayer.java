@@ -2,7 +2,6 @@ package arch.net;
 
 import ibis.ipl.Ibis;
 import ibis.ipl.IbisCapabilities;
-import ibis.ipl.IbisCreationFailedException;
 import ibis.ipl.IbisFactory;
 import ibis.ipl.IbisIdentifier;
 import ibis.ipl.PortType;
@@ -24,9 +23,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import arch.Context;
-import arch.StatisticsCollector;
 import arch.chains.Chain;
+import arch.chains.ChainLocation;
 import arch.data.types.Tuple;
+import arch.statistics.StatisticsCollector;
 import arch.storage.Container;
 import arch.storage.Factory;
 import arch.storage.container.CheckedConcurrentWritableContainer;
@@ -42,28 +42,28 @@ public class NetworkLayer {
 	public static final String nameBcstReceiverPort = "bcst-receiver-port";
 	public static final String nameReceiverPort = "receiver-port";
 
-	public static final PortType requestPortType = new PortType(
+	static final PortType requestPortType = new PortType(
 			PortType.COMMUNICATION_RELIABLE, PortType.SERIALIZATION_DATA,
 			PortType.CONNECTION_MANY_TO_ONE, PortType.RECEIVE_AUTO_UPCALLS);
 
-	public static final PortType mgmtRequestPortType = new PortType(
+	static final PortType mgmtRequestPortType = new PortType(
 			PortType.COMMUNICATION_RELIABLE, PortType.SERIALIZATION_OBJECT,
 			PortType.CONNECTION_MANY_TO_ONE, PortType.RECEIVE_AUTO_UPCALLS);
 
-	public static final PortType broadcastPortType = new PortType(
+	static final PortType broadcastPortType = new PortType(
 			PortType.COMMUNICATION_RELIABLE, PortType.SERIALIZATION_OBJECT_SUN,
 			PortType.CONNECTION_MANY_TO_MANY, PortType.RECEIVE_AUTO_UPCALLS);
 
-	public static final PortType queryPortType = new PortType(
+	static final PortType queryPortType = new PortType(
 			PortType.COMMUNICATION_RELIABLE, PortType.SERIALIZATION_DATA,
 			PortType.CONNECTION_MANY_TO_ONE, PortType.RECEIVE_EXPLICIT);
 
-	public static final IbisCapabilities ibisCapabilities = new IbisCapabilities(
+	static final IbisCapabilities ibisCapabilities = new IbisCapabilities(
 			IbisCapabilities.ELECTIONS_STRICT,
 			IbisCapabilities.MEMBERSHIP_TOTALLY_ORDERED,
 			IbisCapabilities.SIGNALS, IbisCapabilities.MALLEABLE);
 
-	public Ibis ibis = null;
+	Ibis ibis = null;
 	private int partitionId = 0;
 	private IbisIdentifier[] assignedPartitions = null;
 	private final Map<String, Integer> assignedIds = new HashMap<String, Integer>();
@@ -129,8 +129,7 @@ public class NetworkLayer {
 		ch.submissionId = chain.getSubmissionId();
 		ch.chainId = chain.getChainId();
 		ch.parentChainId = chain.getParentChainId();
-		ch.nchildrens = chain.getChainChildren();
-		ch.repFactor = chain.getReplicatedFactor();
+		ch.nchildrens = chain.getTotalChainChildren();
 		ch.failed = false;
 		chainsTerminated.add(ch);
 		chFactory.release(ch);
@@ -184,7 +183,7 @@ public class NetworkLayer {
 		return serverMode;
 	}
 
-	public void startIbis() throws IbisCreationFailedException, IOException {
+	public void startIbis() throws Exception {
 
 		if (ibis == null) {
 			ibis = IbisFactory.createIbis(ibisCapabilities, null,
@@ -255,21 +254,25 @@ public class NetworkLayer {
 		stats = context.getStatisticsCollector();
 		try {
 
+			/**** START SUBMISSION MANAGEMENT THREAD ****/
+			log.debug("Starting Termination chains thread...");
+			ChainTerminator terminator = new ChainTerminator(context,
+					chainsTerminated);
+			Thread thread = new Thread(terminator);
+			thread.setName("Chain Terminator");
+			thread.start();
+
+			if (context.isLocalMode()) {
+				return;
+			}
+
 			sender = new ChainSender(context, chainsToSend);
-			Thread thread = new Thread(sender);
+			thread = new Thread(sender);
 			thread.setName("Chain Sender");
 			thread.start();
 
 			tupleRequester = new TupleRequester(context);
 			tupleSender = new TupleSender(context, bufferFactory);
-
-			/**** START SUBMISSION MANAGEMENT THREAD ****/
-			log.debug("Starting Termination chains thread...");
-			ChainTerminator terminator = new ChainTerminator(context,
-					chainsTerminated);
-			thread = new Thread(terminator);
-			thread.setName("Chain Terminator");
-			thread.start();
 
 			receiver = new Receiver(context, bufferFactory);
 			ReceivePort port = ibis.createReceivePort(requestPortType,
@@ -321,12 +324,19 @@ public class NetworkLayer {
 	}
 
 	public int getNumberNodes() {
-		return assignedPartitions.length;
+		if (assignedPartitions == null)
+			return 1;
+		else
+			return assignedPartitions.length;
 	}
 
 	public void stopIbis() throws IOException {
 		for (ReceivePort rp : receivePorts) {
-			rp.close();
+			try {
+				rp.close(-1);
+			} catch (Throwable e) {
+				// ignore
+			}
 		}
 
 		ibis.end();
@@ -343,17 +353,22 @@ public class NetworkLayer {
 		try {
 			String nameSenderPort = receiverPort + receiver.name();
 			if (!senderPorts.containsKey(nameSenderPort)) {
-				PortType type = null;
-				if (receiverPort.equals(queryReceiverPort)) {
-					type = queryPortType;
-				} else if (receiverPort.equals(nameMgmtReceiverPort)) {
-					type = mgmtRequestPortType;
-				} else if (receiverPort.equals(nameBcstReceiverPort)) {
-					type = broadcastPortType;
-				} else {
-					type = requestPortType;
+				synchronized (NetworkLayer.class) {
+					if (!senderPorts.containsKey(nameSenderPort)) {
+						PortType type = null;
+						if (receiverPort.equals(queryReceiverPort)) {
+							type = queryPortType;
+						} else if (receiverPort.equals(nameMgmtReceiverPort)) {
+							type = mgmtRequestPortType;
+						} else if (receiverPort.equals(nameBcstReceiverPort)) {
+							type = broadcastPortType;
+						} else {
+							type = requestPortType;
+						}
+						startSenderPort(type, nameSenderPort, receiver,
+								receiverPort);
+					}
 				}
-				startSenderPort(type, nameSenderPort, receiver, receiverPort);
 			}
 			port = senderPorts.get(nameSenderPort);
 			WriteMessage w = port.newMessage();
@@ -373,16 +388,16 @@ public class NetworkLayer {
 		return assignedIds.get(id.name());
 	}
 
-	public IbisIdentifier[] getPeersLocation(int start, int end) {
-		try {
-			return Arrays.copyOfRange(assignedPartitions, start, end + 1);
-		} catch (Exception e) {
-			log.error("Error in doing this: length: "
-					+ assignedPartitions.length + " start: " + start + " end: "
-					+ end, e);
+	public IbisIdentifier[] getPeersLocation(ChainLocation loc) {
+		if (loc.getValue() == ChainLocation.V_ALL_NODES) {
+			return assignedPartitions;
+		} else if (loc.getValue() == ChainLocation.V_THIS_NODE) {
+			return Arrays.copyOfRange(assignedPartitions, partitionId,
+					partitionId + 1);
+		} else {
+			return Arrays.copyOfRange(assignedPartitions, loc.getValue(),
+					loc.getValue() + 1);
 		}
-
-		return null;
 	}
 
 	private SendPort startSenderPort(PortType senderPortType,
@@ -418,10 +433,6 @@ public class NetworkLayer {
 				}
 			}
 		}
-	}
-
-	public long getCounter(String string) throws IOException {
-		return ibis.registry().getSequenceNumber(string);
 	}
 
 	public long getSentBytes() {

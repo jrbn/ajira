@@ -22,7 +22,7 @@ class ChainTerminator implements Runnable {
 		public int submissionId;
 		public long chainId;
 		public long parentChainId;
-		public int repFactor;
+		// public int repFactor;
 		public int nchildrens;
 		public boolean failed;
 
@@ -36,7 +36,7 @@ class ChainTerminator implements Runnable {
 			submissionId = input.readInt();
 			chainId = input.readLong();
 			parentChainId = input.readLong();
-			repFactor = input.readInt();
+			// repFactor = input.readInt();
 			nchildrens = input.readInt();
 			failed = input.readBoolean();
 		}
@@ -47,7 +47,7 @@ class ChainTerminator implements Runnable {
 			output.writeInt(submissionId);
 			output.writeLong(chainId);
 			output.writeLong(parentChainId);
-			output.writeInt(repFactor);
+			// output.writeInt(repFactor);
 			output.writeInt(nchildrens);
 			output.writeBoolean(failed);
 		}
@@ -74,35 +74,53 @@ class ChainTerminator implements Runnable {
 		ChainInfo header = new ChainInfo();
 		NetworkLayer ibis = context.getNetworkLayer();
 
+		boolean localMode = context.isLocalMode();
+
 		while (true) {
 			try {
 				chainsTerminated.remove(header);
 
 				if (!header.failed) {
-					IbisIdentifier identifier = ibis
-							.getPeerLocation(header.nodeId);
-					WriteMessage msg = ibis.getMessageToSend(identifier,
-							NetworkLayer.nameMgmtReceiverPort);
-					msg.writeByte((byte) 2);
-					msg.writeBoolean(false);
-					msg.writeInt(header.submissionId);
-					msg.writeLong(header.chainId);
-					msg.writeLong(header.parentChainId);
-					msg.writeInt(header.repFactor);
-					msg.writeInt(header.nchildrens);
-					ibis.finishMessage(msg, header.submissionId);
-					if (log.isDebugEnabled()) {
-						log.debug("Sent message with id 2 to " + identifier);
+					if (localMode) {
+						context.getSubmissionsRegistry().updateCounters(
+								header.submissionId, header.chainId,
+								header.parentChainId, header.nchildrens/*
+																		 * ,
+																		 * header
+																		 * .
+																		 * repFactor
+																		 */);
+					} else {
+						IbisIdentifier identifier = ibis
+								.getPeerLocation(header.nodeId);
+						WriteMessage msg = ibis.getMessageToSend(identifier,
+								NetworkLayer.nameMgmtReceiverPort);
+						msg.writeByte((byte) 2);
+						msg.writeBoolean(false);
+						msg.writeInt(header.submissionId);
+						msg.writeLong(header.chainId);
+						msg.writeLong(header.parentChainId);
+						// msg.writeInt(header.repFactor);
+						msg.writeInt(header.nchildrens);
+						ibis.finishMessage(msg, header.submissionId);
+						if (log.isDebugEnabled()) {
+							log.debug("Sent message with id 2 to " + identifier);
+						}
 					}
 				} else {
 					// Broadcast to all the nodes that the submission ID
 					// should be removed.
-					WriteMessage msg = ibis.getMessageToBroadcast();
-					msg.writeByte((byte) 2);
-					msg.writeBoolean(true);
-					msg.writeInt(header.submissionId);
-					msg.writeInt(header.nodeId);
-					ibis.finishMessage(msg, header.submissionId);
+					if (localMode) {
+						context.cleanupSubmission(header.nodeId,
+								header.submissionId);
+					} else {
+						WriteMessage msg = ibis.getMessageToBroadcast();
+						msg.writeByte((byte) 2);
+						msg.writeBoolean(true);
+						msg.writeInt(header.submissionId);
+						msg.writeInt(header.nodeId);
+						ibis.finishMessage(msg, header.submissionId);
+					}
 				}
 
 			} catch (Exception e) {

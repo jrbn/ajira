@@ -19,7 +19,7 @@ import arch.storage.RawComparator;
 import arch.storage.container.WritableContainer;
 import arch.utils.Consts;
 
-public class TupleSender {
+class TupleSender {
 
 	static final Logger log = LoggerFactory.getLogger(TupleSender.class);
 

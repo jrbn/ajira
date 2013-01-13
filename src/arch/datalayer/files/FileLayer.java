@@ -6,9 +6,9 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import arch.ActionContext;
 import arch.Context;
-import arch.chains.Chain;
+import arch.actions.ActionContext;
+import arch.chains.ChainLocation;
 import arch.data.types.TInt;
 import arch.data.types.TString;
 import arch.data.types.Tuple;
@@ -20,31 +20,17 @@ public class FileLayer extends InputLayer {
 
 	public final static int OP_LS = 0;
 	public final static int OP_READ = 1;
-
-	public final static String IMPL_FILE_READER = "fileslayer.reader.impl";
+	private final static Class<? extends DefaultFileParser> DEFAULT_FILE_PARSER = DefaultFileParser.class;
 
 	static final Logger log = LoggerFactory.getLogger(FileLayer.class);
 
 	Factory<TString> factory = new Factory<TString>(TString.class);
 	Factory<TInt> factoryInt = new Factory<TInt>(TInt.class);
 	int numberNodes;
-	int currentPivot;
-
-	Class<? extends FileIterator> classFileIterator = null;
 
 	@Override
 	protected void load(Context context) throws IOException {
-		currentPivot = -1;
 		numberNodes = context.getNetworkLayer().getNumberNodes();
-
-		String clazz = context.getConfiguration().get(IMPL_FILE_READER, null);
-		try {
-			classFileIterator = Class.forName(clazz).asSubclass(
-					FileIterator.class);
-		} catch (Exception e) {
-			log.error("Failed in loading the file reader class", e);
-		}
-
 	}
 
 	@Override
@@ -65,7 +51,7 @@ public class FileLayer extends InputLayer {
 
 			TupleIterator itr = null;
 			if (operation.getValue() == OP_LS) {
-				itr = new ListFilesReader(value.getValue(), sFilter);
+				itr = new ListFilesIterator(value.getValue(), sFilter);
 			} else { // OP_READ
 
 				// In this case value is the key to a file collection
@@ -74,8 +60,8 @@ public class FileLayer extends InputLayer {
 				if (col == null) {
 					// Get it remotely. Operation will contain the node id.
 					tuple.get(operation, 2);
-					List<Object[]> files = context
-							.retrieveRemoteCacheObjects(value.getValue());
+					List<Object[]> files = context.retrieveCacheObjects(value
+							.getValue());
 					if (files == null || files.size() == 0) {
 						throw new Exception("Failed retrieving the iterator");
 					}
@@ -88,11 +74,24 @@ public class FileLayer extends InputLayer {
 					// There is a customized file reader
 					TString clazz = factory.get();
 					tuple.get(clazz, 3);
-					itr = new MultiFilesReader(col, clazz.getValue());
+
+					// Test whether it is a good class
+					Class<? extends DefaultFileParser> c = null;
+					try {
+						c = Class.forName(clazz.getValue()).asSubclass(
+								DefaultFileParser.class);
+					} catch (Exception e) {
+						log.warn("Customized file parser " + clazz.getValue()
+								+ " is not valid.");
+					}
+					if (c != null)
+						itr = new FilesIterator(col, c);
+					else
+						itr = new FilesIterator(col, DEFAULT_FILE_PARSER);
 					factory.release(clazz);
 
 				} else {
-					itr = new MultiFilesReader(col, classFileIterator);
+					itr = new FilesIterator(col, DEFAULT_FILE_PARSER);
 				}
 
 			}
@@ -108,18 +107,35 @@ public class FileLayer extends InputLayer {
 	}
 
 	@Override
-	public int[] getLocations(Tuple tuple, Chain chain, Context context) {
-		int[] range = new int[2];
-		if (++currentPivot == numberNodes) {
-			currentPivot = 0;
-		}
+	public ChainLocation getLocations(Tuple tuple, ActionContext context) {
+		TInt operation = factoryInt.get();
+		TString value = factory.get();
+		try {
+			tuple.get(operation, value);
+			if (operation.getValue() == OP_LS) {
+				return ChainLocation.THIS_NODE;
+			} else {
+				String s = value.toString();
+				int index = Integer.valueOf(s.substring(s.indexOf('-') + 1));
+				return new ChainLocation(index % numberNodes);
+			}
 
-		range[0] = range[1] = currentPivot;
-		return range;
+		} catch (Exception e) {
+			log.error("Error", e);
+		} finally {
+			factoryInt.release(operation);
+			factory.release(value);
+		}
+		return null;
 	}
 
 	@Override
 	public void releaseIterator(TupleIterator itr, ActionContext context) {
+	}
+
+	@Override
+	public String getName() {
+		return "FilesLayer";
 	}
 
 }

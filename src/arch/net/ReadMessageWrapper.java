@@ -5,7 +5,7 @@ import ibis.ipl.ReadMessage;
 import java.io.DataInput;
 import java.io.IOException;
 
-public class ReadMessageWrapper implements DataInput {
+class ReadMessageWrapper implements DataInput {
 
 	ReadMessage message;
 

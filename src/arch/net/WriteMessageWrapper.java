@@ -5,7 +5,7 @@ import ibis.ipl.WriteMessage;
 import java.io.DataOutput;
 import java.io.IOException;
 
-public class WriteMessageWrapper implements DataOutput {
+class WriteMessageWrapper implements DataOutput {
 
 	WriteMessage message;
 
@@ -47,7 +47,7 @@ public class WriteMessageWrapper implements DataOutput {
 
 	@Override
 	public void writeChar(int v) throws IOException {
-		message.writeChar((char)v);
+		message.writeChar((char) v);
 	}
 
 	@Override

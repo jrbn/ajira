@@ -59,7 +59,6 @@ public class Consts {
 
 	/********** DEFAULT CONFIGURATION OPTIONS **********/
 	public static final String STORAGE_IMPL = "storage.impl";
-	// public static final String ALL_ACTIONS = "actions.all";
 	public static final String N_RES_THREADS = "threads.resolution";
 	public static final String N_PROC_THREADS = "threads.processing";
 	public static final String N_MERGE_THREADS = "threads.merge";
@@ -67,4 +66,7 @@ public class Consts {
 	public static final String STATISTICAL_INTERVAL = "arch.stats";
 	public static final String STATS_ENABLED = "arch.stats.enabled";
 	public static final String DICT_DIR = "dictionary.dir";
+	public static final String BUCKETCOUNTER_NAME = "BucketCounter";
+	public static final String CHAINCOUNTER_NAME = "ChainCounter";
+
 }

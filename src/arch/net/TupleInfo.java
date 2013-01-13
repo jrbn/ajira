@@ -49,4 +49,3 @@ public class TupleInfo extends Writable {
 	}
 
 }
-

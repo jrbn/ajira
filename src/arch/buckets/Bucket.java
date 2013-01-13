@@ -20,12 +20,12 @@ import org.slf4j.LoggerFactory;
 import org.xerial.snappy.SnappyInputStream;
 import org.xerial.snappy.SnappyOutputStream;
 
-import arch.StatisticsCollector;
 import arch.chains.ChainNotifier;
 import arch.data.types.Tuple;
 import arch.data.types.bytearray.FDataInput;
 import arch.data.types.bytearray.FDataOutput;
 import arch.datalayer.TupleIterator;
+import arch.statistics.StatisticsCollector;
 import arch.storage.Factory;
 import arch.storage.RawComparator;
 import arch.storage.container.WritableContainer;
@@ -70,13 +70,13 @@ public class Bucket {
 			super.add(index, e);
 			return true;
 		}
-		
+
 		public T removeLastElement() {
-			return remove(size()-1);
+			return remove(size() - 1);
 		}
-		
+
 		public T getLastElement() {
-			return get(size()-1);
+			return get(size() - 1);
 		}
 	}
 
@@ -90,10 +90,9 @@ public class Bucket {
 
 	private final byte[] sequencesReceived = new byte[Consts.MAX_SEGMENTS_RECEIVED];
 	private int highestSequence;
-	private final Map<Long, int[]> childrens = new HashMap<Long, int[]>();
+	private final Map<Long, Integer> childrens = new HashMap<Long, Integer>();
 	private boolean isFinished;
 
-	private int rootChainsReplication = 0;
 	private boolean receivedMainChain;
 
 	private int submissionNode;
@@ -109,7 +108,6 @@ public class Bucket {
 
 	// Used for unsorted streams.
 	private final List<FDataInput> cacheFiles = new ArrayList<FDataInput>();
-	
 	Map<byte[], FileMetaData> sortedCacheFiles = new HashMap<byte[], FileMetaData>();
 	SortedList<byte[]> minimumSortedList = new SortedList<byte[]>(100,
 			new Comparator<byte[]>() {
@@ -132,7 +130,6 @@ public class Bucket {
 
 		isFinished = false;
 		receivedMainChain = false;
-		rootChainsReplication = 0;
 		nChainsReceived = 0;
 		nBucketReceived = 0;
 		highestSequence = -1;
@@ -165,43 +162,44 @@ public class Bucket {
 	}
 
 	public synchronized void updateCounters(long idChain, long idParentChain,
-			int children, int replicatedFactor, boolean isResponsible)
-			throws IOException {
+			int children, boolean isResponsible) throws IOException {
 
 		if (log.isDebugEnabled()) {
 			log.debug("Update counters of bucket " + this.key + ": ic "
-					+ idChain + " p " + idParentChain + " c " + children
-					+ " r " + replicatedFactor + " " + isResponsible);
+					+ idChain + " p " + idParentChain + " c " + children + " "
+					+ isResponsible);
 		}
 
 		if (children > 0) { // Set the expected children in the
 			// map
-			int[] c = childrens.get(idChain);
+			Integer c = childrens.get(idChain);
 			if (c == null) {
-				c = new int[2];
-				childrens.put(idChain, c);
+				childrens.put(idChain, children);
+			} else {
+				c += children;
+				if (c == 0) {
+					childrens.remove(idChain);
+				} else {
+					childrens.put(idChain, c);
+				}
 			}
-			c[0] += children;
-			if (c[0] == 0 && c[1] == 0)
-				childrens.remove(idChain);
+
 		}
 
 		if (isResponsible) { // It is a root chain
-			rootChainsReplication += replicatedFactor - 1;
 			receivedMainChain = true;
 		} else {
-			int[] c = childrens.get(idParentChain);
+			Integer c = childrens.get(idParentChain);
 			if (c == null) {
-				c = new int[2];
-				childrens.put(idParentChain, c);
+				childrens.put(idParentChain, -1);
+			} else {
+				c--;
+				if (c == 0) {
+					childrens.remove(idParentChain);
+				} else {
+					childrens.put(idParentChain, c);
+				}
 			}
-
-			if (replicatedFactor > 0) { // It is an original chain
-				c[0]--;
-			}
-			c[1] += replicatedFactor - 1;
-			if (c[0] == 0 && c[1] == 0)
-				childrens.remove(idParentChain);
 		}
 
 		nChainsReceived++;
@@ -240,8 +238,7 @@ public class Bucket {
 		 * ", receivedMainChain = " + receivedMainChain); }
 		 */
 		if (nChainsReceived == nBucketReceived && highestSequence != -1
-				&& rootChainsReplication == 0 && childrens.size() == 0
-				&& receivedMainChain) {
+				&& childrens.size() == 0 && receivedMainChain) {
 			for (int i = 0; i < highestSequence + 1; ++i)
 				if (sequencesReceived[i] != 0) {
 					return;
@@ -281,11 +278,6 @@ public class Bucket {
 		boolean response = tuples.addAll(newTuplesContainer);
 		isBufferSorted = (response && isBufferEmpty)
 				|| (isBufferSorted && !response);
-		if (tuples.getNElements() > 10000000) {
-			log.warn("Adding a bucket with "
-					+ newTuplesContainer.getNElements() + " to a bucket with "
-					+ tuples.getNElements() + " elements");
-		}
 		if (!response) {
 
 			if (tuples.getNElements() > newTuplesContainer.getNElements()) {
@@ -422,21 +414,20 @@ public class Bucket {
 
 	private boolean compareWithSortedList(byte[] element) {
 		return minimumSortedList.size() == 0
-				|| (element != null
-				    && minimumSortedList.comparator.compare(element,
-								minimumSortedList.getLastElement()) >= 0);
+				|| (element != null && minimumSortedList.comparator.compare(
+						element, minimumSortedList.getLastElement()) >= 0);
 	}
-	
-	private boolean copyFullFile(FileMetaData meta, WritableContainer<Tuple> tmpBuffer, byte[] minimum) throws Exception {
+
+	private boolean copyFullFile(FileMetaData meta,
+			WritableContainer<Tuple> tmpBuffer, byte[] minimum)
+			throws Exception {
 		// Check whether the last element is smaller than the second minimum.
 		// If it is, then we can copy the entire file in the buffer.
 		if (compareWithSortedList(meta.lastElement)) {
 			// Copy the entire file in the buffer
-			if (tmpBuffer.addAll(meta.stream,
-					meta.lastElement, meta.nElements,
+			if (tmpBuffer.addAll(meta.stream, meta.lastElement, meta.nElements,
 					meta.remainingSize)) {
 				elementsInCache -= meta.nElements;
-				
 				meta.stream.close();
 				sortedCacheFiles.remove(minimum);
 				return true;
@@ -444,17 +435,17 @@ public class Bucket {
 		}
 		return false;
 	}
-	
+
 	private void readFrom(FileMetaData meta, byte[] buf) throws IOException {
 		meta.stream.readFully(buf);
 		meta.remainingSize -= buf.length + 4;
 		meta.nElements--;
 	}
-	
+
 	public synchronized boolean removeChunk(WritableContainer<Tuple> tmpBuffer) {
 
 		if (log.isDebugEnabled()) {
-			log.debug("removeChunk: fill tmpBuffer with sorted triples from bucket " + this.getKey());
+			log.debug("removeChunk: fill tmpBuffer with triples from bucket " + this.getKey());
 		}
 		
 		gettingData = true;
@@ -516,7 +507,8 @@ public class Bucket {
 					int tuplesFromStream = 0;
 					long time = System.currentTimeMillis();
 					do {
-						// Remove the minimum of the tuples and try to add it to the buffer.
+						// Remove the minimum of the tuples and try to add it to
+						// the buffer.
 						byte[] minimum = minimumSortedList.removeLastElement();
 						insertResponse = tmpBuffer.addRaw(minimum);
 						
@@ -524,20 +516,28 @@ public class Bucket {
 							if (sortedCacheFiles.containsKey(minimum)) {
 								tuplesFromStream++;
 								elementsInCache--;
-								// The minimum came from a file. Check if the file can be copied completely.
-								FileMetaData meta = sortedCacheFiles.get(minimum);
+								// The minimum came from a file. Check if the
+								// file can be copied completely.
+								FileMetaData meta = sortedCacheFiles
+										.get(minimum);
+								
 								if (copyFullFile(meta, tmpBuffer, minimum)) {
 									tuplesFromStream += meta.nElements;
 									continue;
 								}
-								// No, it could not. Now try to stay with this file as long as we can.
+
+								// No, it could not. Now try to stay with this
+								// file as long as we can.
 								try {
 									int length;
 									while ((length = meta.stream.readInt()) == minimum.length) {
-										// log.debug("Read length " + length + ", filename = " + meta.filename);
+										// log.debug("Read length " + length +
+										// ", filename = " + meta.filename);
 										// Reuse minimum
 										readFrom(meta, minimum);
-										if (compareWithSortedList(minimum) && (insertResponse = tmpBuffer.addRaw(minimum))) {
+										if (compareWithSortedList(minimum)
+												&& (insertResponse = tmpBuffer
+														.addRaw(minimum))) {
 											tuplesFromStream++;
 											elementsInCache--;
 										} else {
@@ -545,17 +545,22 @@ public class Bucket {
 											break;
 										}
 									}
-									// We get here if the length is different (in which case we still have to read
-									// the tuple, in a new buffer), or when the order was wrong.
+									// We get here if the length is different
+									// (in which case we still have to read
+									// the tuple, in a new buffer), or when the
+									// order was wrong.
 									if (length != minimum.length) {
-										// log.debug("Read new length " + length + ", filename = " + meta.filename);
+										// log.debug("Read new length " + length
+										// + ", filename = " + meta.filename);
 										sortedCacheFiles.remove(minimum);
 										if (length > 0) {
-											// log.warn("The buffer is resized! New length = "	+ length);
+											// log.warn("The buffer is resized! New length = "
+											// + length);
 											byte[] rawValue = new byte[length];
 											readFrom(meta, rawValue);
 											minimumSortedList.add(rawValue);
-											sortedCacheFiles.put(rawValue, meta);
+											sortedCacheFiles
+													.put(rawValue, meta);
 										} else { // File is finished.
 											meta.stream.close();
 										}
@@ -633,11 +638,10 @@ public class Bucket {
 	private void cacheCurrentBuffer() throws IOException {
 
 		if (tuples.getNElements() > 0) {
-			log.warn(
-					"Caching buffer, tuples.getNElements = "
-							+ tuples.getNElements(), new Throwable());
-			if (log.isDebugEnabled()) {
-				log.debug("Caching buffer");
+			if (log.isInfoEnabled()) {
+				log.info(
+						"Caching buffer, tuples.getNElements = "
+								+ tuples.getNElements(), new Throwable());
 			}
 			cacheBuffer(tuples, isBufferSorted, fb);
 			tuples = fb.get();
@@ -690,7 +694,9 @@ public class Bucket {
 					BufferedOutputStream fout = new BufferedOutputStream(
 							new SnappyOutputStream(new FileOutputStream(
 									cacheFile)), 65536);
-					// BufferedOutputStream fout = new BufferedOutputStream(new FileOutputStream(cacheFile), 65536);
+					// BufferedOutputStream fout = new BufferedOutputStream(
+					//				new FileOutputStream(cacheFile), 65536);
+
 					FDataOutput cacheOutputStream = new FDataOutput(fout);
 
 					long time = System.currentTimeMillis();
@@ -707,11 +713,12 @@ public class Bucket {
 
 					cacheOutputStream.close();
 
-                                        /*
-					if (log.isDebugEnabled()) {
-					    checkFile(cacheFile);
-					}
-                                        */
+					/*
+					 * if (log.isDebugEnabled()) { 
+					 * checkFile(cacheFile); 
+					 * }
+					 */
+
 
 					// Register file in the list of cachedBuffers
 					FDataInput is = new FDataInput(new BufferedInputStream(
@@ -719,6 +726,7 @@ public class Bucket {
 									new FileInputStream(cacheFile)), 65536));
 					// FDataInput is = new FDataInput(new BufferedInputStream(
 					//				new FileInputStream(cacheFile), 65536));
+
 
 					synchronized (Bucket.this) {
 						if (comparator == null) {
@@ -736,7 +744,10 @@ public class Bucket {
 								meta.nElements = buffer.getNElements() - 1;
 								meta.lastElement = buffer.returnLastElement();
 								if (log.isDebugEnabled()) {
-								    log.debug("Size of first element is " + length + ", size of last element is " + meta.lastElement.length);
+									log.debug("Size of first element is "
+											+ length
+											+ ", size of last element is "
+											+ meta.lastElement.length);
 								}
 								meta.remainingSize = buffer
 										.getRawElementsSize() - 4 - length;

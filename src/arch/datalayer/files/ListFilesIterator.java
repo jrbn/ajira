@@ -10,15 +10,15 @@ import arch.data.types.TString;
 import arch.data.types.Tuple;
 import arch.datalayer.TupleIterator;
 
-public class ListFilesReader extends TupleIterator {
+public class ListFilesIterator extends TupleIterator {
 
-	static final Logger log = LoggerFactory.getLogger(ListFilesReader.class);
+	static final Logger log = LoggerFactory.getLogger(ListFilesIterator.class);
 
 	int currentIndex = -1;
 	List<File> listFiles = null;
 	TString file = new TString();
 
-	public ListFilesReader(String path, String filter) {
+	public ListFilesIterator(String path, String filter) {
 		try {
 			listFiles = FileUtils.listAllFiles(path, filter);
 		} catch (Exception e) {

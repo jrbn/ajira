@@ -1,66 +1,48 @@
 package arch.actions;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import arch.ActionContext;
 import arch.buckets.Bucket;
-import arch.chains.Chain;
 import arch.data.types.Tuple;
-import arch.storage.container.WritableContainer;
 
 public class PutIntoBucket extends Action {
 
 	static final Logger log = LoggerFactory.getLogger(PutIntoBucket.class);
 
+	public static final int BUCKET_ID = 0;
+	public static final String S_BUCKET_ID = "Bucket ID";
+	public static final int SORTING_FUNCTION = 1;
+	public static final String S_SORTING_FUNCTION = "sorting_function";
+
 	Bucket bucket = null;
 	int bucketID;
+	String sortingFunction;
 
-	public void setBucket(int bucketID) {
-		this.bucketID = bucketID;
+	@Override
+	public void registerActionParameters(ActionConf conf) throws Exception {
+		conf.registerParameter(BUCKET_ID, S_BUCKET_ID, null, true);
+		conf.registerParameter(SORTING_FUNCTION, S_SORTING_FUNCTION, null,
+				false);
 	}
 
 	@Override
-	public void readFrom(DataInput input) throws IOException {
-		bucketID = input.readInt();
+	public void startProcess(ActionContext context) throws Exception {
+		bucketID = getParamInt(BUCKET_ID);
+		sortingFunction = getParamString(SORTING_FUNCTION);
+		bucket = context.getBucket(bucketID, sortingFunction);
 	}
 
 	@Override
-	public void writeTo(DataOutput output) throws IOException {
-		output.writeInt(bucketID);
-	}
-
-	@Override
-	public int bytesToStore() {
-		return 4;
-	}
-
-	@Override
-	public void startProcess(ActionContext context, Chain chain) {
-		bucket = context.getTuplesBuckets().getOrCreateBucket(
-				chain.getSubmissionNode(), chain.getSubmissionId(), bucketID,
-				null, null);
-	}
-
-	@Override
-	public void process(Tuple inputTuple, Chain remainingChain,
-			WritableContainer<Chain> chainsToResolve,
-			WritableContainer<Chain> chainsToProcess,
-			WritableContainer<Tuple> output, ActionContext context)
-			throws Exception {
+	public void process(Tuple inputTuple, ActionContext context,
+			ActionOutput output) throws Exception {
 		bucket.add(inputTuple);
-		output.add(inputTuple);
+		output.output(inputTuple);
 	}
 
 	@Override
-	public void stopProcess(ActionContext context, Chain chain,
-			WritableContainer<Tuple> output,
-			WritableContainer<Chain> newChains,
-			WritableContainer<Chain> chainsToSend) throws Exception {
+	public void stopProcess(ActionContext context, ActionOutput output)
+			throws Exception {
 		bucket.setFinished(true);
 	}
 }

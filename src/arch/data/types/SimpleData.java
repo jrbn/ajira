@@ -1,6 +1,6 @@
 package arch.data.types;
 
-import arch.ActionContext;
+import arch.actions.ActionContext;
 import arch.storage.Writable;
 
 abstract public class SimpleData extends Writable {

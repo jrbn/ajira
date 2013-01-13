@@ -1,7 +1,5 @@
-package arch.actions.files;
+package arch.actions;
 
-import java.io.DataInput;
-import java.io.DataOutput;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -11,28 +9,27 @@ import java.text.NumberFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import arch.ActionContext;
-import arch.actions.Action;
-import arch.chains.Chain;
 import arch.data.types.DataProvider;
 import arch.data.types.SimpleData;
 import arch.data.types.Tuple;
-import arch.storage.container.WritableContainer;
 
 public class WriteToFile extends Action {
 
 	final static Logger log = LoggerFactory.getLogger(WriteToFile.class);
 
+	public static final int CUSTOM_WRITER = 0;
+	public static final String S_CUSTOM_WRITER = "custom_writer";
+	public static final int OUTPUT_DIR = 1;
+	public static final String S_OUTPUT_DIR = "output_dir";
+
 	static public class StandardFileWriter {
 
 		FileWriter writer = null;
-		DataProvider dp = null;
 		SimpleData[] array = null;
 
 		public StandardFileWriter(ActionContext context, File file)
 				throws IOException {
 			writer = new FileWriter(file);
-			dp = context.getDataProvider();
 		}
 
 		public StandardFileWriter() {
@@ -42,7 +39,7 @@ public class WriteToFile extends Action {
 			if (array == null) {
 				array = new SimpleData[tuple.getNElements()];
 				for (int i = 0; i < tuple.getNElements(); ++i) {
-					array[i] = dp.get(tuple.getType(i));
+					array[i] = DataProvider.getInstance().get(tuple.getType(i));
 				}
 			}
 
@@ -62,54 +59,20 @@ public class WriteToFile extends Action {
 	StandardFileWriter file = null;
 	String outputDirectory = null;
 	String customWriter = null;
+	long count;
 
-	public void setOutputDirectory(String outputDirectory) {
-		this.outputDirectory = outputDirectory;
-	}
-
-	public void setCustomWriter(Class<? extends StandardFileWriter> clazz) {
-		customWriter = clazz.getName();
+	@Override
+	public void registerActionParameters(ActionConf conf) throws Exception {
+		conf.registerParameter(CUSTOM_WRITER, S_CUSTOM_WRITER, null, false);
+		conf.registerParameter(OUTPUT_DIR, S_OUTPUT_DIR, null, true);
 	}
 
 	@Override
-	public void readFrom(DataInput input) throws IOException {
-		int l = input.readByte();
-		byte[] content = new byte[l];
-		input.readFully(content);
-		outputDirectory = new String(content);
-
-		l = input.readByte();
-		if (l > 0) {
-			content = new byte[l];
-			input.readFully(content);
-			customWriter = new String(content);
-		} else {
-			customWriter = null;
-		}
-	}
-
-	@Override
-	public void writeTo(DataOutput output) throws IOException {
-		byte[] b = outputDirectory.getBytes();
-		output.writeByte(b.length);
-		output.write(b);
-		if (customWriter == null) {
-			output.writeByte(0);
-		} else {
-			b = customWriter.getBytes();
-			output.writeByte(b.length);
-			output.write(b);
-		}
-	}
-
-	@Override
-	public int bytesToStore() throws IOException {
-		throw new IOException("Not supported");
-	}
-
-	@Override
-	public void startProcess(ActionContext context, Chain chain) {
+	public void startProcess(ActionContext context) throws Exception {
+		outputDirectory = getParamString(OUTPUT_DIR);
+		customWriter = getParamString(CUSTOM_WRITER);
 		file = null;
+		count = 0;
 	}
 
 	private void openFile(ActionContext context) throws IOException {
@@ -124,9 +87,8 @@ public class WriteToFile extends Action {
 			f.mkdir();
 		}
 
-		f = new File(f, "part-"
-				+ nf.format(context.getUniqueCounter("OutputFile")) + "_"
-				+ nf.format(0));
+		f = new File(f, "part-" + nf.format(context.getCounter("OutputFile"))
+				+ "_" + nf.format(0));
 
 		try {
 			if (customWriter != null) {
@@ -147,11 +109,9 @@ public class WriteToFile extends Action {
 	}
 
 	@Override
-	public void process(Tuple inputTuple, Chain remainingChain,
-			WritableContainer<Chain> chainsToResolve,
-			WritableContainer<Chain> chainsToProcess,
-			WritableContainer<Tuple> output, ActionContext context)
-			throws Exception {
+	public void process(Tuple inputTuple, ActionContext context,
+			ActionOutput output) throws Exception {
+		++count;
 		if (file == null) {
 			openFile(context);
 		}
@@ -159,14 +119,13 @@ public class WriteToFile extends Action {
 	}
 
 	@Override
-	public void stopProcess(ActionContext context, Chain chain,
-			WritableContainer<Tuple> output,
-			WritableContainer<Chain> newChains,
-			WritableContainer<Chain> chainsToSend) throws Exception {
+	public void stopProcess(ActionContext context, ActionOutput output)
+			throws Exception {
 		if (file != null) {
 			file.close();
 		}
 		file = null;
+		context.incrCounter("Records Written To Files", count);
 	}
 
 }

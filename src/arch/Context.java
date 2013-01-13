@@ -2,81 +2,83 @@ package arch;
 
 import java.util.List;
 
-import arch.actions.ActionsProvider;
-import arch.actions.ControllersProvider;
+import arch.actions.ActionFactory;
 import arch.buckets.Buckets;
 import arch.buckets.CachedFilesMerger;
 import arch.chains.Chain;
 import arch.chains.ChainHandler;
 import arch.chains.ChainNotifier;
-import arch.chains.ChainResolver;
 import arch.data.types.DataProvider;
 import arch.data.types.Tuple;
 import arch.datalayer.InputLayer;
 import arch.datalayer.InputLayerRegistry;
 import arch.net.NetworkLayer;
+import arch.statistics.StatisticsCollector;
 import arch.storage.Factory;
 import arch.storage.SubmissionCache;
 import arch.storage.container.WritableContainer;
+import arch.submissions.Submission;
 import arch.submissions.SubmissionRegistry;
 import arch.utils.Configuration;
+import arch.utils.Consts;
+import arch.utils.UniqueCounter;
 
 public class Context {
 
+	private static final long BUCKET_INIT = 100;
+	private static final long CHAIN_INIT = 1;
+
+	private boolean localMode;
 	private InputLayerRegistry input;
 	private Configuration conf;
 	private Buckets container;
 	private SubmissionRegistry registry;
-	private WritableContainer<Chain> chainsToResolve;
 	private WritableContainer<Chain> chainsToProcess;
 	private NetworkLayer net;
 	private StatisticsCollector stats;
-	private ActionsProvider actionProvider;
-	private ControllersProvider controllersProvider;
+	private ActionFactory actionProvider;
 	private DataProvider dataProvider;
 	private Factory<Tuple> defaultTupleFactory;
 	private SubmissionCache cache;
 	private ChainNotifier chainNotifier;
-	private List<ChainResolver> resolvers;
 	private List<ChainHandler> handlers;
 	private CachedFilesMerger merger;
 
-	public void init(InputLayerRegistry input, Buckets container,
-			SubmissionRegistry registry,
-			WritableContainer<Chain> chainsToResolve,
-			List<ChainResolver> listResolvers,
+	private UniqueCounter counter;
+
+	public void init(boolean localMode, InputLayerRegistry input,
+			Buckets container, SubmissionRegistry registry,
 			WritableContainer<Chain> chainsToProcess,
 			List<ChainHandler> listHandlers, ChainNotifier notifier,
 			CachedFilesMerger merger, NetworkLayer net,
-			StatisticsCollector stats, ActionsProvider actionProvider,
-			ControllersProvider controllersProvider, DataProvider dataProvider,
-			Factory<Tuple> defaultTupleFactory, SubmissionCache cache,
-			Configuration conf) {
+			StatisticsCollector stats, ActionFactory actionProvider,
+			DataProvider dataProvider, Factory<Tuple> defaultTupleFactory,
+			SubmissionCache cache, Configuration conf) {
+		counter = localMode ? new UniqueCounter() : new UniqueCounter(
+				net.getNumberNodes(), net.getMyPartition());
+
+		this.localMode = localMode;
 		this.input = input;
 		this.conf = conf;
 		this.container = container;
 		this.registry = registry;
-		this.chainsToResolve = chainsToResolve;
 		this.chainsToProcess = chainsToProcess;
 		this.chainNotifier = notifier;
 		this.net = net;
 		this.stats = stats;
 		this.actionProvider = actionProvider;
-		this.controllersProvider = controllersProvider;
 		this.dataProvider = dataProvider;
 		this.defaultTupleFactory = defaultTupleFactory;
 		this.cache = cache;
 		this.merger = merger;
-		this.resolvers = listResolvers;
 		this.handlers = listHandlers;
+
+		initializeCounter(Consts.BUCKETCOUNTER_NAME, BUCKET_INIT);
+		initializeCounter(Consts.CHAINCOUNTER_NAME, CHAIN_INIT);
 	}
 
 	public CachedFilesMerger getMergeSortThreadsInfo() {
 		return merger;
-	}
-
-	public List<ChainResolver> getListChainResolvers() {
-		return resolvers;
 	}
 
 	public List<ChainHandler> getListChainHandlers() {
@@ -115,8 +117,8 @@ public class Context {
 		return registry;
 	}
 
-	public WritableContainer<Chain> getChainsToResolve() {
-		return chainsToResolve;
+	public Submission getSubmission(int submissionId) {
+		return registry.getSubmission(submissionId);
 	}
 
 	public WritableContainer<Chain> getChainsToProcess() {
@@ -127,12 +129,8 @@ public class Context {
 		return chainNotifier;
 	}
 
-	public ActionsProvider getActionsProvider() {
+	public ActionFactory getActionsProvider() {
 		return actionProvider;
-	}
-
-	public ControllersProvider getControllersProvider() {
-		return controllersProvider;
 	}
 
 	public DataProvider getDataProvider() {
@@ -140,7 +138,42 @@ public class Context {
 	}
 
 	public void cleanupSubmission(int submissionNode, int idSubmission) {
-		// FIXME: Every node receives this.
 		System.exit(1);
+	}
+
+	public long getUniqueCounter(String name) {
+		return counter.getCounter(name);
+	}
+
+	public boolean isLocalMode() {
+		return localMode;
+	}
+
+	public void initializeCounter(String name, long init) {
+		counter.init(name, init);
+	}
+
+	public void deleteCounter(String name) {
+		counter.removeCounter(name);
+	}
+
+	public int getBucketCounter(int submissionId) {
+		String name = Consts.BUCKETCOUNTER_NAME + submissionId;
+		synchronized (counter) {
+			if (!counter.hasCounter(name)) {
+				initializeCounter(name, BUCKET_INIT);
+			}
+		}
+		return (int) getUniqueCounter(name);
+	}
+
+	public long getChainCounter(int submissionId) {
+		String name = Consts.CHAINCOUNTER_NAME + submissionId;
+		synchronized (counter) {
+			if (!counter.hasCounter(name)) {
+				initializeCounter(name, CHAIN_INIT);
+			}
+		}
+		return getUniqueCounter(name);
 	}
 }

@@ -9,10 +9,11 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import arch.StatisticsCollector;
+import arch.actions.ActionContext;
 import arch.data.types.Tuple;
 import arch.datalayer.TupleIterator;
 import arch.net.NetworkLayer;
+import arch.statistics.StatisticsCollector;
 import arch.storage.Factory;
 import arch.storage.container.WritableContainer;
 
@@ -29,7 +30,6 @@ public class Buckets {
 
 	StatisticsCollector stats;
 
-	int internalCounter = Integer.MAX_VALUE;
 	int myPartition = 0;
 
 	@SuppressWarnings("unchecked")
@@ -96,9 +96,10 @@ public class Buckets {
 	}
 
 	public synchronized Bucket getOrCreateBucket(int submissionNode,
-			int idSubmission, String sortingFunction, byte[] sortingParams) {
+			int idSubmission, String sortingFunction, byte[] sortingParams,
+			ActionContext context) {
 		return getOrCreateBucket(submissionNode, idSubmission,
-				internalCounter++, sortingFunction, sortingParams);
+				context.getNewBucketID(), sortingFunction, sortingParams);
 	}
 
 	public synchronized void releaseBucket(Bucket bucket) {
@@ -189,10 +190,10 @@ public class Buckets {
 	}
 
 	public Bucket startTransfer(int submissionNode, int submission, int node,
-			int bucketID, String sortingFunction, byte[] sortingParams) {
+			int bucketID, String sortingFunction, byte[] sortingParams,
+			ActionContext context) {
 
 		if (node == myPartition || net.getNumberNodes() == 1) {
-			// return directly the node
 			return getOrCreateBucket(submissionNode, submission, bucketID,
 					sortingFunction, sortingParams);
 		}
@@ -205,10 +206,10 @@ public class Buckets {
 		synchronized (map) {
 			info = map.get(key);
 			if (info == null) {
-				// There is any transfer active. Create one
+				// There is no transfer active. Create one.
 				info = new TransferInfo();
 				info.bucket = getOrCreateBucket(submissionNode, submission,
-						sortingFunction, sortingParams);
+						sortingFunction, sortingParams, context);
 				map.put(key, info);
 			} else {
 				info.count++;
@@ -219,15 +220,15 @@ public class Buckets {
 
 	public void finishTransfer(int submissionNode, int submission, int node,
 			int bucketID, long chainId, long parentChainId, int nchildren,
-			int replicatedFactor, boolean responsible, String sortingFunction,
-			byte[] sortingParams, boolean decreaseCounter) throws IOException {
+			boolean responsible, String sortingFunction, byte[] sortingParams,
+			boolean decreaseCounter) throws IOException {
 
 		if (node == myPartition || net.getNumberNodes() == 1) {
 			Bucket bucket = getOrCreateBucket(submissionNode, submission,
 					bucketID, sortingFunction, sortingParams);
 
 			bucket.updateCounters(chainId, parentChainId, nchildren,
-					replicatedFactor, responsible);
+					responsible);
 			bucket.updateCounters(0, true);
 			return;
 		}
@@ -247,7 +248,7 @@ public class Buckets {
 		message.writeLong(chainId);
 		message.writeLong(parentChainId);
 		message.writeInt(nchildren);
-		message.writeInt(replicatedFactor);
+		// message.writeInt(replicatedFactor);
 		message.writeBoolean(responsible);
 		if (sortingFunction == null || sortingFunction.equals("")) {
 			message.writeBoolean(false);

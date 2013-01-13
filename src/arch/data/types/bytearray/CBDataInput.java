@@ -27,7 +27,7 @@ public class CBDataInput extends BDataInput {
 
 	@Override
 	public int readInt() throws IOException {
-		if (cb.start + 4 < cb.buffer.length)
+		if (cb.start + 4 <= cb.buffer.length)
 			return super.readInt();
 		else {
 			int value = 0;
@@ -47,7 +47,7 @@ public class CBDataInput extends BDataInput {
 	
 	@Override
 	public short readShort() throws IOException {
-		if (cb.start + 2 < cb.buffer.length)
+		if (cb.start + 2 <= cb.buffer.length)
 			return super.readShort();
 		else {
 			if (cb.start >= cb.buffer.length) {
@@ -65,7 +65,7 @@ public class CBDataInput extends BDataInput {
 	@Override
 	public long readLong() throws IOException {
 
-		if (cb.start + 8 < cb.buffer.length) {
+		if (cb.start + 8 <= cb.buffer.length) {
 			return super.readLong();
 
 		} else {

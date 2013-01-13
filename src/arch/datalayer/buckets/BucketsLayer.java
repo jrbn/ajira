@@ -5,10 +5,11 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import arch.ActionContext;
 import arch.Context;
+import arch.actions.ActionContext;
 import arch.buckets.BucketIterator;
-import arch.chains.Chain;
+import arch.buckets.Buckets;
+import arch.chains.ChainLocation;
 import arch.data.types.TInt;
 import arch.data.types.Tuple;
 import arch.datalayer.InputLayer;
@@ -21,34 +22,22 @@ public class BucketsLayer extends InputLayer {
 
 	Factory<TInt> intFactory = new Factory<TInt>(TInt.class);
 
-	// Factory<TBoolean> booleanFactory = new Factory<TBoolean>(TBoolean.class);
+	Buckets buckets;
 
 	@Override
 	protected void load(Context context) throws IOException {
+		buckets = context.getTuplesBuckets();
 	}
 
 	@Override
 	public TupleIterator getIterator(Tuple tuple, ActionContext context) {
 		TupleIterator itr = null;
 		try {
-			TInt submissionBucket = intFactory.get();
 			TInt numberBucket = intFactory.get();
-			// TBoolean removeDuplicates = booleanFactory.get();
-
-			tuple.get(submissionBucket, numberBucket/* , removeDuplicates */);
-
-			itr = context.getTuplesBuckets().getIterator(
-					submissionBucket.getValue(), numberBucket.getValue()/*
-																		 * ,
-																		 * removeDuplicates
-																		 * .
-																		 * getValue
-																		 * ()
-																		 */);
-
-			intFactory.release(submissionBucket);
+			tuple.get(numberBucket);
+			itr = buckets.getIterator(context.getSubmissionId(),
+					numberBucket.getValue());
 			intFactory.release(numberBucket);
-			// booleanFactory.release(removeDuplicates);
 		} catch (Exception e) {
 			log.error("Error retrieving the tuple iterator", e);
 		}
@@ -57,31 +46,32 @@ public class BucketsLayer extends InputLayer {
 	}
 
 	@Override
-	public int[] getLocations(Tuple tuple, Chain chain, Context context) {
-		int[] range = new int[2];
-
+	public ChainLocation getLocations(Tuple tuple, ActionContext context) {
 		try {
 			TInt locationBucket = intFactory.get();
 			tuple.get(locationBucket, tuple.getNElements() - 1);
 			if (locationBucket.getValue() == -1
 					|| locationBucket.getValue() == -2) { // All buckets or
-				// multiple
-				range[0] = 0;
-				range[1] = context.getNetworkLayer().getNumberNodes() - 1;
+				intFactory.release(locationBucket);
+				return ChainLocation.ALL_NODES;
 			} else {
-				range[0] = locationBucket.getValue();
-				range[1] = locationBucket.getValue();
+				intFactory.release(locationBucket);
+				return new ChainLocation(locationBucket.getValue());
 			}
-			intFactory.release(locationBucket);
 		} catch (Exception e) {
 			log.error("Error parsing tuple", e);
 		}
 
-		return range;
+		return null;
 	}
 
 	@Override
 	public void releaseIterator(TupleIterator itr, ActionContext context) {
-		context.getTuplesBuckets().releaseIterator((BucketIterator) itr, false);
+		buckets.releaseIterator((BucketIterator) itr, false);
+	}
+
+	@Override
+	public String getName() {
+		return "BucketsLayer";
 	}
 }

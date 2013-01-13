@@ -1,77 +1,54 @@
 package arch.actions;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-
-import arch.ActionContext;
-import arch.chains.Chain;
 import arch.data.types.TInt;
 import arch.data.types.Tuple;
-import arch.storage.container.WritableContainer;
+import arch.datalayer.Query;
 import arch.utils.Consts;
 
 public class ReadFromBucket extends Action {
 
 	int node;
 	int bucketId;
-	boolean forward = false;
+	boolean branch = false;
 
-	public void setBucket(int bucketId) {
-		this.bucketId = bucketId;
-	}
+	public static final int BUCKET_ID = 0;
+	public static final String S_BUCKET_ID = "bucket_id";
+	public static final int NODE_ID = 1;
+	public static final String S_NODE_ID = "node_id";
 
-	public void setDestination(int nodeId) {
-		this.node = nodeId;
-	}
+	static class ParametersProcessor extends ActionConf.Configurator {
+		@Override
+		void setupConfiguration(Query query, Object[] params,
+				ActionController controller, ActionContext context) {
+			if (params[NODE_ID] == null) {
+				params[NODE_ID] = -1;
+			}
 
-	@Override
-	public void readFrom(DataInput input) throws IOException {
-		node = input.readInt();
-		bucketId = input.readInt();
-		forward = input.readBoolean();
-	}
+			query.setInputLayer(Consts.BUCKET_INPUT_LAYER_ID);
+			query.setInputTuple(new Tuple(
+					new TInt((Integer) params[BUCKET_ID]), new TInt(
+							(Integer) params[NODE_ID])));
 
-	@Override
-	public void writeTo(DataOutput output) throws IOException {
-		output.writeInt(node);
-		output.writeInt(bucketId);
-		output.writeBoolean(forward);
-	}
-
-	@Override
-	public int bytesToStore() throws IOException {
-		return 9;
+			controller.doNotAddAction();
+		}
 	}
 
 	@Override
-	public void process(Tuple inputTuple, Chain remainingChain,
-			WritableContainer<Chain> chainsToResolve,
-			WritableContainer<Chain> chainsToProcess,
-			WritableContainer<Tuple> output, ActionContext context)
-			throws Exception {
-		if (forward)
-			output.add(inputTuple);
+	public void registerActionParameters(ActionConf conf) throws Exception {
+		conf.registerParameter(BUCKET_ID, S_BUCKET_ID, null, true);
+		conf.registerParameter(NODE_ID, S_NODE_ID, -1, false);
+		conf.registerCustomConfigurator(ParametersProcessor.class);
 	}
 
 	@Override
-	public void stopProcess(ActionContext context, Chain chain,
-			WritableContainer<Tuple> output,
-			WritableContainer<Chain> newChains,
-			WritableContainer<Chain> chainsToSend) throws Exception {
-		// Generate a new chain and send it.
-		Chain newChain = new Chain();
-		chain.createBranch(context, newChain);
-
-		newChain.setInputLayerId(Consts.BUCKET_INPUT_LAYER_ID);
-		newChain.replaceInputTuple(new Tuple(new TInt(newChain
-				.getSubmissionId()), new TInt(bucketId), new TInt(node)));
-
-		chainsToSend.add(newChain);
+	public void startProcess(ActionContext context) throws Exception {
+		bucketId = getParamInt(BUCKET_ID);
+		node = getParamInt(NODE_ID);
 	}
 
-	public void setForwardTuples(boolean b) {
-		forward = b;
+	@Override
+	public void process(Tuple inputTuple, ActionContext context,
+			ActionOutput output) throws Exception {
+		output.output(inputTuple);
 	}
-
 }

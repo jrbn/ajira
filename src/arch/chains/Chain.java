@@ -3,103 +3,61 @@ package arch.chains;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import arch.ActionContext;
 import arch.actions.Action;
-import arch.actions.ActionsProvider;
+import arch.actions.ActionConf;
+import arch.actions.ActionContext;
+import arch.actions.ActionController;
+import arch.actions.ActionFactory;
 import arch.data.types.Tuple;
 import arch.data.types.bytearray.BDataInput;
 import arch.data.types.bytearray.BDataOutput;
+import arch.datalayer.Query;
 import arch.storage.Writable;
 import arch.utils.Consts;
 import arch.utils.Utils;
 
-/**
- * 
- * 8 bytes: submission ID the chain belongs to 8 bytes: chain ID 8 bytes: parent
- * chain ID 4 bytes: n children 4 bytes: replicated factor 1 byte: input layer
- * to consider (0 is the default) 1 byte: flag to exclude the execution of the
- * fixed chain
- * 
- * @author jacopo
- * 
- */
-
-public class Chain extends Writable {
+public class Chain extends Writable implements Query {
 
 	static final Logger log = LoggerFactory.getLogger(Chain.class);
 
+	private static class FlowController implements ActionController {
+
+		public boolean doNotAddAction;
+		public boolean stopProcessing;
+		public int destination;
+		public int bucketId;
+
+		public void init() {
+			stopProcessing = doNotAddAction = false;
+		}
+
+		@Override
+		public void continueComputationOn(int destination, int bucketId) {
+			stopProcessing = true;
+			this.destination = destination;
+			this.bucketId = bucketId;
+		}
+
+		@Override
+		public void doNotAddAction() {
+			doNotAddAction = true;
+		}
+	}
+
 	private int startingPosition = Consts.CHAIN_RESERVED_SPACE;
 	private int bufferSize = Consts.CHAIN_RESERVED_SPACE;
-	private static byte[] zeroBuf = new byte[Consts.CHAIN_RESERVED_SPACE];
-
 	private final byte[] buffer = new byte[Consts.CHAIN_SIZE];
 	private Tuple inputTuple = null;
 
+	private FlowController controller = new FlowController();
+
 	private final BDataOutput cos = new BDataOutput(buffer);
 	private final BDataInput cis = new BDataInput(buffer);
-
-	public void init(String[] availableControllers) {
-		System.arraycopy(zeroBuf, 0, buffer, 0, Consts.CHAIN_RESERVED_SPACE);
-		startingPosition = Consts.CHAIN_RESERVED_SPACE;
-		if (availableControllers == null) {
-			Utils.encodeInt(buffer, 35, 0);
-		} else {
-			// Sort the strings to save space
-			String list = "";
-
-			Arrays.sort(availableControllers);
-			String nameLastPackage = "";
-			for (String action : availableControllers) {
-				String packageName = action.substring(0,
-						action.lastIndexOf('.'));
-				if (packageName.equals(nameLastPackage)) {
-					list += "," + action.substring(action.lastIndexOf('.') + 1);
-				} else {
-					list += ":" + action;
-					nameLastPackage = packageName;
-				}
-			}
-
-			if (list.startsWith(",") || list.startsWith(":")) {
-				list = list.substring(1);
-			}
-
-			byte[] toArray = list.getBytes();
-			Utils.encodeInt(buffer, 35, toArray.length);
-			System.arraycopy(toArray, 0, buffer, 39, toArray.length);
-			startingPosition += toArray.length;
-		}
-		bufferSize = startingPosition;
-		inputTuple = null;
-	}
-
-	public String[] getAvailableControllers() {
-		int size = Utils.decodeInt(buffer, 35);
-
-		if (size != 0) {
-			ArrayList<String> classes = new ArrayList<String>();
-			String list = new String(buffer, 39, size);
-			String[] blocks = list.split(":");
-			for (String block : blocks) {
-				String[] names = block.split(",");
-				String packageName = names[0].substring(0,
-						names[0].lastIndexOf("."));
-				classes.add(names[0]);
-				for (int i = 1; i < names.length; ++i) {
-					classes.add(packageName + "." + names[i]);
-				}
-			}
-			return classes.toArray(new String[classes.size()]);
-		}
-		return null;
-	}
 
 	@Override
 	public void readFrom(DataInput input) throws IOException {
@@ -155,7 +113,7 @@ public class Chain extends Writable {
 		return Utils.decodeInt(buffer, 4);
 	}
 
-	public void setChainId(long chainId) {
+	void setChainId(long chainId) {
 		Utils.encodeLong(buffer, 8, chainId);
 	}
 
@@ -171,161 +129,173 @@ public class Chain extends Writable {
 		return Utils.decodeLong(buffer, 16);
 	}
 
-	public void setChainChildren(int chainChildren) {
+	public void setTotalChainChildren(int chainChildren) {
 		Utils.encodeInt(buffer, 24, chainChildren);
 	}
 
-	public int getChainChildren() {
+	public int getTotalChainChildren() {
 		return Utils.decodeInt(buffer, 24);
 	}
 
-	public int getReplicatedFactor() {
-		return Utils.decodeInt(buffer, 28);
-	}
-
-	public void setReplicatedFactor(int factor) {
-		Utils.encodeInt(buffer, 28, factor);
-	}
-
-	public void setInputLayerId(int id) {
+	@Override
+	public void setInputLayer(int id) {
 		buffer[32] = (byte) id;
 	}
 
-	public int getInputLayerId() {
+	@Override
+	public int getInputLayer() {
 		return buffer[32];
 	}
 
-	public void setExcludeExecution(boolean value) {
-		buffer[33] = (byte) (value ? 1 : 0);
-	}
-
-	public boolean getExcludeExecution() {
-		return buffer[33] == 1 ? true : false;
-	}
-
-	public void setCustomFlag(byte value) {
+	void setCustomFlag(byte value) {
 		buffer[34] = value;
 	}
 
-	public int getCustomFlag() {
+	int getCustomFlag() {
 		return buffer[34];
 	}
 
-	public void replaceInputTuple(Tuple tuple) {
+	@Override
+	public void setInputTuple(Tuple tuple) {
 		inputTuple = tuple;
 	}
 
-	public void getInputTuple(Tuple tuple) throws Exception {
-		if (inputTuple != null) {
-			inputTuple.copyTo(tuple);
-			return;
-		}
-
-		int sizeNameAction = Utils.decodeInt(buffer, bufferSize - 4);
-		int startingPoint = bufferSize - 12 - sizeNameAction;
-		startingPoint -= Utils.decodeInt(buffer, startingPoint);
-		cis.setCurrentPosition(startingPoint);
-		tuple.readFrom(cis);
+	@Override
+	public void getInputTuple(Tuple tuple) {
+		inputTuple.copyTo(tuple);
 	}
 
-	public void addActions(List<Action> actions) throws Exception {
+	public void addActions(List<ActionConf> actions, ActionContext context)
+			throws Exception {
 		if (actions != null) {
 			for (int i = actions.size() - 1; i >= 0; i--) {
-				addAction(actions.get(i));
+				addAction(actions.get(i), context);
 			}
 		} else {
 			throw new Exception("actions is null");
 		}
 	}
 
-	public void addAction(Action action) throws Exception {
+	void addAction(ActionConf params, ActionContext context) throws Exception {
 
+		// Validate the action
+		if (!params.validateParameters()) {
+			throw new Exception("Some required parameters for the action "
+					+ params.getClassName() + " are not set.");
+		}
+
+		// Process the parameters and possibly insert instructions to control
+		// the flow.
+		if (params.getConfigurator() != null) {
+			controller.init();
+			params.getConfigurator().process(this, params, controller, context);
+
+			if (controller.doNotAddAction) {
+				return;
+			}
+
+			if (controller.stopProcessing) {
+				cos.setCurrentPosition(bufferSize);
+				cos.writeInt(controller.bucketId);
+				cos.writeInt(controller.destination);
+				cos.writeBoolean(true);
+				bufferSize += 9;
+			} else {
+				cos.writeBoolean(false);
+				bufferSize++;
+			}
+		} else {
+			cos.writeBoolean(false);
+			bufferSize++;
+		}
+
+		// Serialize the action configuration
 		int totalSize = bufferSize;
-
-		// First serialize the action
 		cos.setCurrentPosition(bufferSize);
-		action.writeTo(cos);
+		params.writeTo(cos);
 		int sizeAction = cos.cb.end - totalSize;
 		bufferSize += sizeAction;
 		Utils.encodeInt(buffer, bufferSize, sizeAction);
 		bufferSize += 4;
 
-		// Add eventually the tuple
-		int sizeTuple = bufferSize;
-		Tuple tuple = action.getInputTuple();
-		if (tuple != null) {
-			cos.setCurrentPosition(bufferSize);
-			tuple.writeTo(cos);
-		} else {
-			cos.setCurrentPosition(bufferSize);
-			Tuple.EMPTY_TUPLE.writeTo(cos);
-		}
-		bufferSize = cos.cb.end;
-		Utils.encodeInt(buffer, bufferSize, bufferSize - sizeTuple);
-		bufferSize += 4;
+		// Serialize the chain id of this chain
+		Utils.encodeLong(buffer, bufferSize, getChainId());
+		bufferSize += 8;
 
-		// Add the total size of the action
-		Utils.encodeInt(buffer, bufferSize, bufferSize - totalSize);
-		bufferSize += 4;
-
-		// Add the action class name
-		byte[] sAction = action.getClass().getName().getBytes();
+		// Serialize the class name
+		byte[] sAction = params.getClassName().getBytes();
 		System.arraycopy(sAction, 0, buffer, bufferSize, sAction.length);
-		Utils.encodeInt(buffer, bufferSize + sAction.length, sAction.length);
-		bufferSize += 4 + sAction.length;
+		bufferSize += sAction.length;
+		Utils.encodeInt(buffer, bufferSize, sAction.length);
+		bufferSize += 4;
 	}
 
-	public int getRawSize() {
-		return bufferSize;
-	}
-
-	public void setRawSize(int size) {
+	void setRawSize(int size) {
 		bufferSize = size;
 	}
 
-	public void copyTo(Chain newChain) {
+	void copyTo(Chain newChain) {
 		newChain.startingPosition = startingPosition;
 		newChain.bufferSize = bufferSize;
 		System.arraycopy(buffer, 0, newChain.buffer, 0, bufferSize);
 		if (inputTuple != null) {
 			if (newChain.inputTuple == null) {
 				newChain.inputTuple = new Tuple();
-				inputTuple.copyTo(newChain.inputTuple);
 			}
+			inputTuple.copyTo(newChain.inputTuple);
+		} else {
+			newChain.inputTuple = null;
 		}
 	}
 
-	public void createBranch(ActionContext context, Chain newChain) {
+	public void branch(Chain newChain, long newChainId) {
 		copyTo(newChain);
+		// Set up the new chain
 		newChain.setParentChainId(this.getChainId());
-		newChain.setChainId(context.getNewChainID());
-		newChain.setChainChildren(0);
-		setChainChildren(getChainChildren() + 1);
+		newChain.setChainId(newChainId);
+		newChain.setTotalChainChildren(0);
+
+		// Update counters of the new chain.
+		setTotalChainChildren(getTotalChainChildren() + 1);
 	}
 
-	public int getActions(Action[] actions, int[] rawSizes, ActionsProvider ap)
+	void getActions(ActionsExecutor actions, ActionFactory ap)
 			throws IOException {
+
 		// Read the chain and feel the actions
 		int tmpSize = bufferSize;
-		int nactions = 0;
+		long currentChainId = getChainId();
+		boolean stopProcessing = false;
+		int nodeId = 0;
+		int bucketId = 0;
 
-		while (tmpSize > startingPosition) {
+		while (tmpSize > startingPosition && !stopProcessing) {
 			tmpSize -= 4;
 			int size = Utils.decodeInt(buffer, tmpSize);
 			String sAction = new String(buffer, tmpSize - size, size);
-			Action action = ap.get(sAction);
+
+			tmpSize -= 8 + size;
+			long chainId = Utils.decodeLong(buffer, tmpSize);
 
 			// Get size of the action
-			tmpSize -= 4 + size;
+			tmpSize -= 4;
 			tmpSize -= Utils.decodeInt(buffer, tmpSize);
-
 			cis.setCurrentPosition(tmpSize);
-			action.readFrom(cis);
-			actions[nactions] = action;
-			rawSizes[nactions] = tmpSize;
-			nactions++;
-		}
-		return nactions;
-	}
+			Action action = ap.getAction(sAction, cis);
 
+			stopProcessing = buffer[--tmpSize] == 1;
+			if (stopProcessing) {
+				tmpSize -= 4;
+				nodeId = Utils.decodeInt(buffer, tmpSize);
+				tmpSize -= 4;
+				bucketId = Utils.decodeInt(buffer, tmpSize);
+			}
+
+			actions.addAction(action, chainId == currentChainId, tmpSize);
+		}
+
+		if (stopProcessing) {
+			actions.moveComputation(nodeId, bucketId);
+		}
+	}
 }
