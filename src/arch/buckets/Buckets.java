@@ -106,7 +106,7 @@ public class Buckets {
 		if (log.isDebugEnabled()) {
 			log.debug("releaseBucket: " + bucket.getKey());
 		}
-		bucket.releaseTuples();
+		bucket.releaseInBuffer();
 		buckets.remove(bucket.getKey());
 		// bucketsFactory.release(bucket);
 	}
@@ -194,6 +194,7 @@ public class Buckets {
 			ActionContext context) {
 
 		if (node == myPartition || net.getNumberNodes() == 1) {
+			// Return directly the bucket
 			return getOrCreateBucket(submissionNode, submission, bucketID,
 					sortingFunction, sortingParams);
 		}
@@ -208,8 +209,9 @@ public class Buckets {
 			if (info == null) {
 				// There is no transfer active. Create one.
 				info = new TransferInfo();
-				info.bucket = getOrCreateBucket(submissionNode, submission,
-						sortingFunction, sortingParams, context);
+				// Remote buckets are not sorted (sorting is disabled)
+				info.bucket = getOrCreateBucket(submissionNode, submission, 
+						null, null, context);
 				map.put(key, info);
 			} else {
 				info.count++;

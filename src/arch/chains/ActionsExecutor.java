@@ -3,19 +3,25 @@ package arch.chains;
 import java.io.IOException;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import arch.Context;
 import arch.actions.Action;
 import arch.actions.ActionConf;
 import arch.actions.ActionContext;
 import arch.actions.ActionOutput;
 import arch.buckets.Bucket;
+import arch.buckets.Buckets;
 import arch.data.types.TInt;
 import arch.data.types.Tuple;
 import arch.storage.container.WritableContainer;
 import arch.utils.Consts;
 
 public class ActionsExecutor implements ActionContext, ActionOutput {
-
+	
+	static final Logger log = LoggerFactory.getLogger(ActionsExecutor.class);
+	
 	private Context context;
 
 	private int[] rawSizes = new int[Consts.MAX_N_ACTIONS];
@@ -234,8 +240,18 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 
 	@Override
 	public Bucket startTransfer(int nodeId, int bucketId, String sortingFunction) {
-		return context.getTuplesBuckets().startTransfer(submissionNode,
+		Bucket temp = context.getTuplesBuckets().startTransfer(submissionNode,
 				submissionId, nodeId, bucketId, sortingFunction, null, this);
+		
+		if (log.isDebugEnabled()) {
+			log.debug("startTransfer: " + context.getNetworkLayer().getMyPartition() + 
+					" called start transfer for node " + nodeId + 
+					" on bucketKey " + Buckets.getKey(submissionId, bucketId) +
+					" with sorting = " +
+					((nodeId == context.getNetworkLayer().getMyPartition()) ? true : false));
+		}
+		
+		return temp;
 	}
 
 	@Override
@@ -257,6 +273,12 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 				submissionId, nodeId, bucketId, chain.getChainId(),
 				chain.getParentChainId(), children, roots[currentAction],
 				sortingFunction, null, decreaseCounter);
+		
+		if (log.isDebugEnabled()) {
+			log.debug("finishTransfer: " + context.getNetworkLayer().getMyPartition() + 
+					" called finish transfer for node " + nodeId + 
+					" on bucketKey " + Buckets.getKey(submissionId, bucketId));
+		}
 	}
 
 	int getNActions() {

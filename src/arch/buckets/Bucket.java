@@ -83,7 +83,7 @@ public class Bucket {
 	static final Logger log = LoggerFactory.getLogger(Bucket.class);
 
 	private long key;
-	private WritableContainer<Tuple> tuples = null;
+	private WritableContainer<Tuple> inBuffer = null;
 
 	private int nChainsReceived = 0;
 	private int nBucketReceived = 0;
@@ -125,7 +125,7 @@ public class Bucket {
 			Factory<WritableContainer<Tuple>> fb, CachedFilesMerger merger) {
 		this.key = key;
 		this.fb = fb;
-		this.tuples = null;
+		this.inBuffer = null;
 		this.merger = merger;
 
 		isFinished = false;
@@ -252,47 +252,64 @@ public class Bucket {
 
 	public synchronized void addAll(
 			WritableContainer<Tuple> newTuplesContainer, boolean isSorted,
-			Factory<WritableContainer<Tuple>> factory) throws Exception {
-		
+			Factory<WritableContainer<Tuple>> factory) throws Exception {	
 		long time = System.currentTimeMillis();
-		
-		if (tuples == null) {
-			tuples = fb.get();
-			tuples.clear();
+
+		if (inBuffer == null) {
+			inBuffer = fb.get();
+			inBuffer.clear();
+		}
+
+		// LOG-DEBUG
+		if (log.isDebugEnabled()) {
+			log.debug("addAll: adding a sorted = " + isSorted + " buffer with " +
+					newTuplesContainer.getNElements() + " elements " +  
+					"TO exBuffer, sorted = " + isBufferSorted + " with " +
+					inBuffer.getNElements() + " elements");
 		}
 
 		// If factory is not null, we get control over the newTuplesContainer,
 		// which means that we have to remove it
-		//
-		if (comparator != null && !isSorted) {
-			throw new Exception("This buffer accepts only presorted sets");
-		}
-
-		boolean isBufferEmpty = tuples.getNElements() == 0;
+		boolean isBufferEmpty = (inBuffer.getNElements() == 0);
+		boolean response = false;
 
 		// TODO: if isBufferEmpty, could we just release tuples and replace it
-		// with newTuplesContainer?
-		// Also, if tuples has fewer elements, could we just addAll tuples to
-		// newTuplesContainer,
-		// and then release tuples, and replace it with newTuplesContainer?
-		boolean response = tuples.addAll(newTuplesContainer);
-		isBufferSorted = (response && isBufferEmpty)
-				|| (isBufferSorted && !response);
-		if (!response) {
+		// with newTuplesContainer? Also, if tuples has fewer elements, could 
+		// we just addAll tuples to newTuplesContainer,and then release tuples, 
+		// and replace it with newTuplesContainer? [DONE]
+		if (isBufferEmpty) {
+			releaseInBuffer();
+			inBuffer = newTuplesContainer;
+			isBufferSorted = isSorted;
+			response = true;
+		}
+		else {
+			if (newTuplesContainer.getNElements() > inBuffer.getNElements()) {
+				response = newTuplesContainer.addAll(inBuffer);
 
-			if (tuples.getNElements() > newTuplesContainer.getNElements()) {
-				cacheCurrentBuffer();
-				response = tuples.addAll(newTuplesContainer);
-				isBufferSorted = true;
-				// if (factory != null) {
-				// factory.release(newTuplesContainer);
-				// }
-				if (!response) {
-					// The tuples are bigger than the entire buffer. Must throw
-					// exception
-					throw new Exception(
-							"The buffer is too big! Must increase the buffer size.");
+				if (response) {
+					releaseInBuffer();
+					inBuffer = newTuplesContainer;
 				}
+			}
+			else {
+				response = inBuffer.addAll(newTuplesContainer);
+			}
+
+			isBufferSorted = (response && isSorted && isBufferEmpty) 
+					|| (isBufferSorted && !response);
+		}
+
+		if (!response && !isBufferEmpty) {
+			// The response is 'false', which means there is not much space 
+			// left in exBuffer
+			if (inBuffer.getNElements() > newTuplesContainer.getNElements()) {
+				// Cache current buffer to make space
+				cacheBuffer(inBuffer, isBufferSorted, fb);
+
+				// Replace exBuffer with the new container
+				inBuffer = newTuplesContainer;
+				isBufferSorted = isSorted;	
 			} else {
 				// It's better to store the other buffer
 				if (factory != null) {
@@ -305,10 +322,8 @@ public class Bucket {
 					cacheBuffer(box, isSorted, fb);
 				}
 			}
-			// } else if (factory != null) {
-			// factory.release(newTuplesContainer);
 		}
-		
+
 		stats.addCounter(submissionNode, submissionId,
 				"Bucket:addAll: overall time (ms)",
 				System.currentTimeMillis() - time);
@@ -316,21 +331,21 @@ public class Bucket {
 
 	public synchronized void copyTo(Bucket bucket) throws Exception {
 
-		if (tuples == null) {
-			tuples = fb.get();
-			tuples.clear();
+		if (inBuffer == null) {
+			inBuffer = fb.get();
+			inBuffer.clear();
 		}
 
 		waitForCachers();
 
-		if (tuples.getNElements() > 0) {
+		if (inBuffer.getNElements() > 0) {
 
 			if (comparator != null && !isBufferSorted) {
-				tuples.sort(comparator, fb);
+				inBuffer.sort(comparator, fb);
 				isBufferSorted = true;
 			}
 
-			bucket.addAll(tuples, isBufferSorted, null);
+			bucket.addAll(inBuffer, isBufferSorted, null);
 		}
 
 		if (elementsInCache > 0) {
@@ -353,17 +368,17 @@ public class Bucket {
 
 		long time = System.currentTimeMillis();
 		
-		if (tuples == null) {
-			tuples = fb.get();
-			tuples.clear();
+		if (inBuffer == null) {
+			inBuffer = fb.get();
+			inBuffer.clear();
 		}
 
-		boolean response = tuples.add(tuple);
+		boolean response = inBuffer.add(tuple);
 		if (response) {
-			isBufferSorted = tuples.getNElements() < 2;
+			isBufferSorted = inBuffer.getNElements() < 2;
 		} else {
 			cacheCurrentBuffer();
-			response = tuples.add(tuple);
+			response = inBuffer.add(tuple);
 			isBufferSorted = true;
 
 			if (!response) {
@@ -457,7 +472,7 @@ public class Bucket {
 
 		try {
 			if (comparator != null && !isBufferSorted) {
-				tuples.sort(comparator, fb);
+				inBuffer.sort(comparator, fb);
 				isBufferSorted = true;
 			}
 
@@ -477,14 +492,14 @@ public class Bucket {
 
 					if (log.isDebugEnabled()) {
 						log.debug("Try add the first triple from the in-memory ds to the pool => " +
-								"tuples.getNElements() = " + tuples.getNElements() + ", " + 
+								"tuples.getNElements() = " + inBuffer.getNElements() + ", " + 
 								"minmumSortedlist.size() = " + minimumSortedList.size());
 					}
 					
 					// Add the first triple from the in-memory ds to the pool					
-					if (tuples.getNElements() > 0
+					if (inBuffer.getNElements() > 0
 							&& minimumSortedList.size() == sortedCacheFiles.size()) {
-						byte[] key = tuples.removeRaw(null);
+						byte[] key = inBuffer.removeRaw(null);
 						minimumSortedList.add(key);
 						
 						if (log.isDebugEnabled()) {
@@ -571,9 +586,9 @@ public class Bucket {
 									meta.stream.close();
 								}
 							} else { // It came from the in-memory container.
-								if (tuples.getNElements() > 0
+								if (inBuffer.getNElements() > 0
 										&& elementsInCache > 0) {
-									byte[] key = tuples.removeRaw(minimum);
+									byte[] key = inBuffer.removeRaw(minimum);
 									minimumSortedList.add(key);
 								}
 								tuplesFromBuffer++;
@@ -603,9 +618,9 @@ public class Bucket {
 					}
 				}
 
-				if (tuples != null && tuples.getNElements() > 0) {
-					if (tmpBuffer.addAll(tuples)) {
-						tuples.clear();
+				if (inBuffer != null && inBuffer.getNElements() > 0) {
+					if (tmpBuffer.addAll(inBuffer)) {
+						inBuffer.clear();
 					}
 				}
 			}
@@ -619,13 +634,13 @@ public class Bucket {
 				System.currentTimeMillis() - totTime);
 
 		return isFinished && elementsInCache == 0
-				&& (tuples == null || tuples.getNElements() == 0)
+				&& (inBuffer == null || inBuffer.getNElements() == 0)
 				&& (sortedCacheFiles == null || minimumSortedList.size() == 0);
 	}
 
 	public synchronized boolean availableToTransmit() {
 		return elementsInCache > 0
-				|| (tuples != null && tuples.bytesToStore() > Consts.MIN_SIZE_TO_SEND);
+				|| (inBuffer != null && inBuffer.bytesToStore() > Consts.MIN_SIZE_TO_SEND);
 	}
 
 	int numCachers;
@@ -637,15 +652,15 @@ public class Bucket {
 
 	private void cacheCurrentBuffer() throws IOException {
 
-		if (tuples.getNElements() > 0) {
+		if (inBuffer.getNElements() > 0) {
 			if (log.isInfoEnabled()) {
 				log.info(
 						"Caching buffer, tuples.getNElements = "
-								+ tuples.getNElements(), new Throwable());
+								+ inBuffer.getNElements(), new Throwable());
 			}
-			cacheBuffer(tuples, isBufferSorted, fb);
-			tuples = fb.get();
-			tuples.clear();
+			cacheBuffer(inBuffer, isBufferSorted, fb);
+			inBuffer = fb.get();
+			inBuffer.clear();
 		}
 	}
 
@@ -810,23 +825,23 @@ public class Bucket {
 		return comparator;
 	}
 
-	public void releaseTuples() {
-		if (tuples != null) {
-			// fb.release(tuples);
-			tuples = null;
+	public void releaseInBuffer() {
+		if (inBuffer != null) {
+			fb.release(inBuffer);
+			inBuffer = null;
 		}
 	}
 
 	public boolean isEmpty() {
 		return elementsInCache == 0
-				&& (tuples == null || tuples.getNElements() == 0);
+				&& (inBuffer == null || inBuffer.getNElements() == 0);
 	}
 
 	public long inmemory_size() {
-		if (tuples == null) {
+		if (inBuffer == null) {
 			return 0;
 		} else {
-			return tuples.inmemory_size();
+			return inBuffer.inmemory_size();
 		}
 
 	}
