@@ -15,7 +15,7 @@ public class QueryInput extends Action {
 		@Override
 		void setupConfiguration(Query query, Object[] params,
 				ActionController controller, ActionContext context) {
-			query.setInputLayer((int) params[INPUT_LAYER]);
+			query.setInputLayer(((Integer) params[INPUT_LAYER]).intValue());
 			query.setInputTuple((Tuple) params[TUPLE]);
 			controller.doNotAddAction();
 		}

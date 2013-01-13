@@ -35,8 +35,8 @@ public class CollectToNode extends Action {
 				params[BUCKET_ID] = context.getNewBucketID();
 			}
 
-			controller.continueComputationOn((int) params[NODE_ID],
-					(int) params[BUCKET_ID]);
+			controller.continueComputationOn(((Integer) params[NODE_ID]).intValue(),
+					(Integer) params[BUCKET_ID]);
 		}
 	}
 
