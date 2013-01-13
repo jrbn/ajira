@@ -83,7 +83,10 @@ public class Bucket {
 	static final Logger log = LoggerFactory.getLogger(Bucket.class);
 
 	private long key;
+	// Internal tuples - assigned tuples read from local files
 	private WritableContainer<Tuple> inBuffer = null;
+	// External tuples - assigned tuples pulled from remote files
+	private WritableContainer<Tuple> exBuffer = null;
 
 	private int nChainsReceived = 0;
 	private int nBucketReceived = 0;
@@ -118,7 +121,8 @@ public class Bucket {
 				}
 			});
 	RawComparator<Tuple> comparator = null;
-	private boolean isBufferSorted = true;
+	private boolean isInBufferSorted = true;
+	private boolean isExBufferSorted = true;
 
 	public void init(long key, StatisticsCollector stats, int submissionNode,
 			int submissionId, String comparator, byte[] params,
@@ -149,7 +153,7 @@ public class Bucket {
 		this.submissionNode = submissionNode;
 		this.submissionId = submissionId;
 
-		isBufferSorted = true;
+		isInBufferSorted = true;
 		if (comparator != null && comparator.length() > 0) {
 			setSortingFunction(comparator, params);
 		} else {
@@ -255,61 +259,57 @@ public class Bucket {
 			Factory<WritableContainer<Tuple>> factory) throws Exception {	
 		long time = System.currentTimeMillis();
 
-		if (inBuffer == null) {
-			inBuffer = fb.get();
-			inBuffer.clear();
+		if (exBuffer == null) {
+			exBuffer = fb.get();
+			exBuffer.clear();
 		}
 
 		// LOG-DEBUG
 		if (log.isDebugEnabled()) {
 			log.debug("addAll: adding a sorted = " + isSorted + " buffer with " +
 					newTuplesContainer.getNElements() + " elements " +  
-					"TO exBuffer, sorted = " + isBufferSorted + " with " +
-					inBuffer.getNElements() + " elements");
+					"TO exBuffer, sorted = " + isExBufferSorted + " with " +
+					exBuffer.getNElements() + " elements");
 		}
 
 		// If factory is not null, we get control over the newTuplesContainer,
 		// which means that we have to remove it
-		boolean isBufferEmpty = (inBuffer.getNElements() == 0);
+		boolean isExBufferEmpty = (exBuffer.getNElements() == 0);
 		boolean response = false;
 
-		// TODO: if isBufferEmpty, could we just release tuples and replace it
-		// with newTuplesContainer? Also, if tuples has fewer elements, could 
-		// we just addAll tuples to newTuplesContainer,and then release tuples, 
-		// and replace it with newTuplesContainer? [DONE]
-		if (isBufferEmpty) {
-			releaseInBuffer();
-			inBuffer = newTuplesContainer;
-			isBufferSorted = isSorted;
+		if (isExBufferEmpty) {
+			releaseExBuffer();
+			exBuffer = newTuplesContainer;
+			isExBufferSorted = isSorted;
 			response = true;
 		}
 		else {
-			if (newTuplesContainer.getNElements() > inBuffer.getNElements()) {
-				response = newTuplesContainer.addAll(inBuffer);
+			if (newTuplesContainer.getNElements() > exBuffer.getNElements()) {
+				response = newTuplesContainer.addAll(exBuffer);
 
 				if (response) {
-					releaseInBuffer();
-					inBuffer = newTuplesContainer;
+					releaseExBuffer();
+					exBuffer = newTuplesContainer;
 				}
 			}
 			else {
-				response = inBuffer.addAll(newTuplesContainer);
+				response = exBuffer.addAll(newTuplesContainer);
 			}
 
-			isBufferSorted = (response && isSorted && isBufferEmpty) 
-					|| (isBufferSorted && !response);
+			isExBufferSorted = (response && isSorted && isExBufferEmpty) 
+					|| (isExBufferSorted && !response);
 		}
 
-		if (!response && !isBufferEmpty) {
+		if (!response && !isExBufferEmpty) {
 			// The response is 'false', which means there is not much space 
 			// left in exBuffer
-			if (inBuffer.getNElements() > newTuplesContainer.getNElements()) {
-				// Cache current buffer to make space
-				cacheBuffer(inBuffer, isBufferSorted, fb);
+			if (exBuffer.getNElements() > newTuplesContainer.getNElements()) {
+				// Cache exBuffer to make space
+				cacheBuffer(exBuffer, isExBufferSorted);
 
 				// Replace exBuffer with the new container
-				inBuffer = newTuplesContainer;
-				isBufferSorted = isSorted;	
+				exBuffer = newTuplesContainer;
+				isExBufferSorted = isSorted;	
 			} else {
 				// It's better to store the other buffer
 				if (factory != null) {
@@ -329,6 +329,47 @@ public class Bucket {
 				System.currentTimeMillis() - time);
 	}
 
+	public synchronized void combineInExBuffers() throws Exception {
+			long time = System.currentTimeMillis();
+
+			if (exBuffer == null || exBuffer.getNElements() == 0) {
+				return;
+			}
+
+			if (inBuffer == null) {
+				inBuffer = fb.get();
+				inBuffer.clear();
+			}
+
+			// LOG-DEBUG
+			if (log.isDebugEnabled()) {
+				log.debug("combineInExBuffers: adding exBuffer, sorted = " + isExBufferSorted + " with " +
+						exBuffer.getNElements() + " elements " +
+						"TO inBuffer, sorted = " + isExBufferSorted + " with " +
+						inBuffer.getNElements() + " elements");
+			}
+
+			if (!isFinished()) {
+				throw new Exception("combineInExBuffers: bucket is not yet finished!!");
+			}
+
+			boolean response = inBuffer.addAll(exBuffer);
+
+			if (!response) {
+				// Cache exBuffer to make space
+				cacheBuffer(exBuffer, isExBufferSorted);
+				exBuffer = fb.get();
+				exBuffer.clear();
+			}
+			else {
+				isInBufferSorted = isInBufferSorted && isExBufferSorted;
+			}
+
+			stats.addCounter(submissionNode, submissionId,
+					"Bucket:combineInExBuffers: overall time (ms)",
+					System.currentTimeMillis() - time);
+	}
+	
 	public synchronized void copyTo(Bucket bucket) throws Exception {
 
 		if (inBuffer == null) {
@@ -340,12 +381,12 @@ public class Bucket {
 
 		if (inBuffer.getNElements() > 0) {
 
-			if (comparator != null && !isBufferSorted) {
+			if (comparator != null && !isInBufferSorted) {
 				inBuffer.sort(comparator, fb);
-				isBufferSorted = true;
+				isInBufferSorted = true;
 			}
 
-			bucket.addAll(inBuffer, isBufferSorted, null);
+			bucket.addAll(inBuffer, isInBufferSorted, null);
 		}
 
 		if (elementsInCache > 0) {
@@ -365,7 +406,6 @@ public class Bucket {
 	}
 
 	public synchronized boolean add(Tuple tuple) throws Exception {
-
 		long time = System.currentTimeMillis();
 		
 		if (inBuffer == null) {
@@ -374,12 +414,14 @@ public class Bucket {
 		}
 
 		boolean response = inBuffer.add(tuple);
+		
 		if (response) {
-			isBufferSorted = inBuffer.getNElements() < 2;
-		} else {
-			cacheCurrentBuffer();
+			isInBufferSorted = inBuffer.getNElements() < 2;
+		} 
+		else {
+			cacheBuffer(inBuffer, isInBufferSorted);
 			response = inBuffer.add(tuple);
-			isBufferSorted = true;
+			isInBufferSorted = true;
 
 			if (!response) {
 				throw new Exception(
@@ -396,11 +438,22 @@ public class Bucket {
 
 	public synchronized void setFinished(boolean value) throws IOException {
 		isFinished = value;
+
+		// Combine internal + external buffers before finish
+		try {
+			combineInExBuffers();
+		} 
+		catch (Exception e) {
+			log.error(e.getMessage());
+			e.printStackTrace();
+		}
+
 		if (isFinished && notifier != null) {
 			notifier.markReady(iter);
 			notifier = null;
 			iter = null;
 		}
+
 		notifyAll();
 	}
 
@@ -471,9 +524,9 @@ public class Bucket {
 		waitForCachers();
 
 		try {
-			if (comparator != null && !isBufferSorted) {
+			if (comparator != null && !isInBufferSorted) {
 				inBuffer.sort(comparator, fb);
-				isBufferSorted = true;
+				isInBufferSorted = true;
 			}
 
 			if (elementsInCache > 0) {
@@ -650,17 +703,15 @@ public class Bucket {
 
 	private TupleIterator iter;
 
-	private void cacheCurrentBuffer() throws IOException {
-
-		if (inBuffer.getNElements() > 0) {
-			if (log.isInfoEnabled()) {
-				log.info(
-						"Caching buffer, tuples.getNElements = "
-								+ inBuffer.getNElements(), new Throwable());
+	private void cacheBuffer(final WritableContainer<Tuple> buffer,
+			final boolean isSorted) throws IOException {
+		if (buffer.getNElements() > 0) {
+			if (log.isDebugEnabled()) {
+				log.debug("cacheBuffer: caching buffer, #elems = " + buffer.getNElements() +
+						", sorted = " + isSorted);
 			}
-			cacheBuffer(inBuffer, isBufferSorted, fb);
-			inBuffer = fb.get();
-			inBuffer.clear();
+
+			cacheBuffer(buffer, isSorted, fb);
 		}
 	}
 
@@ -690,7 +741,7 @@ public class Bucket {
 			return;
 		}
 
-		synchronized (this) {
+		synchronized (Bucket.this) {
 			elementsInCache += buffer.getNElements();
 			numCachers++;
 		}
@@ -825,25 +876,48 @@ public class Bucket {
 		return comparator;
 	}
 
-	public void releaseInBuffer() {
-		if (inBuffer != null) {
-			fb.release(inBuffer);
-			inBuffer = null;
-		}
+	public synchronized void releaseBuffers() {
+		releaseInBuffer();
+		releaseExBuffer();
+	}
+	
+	// TODO: should be part of WritableContainer I think
+	private void releaseInBuffer() {
+			if (inBuffer != null) {
+				fb.release(inBuffer);
+				inBuffer = null;
+			}
 	}
 
-	public boolean isEmpty() {
-		return elementsInCache == 0
-				&& (inBuffer == null || inBuffer.getNElements() == 0);
+	// TODO: should be part of WritableContainer I think
+	private void releaseExBuffer() {
+			if (exBuffer != null) {
+				fb.release(exBuffer);
+				exBuffer = null;
+			}
 	}
 
-	public long inmemory_size() {
+	public synchronized boolean isEmpty() {
+		return elementsInCache == 0 &&
+				((inBuffer == null || inBuffer.getNElements() == 0) &&
+				 (exBuffer == null || exBuffer.getNElements() == 0));
+	}
+
+	public synchronized long inmemory_size() {
 		if (inBuffer == null) {
-			return 0;
-		} else {
-			return inBuffer.inmemory_size();
-		}
+			if (exBuffer != null) {
+				return exBuffer.inmemory_size();
+			}
 
+			return 0;
+		}
+		else {
+			if (exBuffer == null) {
+				return inBuffer.inmemory_size();
+			}
+
+			return (inBuffer.inmemory_size() + exBuffer.inmemory_size());
+		}
 	}
 
 	public synchronized void registerFinishedNotifier(ChainNotifier notifier,

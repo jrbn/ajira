@@ -106,7 +106,7 @@ public class Buckets {
 		if (log.isDebugEnabled()) {
 			log.debug("releaseBucket: " + bucket.getKey());
 		}
-		bucket.releaseInBuffer();
+		bucket.releaseBuffers();
 		buckets.remove(bucket.getKey());
 		// bucketsFactory.release(bucket);
 	}
