@@ -219,44 +219,42 @@ public class Buckets {
 		}
 		return info.bucket;
 	}
-
-	public void finishTransfer(int submissionNode, int submission, int node,
+	
+	public void alertTransfer(int submissionNode, int submission, int node,
 			int bucketID, long chainId, long parentChainId, int nchildren,
-			boolean responsible, String sortingFunction, byte[] sortingParams,
-			boolean decreaseCounter) throws IOException {
+			boolean responsible, String sortingFunction, byte[] sortingParams) 
+					throws IOException {
 
 		if (node == myPartition || net.getNumberNodes() == 1) {
-			Bucket bucket = getOrCreateBucket(submissionNode, submission,
-					bucketID, sortingFunction, sortingParams);
-
-			bucket.updateCounters(chainId, parentChainId, nchildren,
-					responsible);
-			bucket.updateCounters(0, true);
 			return;
 		}
 
 		Map<Long, TransferInfo> map = activeTransfers[node];
-
 		long key = getKey(submission, bucketID);
 		TransferInfo info = null;
-
+		
 		// Alert the node that there is an active transfer
 		WriteMessage message = net.getMessageToSend(net.getPeerLocation(node),
 				NetworkLayer.nameMgmtReceiverPort);
 		message.writeByte((byte) 1); // Mark to indicate there are tuples
 		message.writeInt(submissionNode);
 		message.writeInt(submission);
-		message.writeInt(bucketID); // Remote bucket
+		message.writeInt(bucketID); // Remote bucket ID
 		message.writeLong(chainId);
 		message.writeLong(parentChainId);
 		message.writeInt(nchildren);
-		// message.writeInt(replicatedFactor);
 		message.writeBoolean(responsible);
+	
+		// Though the remote bucket is not sorted we do send the sortingFunction
+		// along with its params because the recipient might not have created
+		// its local bucket in time, so, instead, this message creates the local 
+		// bucket for it -- if necessary
 		if (sortingFunction == null || sortingFunction.equals("")) {
 			message.writeBoolean(false);
 		} else {
 			message.writeBoolean(true);
 			message.writeString(sortingFunction);
+			
 			if (sortingParams != null && sortingParams.length > 0) {
 				message.writeInt(sortingParams.length);
 				message.writeArray(sortingParams);
@@ -269,22 +267,121 @@ public class Buckets {
 			info = map.get(key);
 
 			if (info == null || info.alerted) {
-				// There was no triple in the bucket
-				message.writeLong(-1); // Local buffer ID
+				// There was no triple in the bucket OR
+				// the remote node has already been alerted
+				message.writeLong(-1); // Flag
 			} else {
-				// There was something in the bucket. The remote node has
-				// already been alerted
+				// There will be something in the bucket, alert
+				// the node responsible with this remote-data.
 				info.alerted = true;
-				message.writeLong(info.bucket.getKey()); // Local buffer ID
+				message.writeLong(info.bucket.getKey()); // Local bucket key
+			}
+		}
+
+		net.finishMessage(message, submission);
+	}
+
+	public void finishTransfer(int submissionNode, int submission, int node,
+			int bucketID, long chainId, long parentChainId, int nchildren,
+			boolean responsible, String sortingFunction, byte[] sortingParams,
+			boolean decreaseCounter) throws IOException {
+
+		if (node == myPartition || net.getNumberNodes() == 1) {
+			// TODO: getExistentBucket -- the local bucket should 
+			// be created at this moment
+			Bucket bucket = getOrCreateBucket(submissionNode, submission,
+					bucketID, sortingFunction, sortingParams);
+
+			bucket.updateCounters(chainId, parentChainId, nchildren,
+					responsible);
+			bucket.updateCounters(0, true);
+			return;
+		}
+
+		Map<Long, TransferInfo> map = activeTransfers[node];
+		long key = getKey(submission, bucketID);
+		TransferInfo info = null;
+		
+		synchronized (map) {
+			info = map.get(key);
+			
+			if (info == null || !info.alerted) {
+				alertTransfer(submissionNode, submission, node, bucketID, 
+					chainId, parentChainId, nchildren, responsible, 
+					sortingFunction, sortingParams);
 			}
 
 			if (info != null && decreaseCounter) {
 				info.count--;
 			}
 		}
-
-		net.finishMessage(message, submission);
 	}
+
+//	public void finishTransfer_(int submissionNode, int submission, int node,
+//			int bucketID, long chainId, long parentChainId, int nchildren,
+//			boolean responsible, String sortingFunction, byte[] sortingParams,
+//			boolean decreaseCounter) throws IOException {
+//
+//		if (node == myPartition || net.getNumberNodes() == 1) {
+//			Bucket bucket = getOrCreateBucket(submissionNode, submission,
+//					bucketID, sortingFunction, sortingParams);
+//
+//			bucket.updateCounters(chainId, parentChainId, nchildren,
+//					responsible);
+//			bucket.updateCounters(0, true);
+//			return;
+//		}
+//
+//		Map<Long, TransferInfo> map = activeTransfers[node];
+//
+//		long key = getKey(submission, bucketID);
+//		TransferInfo info = null;
+//
+//		// Alert the node that there is an active transfer
+//		WriteMessage message = net.getMessageToSend(net.getPeerLocation(node),
+//				NetworkLayer.nameMgmtReceiverPort);
+//		message.writeByte((byte) 1); // Mark to indicate there are tuples
+//		message.writeInt(submissionNode);
+//		message.writeInt(submission);
+//		message.writeInt(bucketID); // Remote bucket
+//		message.writeLong(chainId);
+//		message.writeLong(parentChainId);
+//		message.writeInt(nchildren);
+//		// message.writeInt(replicatedFactor);
+//		message.writeBoolean(responsible);
+//		if (sortingFunction == null || sortingFunction.equals("")) {
+//			message.writeBoolean(false);
+//		} else {
+//			message.writeBoolean(true);
+//			message.writeString(sortingFunction);
+//			if (sortingParams != null && sortingParams.length > 0) {
+//				message.writeInt(sortingParams.length);
+//				message.writeArray(sortingParams);
+//			} else {
+//				message.writeInt(0);
+//			}
+//		}
+//
+//		synchronized (map) {
+//			info = map.get(key);
+//
+//			if (info == null || info.alerted) {
+//				// There was no triple in the bucket
+//				message.writeLong(-1); // Local buffer ID
+//			} else {
+//				// There was something in the bucket. The remote node has
+//				// already been alerted
+//				info.alerted = true;
+//				message.writeLong(info.bucket.getKey()); // Local buffer ID
+//			}
+//
+//			if (info != null && decreaseCounter) {
+//				info.count--;
+//			}
+//		}
+//
+//		net.finishMessage(message, submission);
+//	}
 
 	public boolean cleanTransfer(int nodeId, int submissionId, int bucketId) {
 

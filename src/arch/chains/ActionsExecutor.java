@@ -250,6 +250,27 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 					" with sorting = " +
 					((nodeId == context.getNetworkLayer().getMyPartition()) ? true : false));
 		}
+	
+		try {
+			int children = chain.getTotalChainChildren();
+			
+			if (children != 0 && currentAction < smallestRuntimeAction) {
+				// Check whether some intermediate nodes after have derived some
+				// info. If they do, we need to decrease the counter.
+				for (int i = smallestRuntimeAction; i < nActions; ++i) {
+					if (currentAction > cRuntimeBranching[i]) {
+						children -= cRuntimeBranching[i];
+					}
+				}
+			}
+			
+			context.getTuplesBuckets().alertTransfer(submissionNode, submissionId, 
+					nodeId, bucketId, chain.getChainId(), chain.getParentChainId(), 
+					children, roots[currentAction], sortingFunction, null);
+		} catch (IOException e) {
+			log.error(e.getMessage());
+			e.printStackTrace();
+		}
 		
 		return temp;
 	}
@@ -257,8 +278,8 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 	@Override
 	public void finishTransfer(int nodeId, int bucketId,
 			String sortingFunction, boolean decreaseCounter) throws IOException {
-
 		int children = chain.getTotalChainChildren();
+		
 		if (children != 0 && currentAction < smallestRuntimeAction) {
 			// Check whether some intermediate nodes after have derived some
 			// info. If they do, we need to decrease the counter.
