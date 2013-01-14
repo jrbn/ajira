@@ -236,24 +236,20 @@ public class Bucket {
 	}
 
 	private void checkFinished() throws IOException {
-
-		/*
-		 * if (log.isDebugEnabled()) { log.debug("checkFinished of bucket: " +
-		 * this.key + ", nChainsReceived = " + nChainsReceived +
-		 * ", nBucketReceived = " + nBucketReceived + ", highestSequence = " +
-		 * highestSequence + ", rootChainsReplication = " +
-		 * rootChainsReplication + ", childrens.size() = " + childrens.size() +
-		 * ", receivedMainChain = " + receivedMainChain); }
-		 */
+		
 		if (nChainsReceived == nBucketReceived && highestSequence != -1
 				&& childrens.size() == 0 && receivedMainChain) {
-			for (int i = 0; i < highestSequence + 1; ++i)
+			
+			for (int i = 0; i < highestSequence + 1; ++i) {
 				if (sequencesReceived[i] != 0) {
 					return;
 				}
+			}
+			
 			if (log.isDebugEnabled()) {
 				log.debug("Calling setFinished on bucket " + this.key);
 			}
+			
 			setFinished(true);
 		}
 	}
@@ -422,7 +418,6 @@ public class Bucket {
 			waitForCachers();
 
 			if (inBuffer.getNElements() > 0) {
-
 				if (comparator != null && !isInBufferSorted) {
 					inBuffer.sort(comparator, fb);
 					isInBufferSorted = true;
@@ -436,12 +431,15 @@ public class Bucket {
 				synchronized (bucket) {
 					if (comparator == null) {
 						bucket.cacheFiles.addAll(cacheFiles);
-					} else {
+					} 
+					else {
 						bucket.sortedCacheFiles.putAll(sortedCacheFiles);
+						
 						for (byte[] min : minimumSortedList) {
 							bucket.minimumSortedList.add(min);
 						}
 					}
+					
 					bucket.elementsInCache += elementsInCache;
 				}
 			}
@@ -509,19 +507,24 @@ public class Bucket {
 	}
 
 	public synchronized boolean waitUntilFinished() {
+		
 		try {
 			while (!isFinished) {
 				if (log.isDebugEnabled()) {
 					log.debug("waitUntilFinished on bucket " + this.key);
 				}
+
 				wait();
+
 				if (log.isDebugEnabled()) {
 					log.debug("waitUntilFinished on bucket " + this.key
 							+ " done");
 				}
 			}
-		} catch (Exception e) {
-			// ignore
+		} 
+		catch (Exception e) {
+			log.error(e.getMessage());
+			e.printStackTrace();
 		}
 
 		return true;
@@ -530,7 +533,7 @@ public class Bucket {
 	private boolean compareWithSortedList(byte[] element) {
 		return minimumSortedList.size() == 0
 				|| (element != null && minimumSortedList.comparator.compare(
-						element, minimumSortedList.getLastElement()) >= 0);
+					element, minimumSortedList.getLastElement()) >= 0);
 	}
 
 	private boolean copyFullFile(FileMetaData meta,
@@ -545,9 +548,11 @@ public class Bucket {
 				elementsInCache -= meta.nElements;
 				meta.stream.close();
 				sortedCacheFiles.remove(minimum);
+				
 				return true;
 			}
 		}
+		
 		return false;
 	}
 
@@ -564,9 +569,8 @@ public class Bucket {
 				log.debug("removeChunk: fill tmpBuffer with triples from bucket " + this.getKey());
 			}
 
-			gettingData = true;
-
 			long totTime = System.currentTimeMillis();
+			gettingData = true;
 
 			// If some threads still have to finish writing
 			waitForCachers();
@@ -589,8 +593,9 @@ public class Bucket {
 								"Bucket:removeChunk: bytes read from cache", tmpBuffer.bytesToStore());
 						elementsInCache -= tmpBuffer.getNElements();
 						di.close();
-					} else { // Need to sort
-
+					} 
+					else { 
+						// Need to sort
 						if (log.isDebugEnabled()) {
 							log.debug("Try add the first triple from the in-memory ds to the pool => " +
 									"tuples.getNElements() = " + inBuffer.getNElements() + ", " + 
@@ -747,13 +752,12 @@ public class Bucket {
 
 	int numCachers;
 	int numWaitingForCachers;
-
 	private ChainNotifier notifier;
-
 	private TupleIterator iter;
 
 	private void cacheBuffer(final WritableContainer<Tuple> buffer,
 			final boolean isSorted) throws IOException {
+		
 		if (buffer.getNElements() > 0) {
 			if (log.isDebugEnabled()) {
 				log.debug("cacheBuffer: caching buffer, #elems = " + buffer.getNElements() +
@@ -768,16 +772,16 @@ public class Bucket {
 		FDataInput is = new FDataInput(new BufferedInputStream(
 			new SnappyInputStream(
 				new FileInputStream(name)), 65536));
-		// FDataInput is = new FDataInput(new BufferedInputStream(new FileInputStream(name), 65536));
-
 		int length;
+		
 		while ((length = is.readInt()) > 0) {
-		    if (length > 256) {
-			log.debug("OOPS: length = " + length);
-		    }
-		    byte[] rawValue = new byte[length];
-		    is.readFully(rawValue);
+			if (length > 256) {
+				log.debug("OOPS: length = " + length);
+			}
+			byte[] rawValue = new byte[length];
+			is.readFully(rawValue);
 		}
+		
 		is.close();
 	}
 
@@ -809,9 +813,6 @@ public class Bucket {
 					BufferedOutputStream fout = new BufferedOutputStream(
 							new SnappyOutputStream(new FileOutputStream(
 									cacheFile)), 65536);
-					// BufferedOutputStream fout = new BufferedOutputStream(
-					//				new FileOutputStream(cacheFile), 65536);
-
 					FDataOutput cacheOutputStream = new FDataOutput(fout);
 
 					long time = System.currentTimeMillis();
@@ -830,18 +831,14 @@ public class Bucket {
 
 					/*
 					 * if (log.isDebugEnabled()) { 
-					 * checkFile(cacheFile); 
+					 * 		checkFile(cacheFile); 
 					 * }
 					 */
-
 
 					// Register file in the list of cachedBuffers
 					FDataInput is = new FDataInput(new BufferedInputStream(
 							new SnappyInputStream(
 									new FileInputStream(cacheFile)), 65536));
-					// FDataInput is = new FDataInput(new BufferedInputStream(
-					//				new FileInputStream(cacheFile), 65536));
-
 
 					synchronized (Bucket.this) {
 						if (comparator == null) {
@@ -897,26 +894,33 @@ public class Bucket {
 
 	private synchronized void waitForCachers() {
 		numWaitingForCachers++;
+		
 		while (numCachers > 0) {
 			if (log.isDebugEnabled()) {
 				log.debug("Waiting for cachers: " + numCachers);
 			}
+			
 			try {
 				wait();
-			} catch (InterruptedException e) {
-				// ignore
+			} 
+			catch (InterruptedException e) {
+				log.error(e.getMessage());
+				e.printStackTrace();
 			}
 		}
+		
 		numWaitingForCachers--;
 	}
 
 	@SuppressWarnings("unchecked")
 	public void setSortingFunction(String sortingFunction, byte[] params) {
+		
 		try {
 			this.comparator = (RawComparator<Tuple>) Class.forName(
 					sortingFunction).newInstance();
 			comparator.init(params);
-		} catch (Exception e) {
+		} 
+		catch (Exception e) {
 			log.error("Error instantiating the comparator.", e);
 		}
 	}
@@ -932,6 +936,7 @@ public class Bucket {
 	
 	// TODO: should be part of WritableContainer I think
 	private void releaseInBuffer() {
+		// Sync with inBuffer
 		synchronized (lockInBuffer) {
 			if (inBuffer != null) {
 				fb.release(inBuffer);
@@ -942,6 +947,7 @@ public class Bucket {
 
 	// TODO: should be part of WritableContainer I think
 	private void releaseExBuffer() {
+		// Sync with exBuffer
 		synchronized (lockExBuffer) {
 			if (exBuffer != null) {
 				fb.release(exBuffer);
@@ -951,7 +957,9 @@ public class Bucket {
 	}
 
 	public boolean isEmpty() {
+		// Sync with inBuffer
 		synchronized(lockInBuffer) {
+			// Sync with exBuffer
 			synchronized (lockExBuffer) {
 				return elementsInCache == 0 &&
 						((inBuffer == null || inBuffer.getNElements() == 0) &&
@@ -961,7 +969,9 @@ public class Bucket {
 	}
 
 	public synchronized long inmemory_size() {
+		// Sync with inBuffer
 		synchronized(lockInBuffer) {
+			// Sync with exBuffer
 			synchronized (lockExBuffer) {
 				if (inBuffer == null) {
 					if (exBuffer != null) {
@@ -983,10 +993,12 @@ public class Bucket {
 
 	public synchronized void registerFinishedNotifier(ChainNotifier notifier,
 			TupleIterator iter) {
+		
 		if (isFinished()) {
 			notifier.markReady(iter);
 			return;
 		}
+		
 		this.notifier = notifier;
 		this.iter = iter;
 	}

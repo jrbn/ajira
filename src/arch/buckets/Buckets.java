@@ -318,7 +318,6 @@ public class Buckets {
 	}
 
 	public boolean cleanTransfer(int nodeId, int submissionId, int bucketId) {
-
 		Map<Long, TransferInfo> map = activeTransfers[nodeId];
 
 		long key = getKey(submissionId, bucketId);
@@ -343,6 +342,7 @@ public class Buckets {
 
 		long key = getKey(submissionId, bucketId);
 		TransferInfo info = null;
+		
 		synchronized (map) {
 			info = map.get(key);
 			return info != null && info.count > 0;
