@@ -310,7 +310,6 @@ public class Bucket {
 				if (exBuffer.getNElements() > newTuplesContainer.getNElements()) {
 					// Cache exBuffer to make space
 					cacheBuffer(exBuffer, isExBufferSorted);
-
 					// Replace exBuffer with the new container
 					exBuffer = newTuplesContainer;
 					isExBufferSorted = isSorted;	
@@ -464,6 +463,9 @@ public class Bucket {
 			} 
 			else {
 				cacheBuffer(inBuffer, isInBufferSorted);
+				inBuffer = fb.get();
+				inBuffer.clear();
+				
 				response = inBuffer.add(tuple);
 				isInBufferSorted = true;
 
