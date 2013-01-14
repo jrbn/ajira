@@ -262,6 +262,7 @@ public class Bucket {
 		if (exBuffer == null) {
 			exBuffer = fb.get();
 			exBuffer.clear();
+			isExBufferSorted = true;
 		}
 
 		// LOG-DEBUG
@@ -339,32 +340,57 @@ public class Bucket {
 			if (inBuffer == null) {
 				inBuffer = fb.get();
 				inBuffer.clear();
-			}
-
-			// LOG-DEBUG
-			if (log.isDebugEnabled()) {
-				log.debug("combineInExBuffers: adding exBuffer, sorted = " + isExBufferSorted + " with " +
-						exBuffer.getNElements() + " elements " +
-						"TO inBuffer, sorted = " + isExBufferSorted + " with " +
-						inBuffer.getNElements() + " elements");
+				isInBufferSorted = true;
 			}
 
 			if (!isFinished()) {
 				throw new Exception("combineInExBuffers: bucket is not yet finished!!");
 			}
 
-			boolean response = inBuffer.addAll(exBuffer);
-
-			if (!response) {
-				// Cache exBuffer to make space
-				cacheBuffer(exBuffer, isExBufferSorted);
-				exBuffer = fb.get();
-				exBuffer.clear();
+			boolean response = false; 
+			isInBufferSorted = isInBufferSorted && isExBufferSorted;
+			
+			if (exBuffer.getNElements() > inBuffer.getNElements()) {
+				// LOG-DEBUG
+				if (log.isDebugEnabled()) {
+					log.debug("combineInExBuffers: adding inBuffer, sorted = " + isInBufferSorted + " with " +
+							inBuffer.getNElements() + " elements " +
+							"TO exBuffer, sorted = " + isExBufferSorted + " with " +
+							exBuffer.getNElements() + " elements");
+				}
+				
+				response = exBuffer.addAll(inBuffer);
+								
+				if (!response) {
+					// Cache inBuffer and replace it with exBuffer
+					cacheBuffer(inBuffer, isInBufferSorted);
+					isInBufferSorted = isExBufferSorted;
+				}
+				
+				// Replace inBuffer with exBuffer
+				inBuffer = exBuffer;
 			}
 			else {
-				isInBufferSorted = isInBufferSorted && isExBufferSorted;
+				// LOG-DEBUG
+				if (log.isDebugEnabled()) {
+					log.debug("combineInExBuffers: adding exBuffer, sorted = " + isExBufferSorted + " with " +
+							exBuffer.getNElements() + " elements " +
+							"TO inBuffer, sorted = " + isInBufferSorted + " with " +
+							inBuffer.getNElements() + " elements");
+				}
+				
+				response = inBuffer.addAll(exBuffer);
+				
+				if (!response) {	
+					// Cache exBuffer and reset it afterwards
+					cacheBuffer(exBuffer, isExBufferSorted);
+				}
 			}
-
+			
+			// Reset exBuffer
+			exBuffer = fb.get();
+			exBuffer.clear();
+			
 			stats.addCounter(submissionNode, submissionId,
 					"Bucket:combineInExBuffers: overall time (ms)",
 					System.currentTimeMillis() - time);
@@ -375,6 +401,7 @@ public class Bucket {
 		if (inBuffer == null) {
 			inBuffer = fb.get();
 			inBuffer.clear();
+			isInBufferSorted = true;
 		}
 
 		waitForCachers();
@@ -411,6 +438,7 @@ public class Bucket {
 		if (inBuffer == null) {
 			inBuffer = fb.get();
 			inBuffer.clear();
+			isInBufferSorted = true;
 		}
 
 		boolean response = inBuffer.add(tuple);
