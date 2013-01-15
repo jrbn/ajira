@@ -36,7 +36,7 @@ class TupleSender {
 	public TupleSender(Context context,
 			Factory<WritableContainer<Tuple>> bufferFactory) {
 		this.net = context.getNetworkLayer();
-		this.buckets = context.getTuplesBuckets();
+		this.buckets = context.getBuckets();
 		this.bufferFactory = bufferFactory;
 		ThreadPool.createNew(new Runnable() {
 			@Override

@@ -142,9 +142,9 @@ public class ChainHandler implements Runnable {
 				// failed.
 				log.error("Chain failed. Cancelling the job ...", e);
 				try {
-
-					context.cleanupSubmission(chain.getSubmissionNode(),
-							chain.getSubmissionId());
+					// FIXME:
+					// context.cleanupSubmission(chain.getSubmissionNode(),
+					// chain.getSubmissionId());
 					net.signalChainFailed(chain);
 				} catch (Exception e1) {
 					log.error("Failed in managing to cancel the job."

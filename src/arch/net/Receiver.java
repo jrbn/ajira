@@ -39,7 +39,7 @@ class Receiver implements MessageUpcall {
 			Factory<WritableContainer<Tuple>> bufferFactory) {
 		this.context = context;
 		this.chainsToProcess = context.getChainsToProcess();
-		this.buckets = context.getTuplesBuckets();
+		this.buckets = context.getBuckets();
 		this.net = context.getNetworkLayer();
 		this.stats = context.getStatisticsCollector();
 		this.bufferFactory = bufferFactory;
@@ -125,7 +125,8 @@ class Receiver implements MessageUpcall {
 			} else {
 				// Cleanup submission
 				submissionNode = message.readInt();
-				context.cleanupSubmission(submissionNode, idSubmission);
+				// FIXME:
+				// context.cleanupSubmission(submissionNode, idSubmission);
 			}
 			break;
 		case 3: // Termination

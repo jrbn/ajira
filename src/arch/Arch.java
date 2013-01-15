@@ -38,6 +38,14 @@ import arch.utils.Consts;
 import arch.utils.Utils;
 import arch.webinterface.WebServer;
 
+/**
+ * @author Jacopo Urbani
+ * 
+ *         This is the main class that allows the user to interface with the
+ *         program. It allows the user to start the cluster, submit the jobs,
+ *         wait to their completion and so on. Starting the cluster using this
+ *         object should be the first thing to do.
+ */
 public class Arch {
 
 	static final Logger log = LoggerFactory.getLogger(Arch.class);
@@ -47,7 +55,7 @@ public class Arch {
 
 	/**
 	 * Returns whether the current instance was the elected server of the
-	 * cluster.
+	 * cluster. Only one node of the cluster will return true to this call.
 	 * 
 	 * @return true if it is, false otherwise.
 	 */

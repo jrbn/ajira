@@ -26,7 +26,7 @@ public class BucketsLayer extends InputLayer {
 
 	@Override
 	protected void load(Context context) throws IOException {
-		buckets = context.getTuplesBuckets();
+		buckets = context.getBuckets();
 	}
 
 	@Override

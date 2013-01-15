@@ -23,6 +23,18 @@ import arch.utils.Configuration;
 import arch.utils.Consts;
 import arch.utils.UniqueCounter;
 
+/**
+ * @author Jacopo Urbani
+ * 
+ *         This class contains all the variables, objects, constants that might
+ *         be useful to the different components of the cluster. In general,
+ *         this context is visible within the architecture, but should not
+ *         visible to the user, who has access to the ActionContext instead.
+ */
+/**
+ * @author Jacopo Urbani
+ * 
+ */
 public class Context {
 
 	private static final long BUCKET_INIT = 100;
@@ -46,6 +58,27 @@ public class Context {
 
 	private UniqueCounter counter;
 
+	/**
+	 * This method initializes the global context. Called when the program is
+	 * starting. In the parameters there are all internal datastructures that
+	 * can be accessed globally.
+	 * 
+	 * @param localMode
+	 * @param input
+	 * @param container
+	 * @param registry
+	 * @param chainsToProcess
+	 * @param listHandlers
+	 * @param notifier
+	 * @param merger
+	 * @param net
+	 * @param stats
+	 * @param actionProvider
+	 * @param dataProvider
+	 * @param defaultTupleFactory
+	 * @param cache
+	 * @param conf
+	 */
 	public void init(boolean localMode, InputLayerRegistry input,
 			Buckets container, SubmissionRegistry registry,
 			WritableContainer<Chain> chainsToProcess,
@@ -109,7 +142,7 @@ public class Context {
 		return conf;
 	}
 
-	public Buckets getTuplesBuckets() {
+	public Buckets getBuckets() {
 		return container;
 	}
 
@@ -137,26 +170,40 @@ public class Context {
 		return dataProvider;
 	}
 
-	public void cleanupSubmission(int submissionNode, int idSubmission) {
-		System.exit(1);
-	}
-
+	/**
+	 * 
+	 * @param name
+	 * @return Returns a globally unique ID for the counter specified in input.
+	 *         It can be used for various purposes.
+	 */
 	public long getUniqueCounter(String name) {
 		return counter.getCounter(name);
 	}
 
+	/**
+	 * Returns whether the program is launched on a single machine or there is a
+	 * cluster of machines. This makes a difference because if there are more
+	 * machines, then the network layer is used, otherwise everything is done
+	 * locally.
+	 * 
+	 * @return
+	 */
 	public boolean isLocalMode() {
 		return localMode;
 	}
 
-	public void initializeCounter(String name, long init) {
+	private void initializeCounter(String name, long init) {
 		counter.init(name, init);
 	}
 
-	public void deleteCounter(String name) {
-		counter.removeCounter(name);
-	}
-
+	/**
+	 * This method is used to get new counters to assign to buckets. It starts
+	 * from the value defined in the constant BUCKET_INIT (in the same object).
+	 * These IDs are globally unique. This method is not accessable to the user.
+	 * 
+	 * @param submissionId
+	 * @return a new ID for a bucket.
+	 */
 	public int getBucketCounter(int submissionId) {
 		String name = Consts.BUCKETCOUNTER_NAME + submissionId;
 		synchronized (counter) {
@@ -167,6 +214,14 @@ public class Context {
 		return (int) getUniqueCounter(name);
 	}
 
+	/**
+	 * This method is used to get new counters to assign to the chains that
+	 * constitute the branches of the program. These values are globally unique
+	 * and start from the constant CHAIN_INIT.
+	 * 
+	 * @param submissionId
+	 * @return a new ID for a chain.
+	 */
 	public long getChainCounter(int submissionId) {
 		String name = Consts.CHAINCOUNTER_NAME + submissionId;
 		synchronized (counter) {

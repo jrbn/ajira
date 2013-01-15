@@ -228,13 +228,13 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 
 	@Override
 	public Bucket getBucket(final int bucketId, final String sortingFunction) {
-		return context.getTuplesBuckets().getOrCreateBucket(submissionNode,
+		return context.getBuckets().getOrCreateBucket(submissionNode,
 				submissionId, bucketId, sortingFunction, null);
 	}
 
 	@Override
 	public Bucket startTransfer(int nodeId, int bucketId, String sortingFunction) {
-		return context.getTuplesBuckets().startTransfer(submissionNode,
+		return context.getBuckets().startTransfer(submissionNode,
 				submissionId, nodeId, bucketId, sortingFunction, null, this);
 	}
 
@@ -253,7 +253,7 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 			}
 		}
 
-		context.getTuplesBuckets().finishTransfer(this.submissionNode,
+		context.getBuckets().finishTransfer(this.submissionNode,
 				submissionId, nodeId, bucketId, chain.getChainId(),
 				chain.getParentChainId(), children, roots[currentAction],
 				sortingFunction, null, decreaseCounter);
