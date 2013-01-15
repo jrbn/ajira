@@ -91,15 +91,15 @@ public class Bucket {
 	private final Object lockInBuffer = new Object();
 	private final Object lockExBuffer = new Object();
 	
-	public static final int N_AUX_BUFFS = 2;
+	public static final int N_WBUFFS = 2;
 	@SuppressWarnings("unchecked")
-	private WritableContainer<Tuple>[] auxBuffer = 
+	private WritableContainer<Tuple>[] writeBuffer = 
 			(WritableContainer<Tuple>[]) java.lang.reflect.Array.newInstance(
-			 WritableContainer.class, N_AUX_BUFFS);
-	private int currAuxBuffIndex = 0;
-	private boolean removeWChunkDone[] = new boolean[N_AUX_BUFFS]; 
+			 WritableContainer.class, N_WBUFFS);
+	private int currWBuffIndex = 0;
+	private boolean removeWChunkDone[] = new boolean[N_WBUFFS]; 
 	private final Object removeWChunk = new Object(),
-			lockAuxBuffer[] = new Object[N_AUX_BUFFS];
+			lockWriteBuffer[] = new Object[N_WBUFFS];
 	
 	private int nChainsReceived = 0;
 	private int nBucketReceived = 0;
@@ -264,8 +264,7 @@ public class Bucket {
 		}
 	}
 
-	public void addAll(
-			WritableContainer<Tuple> newTuplesContainer, boolean isSorted,
+	public void addAll(WritableContainer<Tuple> newTuplesContainer, boolean isSorted,
 			Factory<WritableContainer<Tuple>> factory) throws Exception {	
 		// Sync with exBuffer -> cacheBuffer() will be sync'd on Bucket.thi,
 		// combineInExBuffers() on both objects.
@@ -576,47 +575,79 @@ public class Bucket {
 	}
 
 	private void prepareRemoveWChunk() {
-		currAuxBuffIndex = 0;
-		lockAuxBuffer[currAuxBuffIndex] = new Object();
-		lockAuxBuffer[currAuxBuffIndex + 1] = new Object();
+		// LOG-DEBUG
+		if (log.isDebugEnabled()) {
+			log.debug("prepareRemoveWChunk: init variables...");
+		}
+		
+		currWBuffIndex = 0;
+		for (int i = 0; i < N_WBUFFS; i++) {
+			lockWriteBuffer[i] = new Object();
+		}
 				
 		ThreadPool.createNew(new Runnable() {
 			@Override
 			public void run() {
-				fillAuxBuffers();
+				fillWriteBuffers();
 			}
-		}, "FillAuxBuffers");
+		}, "FillWriteBuffers");
 	}
 	
-	private void fillAuxBuffers() {
-		int auxBuffIndex = currAuxBuffIndex;
+	private void fillWriteBuffers() {
+		int wBuffIndex = currWBuffIndex;
+		
+		// LOG-DEBUG
+		if (log.isDebugEnabled()) {
+			log.debug("fillWriteBuffers: start the thread for double-buffering...");
+		}
 		
 		for (;;) {
-			synchronized (lockAuxBuffer[auxBuffIndex]) {
-				if (auxBuffer[auxBuffIndex] == null) {
-					auxBuffer[auxBuffIndex] = fb.get();
-					auxBuffer[auxBuffIndex].clear();
+			long timeStart, timeEnd;
+			
+			synchronized (lockWriteBuffer[wBuffIndex]) {
+				if (writeBuffer[wBuffIndex] == null) {
+					writeBuffer[wBuffIndex] = fb.get();
+					writeBuffer[wBuffIndex].clear();
 				}
 				
-				while (auxBuffer[auxBuffIndex].getNElements() > 0) {
+				while (writeBuffer[wBuffIndex].getNElements() > 0) {
 					try {
-						lockAuxBuffer[auxBuffIndex].wait();
+						lockWriteBuffer[wBuffIndex].wait();
 					} catch (InterruptedException e) {
+						log.error(e.getMessage());
 						e.printStackTrace();
 					}
 				}
 				
-				removeChunk(auxBuffer[auxBuffIndex]);
+				// LOG-DEBUG
+				if (log.isDebugEnabled()) {
+					log.debug("fillWriteBufers: fill writeBuffer[" + wBuffIndex + "], " +
+							"call removeChunk");
+				}
 				
-				if (auxBuffer[auxBuffIndex].getNElements() == 0) {
-					removeWChunkDone[auxBuffIndex] = true;
-					lockAuxBuffer[auxBuffIndex].notifyAll();
+				timeStart = System.currentTimeMillis();
+				removeChunk(writeBuffer[wBuffIndex]);
+				timeEnd = System.currentTimeMillis();
+				
+				if (writeBuffer[wBuffIndex].getNElements() == 0) {
+					// LOG-DEBUG
+					if (log.isDebugEnabled()) {
+						log.debug("fillWriteBufers: done, no more chunks to fill with, " +
+								"stop the thread for double-buffering & notify all...");
+					}
+					
+					removeWChunkDone[wBuffIndex] = true;
+					lockWriteBuffer[wBuffIndex].notifyAll();
 					return;
 				}
 				
-				lockAuxBuffer[auxBuffIndex].notifyAll();
-				auxBuffIndex = (auxBuffIndex + 1) % 2;
-			}			
+				lockWriteBuffer[wBuffIndex].notifyAll();
+				wBuffIndex = (wBuffIndex + 1) % N_WBUFFS;
+			}
+			
+			stats.addCounter(submissionNode, submissionId,
+					"Bucket:removeChunk: overall time (ms)",
+					(timeStart - timeEnd));
 		}
 	}
 	
@@ -624,17 +655,23 @@ public class Bucket {
 		// Synchronize
 		synchronized(removeWChunk) {
 			boolean done = false;
+			long timeStart = System.currentTimeMillis();
 						
-			synchronized (lockAuxBuffer[currAuxBuffIndex]) {
-				if (auxBuffer[currAuxBuffIndex] == null) {
-					auxBuffer[currAuxBuffIndex] = fb.get();
-					auxBuffer[currAuxBuffIndex].clear();
+			synchronized (lockWriteBuffer[currWBuffIndex]) {
+				if (writeBuffer[currWBuffIndex] == null) {
+					writeBuffer[currWBuffIndex] = fb.get();
+					writeBuffer[currWBuffIndex].clear();
 				}
 				
-				while (auxBuffer[currAuxBuffIndex].getNElements() == 0 
-						&& !removeWChunkDone[currAuxBuffIndex]) {
+				// LOG-DEBUG
+				if (log.isDebugEnabled()) {
+					log.debug("removeWChunk: attempt removing write chunks from writeBuffers");
+				}
+				
+				while (writeBuffer[currWBuffIndex].getNElements() == 0 
+						&& !removeWChunkDone[currWBuffIndex]) {
 					try {
-						lockAuxBuffer[currAuxBuffIndex].wait();
+						lockWriteBuffer[currWBuffIndex].wait();
 					} 
 					catch (InterruptedException e) {
 						e.printStackTrace();
@@ -642,24 +679,44 @@ public class Bucket {
 				}
 				
 				try {
-					done = removeWChunkDone[currAuxBuffIndex];
+					done = removeWChunkDone[currWBuffIndex];
 					
 					if (done) {
-						tmpBuffer.clear();
+						// LOG-DEBUG
+						if (log.isDebugEnabled()) {
+							log.debug("removeWChunk: done, no more chunks to remove");
+						}
+						
+						tmpBuffer.clear();		
+						
+						stats.addCounter(submissionNode, submissionId,
+								"Bucket:removeWChunk: overall time (ms)",
+								System.currentTimeMillis() - timeStart);
+						
 						return;
 					}
-					else {
-						tmpBuffer.addAll(auxBuffer[currAuxBuffIndex]);
-						auxBuffer[currAuxBuffIndex].clear();
+					
+					tmpBuffer.addAll(writeBuffer[currWBuffIndex]);
+					writeBuffer[currWBuffIndex].clear();
+
+					// LOG-DEBUG
+					if (log.isDebugEnabled()) {
+						log.debug("removeWChunk: added " + tmpBuffer.getNElements() + 
+								" tuples to tmpBuffer from" +
+								" writeBuffer[" + currWBuffIndex  + "]");
 					}
+
+					lockWriteBuffer[currWBuffIndex].notifyAll();
+					currWBuffIndex = (currWBuffIndex + 1) % N_WBUFFS;
 				} 
 				catch (Exception e) {
 					e.printStackTrace();
 				}
-								
-				lockAuxBuffer[currAuxBuffIndex].notifyAll();
-				currAuxBuffIndex = (currAuxBuffIndex + 1) % 2;
 			}
+		
+			stats.addCounter(submissionNode, submissionId,
+					"Bucket:removeWChunk: overall time (ms)",
+					System.currentTimeMillis() - timeStart);
 		}
 	}
 	
