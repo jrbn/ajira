@@ -91,6 +91,16 @@ public class Bucket {
 	private final Object lockInBuffer = new Object();
 	private final Object lockExBuffer = new Object();
 	
+	public static final int N_AUX_BUFFS = 2;
+	@SuppressWarnings("unchecked")
+	private WritableContainer<Tuple>[] auxBuffer = 
+			(WritableContainer<Tuple>[]) java.lang.reflect.Array.newInstance(
+			 WritableContainer.class, N_AUX_BUFFS);
+	private int currAuxBuffIndex = 0;
+	private boolean removeWChunkDone[] = new boolean[N_AUX_BUFFS]; 
+	private final Object removeWChunk = new Object(),
+			lockAuxBuffer[] = new Object[N_AUX_BUFFS];
+	
 	private int nChainsReceived = 0;
 	private int nBucketReceived = 0;
 
@@ -502,6 +512,7 @@ public class Bucket {
 		}
 
 		notifyAll();
+		prepareRemoveWChunk();
 	}
 
 	public synchronized boolean isFinished() {
@@ -564,6 +575,94 @@ public class Bucket {
 		meta.nElements--;
 	}
 
+	private void prepareRemoveWChunk() {
+		currAuxBuffIndex = 0;
+		lockAuxBuffer[currAuxBuffIndex] = new Object();
+		lockAuxBuffer[currAuxBuffIndex + 1] = new Object();
+				
+		ThreadPool.createNew(new Runnable() {
+			@Override
+			public void run() {
+				fillAuxBuffers();
+			}
+		}, "FillAuxBuffers");
+	}
+	
+	private void fillAuxBuffers() {
+		int auxBuffIndex = currAuxBuffIndex;
+		
+		for (;;) {
+			synchronized (lockAuxBuffer[auxBuffIndex]) {
+				if (auxBuffer[auxBuffIndex] == null) {
+					auxBuffer[auxBuffIndex] = fb.get();
+					auxBuffer[auxBuffIndex].clear();
+				}
+				
+				while (auxBuffer[auxBuffIndex].getNElements() > 0) {
+					try {
+						lockAuxBuffer[auxBuffIndex].wait();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+				
+				removeChunk(auxBuffer[auxBuffIndex]);
+				
+				if (auxBuffer[auxBuffIndex].getNElements() == 0) {
+					removeWChunkDone[auxBuffIndex] = true;
+					lockAuxBuffer[auxBuffIndex].notifyAll();
+					return;
+				}
+				
+				lockAuxBuffer[auxBuffIndex].notifyAll();
+				auxBuffIndex = (auxBuffIndex + 1) % 2;
+			}			
+		}
+	}
+	
+	public void removeWChunk(WritableContainer<Tuple> tmpBuffer) {
+		// Synchronize
+		synchronized(removeWChunk) {
+			boolean done = false;
+						
+			synchronized (lockAuxBuffer[currAuxBuffIndex]) {
+				if (auxBuffer[currAuxBuffIndex] == null) {
+					auxBuffer[currAuxBuffIndex] = fb.get();
+					auxBuffer[currAuxBuffIndex].clear();
+				}
+				
+				while (auxBuffer[currAuxBuffIndex].getNElements() == 0 
+						&& !removeWChunkDone[currAuxBuffIndex]) {
+					try {
+						lockAuxBuffer[currAuxBuffIndex].wait();
+					} 
+					catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+				
+				try {
+					done = removeWChunkDone[currAuxBuffIndex];
+					
+					if (done) {
+						tmpBuffer.clear();
+						return;
+					}
+					else {
+						tmpBuffer.addAll(auxBuffer[currAuxBuffIndex]);
+						auxBuffer[currAuxBuffIndex].clear();
+					}
+				} 
+				catch (Exception e) {
+					e.printStackTrace();
+				}
+								
+				lockAuxBuffer[currAuxBuffIndex].notifyAll();
+				currAuxBuffIndex = (currAuxBuffIndex + 1) % 2;
+			}
+		}
+	}
+	
 	public synchronized boolean removeChunk(WritableContainer<Tuple> tmpBuffer) {
 		// Sync with inBuffer
 		synchronized (lockInBuffer) {

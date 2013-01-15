@@ -38,7 +38,7 @@ public class BucketIterator extends TupleIterator {
 		// If the local buffer is finished, get tuples from the bucket
 		if (tuples.getNElements() == 0) {
 			long time = System.currentTimeMillis();
-			bucket.removeChunk(tuples);
+			bucket.removeWChunk(tuples);
 			if (log.isDebugEnabled()) {
 				log.debug("Bucket  " + bucket.getKey() + " delivering "
 						+ tuples.getNElements() + " entries, time merging: "
