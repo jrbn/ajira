@@ -35,7 +35,8 @@ public class CollectToNode extends Action {
 				params[BUCKET_ID] = context.getNewBucketID();
 			}
 
-			controller.continueComputationOn(((Integer) params[NODE_ID]).intValue(),
+			controller.continueComputationOn(
+					((Integer) params[NODE_ID]).intValue(),
 					(Integer) params[BUCKET_ID]);
 		}
 	}
@@ -52,6 +53,7 @@ public class CollectToNode extends Action {
 	@Override
 	public void startProcess(ActionContext context) throws Exception {
 		nodeId = getParamInt(NODE_ID);
+		bucketId = getParamInt(BUCKET_ID);
 		sortingFunction = getParamString(SORTING_FUNCTION);
 		bucket = null;
 	}

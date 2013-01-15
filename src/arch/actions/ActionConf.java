@@ -161,6 +161,11 @@ public class ActionConf extends Writable {
 					((Writable) value).writeTo(o);
 					output.writeInt(o.cb.end);
 					output.write(o.cb.buffer, 0, o.cb.end);
+				} else if (value instanceof byte[]) {
+					output.writeByte(4);
+					byte[] v = (byte[]) value;
+					output.writeInt(v.length);
+					output.write(v);
 				} else {
 					throw new IOException(
 							"Format of one parameter is not recognized");
