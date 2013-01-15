@@ -14,8 +14,8 @@ public class CollectToNode extends Action {
 	/* PARAMETERS */
 	public static final int NODE_ID = 0;
 	public static final String S_NODE_ID = "node_id";
-	public static final int BUCKET_ID = 1;
-	public static final String S_BUCKET_ID = "bucket_id";
+	private static final int BUCKET_ID = 1;
+	private static final String S_BUCKET_ID = "bucket_id";
 	public static final int SORTING_FUNCTION = 2;
 	public static final String S_SORTING_FUNCTION = "sorting_function";
 
@@ -31,10 +31,7 @@ public class CollectToNode extends Action {
 			if (params[NODE_ID] == null) {
 				params[NODE_ID] = context.getMyNodeId();
 			}
-			if (params[BUCKET_ID] == null) {
-				params[BUCKET_ID] = context.getNewBucketID();
-			}
-
+			params[BUCKET_ID] = context.getNewBucketID();
 			controller.continueComputationOn(
 					((Integer) params[NODE_ID]).intValue(),
 					(Integer) params[BUCKET_ID]);

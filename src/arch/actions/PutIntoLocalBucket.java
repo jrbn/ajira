@@ -6,9 +6,10 @@ import org.slf4j.LoggerFactory;
 import arch.buckets.Bucket;
 import arch.data.types.Tuple;
 
-public class PutIntoBucket extends Action {
+public class PutIntoLocalBucket extends Action {
 
-	static final Logger log = LoggerFactory.getLogger(PutIntoBucket.class);
+	static final Logger log = LoggerFactory.getLogger(PutIntoLocalBucket.class);
+	public static final int ALL_NODES = -1;
 
 	public static final int BUCKET_ID = 0;
 	public static final String S_BUCKET_ID = "Bucket ID";
@@ -16,8 +17,8 @@ public class PutIntoBucket extends Action {
 	public static final String S_SORTING_FUNCTION = "sorting_function";
 
 	Bucket bucket = null;
-	int bucketID;
-	String sortingFunction;
+	int destID, bucketID;
+	String sortingFunction, sPartitioner;
 
 	@Override
 	public void registerActionParameters(ActionConf conf) throws Exception {
