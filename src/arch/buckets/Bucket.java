@@ -648,6 +648,12 @@ public class Bucket {
 			stats.addCounter(submissionNode, submissionId,
 					"Bucket:removeChunk: overall time (ms)",
 					(timeStart - timeEnd));
+			// this is not a bug - we subtract the time spent
+			// on this background-call from the removeChunk overall time 
+			// (otherwise would mean that we spend more time on 
+			// removing chunks; this method executes in background 
+			// and its spent time is measured inside removeWChunk 
+			// separately)
 		}
 	}
 	
