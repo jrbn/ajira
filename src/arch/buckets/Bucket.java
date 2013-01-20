@@ -266,7 +266,7 @@ public class Bucket {
 
 	public void addAll(WritableContainer<Tuple> newTuplesContainer, boolean isSorted,
 			Factory<WritableContainer<Tuple>> factory) throws Exception {	
-		// Sync with exBuffer -> cacheBuffer() will be sync'd on Bucket.thi,
+		// Sync with exBuffer -> cacheBuffer() will be sync'd on Bucket.this,
 		// combineInExBuffers() on both objects.
 		synchronized (lockExBuffer) {
 			long time = System.currentTimeMillis();
