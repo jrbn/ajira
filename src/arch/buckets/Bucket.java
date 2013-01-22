@@ -260,7 +260,7 @@ public class Bucket {
 			tuples = fb.get();
 			tuples.clear();
 		}
-
+		
 		// If factory is not null, we get control over the newTuplesContainer,
 		// which means that we have to remove it
 		//
@@ -268,6 +268,14 @@ public class Bucket {
 			throw new Exception("This buffer accepts only presorted sets");
 		}
 
+		// LOG-DEBUG
+		if (log.isDebugEnabled()) {
+			log.debug("addAll: adding a sorted = " + isSorted + " buffer with " +
+					newTuplesContainer.getNElements() + " elements " +
+					"TO exBuffer, sorted = " + isBufferSorted + " with " +
+					tuples.getNElements() + " elements");
+		}
+		
 		boolean isBufferEmpty = tuples.getNElements() == 0;
 
 		// TODO: if isBufferEmpty, could we just release tuples and replace it
