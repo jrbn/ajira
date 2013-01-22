@@ -266,7 +266,7 @@ public class Bucket {
 
 	public void addAll(WritableContainer<Tuple> newTuplesContainer, boolean isSorted,
 			Factory<WritableContainer<Tuple>> factory) throws Exception {	
-		// Sync with exBuffer -> cacheBuffer() will be sync'd on Bucket.thi,
+		// Sync with exBuffer -> cacheBuffer() will be sync'd on Bucket.this,
 		// combineInExBuffers() on both objects.
 		synchronized (lockExBuffer) {
 			long time = System.currentTimeMillis();
@@ -648,6 +648,12 @@ public class Bucket {
 			stats.addCounter(submissionNode, submissionId,
 					"Bucket:removeChunk: overall time (ms)",
 					(timeStart - timeEnd));
+			// this is not a bug - we subtract the time spent
+			// on this background-call from the removeChunk overall time 
+			// (otherwise would mean that we spend more time on 
+			// removing chunks; this method executes in background 
+			// and its spent time is measured inside removeWChunk 
+			// separately)
 		}
 	}
 	
