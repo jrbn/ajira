@@ -1,8 +1,8 @@
-<%@page import="arch.chains.ChainResolver"%>
-<%@page import="arch.chains.ChainHandler"%>
+<%@page import="nl.vu.cs.ajira.chains.ChainResolver"%>
+<%@page import="nl.vu.cs.ajira.chains.ChainHandler"%>
 <%@page import="java.util.List"%>
-<%@page import="arch.utils.Consts"%>
-<%@page import="arch.net.NetworkLayer"%>
+<%@page import="nl.vu.cs.ajira.utils.Consts"%>
+<%@page import="nl.vu.cs.ajira.net.NetworkLayer"%>
 <%@page import="arch.Context"%>
 <%@page import="arch.Arch"%>
 <html>
