@@ -9,7 +9,6 @@ import java.util.List;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.storage.Writable;
 
-
 public class Branch extends Action {
 
 	public static class BranchContent extends Writable {
@@ -67,14 +66,14 @@ public class Branch extends Action {
 	}
 
 	@Override
-	public void process(Tuple inputTuple, ActionContext context, ActionOutput output)
-			throws Exception {
+	public void process(Tuple inputTuple, ActionContext context,
+			ActionOutput output) throws Exception {
 	}
 
 	@Override
 	public void stopProcess(ActionContext context, ActionOutput output)
 			throws Exception {
-		if (output.isRootBranch()) {
+		if (context.isRootBranch()) {
 			BranchContent branch = new BranchContent();
 			getParamWritable(branch, BRANCH);
 			output.branch(branch.getActions());

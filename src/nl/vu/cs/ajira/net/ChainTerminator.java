@@ -14,7 +14,6 @@ import nl.vu.cs.ajira.storage.Writable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 class ChainTerminator implements Runnable {
 
 	public static class ChainInfo extends Writable {
@@ -23,7 +22,7 @@ class ChainTerminator implements Runnable {
 		public int submissionId;
 		public long chainId;
 		public long parentChainId;
-		// public int repFactor;
+		public int generatedRootChains;
 		public int nchildrens;
 		public boolean failed;
 
@@ -37,8 +36,8 @@ class ChainTerminator implements Runnable {
 			submissionId = input.readInt();
 			chainId = input.readLong();
 			parentChainId = input.readLong();
-			// repFactor = input.readInt();
 			nchildrens = input.readInt();
+			generatedRootChains = input.readInt();
 			failed = input.readBoolean();
 		}
 
@@ -48,8 +47,8 @@ class ChainTerminator implements Runnable {
 			output.writeInt(submissionId);
 			output.writeLong(chainId);
 			output.writeLong(parentChainId);
-			// output.writeInt(repFactor);
 			output.writeInt(nchildrens);
+			output.writeInt(generatedRootChains);
 			output.writeBoolean(failed);
 		}
 
@@ -85,12 +84,8 @@ class ChainTerminator implements Runnable {
 					if (localMode) {
 						context.getSubmissionsRegistry().updateCounters(
 								header.submissionId, header.chainId,
-								header.parentChainId, header.nchildrens/*
-																		 * ,
-																		 * header
-																		 * .
-																		 * repFactor
-																		 */);
+								header.parentChainId, header.nchildrens,
+								header.generatedRootChains);
 					} else {
 						IbisIdentifier identifier = ibis
 								.getPeerLocation(header.nodeId);
@@ -102,6 +97,7 @@ class ChainTerminator implements Runnable {
 						msg.writeLong(header.chainId);
 						msg.writeLong(header.parentChainId);
 						msg.writeInt(header.nchildrens);
+						msg.writeInt(header.generatedRootChains);
 						ibis.finishMessage(msg, header.submissionId);
 						if (log.isDebugEnabled()) {
 							log.debug("Sent message with id 2 to " + identifier);

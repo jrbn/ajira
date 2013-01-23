@@ -10,8 +10,8 @@ import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.actions.ActionFactory;
 import nl.vu.cs.ajira.buckets.Bucket;
 import nl.vu.cs.ajira.buckets.Buckets;
-import nl.vu.cs.ajira.chains.ActionsExecutor;
 import nl.vu.cs.ajira.chains.Chain;
+import nl.vu.cs.ajira.chains.ChainExecutor;
 import nl.vu.cs.ajira.data.types.DataProvider;
 import nl.vu.cs.ajira.net.NetworkLayer;
 import nl.vu.cs.ajira.statistics.StatisticsCollector;
@@ -23,7 +23,6 @@ import nl.vu.cs.ajira.utils.Consts;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public class SubmissionRegistry {
 
@@ -58,7 +57,7 @@ public class SubmissionRegistry {
 	}
 
 	public void updateCounters(int submissionId, long chainId,
-			long parentChainId, int nchildren) {
+			long parentChainId, int nchildren, int generatedRootChains) {
 		Submission sub = getSubmission(submissionId);
 
 		synchronized (sub) {
@@ -77,8 +76,12 @@ public class SubmissionRegistry {
 				}
 			}
 
+			if (generatedRootChains > 0) {
+				sub.rootChainsReceived -= generatedRootChains;
+			}
+
 			if (parentChainId == -1) { // It is one of the root chains
-				sub.rootChainsReceived = 0;
+				sub.rootChainsReceived++;
 			} else {
 				// Change the children field of the parent chain
 				Integer c = sub.monitors.get(parentChainId);
@@ -125,7 +128,7 @@ public class SubmissionRegistry {
 		Chain chain = new Chain();
 		chain.setParentChainId(-1);
 		chain.setInputLayer(Consts.DEFAULT_INPUT_LAYER_ID);
-		chain.addActions(job.getActions(), new ActionsExecutor(context, null,
+		chain.addActions(job.getActions(), new ChainExecutor(context, null,
 				chain));
 
 		chain.setSubmissionNode(context.getNetworkLayer().getMyPartition());

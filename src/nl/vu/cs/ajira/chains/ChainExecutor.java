@@ -14,8 +14,7 @@ import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.storage.container.WritableContainer;
 import nl.vu.cs.ajira.utils.Consts;
 
-
-public class ActionsExecutor implements ActionContext, ActionOutput {
+public class ChainExecutor implements ActionContext, ActionOutput {
 
 	private Context context;
 
@@ -42,13 +41,12 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 	private int transferNodeId;
 	private int transferBucketId;
 
-	public ActionsExecutor(Context context,
-			WritableContainer<Chain> chainsBuffer) {
+	public ChainExecutor(Context context, WritableContainer<Chain> chainsBuffer) {
 		this.context = context;
 		this.chainsBuffer = chainsBuffer;
 	}
 
-	public ActionsExecutor(Context context,
+	public ChainExecutor(Context context,
 			WritableContainer<Chain> chainsBuffer, Chain chain) {
 		this(context, chainsBuffer);
 		init(chain);
@@ -228,6 +226,22 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 	}
 
 	@Override
+	public ActionOutput split(List<ActionConf> actions) throws Exception {
+		chain.branchFromRoot(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
+		supportChain.addActions(actions, this);
+
+		return null;
+	}
+
+	@Override
+	public ActionOutput split(ActionConf action) throws Exception {
+		chain.branchFromRoot(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
+		supportChain.addAction(action, this);
+
+		return null;
+	}
+
+	@Override
 	public Bucket getBucket(final int bucketId, final String sortingFunction) {
 		return context.getBuckets().getOrCreateBucket(submissionNode,
 				submissionId, bucketId, sortingFunction, null);
@@ -235,8 +249,8 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 
 	@Override
 	public Bucket startTransfer(int nodeId, int bucketId, String sortingFunction) {
-		return context.getBuckets().startTransfer(submissionNode,
-				submissionId, nodeId, bucketId, sortingFunction, null, this);
+		return context.getBuckets().startTransfer(submissionNode, submissionId,
+				nodeId, bucketId, sortingFunction, null, this);
 	}
 
 	@Override
@@ -254,10 +268,10 @@ public class ActionsExecutor implements ActionContext, ActionOutput {
 			}
 		}
 
-		context.getBuckets().finishTransfer(this.submissionNode,
-				submissionId, nodeId, bucketId, chain.getChainId(),
-				chain.getParentChainId(), children, roots[currentAction],
-				sortingFunction, null, decreaseCounter);
+		context.getBuckets().finishTransfer(this.submissionNode, submissionId,
+				nodeId, bucketId, chain.getChainId(), chain.getParentChainId(),
+				children, roots[currentAction], sortingFunction, null,
+				decreaseCounter);
 	}
 
 	int getNActions() {

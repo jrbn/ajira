@@ -20,7 +20,7 @@ import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.datalayer.InputLayer;
 import nl.vu.cs.ajira.datalayer.InputLayerRegistry;
 import nl.vu.cs.ajira.datalayer.buckets.BucketsLayer;
-import nl.vu.cs.ajira.dummylayer.DummyLayer;
+import nl.vu.cs.ajira.datalayer.dummy.DummyLayer;
 import nl.vu.cs.ajira.net.NetworkLayer;
 import nl.vu.cs.ajira.statistics.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Factory;
@@ -47,9 +47,9 @@ import org.slf4j.LoggerFactory;
  *         wait to their completion and so on. Starting the cluster using this
  *         object should be the first thing to do.
  */
-public class Arch {
+public class Ajira {
 
-	static final Logger log = LoggerFactory.getLogger(Arch.class);
+	static final Logger log = LoggerFactory.getLogger(Ajira.class);
 
 	private Context globalContext;
 	private boolean localMode;

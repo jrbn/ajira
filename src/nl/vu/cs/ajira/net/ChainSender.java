@@ -4,7 +4,7 @@ import ibis.ipl.IbisIdentifier;
 import ibis.ipl.WriteMessage;
 
 import nl.vu.cs.ajira.Context;
-import nl.vu.cs.ajira.chains.ActionsExecutor;
+import nl.vu.cs.ajira.chains.ChainExecutor;
 import nl.vu.cs.ajira.chains.Chain;
 import nl.vu.cs.ajira.chains.ChainLocation;
 import nl.vu.cs.ajira.data.types.Tuple;
@@ -41,7 +41,7 @@ class ChainSender implements Runnable {
 
 			while (true) {
 				chainsToSend.remove(chain);
-				ActionsExecutor ac = new ActionsExecutor(context, null, chain);
+				ChainExecutor ac = new ChainExecutor(context, null, chain);
 
 				chain.getInputTuple(tuple);
 				ChainLocation loc = context

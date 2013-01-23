@@ -1,4 +1,4 @@
-package nl.vu.cs.ajira.dummylayer;
+package nl.vu.cs.ajira.datalayer.dummy;
 
 import java.io.IOException;
 

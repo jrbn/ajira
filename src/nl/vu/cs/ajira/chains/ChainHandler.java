@@ -42,7 +42,7 @@ public class ChainHandler implements Runnable {
 		Tuple tuple = new Tuple();
 		WritableContainer<Chain> chainsBuffer = new WritableContainer<Chain>(
 				Consts.SIZE_BUFFERS_CHILDREN_CHAIN_PROCESS);
-		ActionsExecutor actions = new ActionsExecutor(context, chainsBuffer);
+		ChainExecutor actions = new ChainExecutor(context, chainsBuffer);
 
 		while (true) {
 

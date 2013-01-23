@@ -21,7 +21,6 @@ import nl.vu.cs.ajira.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class Chain extends Writable implements Query {
 
 	static final Logger log = LoggerFactory.getLogger(Chain.class);
@@ -50,7 +49,6 @@ public class Chain extends Writable implements Query {
 		}
 	}
 
-	private int startingPosition = Consts.CHAIN_RESERVED_SPACE;
 	private int bufferSize = Consts.CHAIN_RESERVED_SPACE;
 	private final byte[] buffer = new byte[Consts.CHAIN_SIZE];
 	private Tuple inputTuple = null;
@@ -62,7 +60,6 @@ public class Chain extends Writable implements Query {
 
 	@Override
 	public void readFrom(DataInput input) throws IOException {
-		startingPosition = input.readInt();
 		bufferSize = input.readInt();
 		input.readFully(buffer, 0, bufferSize);
 
@@ -78,7 +75,6 @@ public class Chain extends Writable implements Query {
 
 	@Override
 	public void writeTo(DataOutput output) throws IOException {
-		output.writeInt(startingPosition);
 		output.writeInt(bufferSize);
 		output.write(buffer, 0, bufferSize);
 		if (inputTuple != null) {
@@ -130,12 +126,20 @@ public class Chain extends Writable implements Query {
 		return Utils.decodeLong(buffer, 16);
 	}
 
-	public void setTotalChainChildren(int chainChildren) {
+	void setTotalChainChildren(int chainChildren) {
 		Utils.encodeInt(buffer, 24, chainChildren);
+	}
+
+	void setGeneratedRootChains(int rootChains) {
+		Utils.encodeInt(buffer, 28, rootChains);
 	}
 
 	public int getTotalChainChildren() {
 		return Utils.decodeInt(buffer, 24);
+	}
+
+	public int getGeneratedRootChains() {
+		return Utils.decodeInt(buffer, 28);
 	}
 
 	@Override
@@ -236,7 +240,6 @@ public class Chain extends Writable implements Query {
 	}
 
 	void copyTo(Chain newChain) {
-		newChain.startingPosition = startingPosition;
 		newChain.bufferSize = bufferSize;
 		System.arraycopy(buffer, 0, newChain.buffer, 0, bufferSize);
 		if (inputTuple != null) {
@@ -255,13 +258,27 @@ public class Chain extends Writable implements Query {
 		newChain.setParentChainId(this.getChainId());
 		newChain.setChainId(newChainId);
 		newChain.setTotalChainChildren(0);
+		newChain.setGeneratedRootChains(0);
 
 		// Update counters of the new chain.
 		setTotalChainChildren(getTotalChainChildren() + 1);
 	}
 
-	void getActions(ActionsExecutor actions, ActionFactory ap)
-			throws IOException {
+	void branchFromRoot(Chain newChain, long newChainId) {
+		newChain.bufferSize = Consts.CHAIN_RESERVED_SPACE;
+		System.arraycopy(buffer, 0, newChain.buffer, 0, bufferSize);
+
+		// Set up the new chain
+		newChain.setParentChainId(-1);
+		newChain.setChainId(newChainId);
+		newChain.setTotalChainChildren(0);
+		newChain.setGeneratedRootChains(0);
+
+		// Update this counter
+		setGeneratedRootChains(getGeneratedRootChains() + 1);
+	}
+
+	void getActions(ChainExecutor actions, ActionFactory ap) throws IOException {
 
 		// Read the chain and feel the actions
 		int tmpSize = bufferSize;
@@ -270,7 +287,7 @@ public class Chain extends Writable implements Query {
 		int nodeId = 0;
 		int bucketId = 0;
 
-		while (tmpSize > startingPosition && !stopProcessing) {
+		while (tmpSize > Consts.CHAIN_RESERVED_SPACE && !stopProcessing) {
 			tmpSize -= 4;
 			int size = Utils.decodeInt(buffer, tmpSize);
 			String sAction = new String(buffer, tmpSize - size, size);

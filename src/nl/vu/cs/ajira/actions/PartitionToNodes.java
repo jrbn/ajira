@@ -10,7 +10,6 @@ import nl.vu.cs.ajira.datalayer.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class PartitionToNodes extends Action {
 
 	public static final int MULTIPLE = -1;
@@ -153,7 +152,7 @@ public class PartitionToNodes extends Action {
 
 			// Send the chains to process the buckets to all the nodes that
 			// will host the buckets
-			if (output.isRootBranch()) {
+			if (context.isRootBranch()) {
 				for (int i = 1; i < nPartitionsPerNode; i++) {
 					ActionConf c = ActionFactory
 							.getActionConf(ReadFromBucket.class);

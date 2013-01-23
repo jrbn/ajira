@@ -21,7 +21,6 @@ import nl.vu.cs.ajira.submissions.Submission;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 class Receiver implements MessageUpcall {
 
 	static final Logger log = LoggerFactory.getLogger(Receiver.class);
@@ -120,9 +119,10 @@ class Receiver implements MessageUpcall {
 				idChain = message.readLong();
 				idParentChain = message.readLong();
 				children = message.readInt();
+				int generatedRootChanis = message.readInt();
 				finishMessage(message, time, idSubmission);
 				context.getSubmissionsRegistry().updateCounters(idSubmission,
-						idChain, idParentChain, children);
+						idChain, idParentChain, children, generatedRootChanis);
 			} else {
 				// Cleanup submission
 				submissionNode = message.readInt();

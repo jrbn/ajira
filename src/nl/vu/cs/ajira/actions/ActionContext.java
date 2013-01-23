@@ -5,7 +5,6 @@ import java.util.List;
 
 import nl.vu.cs.ajira.buckets.Bucket;
 
-
 public interface ActionContext {
 
 	public long getCounter(String counterId);
@@ -37,6 +36,8 @@ public interface ActionContext {
 	public void broadcastCacheObjects(Object... keys);
 
 	public int getNewBucketID();
+
+	public boolean isRootBranch();
 
 	// TODO: To remove in something safer
 	Bucket getBucket(int bucketId, String sortingFunction);

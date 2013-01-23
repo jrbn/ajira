@@ -23,7 +23,6 @@ import nl.vu.cs.ajira.utils.Configuration;
 import nl.vu.cs.ajira.utils.Consts;
 import nl.vu.cs.ajira.utils.UniqueCounter;
 
-
 /**
  * @author Jacopo Urbani
  * 
@@ -31,10 +30,6 @@ import nl.vu.cs.ajira.utils.UniqueCounter;
  *         be useful to the different components of the cluster. In general,
  *         this context is visible within the architecture, but should not
  *         visible to the user, who has access to the ActionContext instead.
- */
-/**
- * @author Jacopo Urbani
- * 
  */
 public class Context {
 
@@ -172,6 +167,7 @@ public class Context {
 	}
 
 	/**
+	 * Returns an unique counter
 	 * 
 	 * @param name
 	 * @return Returns a globally unique ID for the counter specified in input.

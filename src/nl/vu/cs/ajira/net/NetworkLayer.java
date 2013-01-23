@@ -33,7 +33,6 @@ import nl.vu.cs.ajira.utils.Consts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class NetworkLayer {
 
 	static final Logger log = LoggerFactory.getLogger(NetworkLayer.class);
@@ -131,6 +130,7 @@ public class NetworkLayer {
 		ch.chainId = chain.getChainId();
 		ch.parentChainId = chain.getParentChainId();
 		ch.nchildrens = chain.getTotalChainChildren();
+		ch.generatedRootChains = chain.getGeneratedRootChains();
 		ch.failed = false;
 		chainsTerminated.add(ch);
 		chFactory.release(ch);
