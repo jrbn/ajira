@@ -68,7 +68,7 @@ class TupleSender {
 		tu.sequence = sequence;
 		tu.nrequests = nrequest;
 		tu.expected = -1;
-		Bucket bucket = buckets.getBucket(tu.bucketKey);
+		Bucket bucket = buckets.getExistingBucket(tu.bucketKey, false);
 		if (bucket != null) {
 			boolean enoughData = bucket.availableToTransmit()
 					|| !buckets.isActiveTransfer(tu.submissionId,
@@ -104,7 +104,8 @@ class TupleSender {
 				}
 				for (int i = 0; i < sz; i++) {
 					TupleInfo info = checkList.remove(0);
-					Bucket bucket = buckets.getBucket(info.bucketKey);
+					Bucket bucket = buckets.getExistingBucket(info.bucketKey,
+							false);
 					if (bucket != null) {
 						boolean enoughData = bucket.availableToTransmit()
 								|| !buckets.isActiveTransfer(info.submissionId,
@@ -154,7 +155,7 @@ class TupleSender {
 		// long time = System.currentTimeMillis();
 		WritableContainer<Tuple> tmpBuffer = bufferFactory.get();
 		tmpBuffer.clear();
-		Bucket bucket = buckets.getBucket(info.bucketKey);
+		Bucket bucket = buckets.getExistingBucket(info.bucketKey, false);
 		// long timeMsg = System.currentTimeMillis();
 		bucket.removeChunk(tmpBuffer);
 		// long timeRetrieve = System.currentTimeMillis() - timeMsg;

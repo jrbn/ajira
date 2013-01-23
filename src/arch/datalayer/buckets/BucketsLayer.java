@@ -67,7 +67,7 @@ public class BucketsLayer extends InputLayer {
 
 	@Override
 	public void releaseIterator(TupleIterator itr, ActionContext context) {
-		buckets.releaseIterator((BucketIterator) itr, false);
+		buckets.releaseIterator((BucketIterator) itr);
 	}
 
 	@Override

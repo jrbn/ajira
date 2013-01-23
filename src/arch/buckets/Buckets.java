@@ -50,11 +50,11 @@ public class Buckets {
 
 	// Ceriel: added getKey method which ensures that high-order int contains
 	// submissionId, even if bucketID < 0.
-	public static long getKey(int submissionId, int bucketId) {
+	private static long getKey(int submissionId, int bucketId) {
 		return ((long) submissionId << 32) + (bucketId & 0xFFFFFFFFL);
 	}
 
-	public synchronized void clearSubmission(int submissionId) {
+	public synchronized void removeBucketsOfSubmission(int submissionId) {
 		if (buckets.size() > 0) {
 			Bucket[] values = buckets.values().toArray(
 					new Bucket[buckets.size()]);
@@ -95,13 +95,6 @@ public class Buckets {
 		return bucket;
 	}
 
-	public synchronized Bucket getOrCreateBucket(int submissionNode,
-			int idSubmission, String sortingFunction, byte[] sortingParams,
-			ActionContext context) {
-		return getOrCreateBucket(submissionNode, idSubmission,
-				context.getNewBucketID(), sortingFunction, sortingParams);
-	}
-
 	public synchronized void releaseBucket(Bucket bucket) {
 		if (log.isDebugEnabled()) {
 			log.debug("releaseBucket: " + bucket.getKey());
@@ -109,13 +102,6 @@ public class Buckets {
 		bucket.releaseTuples();
 		buckets.remove(bucket.getKey());
 		// bucketsFactory.release(bucket);
-	}
-
-	public synchronized void clear() {
-		// for (Bucket bucket : buckets.values()) {
-		// bucketsFactory.release(bucket);
-		// }
-		buckets.clear();
 	}
 
 	public TupleIterator getIterator(int idSubmission, int idBucket/*
@@ -129,7 +115,7 @@ public class Buckets {
 		return itr;
 	}
 
-	public void releaseIterator(BucketIterator itr, boolean forceRelease) {
+	public void releaseIterator(BucketIterator itr) {
 		// Ceriel: changed order: read bucket from iterator and release it
 		// before releasing the iterator (which may corrupt the bucket field).
 		if (log.isDebugEnabled()) {
@@ -138,22 +124,15 @@ public class Buckets {
 		// If itr.isUsed is false, this iterator was just there to wait for
 		// availability.
 		// So, don't kill the bucket!
-		if (forceRelease
-				|| (itr.isUsed && itr.bucket.isFinished() && itr.bucket
-						.isEmpty())) {
-			// releaseBucket(itr.bucket);
+		if (itr.isUsed && itr.bucket.isFinished() && itr.bucket.isEmpty()) {
 			itr.bucket = null;
 		}
 	}
 
-	public synchronized Bucket getBucket(long bucketKey) {
-		return buckets.get(bucketKey);
-	}
-
-	public synchronized Bucket getExistingBucket(long bucketKey) {
+	public synchronized Bucket getExistingBucket(long bucketKey, boolean wait) {
 		Bucket bucket = buckets.get(bucketKey);
 
-		while (bucket == null) {
+		while (wait && bucket == null) {
 			// wait until somebody else will create it
 			try {
 				if (log.isDebugEnabled()) {
@@ -175,13 +154,8 @@ public class Buckets {
 	}
 
 	public synchronized Bucket getExistingBucket(int submissionId, int bucketId) {
-		return getExistingBucket(getKey(submissionId, bucketId));
+		return getExistingBucket(getKey(submissionId, bucketId), true);
 	}
-
-	// public synchronized Bucket findExistingBucket(int submissionId, int
-	// bucketId) {
-	// return buckets.get(getKey(submissionId, bucketId));
-	// }
 
 	private static class TransferInfo {
 		int count = 1;
@@ -209,7 +183,8 @@ public class Buckets {
 				// There is no transfer active. Create one.
 				info = new TransferInfo();
 				info.bucket = getOrCreateBucket(submissionNode, submission,
-						sortingFunction, sortingParams, context);
+						context.getNewBucketID(), sortingFunction,
+						sortingParams);
 				map.put(key, info);
 			} else {
 				info.count++;

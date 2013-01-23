@@ -33,12 +33,12 @@ import arch.utils.Consts;
 
 public class Bucket {
 
-	public static class FileMetaData {
+	static class FileMetaData {
 		String filename;
-		FDataInput stream;
 		byte[] lastElement;
 		long nElements;
 		long remainingSize;
+		FDataInput stream;
 	}
 
 	static class SortedList<T> extends ArrayList<T> {
@@ -71,45 +71,35 @@ public class Bucket {
 			return true;
 		}
 
-		public T removeLastElement() {
-			return remove(size() - 1);
-		}
-
 		public T getLastElement() {
 			return get(size() - 1);
+		}
+
+		public T removeLastElement() {
+			return remove(size() - 1);
 		}
 	}
 
 	static final Logger log = LoggerFactory.getLogger(Bucket.class);
 
-	private long key;
-	private WritableContainer<Tuple> tuples = null;
-
-	private int nChainsReceived = 0;
-	private int nBucketReceived = 0;
-
-	private final byte[] sequencesReceived = new byte[Consts.MAX_SEGMENTS_RECEIVED];
-	private int highestSequence;
-	private final Map<Long, Integer> childrens = new HashMap<Long, Integer>();
-	private boolean isFinished;
-
-	private boolean receivedMainChain;
-
-	private int submissionNode;
-	private int submissionId;
-	private StatisticsCollector stats;
-
-	boolean gettingData;
-
-	private long elementsInCache = 0;
-	Factory<WritableContainer<Tuple>> fb = null;
-
-	CachedFilesMerger merger;
-
 	// Used for unsorted streams.
 	private final List<FDataInput> cacheFiles = new ArrayList<FDataInput>();
+	private final Map<Long, Integer> childrens = new HashMap<Long, Integer>();
 
-	Map<byte[], FileMetaData> sortedCacheFiles = new HashMap<byte[], FileMetaData>();
+	RawComparator<Tuple> comparator = null;
+	private long elementsInCache = 0;
+
+	private Factory<WritableContainer<Tuple>> fb = null;
+	boolean gettingData;
+	private int highestSequence;
+	private boolean isBufferSorted = true;
+
+	private boolean isFinished;
+
+	private TupleIterator iter;
+	private long key;
+	CachedFilesMerger merger;
+
 	SortedList<byte[]> minimumSortedList = new SortedList<byte[]>(100,
 			new Comparator<byte[]>() {
 				@Override
@@ -118,137 +108,47 @@ public class Bucket {
 							o2.length);
 				}
 			});
-	RawComparator<Tuple> comparator = null;
-	private boolean isBufferSorted = true;
 
-	public void init(long key, StatisticsCollector stats, int submissionNode,
-			int submissionId, String comparator, byte[] params,
-			Factory<WritableContainer<Tuple>> fb, CachedFilesMerger merger) {
-		this.key = key;
-		this.fb = fb;
-		this.tuples = null;
-		this.merger = merger;
+	private int nBucketReceived = 0;
+	private int nChainsReceived = 0;
 
-		isFinished = false;
-		receivedMainChain = false;
-		nChainsReceived = 0;
-		nBucketReceived = 0;
-		highestSequence = -1;
-		gettingData = false;
+	private ChainNotifier notifier;
 
-		notifier = null;
-		iter = null;
+	int numCachers;
+	int numWaitingForCachers;
+	Map<byte[], FileMetaData> sortedCacheFiles = new HashMap<byte[], FileMetaData>();
 
-		elementsInCache = 0;
+	private boolean receivedMainChain;
 
-		sortedCacheFiles.clear();
-		minimumSortedList.clear();
-		cacheFiles.clear();
-		childrens.clear();
+	private final byte[] sequencesReceived = new byte[Consts.MAX_SEGMENTS_RECEIVED];
 
-		this.stats = stats;
-		this.submissionNode = submissionNode;
-		this.submissionId = submissionId;
+	private StatisticsCollector stats;
+	private int submissionId;
+	private int submissionNode;
+	private WritableContainer<Tuple> tuples = null;
 
-		isBufferSorted = true;
-		if (comparator != null && comparator.length() > 0) {
-			setSortingFunction(comparator, params);
+	public synchronized boolean add(Tuple tuple) throws Exception {
+
+		if (tuples == null) {
+			tuples = fb.get();
+			tuples.clear();
+		}
+
+		boolean response = tuples.add(tuple);
+		if (response) {
+			isBufferSorted = tuples.getNElements() < 2;
 		} else {
-			this.comparator = null;
-		}
-	}
+			cacheCurrentBuffer();
+			response = tuples.add(tuple);
+			isBufferSorted = true;
 
-	public long getKey() {
-		return key;
-	}
-
-	public synchronized void updateCounters(long idChain, long idParentChain,
-			int children, boolean isResponsible) throws IOException {
-
-		if (log.isDebugEnabled()) {
-			log.debug("Update counters of bucket " + this.key + ": ic "
-					+ idChain + " p " + idParentChain + " c " + children + " "
-					+ isResponsible);
-		}
-
-		if (children > 0) { // Set the expected children in the
-			// map
-			Integer c = childrens.get(idChain);
-			if (c == null) {
-				childrens.put(idChain, children);
-			} else {
-				c += children;
-				if (c == 0) {
-					childrens.remove(idChain);
-				} else {
-					childrens.put(idChain, c);
-				}
-			}
-
-		}
-
-		if (isResponsible) { // It is a root chain
-			receivedMainChain = true;
-		} else {
-			Integer c = childrens.get(idParentChain);
-			if (c == null) {
-				childrens.put(idParentChain, -1);
-			} else {
-				c--;
-				if (c == 0) {
-					childrens.remove(idParentChain);
-				} else {
-					childrens.put(idParentChain, c);
-				}
+			if (!response) {
+				throw new Exception(
+						"The buffer is too small! Must increase the buffer size.");
 			}
 		}
 
-		nChainsReceived++;
-
-		checkFinished();
-	}
-
-	public synchronized void updateCounters(int sequence, boolean lastSequence)
-			throws IOException {
-
-		if (log.isDebugEnabled()) {
-			log.debug("updateCounters of bucket: " + this.key + ", sequence = "
-					+ sequence + ", lastSequence = " + lastSequence);
-		}
-
-		sequencesReceived[sequence]++;
-		if (highestSequence < sequence)
-			highestSequence = sequence;
-		if (lastSequence) {
-			nBucketReceived++;
-			for (int i = 0; i < sequence + 1; ++i) {
-				sequencesReceived[i]--;
-			}
-		}
-		checkFinished();
-	}
-
-	private void checkFinished() throws IOException {
-
-		/*
-		 * if (log.isDebugEnabled()) { log.debug("checkFinished of bucket: " +
-		 * this.key + ", nChainsReceived = " + nChainsReceived +
-		 * ", nBucketReceived = " + nBucketReceived + ", highestSequence = " +
-		 * highestSequence + ", rootChainsReplication = " +
-		 * rootChainsReplication + ", childrens.size() = " + childrens.size() +
-		 * ", receivedMainChain = " + receivedMainChain); }
-		 */
-		if (nChainsReceived == nBucketReceived && highestSequence != -1
-				&& childrens.size() == 0 && receivedMainChain) {
-			for (int i = 0; i < highestSequence + 1; ++i)
-				if (sequencesReceived[i] != 0) {
-					return;
-				}
-			if (log.isDebugEnabled()) {
-				log.debug("Calling setFinished on bucket " + this.key);
-			}
-			setFinished(true);
-		}
+		return response;
 	}
 
 	public synchronized void addAll(
@@ -308,96 +208,155 @@ public class Bucket {
 		}
 	}
 
-	public synchronized void copyTo(Bucket bucket) throws Exception {
+	public synchronized boolean availableToTransmit() {
+		return elementsInCache > 0
+				|| (tuples != null && tuples.bytesToStore() > Consts.MIN_SIZE_TO_SEND);
+	}
 
-		if (tuples == null) {
-			tuples = fb.get();
-			tuples.clear();
+	private void cacheBuffer(final WritableContainer<Tuple> buffer,
+			final boolean sorted, final Factory<WritableContainer<Tuple>> fb)
+			throws IOException {
+
+		if (buffer.getNElements() == 0) {
+			// nothing to cache.
+			return;
 		}
 
-		waitForCachers();
-
-		if (tuples.getNElements() > 0) {
-
-			if (comparator != null && !isBufferSorted) {
-				tuples.sort(comparator, fb);
-				isBufferSorted = true;
-			}
-
-			bucket.addAll(tuples, isBufferSorted, null);
+		synchronized (this) {
+			elementsInCache += buffer.getNElements();
+			numCachers++;
 		}
 
-		if (elementsInCache > 0) {
-			// There are some files to move in the new buffer
-			synchronized (bucket) {
-				if (comparator == null) {
-					bucket.cacheFiles.addAll(cacheFiles);
-				} else {
-					bucket.sortedCacheFiles.putAll(sortedCacheFiles);
-					for (byte[] min : minimumSortedList) {
-						bucket.minimumSortedList.add(min);
+		ThreadPool.createNew(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					if (comparator != null && !sorted) {
+						buffer.sort(comparator, fb);
+					}
+
+					File cacheFile = File.createTempFile("cache", "tmp");
+					cacheFile.deleteOnExit();
+
+					BufferedOutputStream fout = new BufferedOutputStream(
+							new SnappyOutputStream(new FileOutputStream(
+									cacheFile)), 65536);
+					// BufferedOutputStream fout = new BufferedOutputStream(new
+					// FileOutputStream(cacheFile), 65536);
+					FDataOutput cacheOutputStream = new FDataOutput(fout);
+
+					long time = System.currentTimeMillis();
+					if (comparator == null) {
+						buffer.writeTo(cacheOutputStream);
+					} else {
+						buffer.writeElementsTo(cacheOutputStream);
+						cacheOutputStream.writeInt(0);
+					}
+
+					stats.addCounter(submissionNode, submissionId,
+							"Time spent writing to cache (ms)",
+							System.currentTimeMillis() - time);
+
+					cacheOutputStream.close();
+
+					/*
+					 * if (log.isDebugEnabled()) { checkFile(cacheFile); }
+					 */
+
+					// Register file in the list of cachedBuffers
+					FDataInput is = new FDataInput(new BufferedInputStream(
+							new SnappyInputStream(
+									new FileInputStream(cacheFile)), 65536));
+					// FDataInput is = new FDataInput(new BufferedInputStream(
+					// new FileInputStream(cacheFile), 65536));
+
+					synchronized (Bucket.this) {
+						if (comparator == null) {
+							cacheFiles.add(is);
+						} else {
+							// Read the first element and put it into the map
+							try {
+								int length = is.readInt();
+								byte[] rawValue = new byte[length];
+								is.readFully(rawValue);
+
+								FileMetaData meta = new FileMetaData();
+								meta.filename = cacheFile.getAbsolutePath();
+								meta.stream = is;
+								meta.nElements = buffer.getNElements() - 1;
+								meta.lastElement = buffer.returnLastElement();
+								if (log.isDebugEnabled()) {
+									log.debug("Size of first element is "
+											+ length
+											+ ", size of last element is "
+											+ meta.lastElement.length);
+								}
+								meta.remainingSize = buffer
+										.getRawElementsSize() - 4 - length;
+
+								sortedCacheFiles.put(rawValue, meta);
+								minimumSortedList.add(rawValue);
+
+							} catch (Exception e) {
+								log.error("Error", e);
+							}
+
+							if (sortedCacheFiles.size() > 8) {
+								merger.newRequest(Bucket.this);
+							}
+						}
+					}
+					// fb.release(buffer);
+				} catch (IOException e) {
+					// TODO: what to do now?
+					log.error("Got exception while writing cache!", e);
+				}
+				synchronized (Bucket.this) {
+					numCachers--;
+					if (numCachers == 0 && numWaitingForCachers > 0) {
+						Bucket.this.notifyAll();
 					}
 				}
-				bucket.elementsInCache += elementsInCache;
 			}
-		}
+		}, "Sort-and-cache");
+
 	}
 
-	public synchronized boolean add(Tuple tuple) throws Exception {
+	private void cacheCurrentBuffer() throws IOException {
 
-		if (tuples == null) {
+		if (tuples.getNElements() > 0) {
+			if (log.isInfoEnabled()) {
+				log.info(
+						"Caching buffer, tuples.getNElements = "
+								+ tuples.getNElements(), new Throwable());
+			}
+			cacheBuffer(tuples, isBufferSorted, fb);
 			tuples = fb.get();
 			tuples.clear();
 		}
-
-		boolean response = tuples.add(tuple);
-		if (response) {
-			isBufferSorted = tuples.getNElements() < 2;
-		} else {
-			cacheCurrentBuffer();
-			response = tuples.add(tuple);
-			isBufferSorted = true;
-
-			if (!response) {
-				throw new Exception(
-						"The buffer is too small! Must increase the buffer size.");
-			}
-		}
-
-		return response;
 	}
 
-	public synchronized void setFinished(boolean value) throws IOException {
-		isFinished = value;
-		if (isFinished && notifier != null) {
-			notifier.markReady(iter);
-			notifier = null;
-			iter = null;
-		}
-		notifyAll();
-	}
+	private void checkFinished() throws IOException {
 
-	public synchronized boolean isFinished() {
-		return isFinished;
-	}
-
-	public synchronized boolean waitUntilFinished() {
-		try {
-			while (!isFinished) {
-				if (log.isDebugEnabled()) {
-					log.debug("waitUntilFinished on bucket " + this.key);
+		/*
+		 * if (log.isDebugEnabled()) { log.debug("checkFinished of bucket: " +
+		 * this.key + ", nChainsReceived = " + nChainsReceived +
+		 * ", nBucketReceived = " + nBucketReceived + ", highestSequence = " +
+		 * highestSequence + ", rootChainsReplication = " +
+		 * rootChainsReplication + ", childrens.size() = " + childrens.size() +
+		 * ", receivedMainChain = " + receivedMainChain); }
+		 */
+		if (nChainsReceived == nBucketReceived && highestSequence != -1
+				&& childrens.size() == 0 && receivedMainChain) {
+			for (int i = 0; i < highestSequence + 1; ++i)
+				if (sequencesReceived[i] != 0) {
+					return;
 				}
-				wait();
-				if (log.isDebugEnabled()) {
-					log.debug("waitUntilFinished on bucket " + this.key
-							+ " done");
-				}
+			if (log.isDebugEnabled()) {
+				log.debug("Calling setFinished on bucket " + this.key);
 			}
-		} catch (Exception e) {
-			// ignore
+			setFinished(true);
 		}
-
-		return true;
 	}
 
 	private boolean compareWithSortedList(byte[] element) {
@@ -425,10 +384,97 @@ public class Bucket {
 		return false;
 	}
 
+	public long getKey() {
+		return key;
+	}
+
+	public RawComparator<Tuple> getSortingFunction() {
+		return comparator;
+	}
+
+	@SuppressWarnings("unchecked")
+	void init(long key, StatisticsCollector stats, int submissionNode,
+			int submissionId, String comparator, byte[] params,
+			Factory<WritableContainer<Tuple>> fb, CachedFilesMerger merger) {
+		this.key = key;
+		this.fb = fb;
+		this.tuples = null;
+		this.merger = merger;
+
+		isFinished = false;
+		receivedMainChain = false;
+		nChainsReceived = 0;
+		nBucketReceived = 0;
+		highestSequence = -1;
+		gettingData = false;
+
+		notifier = null;
+		iter = null;
+
+		elementsInCache = 0;
+
+		sortedCacheFiles.clear();
+		minimumSortedList.clear();
+		cacheFiles.clear();
+		childrens.clear();
+
+		this.stats = stats;
+		this.submissionNode = submissionNode;
+		this.submissionId = submissionId;
+
+		isBufferSorted = true;
+		if (comparator != null && comparator.length() > 0) {
+
+			try {
+				this.comparator = (RawComparator<Tuple>) Class.forName(
+						comparator).newInstance();
+				this.comparator.init(params);
+			} catch (Exception e) {
+				log.error("Error instantiating the comparator.", e);
+			}
+		} else {
+			this.comparator = null;
+		}
+	}
+
+	public long inmemory_size() {
+		if (tuples == null) {
+			return 0;
+		} else {
+			return tuples.inmemory_size();
+		}
+
+	}
+
+	boolean isEmpty() {
+		return elementsInCache == 0
+				&& (tuples == null || tuples.getNElements() == 0);
+	}
+
+	synchronized boolean isFinished() {
+		return isFinished;
+	}
+
 	private void readFrom(FileMetaData meta, byte[] buf) throws IOException {
 		meta.stream.readFully(buf);
 		meta.remainingSize -= buf.length + 4;
 		meta.nElements--;
+	}
+
+	synchronized void registerFinishedNotifier(ChainNotifier notifier,
+			TupleIterator iter) {
+		if (isFinished()) {
+			notifier.markReady(iter);
+			return;
+		}
+		this.notifier = notifier;
+		this.iter = iter;
+	}
+
+	void releaseTuples() {
+		if (tuples != null) {
+			tuples = null;
+		}
 	}
 
 	public synchronized boolean removeChunk(WritableContainer<Tuple> tmpBuffer) {
@@ -586,157 +632,80 @@ public class Bucket {
 				&& (sortedCacheFiles == null || minimumSortedList.size() == 0);
 	}
 
-	public synchronized boolean availableToTransmit() {
-		return elementsInCache > 0
-				|| (tuples != null && tuples.bytesToStore() > Consts.MIN_SIZE_TO_SEND);
-	}
-
-	int numCachers;
-	int numWaitingForCachers;
-
-	private ChainNotifier notifier;
-
-	private TupleIterator iter;
-
-	private void cacheCurrentBuffer() throws IOException {
-
-		if (tuples.getNElements() > 0) {
-			if (log.isInfoEnabled()) {
-				log.info(
-						"Caching buffer, tuples.getNElements = "
-								+ tuples.getNElements(), new Throwable());
-			}
-			cacheBuffer(tuples, isBufferSorted, fb);
-			tuples = fb.get();
-			tuples.clear();
+	public synchronized void setFinished(boolean value) throws IOException {
+		isFinished = value;
+		if (isFinished && notifier != null) {
+			notifier.markReady(iter);
+			notifier = null;
+			iter = null;
 		}
+		notifyAll();
 	}
 
-	// private void checkFile(File name) throws IOException {
-	// FDataInput is = new FDataInput(new BufferedInputStream(
-	// new SnappyInputStream(
-	// new FileInputStream(name)), 65536));
-	// // FDataInput is = new FDataInput(new BufferedInputStream(new
-	// FileInputStream(name), 65536));
-	//
-	// int length;
-	// while ((length = is.readInt()) > 0) {
-	// if (length > 256) {
-	// log.debug("OOPS: length = " + length);
-	// }
-	// byte[] rawValue = new byte[length];
-	// is.readFully(rawValue);
-	// }
-	// is.close();
-	// }
-
-	private void cacheBuffer(final WritableContainer<Tuple> buffer,
-			final boolean sorted, final Factory<WritableContainer<Tuple>> fb)
+	public synchronized void updateCounters(int sequence, boolean lastSequence)
 			throws IOException {
 
-		if (buffer.getNElements() == 0) {
-			// nothing to cache.
-			return;
+		if (log.isDebugEnabled()) {
+			log.debug("updateCounters of bucket: " + this.key + ", sequence = "
+					+ sequence + ", lastSequence = " + lastSequence);
 		}
 
-		synchronized (this) {
-			elementsInCache += buffer.getNElements();
-			numCachers++;
+		sequencesReceived[sequence]++;
+		if (highestSequence < sequence)
+			highestSequence = sequence;
+		if (lastSequence) {
+			nBucketReceived++;
+			for (int i = 0; i < sequence + 1; ++i) {
+				sequencesReceived[i]--;
+			}
+		}
+		checkFinished();
+	}
+
+	public synchronized void updateCounters(long idChain, long idParentChain,
+			int children, boolean isResponsible) throws IOException {
+
+		if (log.isDebugEnabled()) {
+			log.debug("Update counters of bucket " + this.key + ": ic "
+					+ idChain + " p " + idParentChain + " c " + children + " "
+					+ isResponsible);
 		}
 
-		ThreadPool.createNew(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					if (comparator != null && !sorted) {
-						buffer.sort(comparator, fb);
-					}
-
-					File cacheFile = File.createTempFile("cache", "tmp");
-					cacheFile.deleteOnExit();
-
-					BufferedOutputStream fout = new BufferedOutputStream(
-							new SnappyOutputStream(new FileOutputStream(
-									cacheFile)), 65536);
-					// BufferedOutputStream fout = new BufferedOutputStream(new
-					// FileOutputStream(cacheFile), 65536);
-					FDataOutput cacheOutputStream = new FDataOutput(fout);
-
-					long time = System.currentTimeMillis();
-					if (comparator == null) {
-						buffer.writeTo(cacheOutputStream);
-					} else {
-						buffer.writeElementsTo(cacheOutputStream);
-						cacheOutputStream.writeInt(0);
-					}
-
-					stats.addCounter(submissionNode, submissionId,
-							"Time spent writing to cache (ms)",
-							System.currentTimeMillis() - time);
-
-					cacheOutputStream.close();
-
-					/*
-					 * if (log.isDebugEnabled()) { checkFile(cacheFile); }
-					 */
-
-					// Register file in the list of cachedBuffers
-					FDataInput is = new FDataInput(new BufferedInputStream(
-							new SnappyInputStream(
-									new FileInputStream(cacheFile)), 65536));
-					// FDataInput is = new FDataInput(new BufferedInputStream(
-					// new FileInputStream(cacheFile), 65536));
-
-					synchronized (Bucket.this) {
-						if (comparator == null) {
-							cacheFiles.add(is);
-						} else {
-							// Read the first element and put it into the map
-							try {
-								int length = is.readInt();
-								byte[] rawValue = new byte[length];
-								is.readFully(rawValue);
-
-								FileMetaData meta = new FileMetaData();
-								meta.filename = cacheFile.getAbsolutePath();
-								meta.stream = is;
-								meta.nElements = buffer.getNElements() - 1;
-								meta.lastElement = buffer.returnLastElement();
-								if (log.isDebugEnabled()) {
-									log.debug("Size of first element is "
-											+ length
-											+ ", size of last element is "
-											+ meta.lastElement.length);
-								}
-								meta.remainingSize = buffer
-										.getRawElementsSize() - 4 - length;
-
-								sortedCacheFiles.put(rawValue, meta);
-								minimumSortedList.add(rawValue);
-
-							} catch (Exception e) {
-								log.error("Error", e);
-							}
-
-							if (sortedCacheFiles.size() > 8) {
-								merger.newRequest(Bucket.this);
-							}
-						}
-					}
-					// fb.release(buffer);
-				} catch (IOException e) {
-					// TODO: what to do now?
-					log.error("Got exception while writing cache!", e);
-				}
-				synchronized (Bucket.this) {
-					numCachers--;
-					if (numCachers == 0 && numWaitingForCachers > 0) {
-						Bucket.this.notifyAll();
-					}
+		if (children > 0) { // Set the expected children in the
+			// map
+			Integer c = childrens.get(idChain);
+			if (c == null) {
+				childrens.put(idChain, children);
+			} else {
+				c += children;
+				if (c == 0) {
+					childrens.remove(idChain);
+				} else {
+					childrens.put(idChain, c);
 				}
 			}
-		}, "Sort-and-cache");
 
+		}
+
+		if (isResponsible) { // It is a root chain
+			receivedMainChain = true;
+		} else {
+			Integer c = childrens.get(idParentChain);
+			if (c == null) {
+				childrens.put(idParentChain, -1);
+			} else {
+				c--;
+				if (c == 0) {
+					childrens.remove(idParentChain);
+				} else {
+					childrens.put(idParentChain, c);
+				}
+			}
+		}
+
+		nChainsReceived++;
+
+		checkFinished();
 	}
 
 	private synchronized void waitForCachers() {
@@ -754,49 +723,22 @@ public class Bucket {
 		numWaitingForCachers--;
 	}
 
-	@SuppressWarnings("unchecked")
-	public void setSortingFunction(String sortingFunction, byte[] params) {
+	public synchronized boolean waitUntilFinished() {
 		try {
-			this.comparator = (RawComparator<Tuple>) Class.forName(
-					sortingFunction).newInstance();
-			comparator.init(params);
+			while (!isFinished) {
+				if (log.isDebugEnabled()) {
+					log.debug("waitUntilFinished on bucket " + this.key);
+				}
+				wait();
+				if (log.isDebugEnabled()) {
+					log.debug("waitUntilFinished on bucket " + this.key
+							+ " done");
+				}
+			}
 		} catch (Exception e) {
-			log.error("Error instantiating the comparator.", e);
-		}
-	}
-
-	public RawComparator<Tuple> getSortingFunction() {
-		return comparator;
-	}
-
-	public void releaseTuples() {
-		if (tuples != null) {
-			// fb.release(tuples);
-			tuples = null;
-		}
-	}
-
-	public boolean isEmpty() {
-		return elementsInCache == 0
-				&& (tuples == null || tuples.getNElements() == 0);
-	}
-
-	public long inmemory_size() {
-		if (tuples == null) {
-			return 0;
-		} else {
-			return tuples.inmemory_size();
+			// ignore
 		}
 
-	}
-
-	public synchronized void registerFinishedNotifier(ChainNotifier notifier,
-			TupleIterator iter) {
-		if (isFinished()) {
-			notifier.markReady(iter);
-			return;
-		}
-		this.notifier = notifier;
-		this.iter = iter;
+		return true;
 	}
 }

@@ -22,8 +22,7 @@ public class BucketIterator extends TupleIterator {
 	Buckets buckets;
 	boolean isUsed;
 
-	public void init(Bucket bucket, int idSubmission, int idBucket,
-			Buckets buckets/* , boolean removeDuplicates */) {
+	void init(Bucket bucket, int idSubmission, int idBucket, Buckets buckets) {
 		tuples.clear();
 		this.bucket = bucket;
 		this.idSubmission = idSubmission;

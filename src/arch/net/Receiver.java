@@ -264,7 +264,8 @@ class Receiver implements MessageUpcall {
 
 				tmpBuffer = null;
 				if (isFinished) {
-					buckets.clearSubmission(submission.getSubmissionId());
+					buckets.removeBucketsOfSubmission(submission
+							.getSubmissionId());
 					Runtime.getRuntime().gc();
 				}
 				context.getSubmissionsRegistry().releaseSubmission(submission);
@@ -279,7 +280,7 @@ class Receiver implements MessageUpcall {
 			stats.sendStatisticsAway();
 			if (myId != 0) {
 				// Node 0 has the answer, so cannot clear yet.
-				buckets.clearSubmission(submissionId);
+				buckets.removeBucketsOfSubmission(submissionId);
 				context.getSubmissionCache().clearAll(submissionId);
 				Runtime.getRuntime().gc();
 			} else {
@@ -293,7 +294,7 @@ class Receiver implements MessageUpcall {
 			bucketKey = message.readLong();
 			message.finish();
 
-			bucket = buckets.getExistingBucket(bucketKey);
+			bucket = buckets.getExistingBucket(bucketKey, true);
 			WritableContainer<Tuple> tmpBuffer = bufferFactory.get();
 			tmpBuffer.clear();
 			boolean isFinished = bucket.removeChunk(tmpBuffer);
@@ -312,7 +313,7 @@ class Receiver implements MessageUpcall {
 			// bufferFactory.release(tmpBuffer);
 			tmpBuffer = null;
 			if (isFinished) {
-				buckets.clearSubmission((int) (bucketKey >> 32));
+				buckets.removeBucketsOfSubmission((int) (bucketKey >> 32));
 				Runtime.getRuntime().gc();
 			}
 			break;
