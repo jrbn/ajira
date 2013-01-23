@@ -81,10 +81,6 @@ public class NetworkLayer {
 	Receiver receiver;
 	Container<Chain> chainsToSend = new CheckedConcurrentWritableContainer<Chain>(
 			Consts.SIZE_BUFFERS_CHAIN_SEND);
-	Container<ChainTerminator.ChainInfo> chainsTerminated = new CheckedConcurrentWritableContainer<ChainTerminator.ChainInfo>(
-			Consts.SIZE_BUFFERS_CHAIN_TERMINATED);
-	Factory<ChainTerminator.ChainInfo> chFactory = new Factory<ChainTerminator.ChainInfo>(
-			ChainTerminator.ChainInfo.class);
 
 	Factory<WritableContainer<Tuple>> bufferFactory = null;
 
@@ -96,6 +92,8 @@ public class NetworkLayer {
 
 	private IbisMonitor ibisMonitor;
 	private final static NetworkLayer instance = new NetworkLayer();
+
+	ChainTerminator terminator;
 
 	private NetworkLayer() {
 	}
@@ -124,15 +122,7 @@ public class NetworkLayer {
 	}
 
 	public void signalChainTerminated(Chain chain) throws Exception {
-		ChainTerminator.ChainInfo ch = chFactory.get();
-		ch.nodeId = chain.getSubmissionNode();
-		ch.submissionId = chain.getSubmissionId();
-		ch.chainId = chain.getChainId();
-		ch.parentChainId = chain.getParentChainId();
-		ch.nchildrens = chain.getTotalChainChildren();
-		ch.failed = false;
-		chainsTerminated.add(ch);
-		chFactory.release(ch);
+		terminator.addChain(chain);
 	}
 
 	public void signalReady() throws IOException {
@@ -256,8 +246,7 @@ public class NetworkLayer {
 
 			/**** START SUBMISSION MANAGEMENT THREAD ****/
 			log.debug("Starting Termination chains thread...");
-			ChainTerminator terminator = new ChainTerminator(context,
-					chainsTerminated);
+			terminator = new ChainTerminator(context);
 			Thread thread = new Thread(terminator);
 			thread.setName("Chain Terminator");
 			thread.start();
@@ -673,12 +662,7 @@ public class NetworkLayer {
 
 	}
 
-	public void signalChainFailed(Chain chain) throws Exception {
-		ChainTerminator.ChainInfo ch = chFactory.get();
-		ch.submissionId = chain.getSubmissionId();
-		ch.nodeId = chain.getSubmissionNode();
-		ch.failed = true;
-		chainsTerminated.add(ch);
-		chFactory.release(ch);
+	public void signalChainFailed(Chain chain, Throwable exception) {
+		terminator.addFailedChain(chain, exception);
 	}
 }
