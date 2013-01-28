@@ -103,7 +103,7 @@ public class SubmissionRegistry {
 					bucket.waitUntilFinished();
 				}
 
-				sub.setFinished();
+				sub.setFinished(Consts.STATE_FINISHED);
 				sub.notifyAll();
 			}
 		}
@@ -123,8 +123,11 @@ public class SubmissionRegistry {
 				job.getAssignedOutputBucket());
 
 		try {
-
 			submissions.put(submissionId, sub);
+
+			if (job.getActions() == null) {
+				throw new Exception("No action is defined!");
+			}
 
 			Chain chain = new Chain();
 			chain.setParentChainId(-1);
@@ -143,9 +146,9 @@ public class SubmissionRegistry {
 			}
 
 		} catch (Exception e) {
-			log.error("Init of the job " + job + " has failed");
+			log.error("Init of the submission " + sub + " has failed", e);
 			submissions.remove(submissionId);
-			sub.setState(Consts.STATE_INIT_FAILED);
+			sub.setFinished(Consts.STATE_INIT_FAILED);
 		}
 
 		return sub;
@@ -186,7 +189,9 @@ public class SubmissionRegistry {
 		// Pool the submission registry to know when it is present and return it
 		synchronized (submission) {
 			while (!submission.getState().equalsIgnoreCase(
-					Consts.STATE_FINISHED)) {
+					Consts.STATE_FINISHED)
+					&& !submission.getState().equalsIgnoreCase(
+							Consts.STATE_INIT_FAILED)) {
 				try {
 					submission.wait(waitInterval);
 				} catch (InterruptedException e) {
@@ -200,24 +205,13 @@ public class SubmissionRegistry {
 		return submission;
 	}
 
-	public void getStatistics(Job job, Submission submission) {
+	public void getStatistics(Submission submission) {
 		try {
 			Thread.sleep(500);
 		} catch (Exception e) {
 			log.error("Thread failed in sleeping", e);
 		}
-
 		submission.counters = stats.removeCountersSubmission(submission
 				.getSubmissionId());
-
-		// Print the counters
-		String stats = "Final statistics for job "
-				+ submission.getSubmissionId() + ":\n";
-		if (submission.counters != null) {
-			for (Map.Entry<String, Long> entry : submission.counters.entrySet()) {
-				stats += " " + entry.getKey() + " = " + entry.getValue() + "\n";
-			}
-		}
-		log.info(stats);
 	}
 }

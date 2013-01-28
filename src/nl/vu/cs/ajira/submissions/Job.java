@@ -10,7 +10,6 @@ import nl.vu.cs.ajira.actions.ActionConf;
 import nl.vu.cs.ajira.actions.ActionFactory;
 import nl.vu.cs.ajira.storage.Writable;
 
-
 public class Job extends Writable {
 
 	private boolean waitForStatistics = true;

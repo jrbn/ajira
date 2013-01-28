@@ -25,8 +25,8 @@ import nl.vu.cs.ajira.net.NetworkLayer;
 import nl.vu.cs.ajira.statistics.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Factory;
 import nl.vu.cs.ajira.storage.SubmissionCache;
-import nl.vu.cs.ajira.storage.container.CheckedConcurrentWritableContainer;
-import nl.vu.cs.ajira.storage.container.WritableContainer;
+import nl.vu.cs.ajira.storage.containers.CheckedConcurrentWritableContainer;
+import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.submissions.Job;
 import nl.vu.cs.ajira.submissions.Submission;
 import nl.vu.cs.ajira.submissions.SubmissionRegistry;
@@ -92,8 +92,11 @@ public class Ajira {
 				log.error("Error in shutting down", e);
 				System.exit(1);
 			}
+			log.info("...done");
+		} else {
+			log.info("...done");
+			System.exit(0);
 		}
-		log.info("...done");
 	}
 
 	/**
@@ -279,7 +282,7 @@ public class Ajira {
 	public Submission waitForCompletion(Job job) {
 		Submission sub = globalContext.getSubmissionsRegistry()
 				.waitForCompletion(globalContext, job);
-		globalContext.getSubmissionsRegistry().getStatistics(job, sub);
+		globalContext.getSubmissionsRegistry().getStatistics(sub);
 		return sub;
 	}
 }

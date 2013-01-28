@@ -37,13 +37,14 @@ public interface ActionContext {
 
 	public int getNewBucketID();
 
-	public boolean isRootBranch();
+	public boolean isPrincipalBranch();
 
 	// TODO: To remove in something safer
-	Bucket getBucket(int bucketId, String sortingFunction);
+	Bucket getBucket(int bucketId, String sortingFunction, byte[] sortingFields);
 
-	Bucket startTransfer(int nodeId, int bucketId, String sortingFunction);
+	Bucket startTransfer(int nodeId, int bucketId, String sortingFunction,
+			byte[] sortingFields);
 
 	void finishTransfer(int nodeId, int bucketId, String sortingFunction,
-			boolean decreaseCounter) throws IOException;
+			byte[] sortingFields, boolean decreaseCounter) throws IOException;
 }

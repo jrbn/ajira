@@ -21,8 +21,7 @@ public class Consts {
 
 	public static final int TUPLES_CONTAINER_BUFFER_SIZE = 512 * 1024 * 1024;
 
-	public static final int STARTING_SIZE_FACTORY = 0; // Insert 20 elements in
-	// the factory
+	public static final int STARTING_SIZE_FACTORY = 0;
 	public static final int INIT_ACTION_CACHE = 3;
 
 	public static final int MIN_SIZE_TO_SEND = 4 * 1024 * 1024;
@@ -39,6 +38,7 @@ public class Consts {
 	public static final int DATATYPE_TSET = 3;
 	public static final int DATATYPE_TBOOLEAN = 4;
 	public static final int DATATYPE_TBYTE = 5;
+	public static final int DATATYPE_TBYTEARRAY = 6;
 
 	public static final String STATE_OPEN = "OPEN";
 	public static final String STATE_RESULTS_RECEIVED = "RESULTS_RECEIVED";
@@ -54,10 +54,7 @@ public class Consts {
 	public static final int MAX_N_PARAMS = 1024;
 	public static final int MAX_CONCURRENT_TRANSFERS = 128;
 
-	public static final int DEFAULT_STATISTICAL_INTERVAL = 1000; // Stats are
-	// collected
-	// every 5
-	// second;
+	public static final int DEFAULT_STATISTICAL_INTERVAL = 1000;
 
 	/********** DEFAULT CONFIGURATION OPTIONS **********/
 	public static final String STORAGE_IMPL = "storage.impl";

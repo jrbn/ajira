@@ -12,7 +12,7 @@ import nl.vu.cs.ajira.datalayer.TupleIterator;
 import nl.vu.cs.ajira.net.NetworkLayer;
 import nl.vu.cs.ajira.statistics.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Factory;
-import nl.vu.cs.ajira.storage.container.WritableContainer;
+import nl.vu.cs.ajira.storage.containers.WritableContainer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

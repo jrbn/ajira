@@ -91,7 +91,7 @@ public class ActionConf extends Writable {
 	private static boolean checkAllowedTypes(Object value) {
 		if (value == null || value instanceof Integer || value instanceof Long
 				|| value instanceof String || value instanceof Boolean
-				|| value instanceof Writable) {
+				|| value instanceof Writable || value instanceof byte[]) {
 			return true;
 		} else {
 			return false;
@@ -171,7 +171,6 @@ public class ActionConf extends Writable {
 							"Format of one parameter is not recognized");
 				}
 			} else {
-				// Check to see whether there is a required field
 				output.writeByte(-1);
 			}
 		}
@@ -182,14 +181,21 @@ public class ActionConf extends Writable {
 		throw new IOException("Not (yet) implemented");
 	}
 
-	public final boolean setParam(int pos, Object value) {
+	private boolean checkPos(int pos) {
 		if (valuesParameters == null) {
 			log.error("Action " + className + ": No parameters are allowed. ");
 			return false;
 		}
 		if (pos < 0 || pos >= valuesParameters.length) {
-			log.error("Action " + className + ":Position not valid (" + pos
+			log.error("Action " + className + ": Position not valid (" + pos
 					+ ")");
+			return false;
+		}
+		return true;
+	}
+
+	public final boolean setParam(int pos, Object value) {
+		if (!checkPos(pos)) {
 			return false;
 		}
 
@@ -198,6 +204,46 @@ public class ActionConf extends Writable {
 			return false;
 		}
 
+		valuesParameters[pos] = value;
+		return true;
+	}
+
+	public final boolean setParamByteArray(int pos, byte... value) {
+		if (!checkPos(pos)) {
+			return false;
+		}
+		valuesParameters[pos] = value;
+		return true;
+	}
+
+	public final boolean setParamInt(int pos, int value) {
+		if (!checkPos(pos)) {
+			return false;
+		}
+		valuesParameters[pos] = value;
+		return true;
+	}
+
+	public final boolean setParamBoolean(int pos, boolean value) {
+		if (!checkPos(pos)) {
+			return false;
+		}
+		valuesParameters[pos] = value;
+		return true;
+	}
+
+	public final boolean setParamLong(int pos, long value) {
+		if (!checkPos(pos)) {
+			return false;
+		}
+		valuesParameters[pos] = value;
+		return true;
+	}
+
+	public final boolean setParamString(int pos, String value) {
+		if (!checkPos(pos)) {
+			return false;
+		}
 		valuesParameters[pos] = value;
 		return true;
 	}

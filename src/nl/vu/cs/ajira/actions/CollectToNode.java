@@ -7,7 +7,6 @@ import nl.vu.cs.ajira.datalayer.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class CollectToNode extends Action {
 
 	static final Logger log = LoggerFactory.getLogger(CollectToNode.class);
@@ -19,10 +18,13 @@ public class CollectToNode extends Action {
 	private static final String S_BUCKET_ID = "bucket_id";
 	public static final int SORTING_FUNCTION = 2;
 	public static final String S_SORTING_FUNCTION = "sorting_function";
+	public static final int SORTING_FIELDS = 3;
+	public static final String S_SORTING_FIELDS = "sorting_fields";
 
 	private int nodeId;
 	private int bucketId = -1;
 	private String sortingFunction = null;
+	private byte[] sortingFields;
 	private Bucket bucket;
 
 	static class ParametersProcessor extends ActionConf.Configurator {
@@ -45,6 +47,7 @@ public class CollectToNode extends Action {
 		conf.registerParameter(BUCKET_ID, S_BUCKET_ID, null, false);
 		conf.registerParameter(SORTING_FUNCTION, S_SORTING_FUNCTION, null,
 				false);
+		conf.registerParameter(SORTING_FIELDS, S_SORTING_FIELDS, null, false);
 		conf.registerCustomConfigurator(ParametersProcessor.class);
 	}
 
@@ -53,6 +56,7 @@ public class CollectToNode extends Action {
 		nodeId = getParamInt(NODE_ID);
 		bucketId = getParamInt(BUCKET_ID);
 		sortingFunction = getParamString(SORTING_FUNCTION);
+		sortingFields = getParamByteArray(SORTING_FIELDS);
 		bucket = null;
 	}
 
@@ -62,7 +66,7 @@ public class CollectToNode extends Action {
 		try {
 			if (bucket == null) {
 				bucket = context.startTransfer(nodeId, bucketId,
-						sortingFunction);
+						sortingFunction, sortingFields);
 			}
 			bucket.add(inputTuple);
 		} catch (Exception e) {
@@ -74,7 +78,7 @@ public class CollectToNode extends Action {
 	public void stopProcess(ActionContext context, ActionOutput output) {
 		try {
 			context.finishTransfer(nodeId, bucketId, sortingFunction,
-					bucket != null);
+					sortingFields, bucket != null);
 
 			// // Send the chains to process the buckets to all the nodes that
 			// // will host the buckets

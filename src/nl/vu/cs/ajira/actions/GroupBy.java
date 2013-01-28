@@ -2,6 +2,7 @@ package nl.vu.cs.ajira.actions;
 
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.datalayer.Query;
+import nl.vu.cs.ajira.storage.TupleComparator;
 
 public class GroupBy extends Action {
 
@@ -16,19 +17,16 @@ public class GroupBy extends Action {
 
 			// Which fields should be used for the grouping? Get them from the
 			// parameter
-			if (params[0] instanceof Integer) {
-				// TODO: single field.
-			} else {
-				// Array of positions
-			}
-
-			// First partition the triples across the nodes
-			ActionConf action = ActionFactory
+			byte[] fieldsToSort = (byte[]) params[0];
+			ActionConf partition = ActionFactory
 					.getActionConf(PartitionToNodes.class);
-			controller.addAction(action);
-
+			partition.setParam(PartitionToNodes.SORTING_FUNCTION,
+					TupleComparator.class);
+			if (fieldsToSort != null)
+				partition.setParam(PartitionToNodes.SORTING_FIELDS,
+						fieldsToSort);
+			controller.addAction(partition);
 		}
-
 	}
 
 	@Override

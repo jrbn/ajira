@@ -67,9 +67,6 @@ public abstract class Action {
 			throw new Exception("Position not valid (" + pos + ")");
 		}
 
-		if (valuesParameters[pos] instanceof byte[])
-			throw new Exception(
-					"This parameter is of type Writable. Should be invoked using getParamWritable");
 		return valuesParameters[pos];
 	}
 
@@ -84,6 +81,14 @@ public abstract class Action {
 		}
 
 		b.readFrom(new BDataInput((byte[]) valuesParameters[pos]));
+	}
+
+	protected final byte[] getParamByteArray(int pos) throws Exception {
+		Object o = getParam(pos);
+		if (o != null) {
+			return (byte[]) o;
+		}
+		return null;
 	}
 
 }

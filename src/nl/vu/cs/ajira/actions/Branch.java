@@ -73,7 +73,7 @@ public class Branch extends Action {
 	@Override
 	public void stopProcess(ActionContext context, ActionOutput output)
 			throws Exception {
-		if (context.isRootBranch()) {
+		if (context.isPrincipalBranch()) {
 			BranchContent branch = new BranchContent();
 			getParamWritable(branch, BRANCH);
 			output.branch(branch.getActions());

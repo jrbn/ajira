@@ -12,9 +12,6 @@ import org.slf4j.LoggerFactory;
 
 public class PartitionToNodes extends Action {
 
-	public static final int MULTIPLE = -1;
-	public static final int ALL = -2;
-
 	/* PARAMETERS */
 	public static final int SORTING_FUNCTION = 0;
 	public static final String S_SORTING_FUNCTION = "sorting_function";
@@ -24,10 +21,14 @@ public class PartitionToNodes extends Action {
 	public static final String S_NPARTITIONS_PER_NODE = "npartitions_per_node";
 	private static final int BUCKET_IDS = 3;
 	private static final String S_BUCKET_IDS = "bucket_ids";
+	public static final int SORTING_FIELDS = 4;
+	public static final String S_SORTING_FIELDS = "sorting_fields";
 
 	static final Logger log = LoggerFactory.getLogger(PartitionToNodes.class);
 
 	private String sortingFunction = null;
+	private byte[] sortingFields = null;
+
 	private Bucket[] bucketsCache;
 	private int nPartitionsPerNode;
 	private String sPartitioner = null;
@@ -89,20 +90,25 @@ public class PartitionToNodes extends Action {
 		conf.registerParameter(NPARTITIONS_PER_NODE, S_NPARTITIONS_PER_NODE,
 				null, false);
 		conf.registerParameter(BUCKET_IDS, S_BUCKET_IDS, null, false);
+		conf.registerParameter(SORTING_FIELDS, S_SORTING_FIELDS, null, false);
+
 		conf.registerCustomConfigurator(ParametersProcessor.class);
 	}
 
 	@Override
 	public void startProcess(ActionContext context) throws Exception {
 		sortingFunction = getParamString(SORTING_FUNCTION);
+		sortingFields = getParamByteArray(SORTING_FIELDS);
+
 		sPartitioner = getParamString(PARTITIONER);
 		nPartitionsPerNode = getParamInt(NPARTITIONS_PER_NODE);
-		Tuple buckets = new Tuple();
-		getParamWritable(buckets, BUCKET_IDS);
+
+		Tuple t = new Tuple();
+		getParamWritable(t, BUCKET_IDS);
 		TInt v = new TInt();
-		bucketIds = new int[buckets.getNElements()];
+		bucketIds = new int[t.getNElements()];
 		for (int i = 0; i < bucketIds.length; i++) {
-			buckets.get(v, i);
+			t.get(v, i);
 			bucketIds[i] = v.getValue();
 		}
 		nPartitions = nPartitionsPerNode * context.getNumberNodes();
@@ -130,7 +136,8 @@ public class PartitionToNodes extends Action {
 			if (b == null) {
 				int nodeNo = partition / nPartitionsPerNode;
 				int bucketNo = bucketIds[partition % nPartitionsPerNode];
-				b = context.startTransfer(nodeNo, bucketNo, sortingFunction);
+				b = context.startTransfer(nodeNo, bucketNo, sortingFunction,
+						sortingFields);
 				bucketsCache[partition] = b;
 			}
 			b.add(inputTuple);
@@ -147,12 +154,12 @@ public class PartitionToNodes extends Action {
 				int nodeNo = i / nPartitionsPerNode;
 				int bucketNo = bucketIds[i % nPartitionsPerNode];
 				context.finishTransfer(nodeNo, bucketNo, sortingFunction,
-						bucketsCache[i] != null);
+						sortingFields, bucketsCache[i] != null);
 			}
 
 			// Send the chains to process the buckets to all the nodes that
 			// will host the buckets
-			if (context.isRootBranch()) {
+			if (context.isPrincipalBranch()) {
 				for (int i = 1; i < nPartitionsPerNode; i++) {
 					ActionConf c = ActionFactory
 							.getActionConf(ReadFromBuckets.class);

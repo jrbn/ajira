@@ -1,6 +1,6 @@
 package nl.vu.cs.ajira.storage;
 
-import nl.vu.cs.ajira.storage.container.WritableContainer;
+import nl.vu.cs.ajira.storage.containers.WritableContainer;
 
 public interface Container<K extends Writable> {
 

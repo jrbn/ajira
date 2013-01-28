@@ -12,7 +12,7 @@ import nl.vu.cs.ajira.buckets.Bucket;
 import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.TInt;
 import nl.vu.cs.ajira.data.types.Tuple;
-import nl.vu.cs.ajira.storage.container.WritableContainer;
+import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.utils.Consts;
 
 public class ChainExecutor implements ActionContext, ActionOutput {
@@ -200,7 +200,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	}
 
 	@Override
-	public boolean isRootBranch() {
+	public boolean isPrincipalBranch() {
 		return roots[currentAction];
 	}
 
@@ -253,20 +253,23 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	}
 
 	@Override
-	public Bucket getBucket(final int bucketId, final String sortingFunction) {
+	public Bucket getBucket(final int bucketId, final String sortingFunction,
+			byte[] sortingFields) {
 		return context.getBuckets().getOrCreateBucket(submissionNode,
-				submissionId, bucketId, sortingFunction, null);
+				submissionId, bucketId, sortingFunction, sortingFields);
 	}
 
 	@Override
-	public Bucket startTransfer(int nodeId, int bucketId, String sortingFunction) {
+	public Bucket startTransfer(int nodeId, int bucketId,
+			String sortingFunction, byte[] sortingFields) {
 		return context.getBuckets().startTransfer(submissionNode, submissionId,
-				nodeId, bucketId, sortingFunction, null, this);
+				nodeId, bucketId, sortingFunction, sortingFields, this);
 	}
 
 	@Override
 	public void finishTransfer(int nodeId, int bucketId,
-			String sortingFunction, boolean decreaseCounter) throws IOException {
+			String sortingFunction, byte[] sortingFields,
+			boolean decreaseCounter) throws IOException {
 
 		int children = chain.getTotalChainChildren();
 		if (children != 0 && currentAction < smallestRuntimeAction) {
@@ -281,7 +284,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 		context.getBuckets().finishTransfer(this.submissionNode, submissionId,
 				nodeId, bucketId, chain.getChainId(), chain.getParentChainId(),
-				children, roots[currentAction], sortingFunction, null,
+				children, roots[currentAction], sortingFunction, sortingFields,
 				decreaseCounter);
 	}
 

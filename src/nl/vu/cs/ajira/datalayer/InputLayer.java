@@ -6,12 +6,12 @@ import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.chains.ChainLocation;
 import nl.vu.cs.ajira.data.types.Tuple;
+import nl.vu.cs.ajira.datalayer.files.FileLayer;
 import nl.vu.cs.ajira.utils.Configuration;
 import nl.vu.cs.ajira.utils.Consts;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public abstract class InputLayer {
 
@@ -26,8 +26,8 @@ public abstract class InputLayer {
 		if (storage == null) {
 			String className = configuration.get(Consts.STORAGE_IMPL, null);
 			if (className == null) {
-				throw new IOException(
-						"Storage implementation class not defined!");
+				log.info("Storage implementation class not defined!. Use FileLayer instead.");
+				className = FileLayer.class.getName();
 			}
 
 			Class<? extends InputLayer> cStorage = ClassLoader

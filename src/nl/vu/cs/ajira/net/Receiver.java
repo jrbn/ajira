@@ -14,7 +14,7 @@ import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.statistics.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Container;
 import nl.vu.cs.ajira.storage.Factory;
-import nl.vu.cs.ajira.storage.container.WritableContainer;
+import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.submissions.Job;
 import nl.vu.cs.ajira.submissions.Submission;
 
@@ -256,12 +256,7 @@ class Receiver implements MessageUpcall {
 					reply.writeLong(bucket.getKey());
 				}
 				reply.finish();
-
-				if (log.isDebugEnabled()) {
-					log.debug("Sent reply");
-				}
-
-				context.getSubmissionsRegistry().getStatistics(job, submission);
+				context.getSubmissionsRegistry().getStatistics(submission);
 
 				tmpBuffer = null;
 				if (isFinished) {

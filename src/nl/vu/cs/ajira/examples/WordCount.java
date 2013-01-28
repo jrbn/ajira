@@ -1,4 +1,4 @@
-package nl.vu.cs.examples;
+package nl.vu.cs.ajira.examples;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,7 +9,7 @@ import nl.vu.cs.ajira.actions.ActionConf;
 import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.actions.ActionFactory;
 import nl.vu.cs.ajira.actions.ActionOutput;
-import nl.vu.cs.ajira.actions.PartitionToNodes;
+import nl.vu.cs.ajira.actions.GroupBy;
 import nl.vu.cs.ajira.actions.ReadFromFiles;
 import nl.vu.cs.ajira.actions.WriteToFiles;
 import nl.vu.cs.ajira.data.types.TInt;
@@ -76,6 +76,13 @@ public class WordCount {
 	 * @param args
 	 */
 	public static void main(String[] args) {
+
+		if (args.length < 2) {
+			System.out.println("Usage: " + WordCount.class.getSimpleName()
+					+ " <input directory> <output directory>");
+			System.exit(1);
+		}
+
 		// Start up the cluster
 		Ajira ajira = new Ajira();
 		ajira.startup();
@@ -90,28 +97,31 @@ public class WordCount {
 			// Read the input files
 			ActionConf action = ActionFactory
 					.getActionConf(ReadFromFiles.class);
-			action.setParam(ReadFromFiles.PATH, args[0]);
+			action.setParamString(ReadFromFiles.PATH, args[0]);
 			actions.add(action);
 
 			// Count the words
 			actions.add(ActionFactory.getActionConf(CountWords.class));
 
-			// Partitions them across the cluster
-			actions.add(ActionFactory.getActionConf(PartitionToNodes.class));
+			// Groups the pairs
+			action = ActionFactory.getActionConf(GroupBy.class);
+			action.setParamByteArray(GroupBy.FIELDS_TO_GROUP, (byte) 0);
+			actions.add(action);
 
 			// Sum the counts
 			actions.add(ActionFactory.getActionConf(SumCounts.class));
 
 			// Write the results on files
 			action = ActionFactory.getActionConf(WriteToFiles.class);
-			action.setParam(WriteToFiles.OUTPUT_DIR, args[1]);
+			action.setParamString(WriteToFiles.OUTPUT_DIR, args[1]);
+			actions.add(action);
 
 			// Launch it!
+			job.addActions(actions);
 			Submission sub = ajira.waitForCompletion(job);
 
-			// Print some statistics
-			System.out.println("Execution time: " + sub.getExecutionTimeInMs()
-					+ " ms.");
+			// Print output
+			sub.printStatistics();
 
 			// Shutdown the cluster
 			ajira.shutdown();

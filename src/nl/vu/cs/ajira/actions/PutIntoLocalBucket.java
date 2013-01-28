@@ -6,7 +6,6 @@ import nl.vu.cs.ajira.data.types.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class PutIntoLocalBucket extends Action {
 
 	static final Logger log = LoggerFactory.getLogger(PutIntoLocalBucket.class);
@@ -32,7 +31,7 @@ public class PutIntoLocalBucket extends Action {
 	public void startProcess(ActionContext context) throws Exception {
 		bucketID = getParamInt(BUCKET_ID);
 		sortingFunction = getParamString(SORTING_FUNCTION);
-		bucket = context.getBucket(bucketID, sortingFunction);
+		bucket = context.getBucket(bucketID, sortingFunction, null);
 	}
 
 	@Override
