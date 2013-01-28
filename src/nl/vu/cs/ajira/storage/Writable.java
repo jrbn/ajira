@@ -4,12 +4,12 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-public abstract class Writable {
+public interface Writable {
 
-	abstract public void readFrom(DataInput input) throws IOException;
+	public void readFrom(DataInput input) throws IOException;
 
-	abstract public void writeTo(DataOutput output) throws IOException;
+	public void writeTo(DataOutput output) throws IOException;
 
-	abstract public int bytesToStore() throws IOException;
+	public int bytesToStore() throws IOException;
 
 }

@@ -14,8 +14,7 @@ import nl.vu.cs.ajira.utils.Consts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
-public class Tuple extends Writable {
+public class Tuple implements Writable {
 
 	static final Logger log = LoggerFactory.getLogger(Tuple.class);
 

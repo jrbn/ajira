@@ -14,7 +14,7 @@ import nl.vu.cs.ajira.utils.Consts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ActionConf extends Writable {
+public class ActionConf implements Writable {
 
 	public static abstract class Configurator {
 

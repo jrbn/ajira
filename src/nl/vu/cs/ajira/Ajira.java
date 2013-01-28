@@ -179,8 +179,6 @@ public class Ajira {
 					net);
 			ActionFactory ap = new ActionFactory();
 			DataProvider dp = new DataProvider();
-			Factory<Tuple> defaultTupleFactory = new Factory<Tuple>(
-					Tuple.class, (Object[]) null);
 			SubmissionCache cache = new SubmissionCache(net);
 
 			SubmissionRegistry registry = new SubmissionRegistry(net, stats,
@@ -198,7 +196,7 @@ public class Ajira {
 			ChainNotifier notifier = new ChainNotifier(globalContext);
 			globalContext.init(localMode, inputRegistry, tuplesContainer,
 					registry, chainsToProcess, listHandlers, notifier, merger,
-					net, stats, ap, dp, defaultTupleFactory, cache, conf);
+					net, stats, ap, dp, cache, conf);
 
 			/**** START PROCESSING THREADS ****/
 			int i = conf.getInt(Consts.N_PROC_THREADS, 1);

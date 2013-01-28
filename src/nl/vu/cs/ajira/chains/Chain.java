@@ -22,7 +22,7 @@ import nl.vu.cs.ajira.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Chain extends Writable implements Query {
+public class Chain implements Writable, Query {
 
 	static final Logger log = LoggerFactory.getLogger(Chain.class);
 
@@ -204,6 +204,16 @@ public class Chain extends Writable implements Query {
 			action.getConfigurator().process(this, action, controller, context);
 
 			if (controller.doNotAddAction) {
+				if (action.getConfigurator() != null
+						&& controller.listActions.size() > 0) {
+					// Add the actions from the last
+					List<ActionConf> list = controller.listActions;
+					controller.listActions = new ArrayList<>();
+					for (int i = list.size() - 1; i >= 0; --i) {
+						addAction(list.get(i), context);
+					}
+				}
+
 				return;
 			}
 

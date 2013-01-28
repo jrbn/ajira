@@ -11,7 +11,7 @@ import nl.vu.cs.ajira.storage.Writable;
 
 public class Branch extends Action {
 
-	public static class BranchContent extends Writable {
+	public static class BranchContent implements Writable {
 
 		private List<ActionConf> actions;
 

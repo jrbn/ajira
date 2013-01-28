@@ -64,8 +64,7 @@ public class WordCount {
 		@Override
 		public void process(Tuple tuple, ActionContext context,
 				ActionOutput actionOutput) throws Exception {
-			// TODO Auto-generated method stub
-
+			actionOutput.output(tuple);
 		}
 
 	}

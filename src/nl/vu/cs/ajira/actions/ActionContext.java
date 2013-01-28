@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import nl.vu.cs.ajira.buckets.Bucket;
+import nl.vu.cs.ajira.datalayer.TupleIterator;
 
 public interface ActionContext {
 
@@ -40,6 +41,8 @@ public interface ActionContext {
 	public boolean isPrincipalBranch();
 
 	// TODO: To remove in something safer
+	TupleIterator getInputIterator();
+
 	Bucket getBucket(int bucketId, String sortingFunction, byte[] sortingFields);
 
 	Bucket startTransfer(int nodeId, int bucketId, String sortingFunction,

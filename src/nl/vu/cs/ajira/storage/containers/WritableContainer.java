@@ -21,8 +21,7 @@ import nl.vu.cs.ajira.storage.Writable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
-public class WritableContainer<K extends Writable> extends Writable implements
+public class WritableContainer<K extends Writable> implements Writable,
 		Container<K> {
 
 	static final Logger log = LoggerFactory.getLogger(WritableContainer.class);
@@ -88,8 +87,8 @@ public class WritableContainer<K extends Writable> extends Writable implements
 		} else {
 			currentSize = cb.buffer.length - cb.start + cb.end;
 		}
-                // Since we assume that the buffer is empty if cb.end == cb.start,
-                // we cannot fill the buffer completely, hence -1. --Ceriel
+		// Since we assume that the buffer is empty if cb.end == cb.start,
+		// we cannot fill the buffer completely, hence -1. --Ceriel
 		return maxSize - currentSize - 1;
 	}
 

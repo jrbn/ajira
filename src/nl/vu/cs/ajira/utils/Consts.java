@@ -35,7 +35,7 @@ public class Consts {
 	public static final int DATATYPE_TLONG = 0;
 	public static final int DATATYPE_TSTRING = 1;
 	public static final int DATATYPE_TINT = 2;
-	public static final int DATATYPE_TSET = 3;
+	public static final int DATATYPE_TBAG = 3;
 	public static final int DATATYPE_TBOOLEAN = 4;
 	public static final int DATATYPE_TBYTE = 5;
 	public static final int DATATYPE_TBYTEARRAY = 6;

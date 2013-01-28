@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 
 class ChainTerminator implements Runnable {
 
-	public static class ChainInfo extends Writable {
+	public static class ChainInfo implements Writable {
 
 		public int nodeId;
 		public int submissionId;

@@ -14,7 +14,6 @@ import nl.vu.cs.ajira.utils.Consts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class ChainHandler implements Runnable {
 
 	static final Logger log = LoggerFactory.getLogger(ChainHandler.class);
@@ -75,6 +74,7 @@ public class ChainHandler implements Runnable {
 
 					/***** START CHAIN *****/
 					long timeCycle = System.currentTimeMillis();
+					actions.setInputIterator(itr);
 					actions.startProcess();
 					String counter = "Records Read From Input "
 							+ input.getName();

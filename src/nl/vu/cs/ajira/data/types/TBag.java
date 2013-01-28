@@ -10,7 +10,7 @@ public class TBag extends SimpleData {
 
 	@Override
 	public int getIdDatatype() {
-		return Consts.DATATYPE_TBYTE;
+		return Consts.DATATYPE_TBAG;
 	}
 
 	@Override

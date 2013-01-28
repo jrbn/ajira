@@ -6,8 +6,7 @@ import java.io.IOException;
 
 import nl.vu.cs.ajira.storage.Writable;
 
-
-public class TupleInfo extends Writable {
+public class TupleInfo implements Writable {
 
 	public long bucketKey;
 
