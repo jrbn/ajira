@@ -5,7 +5,7 @@ import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.datalayer.Query;
 import nl.vu.cs.ajira.utils.Consts;
 
-public class ReadFromBucket extends Action {
+public class ReadFromBuckets extends Action {
 
 	int node;
 	int bucketId;
@@ -29,7 +29,7 @@ public class ReadFromBucket extends Action {
 					new TInt((Integer) params[BUCKET_ID]), new TInt(
 							(Integer) params[NODE_ID])));
 
-			controller.doNotAddAction();
+			controller.doNotAddCurrentAction();
 		}
 	}
 

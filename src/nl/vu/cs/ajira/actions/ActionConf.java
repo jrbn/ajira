@@ -14,7 +14,6 @@ import nl.vu.cs.ajira.utils.Consts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class ActionConf extends Writable {
 
 	public static abstract class Configurator {
@@ -183,19 +182,24 @@ public class ActionConf extends Writable {
 		throw new IOException("Not (yet) implemented");
 	}
 
-	public final void setParam(int pos, Object value) throws Exception {
+	public final boolean setParam(int pos, Object value) {
 		if (valuesParameters == null) {
-			throw new Exception("No parameters are allowed");
+			log.error("Action " + className + ": No parameters are allowed. ");
+			return false;
 		}
 		if (pos < 0 || pos >= valuesParameters.length) {
-			throw new Exception("Position not valid (" + pos + ")");
+			log.error("Action " + className + ":Position not valid (" + pos
+					+ ")");
+			return false;
 		}
 
 		if (!checkAllowedTypes(value)) {
-			throw new Exception("Object type not valid");
+			log.error("Action " + className + ":Object type not valid");
+			return false;
 		}
 
 		valuesParameters[pos] = value;
+		return true;
 	}
 
 	public String getClassName() {

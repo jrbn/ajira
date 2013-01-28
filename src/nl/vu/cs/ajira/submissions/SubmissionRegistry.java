@@ -2,7 +2,6 @@ package nl.vu.cs.ajira.submissions;
 
 import ibis.ipl.WriteMessage;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -114,7 +113,7 @@ public class SubmissionRegistry {
 		return submissions.get(submissionId);
 	}
 
-	private Submission submitNewJob(Context context, Job job) throws Exception {
+	private Submission submitNewJob(Context context, Job job) {
 
 		int submissionId;
 		synchronized (this) {
@@ -123,22 +122,30 @@ public class SubmissionRegistry {
 		Submission sub = new Submission(submissionId,
 				job.getAssignedOutputBucket());
 
-		submissions.put(submissionId, sub);
+		try {
 
-		Chain chain = new Chain();
-		chain.setParentChainId(-1);
-		chain.setInputLayer(Consts.DEFAULT_INPUT_LAYER_ID);
-		chain.addActions(job.getActions(), new ChainExecutor(context, null,
-				chain));
+			submissions.put(submissionId, sub);
 
-		chain.setSubmissionNode(context.getNetworkLayer().getMyPartition());
-		chain.setSubmissionId(submissionId);
+			Chain chain = new Chain();
+			chain.setParentChainId(-1);
+			chain.setInputLayer(Consts.DEFAULT_INPUT_LAYER_ID);
+			chain.addActions(job.getActions(), new ChainExecutor(context, null,
+					chain));
 
-		// If local
-		if (context.isLocalMode()) {
-			chainsToProcess.add(chain);
-		} else {
-			context.getNetworkLayer().sendChain(chain);
+			chain.setSubmissionNode(context.getNetworkLayer().getMyPartition());
+			chain.setSubmissionId(submissionId);
+
+			// If local
+			if (context.isLocalMode()) {
+				chainsToProcess.add(chain);
+			} else {
+				context.getNetworkLayer().sendChain(chain);
+			}
+
+		} catch (Exception e) {
+			log.error("Init of the job " + job + " has failed");
+			submissions.remove(submissionId);
+			sub.setState(Consts.STATE_INIT_FAILED);
 		}
 
 		return sub;
@@ -152,24 +159,26 @@ public class SubmissionRegistry {
 		submissions.get(submissionId).setState(state);
 	}
 
-	public void cleanupSubmission(Submission submission) throws IOException,
-			InterruptedException {
-
-		for (int i = 0; i < net.getNumberNodes(); ++i) {
-			if (i == net.getMyPartition()) {
-				cache.clearAll(submission.getSubmissionId());
-			} else {
-				WriteMessage msg = net.getMessageToSend(net.getPeerLocation(i),
-						NetworkLayer.nameMgmtReceiverPort);
-				msg.writeByte((byte) 8);
-				msg.writeInt(submission.getSubmissionId());
-				msg.finish();
+	public void cleanupSubmission(Submission submission) {
+		try {
+			for (int i = 0; i < net.getNumberNodes(); ++i) {
+				if (i == net.getMyPartition()) {
+					cache.clearAll(submission.getSubmissionId());
+				} else {
+					WriteMessage msg = net.getMessageToSend(
+							net.getPeerLocation(i),
+							NetworkLayer.nameMgmtReceiverPort);
+					msg.writeByte((byte) 8);
+					msg.writeInt(submission.getSubmissionId());
+					msg.finish();
+				}
 			}
+		} catch (Exception e) {
+			log.error("Failure in cleaning up the submission", e);
 		}
 	}
 
-	public Submission waitForCompletion(Context context, Job job)
-			throws Exception {
+	public Submission waitForCompletion(Context context, Job job) {
 
 		Submission submission = submitNewJob(context, job);
 		int waitInterval = conf.getInt(Consts.STATISTICAL_INTERVAL,
@@ -178,7 +187,11 @@ public class SubmissionRegistry {
 		synchronized (submission) {
 			while (!submission.getState().equalsIgnoreCase(
 					Consts.STATE_FINISHED)) {
-				submission.wait(waitInterval);
+				try {
+					submission.wait(waitInterval);
+				} catch (InterruptedException e) {
+					log.warn("The thread was awaken by something strange...", e);
+				}
 			}
 		}
 
@@ -187,9 +200,13 @@ public class SubmissionRegistry {
 		return submission;
 	}
 
-	public void getStatistics(Job job, Submission submission)
-			throws InterruptedException {
-		Thread.sleep(500);
+	public void getStatistics(Job job, Submission submission) {
+		try {
+			Thread.sleep(500);
+		} catch (Exception e) {
+			log.error("Thread failed in sleeping", e);
+		}
+
 		submission.counters = stats.removeCountersSubmission(submission
 				.getSubmissionId());
 

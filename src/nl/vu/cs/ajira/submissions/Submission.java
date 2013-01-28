@@ -5,7 +5,6 @@ import java.util.Map;
 
 import nl.vu.cs.ajira.utils.Consts;
 
-
 public class Submission {
 
 	private final long startupTime;

@@ -155,9 +155,9 @@ public class PartitionToNodes extends Action {
 			if (context.isRootBranch()) {
 				for (int i = 1; i < nPartitionsPerNode; i++) {
 					ActionConf c = ActionFactory
-							.getActionConf(ReadFromBucket.class);
-					c.setParam(ReadFromBucket.BUCKET_ID, bucketIds[i]);
-					c.setParam(ReadFromBucket.NODE_ID, -1);
+							.getActionConf(ReadFromBuckets.class);
+					c.setParam(ReadFromBuckets.BUCKET_ID, bucketIds[i]);
+					c.setParam(ReadFromBuckets.NODE_ID, -1);
 					output.branch(c);
 				}
 			}

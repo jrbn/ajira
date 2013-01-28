@@ -9,6 +9,7 @@ import nl.vu.cs.ajira.actions.ActionConf;
 import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.actions.ActionOutput;
 import nl.vu.cs.ajira.chains.ChainLocation;
+import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.TInt;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.datalayer.InputLayer;
@@ -88,6 +89,13 @@ public class ChainSplitLayer extends InputLayer {
 			throw new Exception("Not allowed");
 		}
 
+		// FIXME: Very very inefficient. Need to fix it!
+		@Override
+		public void output(SimpleData... data) throws Exception {
+			this.tuple = new Tuple(data);
+			notify();
+			wait();
+		}
 	}
 
 	private static final ChainSplitLayer instance = new ChainSplitLayer();
