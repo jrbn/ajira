@@ -2,6 +2,7 @@ package nl.vu.cs.ajira.actions;
 
 import nl.vu.cs.ajira.data.types.TInt;
 import nl.vu.cs.ajira.data.types.Tuple;
+import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.datalayer.Query;
 import nl.vu.cs.ajira.utils.Consts;
 
@@ -25,9 +26,9 @@ public class ReadFromBuckets extends Action {
 			}
 
 			query.setInputLayer(Consts.BUCKET_INPUT_LAYER_ID);
-			query.setInputTuple(new Tuple(
-					new TInt((Integer) params[BUCKET_ID]), new TInt(
-							(Integer) params[NODE_ID])));
+			query.setInputTuple(TupleFactory.newTuple(new TInt(
+					(Integer) params[BUCKET_ID]), new TInt(
+					(Integer) params[NODE_ID])));
 
 			controller.doNotAddCurrentAction();
 		}

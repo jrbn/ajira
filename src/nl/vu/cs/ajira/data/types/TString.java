@@ -6,7 +6,6 @@ import java.io.IOException;
 
 import nl.vu.cs.ajira.utils.Consts;
 
-
 public final class TString extends SimpleData {
 
 	String value = null;
@@ -59,8 +58,18 @@ public final class TString extends SimpleData {
 		return value == null ? 4 : value.getBytes().length + 4;
 	}
 
+	@Override
 	public String toString() {
 		return value;
 	}
 
+	@Override
+	public void copyTo(SimpleData el) {
+		((TString) el).value = value;
+	}
+
+	@Override
+	public int compareTo(SimpleData el) {
+		return value.compareTo(((TString) el).value);
+	}
 }

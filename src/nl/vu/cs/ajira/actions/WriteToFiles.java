@@ -6,13 +6,10 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.text.NumberFormat;
 
-import nl.vu.cs.ajira.data.types.DataProvider;
-import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.Tuple;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public class WriteToFiles extends Action {
 
@@ -26,7 +23,6 @@ public class WriteToFiles extends Action {
 	static public class StandardFileWriter {
 
 		FileWriter writer = null;
-		SimpleData[] array = null;
 
 		public StandardFileWriter(ActionContext context, File file)
 				throws IOException {
@@ -37,19 +33,13 @@ public class WriteToFiles extends Action {
 		}
 
 		public void write(Tuple tuple) throws Exception {
-			if (array == null) {
-				array = new SimpleData[tuple.getNElements()];
-				for (int i = 0; i < tuple.getNElements(); ++i) {
-					array[i] = DataProvider.getInstance().get(tuple.getType(i));
+			if (tuple.getNElements() > 0) {
+				String value = tuple.get(0).toString();
+				for (int i = 1; i < tuple.getNElements(); ++i) {
+					value += " " + tuple.get(i).toString();
 				}
+				writer.write(value + "\n");
 			}
-
-			tuple.get(array);
-			String value = array[0].toString();
-			for (int i = 1; i < array.length; ++i) {
-				value += " " + array[i].toString();
-			}
-			writer.write(value + "\n");
 		}
 
 		public void close() throws IOException {

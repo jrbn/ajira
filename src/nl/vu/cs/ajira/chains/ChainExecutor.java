@@ -12,6 +12,7 @@ import nl.vu.cs.ajira.buckets.Bucket;
 import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.TInt;
 import nl.vu.cs.ajira.data.types.Tuple;
+import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.utils.Consts;
@@ -38,7 +39,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	private WritableContainer<Chain> chainsBuffer;
 
 	private final Chain supportChain = new Chain();
-	private final Tuple supportTuple = new Tuple();
+	private final Tuple supportTuple = TupleFactory.newTuple();
 
 	private boolean transferComputation = false;
 	private int transferNodeId;

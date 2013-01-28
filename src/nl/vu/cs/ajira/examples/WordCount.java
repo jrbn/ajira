@@ -29,14 +29,13 @@ public class WordCount {
 	 */
 	public static class CountWords extends Action {
 
-		private final TString iText = new TString();
 		private final TString oWord = new TString();
 		private static final TInt oCount = new TInt(1);
 
 		@Override
 		public void process(Tuple tuple, ActionContext context,
 				ActionOutput actionOutput) throws Exception {
-			tuple.get(iText);
+			TString iText = (TString) tuple.get(0);
 			String sText = iText.getValue();
 			if (sText != null && sText.length() > 0) {
 				String[] words = sText.split(" ");

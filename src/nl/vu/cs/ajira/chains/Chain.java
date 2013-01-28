@@ -12,6 +12,7 @@ import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.actions.ActionController;
 import nl.vu.cs.ajira.actions.ActionFactory;
 import nl.vu.cs.ajira.data.types.Tuple;
+import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.data.types.bytearray.BDataInput;
 import nl.vu.cs.ajira.data.types.bytearray.BDataOutput;
 import nl.vu.cs.ajira.datalayer.Query;
@@ -73,7 +74,7 @@ public class Chain implements Writable, Query {
 
 		if (input.readBoolean()) {
 			if (inputTuple == null) {
-				inputTuple = new Tuple();
+				inputTuple = TupleFactory.newTuple();
 			}
 			inputTuple.readFrom(input);
 		} else {
@@ -94,7 +95,7 @@ public class Chain implements Writable, Query {
 	}
 
 	@Override
-	public int bytesToStore() {
+	public int bytesToStore() throws IOException {
 		int size = bufferSize + 9;
 		if (inputTuple != null) {
 			size += inputTuple.bytesToStore();
@@ -272,7 +273,7 @@ public class Chain implements Writable, Query {
 		System.arraycopy(buffer, 0, newChain.buffer, 0, bufferSize);
 		if (inputTuple != null) {
 			if (newChain.inputTuple == null) {
-				newChain.inputTuple = new Tuple();
+				newChain.inputTuple = TupleFactory.newTuple();
 			}
 			inputTuple.copyTo(newChain.inputTuple);
 		} else {

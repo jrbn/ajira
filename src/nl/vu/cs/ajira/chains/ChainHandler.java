@@ -3,6 +3,7 @@ package nl.vu.cs.ajira.chains;
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.actions.ActionFactory;
 import nl.vu.cs.ajira.data.types.Tuple;
+import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.datalayer.InputLayer;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
 import nl.vu.cs.ajira.net.NetworkLayer;
@@ -38,7 +39,7 @@ public class ChainHandler implements Runnable {
 	public void run() {
 
 		Chain chain = new Chain();
-		Tuple tuple = new Tuple();
+		Tuple tuple = TupleFactory.newTuple();
 		WritableContainer<Chain> chainsBuffer = new WritableContainer<Chain>(
 				Consts.SIZE_BUFFERS_CHILDREN_CHAIN_PROCESS);
 		ChainExecutor actions = new ChainExecutor(context, chainsBuffer);

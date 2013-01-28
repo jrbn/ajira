@@ -5,6 +5,7 @@ import nl.vu.cs.ajira.actions.support.Partitioner;
 import nl.vu.cs.ajira.buckets.Bucket;
 import nl.vu.cs.ajira.data.types.TInt;
 import nl.vu.cs.ajira.data.types.Tuple;
+import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.datalayer.Query;
 
 import org.slf4j.Logger;
@@ -51,7 +52,7 @@ public class PartitionToNodes extends Action {
 
 			if (params[BUCKET_IDS] == null) {
 				int np = (Integer) params[NPARTITIONS_PER_NODE];
-				Tuple p = new Tuple();
+				Tuple p = TupleFactory.newTuple();
 				TInt v = new TInt();
 				for (int i = 0; i < np; i++) {
 					v.setValue(context.getNewBucketID());
@@ -70,14 +71,7 @@ public class PartitionToNodes extends Action {
 				throw new Error("inconsistency in number of partitions");
 			}
 
-			TInt v = new TInt();
-			try {
-				t.get(v, 0);
-			} catch (Exception e) {
-				log.error("Oops: could not retrieve first bucketID");
-				throw new Error("Could not retrieve first bucketID");
-			}
-			controller.continueComputationOn(-1, v.getValue());
+			controller.continueComputationOn(-1, ((TInt) t.get(0)).getValue());
 		}
 	}
 
@@ -103,13 +97,11 @@ public class PartitionToNodes extends Action {
 		sPartitioner = getParamString(PARTITIONER);
 		nPartitionsPerNode = getParamInt(NPARTITIONS_PER_NODE);
 
-		Tuple t = new Tuple();
+		Tuple t = TupleFactory.newTuple();
 		getParamWritable(t, BUCKET_IDS);
-		TInt v = new TInt();
 		bucketIds = new int[t.getNElements()];
 		for (int i = 0; i < bucketIds.length; i++) {
-			t.get(v, i);
-			bucketIds[i] = v.getValue();
+			bucketIds[i] = ((TInt) t.get(i)).getValue();
 		}
 		nPartitions = nPartitionsPerNode * context.getNumberNodes();
 

@@ -28,4 +28,16 @@ public class TBag extends SimpleData {
 		// TODO
 		return -1;
 	}
+
+	@Override
+	public void copyTo(SimpleData el) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public int compareTo(SimpleData el) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
 }

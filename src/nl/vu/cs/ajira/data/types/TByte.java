@@ -6,7 +6,6 @@ import java.io.IOException;
 
 import nl.vu.cs.ajira.utils.Consts;
 
-
 public class TByte extends SimpleData {
 
 	int value;
@@ -49,5 +48,15 @@ public class TByte extends SimpleData {
 	@Override
 	public String toString() {
 		return Integer.toString(value);
+	}
+
+	@Override
+	public void copyTo(SimpleData el) {
+		((TByte) el).value = value;
+	}
+
+	@Override
+	public int compareTo(SimpleData el) {
+		return value - ((TByte) el).value;
 	}
 }

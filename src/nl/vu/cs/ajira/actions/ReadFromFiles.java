@@ -6,6 +6,7 @@ import nl.vu.cs.ajira.actions.support.FilterHiddenFiles;
 import nl.vu.cs.ajira.data.types.TInt;
 import nl.vu.cs.ajira.data.types.TString;
 import nl.vu.cs.ajira.data.types.Tuple;
+import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.datalayer.Query;
 import nl.vu.cs.ajira.datalayer.files.FileCollection;
 import nl.vu.cs.ajira.datalayer.files.FileLayer;
@@ -13,7 +14,6 @@ import nl.vu.cs.ajira.utils.Consts;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public class ReadFromFiles extends Action {
 
@@ -39,9 +39,9 @@ public class ReadFromFiles extends Action {
 				throws Exception {
 			if (params[PATH] != null) {
 				query.setInputLayer(Consts.DEFAULT_INPUT_LAYER_ID);
-				query.setInputTuple(new Tuple(new TInt(FileLayer.OP_LS),
-						new TString((String) params[PATH]), new TString(
-								FilterHiddenFiles.class.getName())));
+				query.setInputTuple(TupleFactory.newTuple(new TInt(
+						FileLayer.OP_LS), new TString((String) params[PATH]),
+						new TString(FilterHiddenFiles.class.getName())));
 			}
 		}
 	}
@@ -51,7 +51,7 @@ public class ReadFromFiles extends Action {
 		String key = "split-" + splitId++;
 		context.putObjectInCache(key, currentFileSplit);
 
-		Tuple tuple = new Tuple();
+		Tuple tuple = TupleFactory.newTuple();
 		if (customReader == null) {
 			tuple.set(new TInt(FileLayer.OP_READ), new TString(key), new TInt(
 					context.getMyNodeId()));
@@ -88,9 +88,7 @@ public class ReadFromFiles extends Action {
 			ActionOutput output) throws Exception {
 
 		// In input I receive a list of files
-		TString path = new TString();
-		inputTuple.get(path, 0);
-		File file = new File(path.getValue());
+		File file = new File(((TString) inputTuple.get(0)).getValue());
 
 		long sizeFile = file.length();
 		if (currentFileSplit.getSize() + sizeFile >= minimumFileSplitSize) {

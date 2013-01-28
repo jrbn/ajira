@@ -6,18 +6,18 @@ import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.chains.ChainLocation;
 import nl.vu.cs.ajira.data.types.Tuple;
+import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.datalayer.InputLayer;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class DummyLayer extends InputLayer {
 
 	public class DummyIterator extends TupleIterator {
 
-		Tuple tuple = new Tuple();
+		Tuple tuple = TupleFactory.newTuple();
 		boolean first = true;
 
 		public DummyIterator(Tuple tuple) {
