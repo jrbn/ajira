@@ -46,7 +46,7 @@ public class Bucket {
 	 * cached/stored on the disk, such as where it
 	 * was stored (filename), the last element written
 	 * in the file (lastElement), total elements 
-	 * (nElements), who much was remained from the file 
+	 * (nElements), how much space remained in the file 
 	 * (remaining size) and the file stream -- descriptor
 	 * (stream) 
 	 */
@@ -62,7 +62,7 @@ public class Bucket {
 	 * This class represents an implementation of a sorted list,
 	 * with a custom comparator, used for merging the elements 
 	 * from the main memory (buffer) with the ones from the files 
-	 * stored on disk (cacheFiles). 
+	 * stored on the disk (cacheFiles). 
 	 * 
 	 * @param <T>
 	 */
@@ -210,9 +210,9 @@ public class Bucket {
 	}
 	
 	/**
-	 * This method is used to add a tuple to the memory-buffer.
-	 * If the element cannot be add at first attempt the buffer 
-	 * has to be spilled on disk and then retry to add the element 
+	 * This method is used to add a tuple to the in-memory buffer.
+	 * If the element cannot be added on the first attempt, the 
+	 * buffer has to be spilled on disk and then retry to add it 
 	 * again. If this action also fails than an exception is raised.
 	 * 
 	 * @param tuple 
@@ -328,14 +328,14 @@ public class Bucket {
 	}
 
 	/**
-	 * Method that is used to cache the content of a buffer into disk files 
+	 * Method that is used to cache the content of a buffer into files on disk 
 	 * whenever its size exceeds a maximum limit. 
 	 * The idea is to spill on disk the entire in-memory buffer when its size
 	 * exceeds a limit (when no tuple can be inserted anymore - the response 
 	 * will be false so this method is called for caching the buffer before 
 	 * retrying to add the tuple). For doing that we first sort the buffer 
 	 * (if necessary - depends on the 'sorted' param) and then we open a 
-	 * temporary file (input stream) for writing it's content down.All the 
+	 * temporary file (input stream) for writing it's content down. All the 
 	 * information/details (filename, size, etc) about the caching operation 
 	 * are kept as metadata into a hash data-structure.
 	 * 		@see FileMetaData
