@@ -13,25 +13,24 @@ public class PutIntoLocalBucket extends Action {
 
 	public static final int BUCKET_ID = 0;
 	private static final String S_BUCKET_ID = "Bucket ID";
-	public static final int SORT = 1;
-	private static final String S_SORT = "sorting_function";
+	public static final int TUPLE_FIELDS = 1;
+	private static final String S_TUPLE_FIELDS = "tuple_fields";
 
-	Bucket bucket = null;
-	int destID, bucketID;
-	String sPartitioner;
-	boolean sort;
+	private Bucket bucket = null;
+	private int bucketID;
+	private byte[] fields;
 
 	@Override
 	public void registerActionParameters(ActionConf conf) throws Exception {
 		conf.registerParameter(BUCKET_ID, S_BUCKET_ID, null, true);
-		conf.registerParameter(SORT, S_SORT, null, false);
+		conf.registerParameter(TUPLE_FIELDS, S_TUPLE_FIELDS, null, true);
 	}
 
 	@Override
 	public void startProcess(ActionContext context) throws Exception {
 		bucketID = getParamInt(BUCKET_ID);
-		sort = getParamBoolean(SORT);
-		bucket = context.getBucket(bucketID, sort, null);
+		fields = getParamByteArray(TUPLE_FIELDS);
+		bucket = context.getBucket(bucketID, false, null, fields);
 	}
 
 	@Override

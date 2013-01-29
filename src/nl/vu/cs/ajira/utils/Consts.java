@@ -11,14 +11,14 @@ public class Consts {
 	public static final int SIZE_BUFFERS_CHILDREN_CHAIN_PROCESS = 4 * 1024 * 1024;
 	public static final int SIZE_BUFFERS_TUPLES_CHAIN_PROCESS = 16 * 1024 * 1024;
 
-	public static final int SIZE_BUFFERS_CHAIN_SEND = 512 * 1024 * 1024;
+	public static final int SIZE_BUFFERS_CHAIN_SEND = 4 * 1024 * 1024;
 	public static final int SIZE_BUFFERS_CHAIN_TERMINATED = 4 * 1024 * 1024;
 	public static final int SIZE_BUFFERS_TUPLES_REQUESTED = 2 * 1024 * 1024;
 
 	public static final int SIZE_BUFFERS_CHAINS_RESOLVE = 64 * 1024 * 1024;
 	public static final int SIZE_BUFFERS_CHAINS_PROCESS = 64 * 1024 * 1024;
 
-	public static final int TUPLES_CONTAINER_BUFFER_SIZE = 512 * 1024 * 1024;
+	public static final int TUPLES_CONTAINER_BUFFER_SIZE = 128 * 1024 * 1024;
 
 	public static final int STARTING_SIZE_FACTORY = 0;
 	public static final int INIT_ACTION_CACHE = 3;

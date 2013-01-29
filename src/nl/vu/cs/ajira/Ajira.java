@@ -199,7 +199,7 @@ public class Ajira {
 					net, stats, ap, dp, cache, conf);
 
 			/**** START PROCESSING THREADS ****/
-			int i = conf.getInt(Consts.N_PROC_THREADS, 1);
+			int i = conf.getInt(Consts.N_PROC_THREADS, 2);
 			for (int j = 0; j < i; ++j) {
 				log.debug("Starting Chain Handler " + j + " ...");
 				ChainHandler handler = new ChainHandler(globalContext);
