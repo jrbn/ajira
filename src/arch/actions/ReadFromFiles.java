@@ -17,7 +17,7 @@ import arch.utils.Consts;
 public class ReadFromFiles extends Action {
 
 	public static final String MINIMUM_SPLIT_SIZE = "splitinput.minimumsize";
-	public static final int MINIMUM_FILE_SPLIT = (2047 * 1024 * 1024); // ~2 GB
+	public static final int MINIMUM_FILE_SPLIT = (1024 * 1024 * 1024); // 1 GB
 
 	public static final int PATH = 0;
 	public static final String S_PATH = "path";
