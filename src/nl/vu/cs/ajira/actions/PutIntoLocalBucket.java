@@ -12,9 +12,9 @@ public class PutIntoLocalBucket extends Action {
 	public static final int ALL_NODES = -1;
 
 	public static final int BUCKET_ID = 0;
-	public static final String S_BUCKET_ID = "Bucket ID";
+	private static final String S_BUCKET_ID = "Bucket ID";
 	public static final int SORT = 1;
-	public static final String S_SORT = "sorting_function";
+	private static final String S_SORT = "sorting_function";
 
 	Bucket bucket = null;
 	int destID, bucketID;

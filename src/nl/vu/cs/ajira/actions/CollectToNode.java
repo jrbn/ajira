@@ -13,18 +13,21 @@ public class CollectToNode extends Action {
 
 	/* PARAMETERS */
 	public static final int NODE_ID = 0;
-	public static final String S_NODE_ID = "node_id";
+	private static final String S_NODE_ID = "node_id";
 	private static final int BUCKET_ID = 1;
 	private static final String S_BUCKET_ID = "bucket_id";
 	public static final int SORT = 2;
-	public static final String S_SORT = "sort";
+	private static final String S_SORT = "sort";
 	public static final int SORTING_FIELDS = 3;
-	public static final String S_SORTING_FIELDS = "sorting_fields";
+	private static final String S_SORTING_FIELDS = "sorting_fields";
+	public static final int TUPLE_FIELDS = 4;
+	private static final String S_TUPLE_FIELDS = "tuple_fields";
 
 	private int nodeId;
 	private int bucketId = -1;
 	private boolean sort;
 	private byte[] sortingFields;
+	private byte[] fields;
 	private Bucket bucket;
 
 	static class ParametersProcessor extends ActionConf.Configurator {
@@ -47,6 +50,7 @@ public class CollectToNode extends Action {
 		conf.registerParameter(BUCKET_ID, S_BUCKET_ID, null, false);
 		conf.registerParameter(SORT, S_SORT, null, false);
 		conf.registerParameter(SORTING_FIELDS, S_SORTING_FIELDS, null, false);
+		conf.registerParameter(TUPLE_FIELDS, S_TUPLE_FIELDS, null, true);
 		conf.registerCustomConfigurator(ParametersProcessor.class);
 	}
 
@@ -56,6 +60,7 @@ public class CollectToNode extends Action {
 		bucketId = getParamInt(BUCKET_ID);
 		sort = getParamBoolean(SORT);
 		sortingFields = getParamByteArray(SORTING_FIELDS);
+		fields = getParamByteArray(TUPLE_FIELDS);
 		bucket = null;
 	}
 
@@ -65,7 +70,7 @@ public class CollectToNode extends Action {
 		try {
 			if (bucket == null) {
 				bucket = context.startTransfer(nodeId, bucketId, sort,
-						sortingFields);
+						sortingFields, fields);
 			}
 			bucket.add(inputTuple);
 		} catch (Exception e) {
@@ -77,7 +82,7 @@ public class CollectToNode extends Action {
 	public void stopProcess(ActionContext context, ActionOutput output) {
 		try {
 			context.finishTransfer(nodeId, bucketId, sort, sortingFields,
-					bucket != null);
+					bucket != null, fields);
 
 			// // Send the chains to process the buckets to all the nodes that
 			// // will host the buckets

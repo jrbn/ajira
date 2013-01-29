@@ -247,8 +247,6 @@ public class Bucket {
 					BufferedOutputStream fout = new BufferedOutputStream(
 							new SnappyOutputStream(new FileOutputStream(
 									cacheFile)), 65536);
-					// BufferedOutputStream fout = new BufferedOutputStream(new
-					// FileOutputStream(cacheFile), 65536);
 					FDataOutput cacheOutputStream = new FDataOutput(fout);
 
 					long time = System.currentTimeMillis();
@@ -331,11 +329,6 @@ public class Bucket {
 	private void cacheCurrentBuffer() throws IOException {
 
 		if (tuples.getNElements() > 0) {
-			if (log.isInfoEnabled()) {
-				log.info(
-						"Caching buffer, tuples.getNElements = "
-								+ tuples.getNElements(), new Throwable());
-			}
 			cacheBuffer(tuples, isBufferSorted, fb);
 			tuples = fb.get();
 			tuples.clear();
