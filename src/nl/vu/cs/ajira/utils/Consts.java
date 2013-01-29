@@ -4,7 +4,6 @@ public class Consts {
 
 	/********** DEFAULT VALUES **********/
 	public static final int MAX_N_ACTIONS = 128;
-	public static final int MAX_TUPLE_SIZE = 1 * 1024; // 1K
 	public static final int CHAIN_SIZE = 10 * 1024;
 	public static final int CHAIN_RESERVED_SPACE = 39;
 

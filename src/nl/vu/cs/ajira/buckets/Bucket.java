@@ -22,7 +22,7 @@ import nl.vu.cs.ajira.data.types.bytearray.FDataOutput;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
 import nl.vu.cs.ajira.statistics.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Factory;
-import nl.vu.cs.ajira.storage.RawComparator;
+import nl.vu.cs.ajira.storage.TupleComparator;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.utils.Consts;
 
@@ -30,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xerial.snappy.SnappyInputStream;
 import org.xerial.snappy.SnappyOutputStream;
-
 
 public class Bucket {
 
@@ -87,7 +86,12 @@ public class Bucket {
 	private final List<FDataInput> cacheFiles = new ArrayList<FDataInput>();
 	private final Map<Long, Integer> childrens = new HashMap<Long, Integer>();
 
-	RawComparator<Tuple> comparator = null;
+	// Used for sorting
+	private boolean sort;
+	private byte[] sortingFields = null;
+	private final TupleComparator comparator = new TupleComparator();
+	private byte[] signature;
+
 	private long elementsInCache = 0;
 
 	private Factory<WritableContainer<Tuple>> fb = null;
@@ -136,6 +140,7 @@ public class Bucket {
 		}
 
 		boolean response = tuples.add(tuple);
+
 		if (response) {
 			isBufferSorted = tuples.getNElements() < 2;
 		} else {
@@ -163,7 +168,7 @@ public class Bucket {
 		// If factory is not null, we get control over the newTuplesContainer,
 		// which means that we have to remove it
 		//
-		if (comparator != null && !isSorted) {
+		if (sort && !isSorted) {
 			throw new Exception("This buffer accepts only presorted sets");
 		}
 
@@ -232,7 +237,7 @@ public class Bucket {
 			@Override
 			public void run() {
 				try {
-					if (comparator != null && !sorted) {
+					if (sort && !sorted) {
 						buffer.sort(comparator, fb);
 					}
 
@@ -247,7 +252,7 @@ public class Bucket {
 					FDataOutput cacheOutputStream = new FDataOutput(fout);
 
 					long time = System.currentTimeMillis();
-					if (comparator == null) {
+					if (!sort) {
 						buffer.writeTo(cacheOutputStream);
 					} else {
 						buffer.writeElementsTo(cacheOutputStream);
@@ -272,7 +277,7 @@ public class Bucket {
 					// new FileInputStream(cacheFile), 65536));
 
 					synchronized (Bucket.this) {
-						if (comparator == null) {
+						if (!sort) {
 							cacheFiles.add(is);
 						} else {
 							// Read the first element and put it into the map
@@ -389,14 +394,18 @@ public class Bucket {
 		return key;
 	}
 
-	public RawComparator<Tuple> getSortingFunction() {
-		return comparator;
+	public boolean shouldSort() {
+		return sort;
 	}
 
-	@SuppressWarnings("unchecked")
+	public byte[] getSortingFields() {
+		return sortingFields;
+	}
+
 	void init(long key, StatisticsCollector stats, int submissionNode,
-			int submissionId, String comparator, byte[] params,
-			Factory<WritableContainer<Tuple>> fb, CachedFilesMerger merger) {
+			int submissionId, boolean sort, byte[] sortingFields,
+			Factory<WritableContainer<Tuple>> fb, CachedFilesMerger merger,
+			byte[] signature) {
 		this.key = key;
 		this.fb = fb;
 		this.tuples = null;
@@ -424,18 +433,10 @@ public class Bucket {
 		this.submissionId = submissionId;
 
 		isBufferSorted = true;
-		if (comparator != null && comparator.length() > 0) {
-
-			try {
-				this.comparator = (RawComparator<Tuple>) Class.forName(
-						comparator).newInstance();
-				this.comparator.init(params);
-			} catch (Exception e) {
-				log.error("Error instantiating the comparator.", e);
-			}
-		} else {
-			this.comparator = null;
-		}
+		this.sort = sort;
+		this.sortingFields = sortingFields;
+		this.comparator.init(signature, sortingFields);
+		this.signature = signature;
 	}
 
 	public long inmemory_size() {
@@ -486,13 +487,13 @@ public class Bucket {
 		waitForCachers();
 
 		try {
-			if (comparator != null && !isBufferSorted) {
+			if (sort && !isBufferSorted) {
 				tuples.sort(comparator, fb);
 				isBufferSorted = true;
 			}
 
 			if (elementsInCache > 0) {
-				if (comparator == null) { // No sorting applied
+				if (!sort) { // No sorting applied
 					long time = System.currentTimeMillis();
 					FDataInput di = cacheFiles.remove(0);
 					tmpBuffer.readFrom(di); // Read the oldest file

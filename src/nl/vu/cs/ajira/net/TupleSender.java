@@ -12,13 +12,11 @@ import nl.vu.cs.ajira.buckets.Bucket;
 import nl.vu.cs.ajira.buckets.Buckets;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.storage.Factory;
-import nl.vu.cs.ajira.storage.RawComparator;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.utils.Consts;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 class TupleSender {
 
@@ -169,18 +167,8 @@ class TupleSender {
 		msg.writeInt(info.sequence);
 		msg.writeLong(info.bucketKey);
 		msg.writeInt(info.nrequests);
-		RawComparator<Tuple> c = bucket.getSortingFunction();
-		if (c != null) {
+		if (bucket.shouldSort()) {
 			msg.writeBoolean(true);
-			msg.writeString(c.getClass().getName());
-			byte[] params = c.getSortingParams();
-			if (params != null) {
-				msg.writeInt(params.length);
-				if (params.length > 0)
-					msg.writeArray(params);
-			} else {
-				msg.writeInt(0);
-			}
 		} else {
 			msg.writeBoolean(false);
 		}

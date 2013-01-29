@@ -43,11 +43,13 @@ public interface ActionContext {
 	// TODO: To remove in something safer
 	TupleIterator getInputIterator();
 
-	Bucket getBucket(int bucketId, String sortingFunction, byte[] sortingFields);
+	Bucket getBucket(int bucketId, boolean sort, byte[] sortingFields,
+			byte[] signature);
 
-	Bucket startTransfer(int nodeId, int bucketId, String sortingFunction,
-			byte[] sortingFields);
+	Bucket startTransfer(int nodeId, int bucketId, boolean sort,
+			byte[] sortingFields, byte[] signature);
 
-	void finishTransfer(int nodeId, int bucketId, String sortingFunction,
-			byte[] sortingFields, boolean decreaseCounter) throws IOException;
+	void finishTransfer(int nodeId, int bucketId, boolean sort,
+			byte[] sortingFields, boolean decreaseCounter, byte[] signature)
+			throws IOException;
 }

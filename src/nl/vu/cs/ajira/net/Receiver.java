@@ -83,10 +83,8 @@ class Receiver implements MessageUpcall {
 			int children = message.readInt();
 			boolean isResponsible = message.readBoolean();
 			boolean isSorted = message.readBoolean();
-			String cf = null;
 			byte[] cfParams = null;
 			if (isSorted) {
-				cf = message.readString();
 				int lengthSortingParams = message.readInt();
 				if (lengthSortingParams > 0) {
 					cfParams = new byte[lengthSortingParams];
@@ -94,8 +92,12 @@ class Receiver implements MessageUpcall {
 				}
 			}
 			long bufferKey = message.readLong();
+			int lSignature = message.readByte();
+			byte[] signature = new byte[lSignature];
+			message.readArray(signature);
+
 			Bucket bucket = buckets.getOrCreateBucket(submissionNode,
-					idSubmission, idBucket, cf, cfParams);
+					idSubmission, idBucket, isSorted, cfParams, signature);
 			bucket.updateCounters(idChain, idParentChain, children,
 					isResponsible);
 
@@ -154,29 +156,18 @@ class Receiver implements MessageUpcall {
 			bucketKey = message.readLong();
 			nrequest = message.readInt();
 			isSorted = message.readBoolean();
-			String cFunction = null;
-			byte[] cParams = null;
-			if (isSorted) {
-				cFunction = message.readString();
-				int lengthSortingParams = message.readInt();
-				if (lengthSortingParams > 0) {
-					cParams = new byte[lengthSortingParams];
-					message.readArray(cParams);
-				}
-			}
 			boolean data = message.readBoolean();
-
 			if (data) {
 				net.removeActiveRequest(ticket);
+
 				WritableContainer<Tuple> container = bufferFactory.get();
 				container.readFrom(new ReadMessageWrapper(message));
 				boolean isFinished = message.readBoolean();
 
-				bucket = buckets.getOrCreateBucket(myId, submissionId,
-						bucketId, cFunction, cParams);
+				bucket = buckets.getExistingBucket(submissionId, bucketId);
 
 				try {
-					bucket.addAll(container, cFunction != null, bufferFactory);
+					bucket.addAll(container, isSorted, bufferFactory);
 				} catch (Exception e) {
 					log.error("Failed in adding the elements", e);
 				}

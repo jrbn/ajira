@@ -1,13 +1,6 @@
 package nl.vu.cs.ajira.storage;
 
-public class RawComparator<K extends Writable> {
-
-	public void init(byte[] params) {
-	}
-
-	public byte[] getSortingParams() {
-		return null;
-	}
+public class RawComparator<T> {
 
 	public static int compareBytes(byte[] b1, int s1, int l1, byte[] b2,
 			int s2, int l2) {
@@ -18,8 +11,6 @@ public class RawComparator<K extends Writable> {
 		if (end1 <= b1.length && end2 <= b2.length) {
 			// this is probably the common case.
 			while (s1 < end1 && s2 < end2) {
-				// int a = (b1[s1] & 0xff);
-				// int b = (b2[s2] & 0xff);
 				if (b1[s1] != b2[s2]) {
 					return (b1[s1] & 0xff) - (b2[s2] & 0xff);
 				}

@@ -16,14 +16,14 @@ public class CollectToNode extends Action {
 	public static final String S_NODE_ID = "node_id";
 	private static final int BUCKET_ID = 1;
 	private static final String S_BUCKET_ID = "bucket_id";
-	public static final int SORTING_FUNCTION = 2;
-	public static final String S_SORTING_FUNCTION = "sorting_function";
+	public static final int SORT = 2;
+	public static final String S_SORT = "sort";
 	public static final int SORTING_FIELDS = 3;
 	public static final String S_SORTING_FIELDS = "sorting_fields";
 
 	private int nodeId;
 	private int bucketId = -1;
-	private String sortingFunction = null;
+	private boolean sort;
 	private byte[] sortingFields;
 	private Bucket bucket;
 
@@ -45,8 +45,7 @@ public class CollectToNode extends Action {
 	public void registerActionParameters(ActionConf conf) throws Exception {
 		conf.registerParameter(NODE_ID, S_NODE_ID, null, false);
 		conf.registerParameter(BUCKET_ID, S_BUCKET_ID, null, false);
-		conf.registerParameter(SORTING_FUNCTION, S_SORTING_FUNCTION, null,
-				false);
+		conf.registerParameter(SORT, S_SORT, null, false);
 		conf.registerParameter(SORTING_FIELDS, S_SORTING_FIELDS, null, false);
 		conf.registerCustomConfigurator(ParametersProcessor.class);
 	}
@@ -55,7 +54,7 @@ public class CollectToNode extends Action {
 	public void startProcess(ActionContext context) throws Exception {
 		nodeId = getParamInt(NODE_ID);
 		bucketId = getParamInt(BUCKET_ID);
-		sortingFunction = getParamString(SORTING_FUNCTION);
+		sort = getParamBoolean(SORT);
 		sortingFields = getParamByteArray(SORTING_FIELDS);
 		bucket = null;
 	}
@@ -65,8 +64,8 @@ public class CollectToNode extends Action {
 			ActionOutput output) {
 		try {
 			if (bucket == null) {
-				bucket = context.startTransfer(nodeId, bucketId,
-						sortingFunction, sortingFields);
+				bucket = context.startTransfer(nodeId, bucketId, sort,
+						sortingFields);
 			}
 			bucket.add(inputTuple);
 		} catch (Exception e) {
@@ -77,8 +76,8 @@ public class CollectToNode extends Action {
 	@Override
 	public void stopProcess(ActionContext context, ActionOutput output) {
 		try {
-			context.finishTransfer(nodeId, bucketId, sortingFunction,
-					sortingFields, bucket != null);
+			context.finishTransfer(nodeId, bucketId, sort, sortingFields,
+					bucket != null);
 
 			// // Send the chains to process the buckets to all the nodes that
 			// // will host the buckets

@@ -17,7 +17,6 @@ import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class Buckets {
 
 	static final Logger log = LoggerFactory.getLogger(Buckets.class);
@@ -80,15 +79,15 @@ public class Buckets {
 	}
 
 	public synchronized Bucket getOrCreateBucket(int submissionNode,
-			int idSubmission, int idBucket, String sortingFunction,
-			byte[] sortingParams) {
+			int idSubmission, int idBucket, boolean sort, byte[] sortingParams,
+			byte[] signature) {
 		long key = getKey(idSubmission, idBucket);
 		Bucket bucket = buckets.get(key);
 
 		if (bucket == null) {
 			bucket = bucketsFactory.get();
-			bucket.init(key, stats, submissionNode, idSubmission,
-					sortingFunction, sortingParams, fb, merger);
+			bucket.init(key, stats, submissionNode, idSubmission, sort,
+					sortingParams, fb, merger, signature);
 			buckets.put(key, bucket);
 			this.notifyAll();
 		}
@@ -165,12 +164,12 @@ public class Buckets {
 	}
 
 	public Bucket startTransfer(int submissionNode, int submission, int node,
-			int bucketID, String sortingFunction, byte[] sortingParams,
+			int bucketID, boolean sort, byte[] sortingParams, byte[] signature,
 			ActionContext context) {
 
 		if (node == myPartition || net.getNumberNodes() == 1) {
 			return getOrCreateBucket(submissionNode, submission, bucketID,
-					sortingFunction, sortingParams);
+					sort, sortingParams, signature);
 		}
 
 		Map<Long, TransferInfo> map = activeTransfers[node];
@@ -184,8 +183,8 @@ public class Buckets {
 				// There is no transfer active. Create one.
 				info = new TransferInfo();
 				info.bucket = getOrCreateBucket(submissionNode, submission,
-						context.getNewBucketID(), sortingFunction,
-						sortingParams);
+						context.getNewBucketID(), sort, sortingParams,
+						signature);
 				map.put(key, info);
 			} else {
 				info.count++;
@@ -196,12 +195,12 @@ public class Buckets {
 
 	public void finishTransfer(int submissionNode, int submission, int node,
 			int bucketID, long chainId, long parentChainId, int nchildren,
-			boolean responsible, String sortingFunction, byte[] sortingParams,
-			boolean decreaseCounter) throws IOException {
+			boolean responsible, boolean sort, byte[] sortingParams,
+			byte[] signature, boolean decreaseCounter) throws IOException {
 
 		if (node == myPartition || net.getNumberNodes() == 1) {
 			Bucket bucket = getOrCreateBucket(submissionNode, submission,
-					bucketID, sortingFunction, sortingParams);
+					bucketID, sort, sortingParams, signature);
 
 			bucket.updateCounters(chainId, parentChainId, nchildren,
 					responsible);
@@ -224,13 +223,11 @@ public class Buckets {
 		message.writeLong(chainId);
 		message.writeLong(parentChainId);
 		message.writeInt(nchildren);
-		// message.writeInt(replicatedFactor);
 		message.writeBoolean(responsible);
-		if (sortingFunction == null || sortingFunction.equals("")) {
+		if (!sort) {
 			message.writeBoolean(false);
 		} else {
 			message.writeBoolean(true);
-			message.writeString(sortingFunction);
 			if (sortingParams != null && sortingParams.length > 0) {
 				message.writeInt(sortingParams.length);
 				message.writeArray(sortingParams);
@@ -256,6 +253,9 @@ public class Buckets {
 				info.count--;
 			}
 		}
+
+		message.writeByte((byte) signature.length);
+		message.writeArray(signature);
 
 		net.finishMessage(message, submission);
 	}

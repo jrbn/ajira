@@ -36,14 +36,13 @@ public class FileLayer extends InputLayer {
 			int operation = ((TInt) tuple.get(0)).getValue();
 			String value = ((TString) tuple.get(1)).getValue();
 
-			// Read if there is also a filter
-			String sFilter = null;
-			if (tuple.getNElements() == 3) {
-				sFilter = ((TString) tuple.get(2)).getValue();
-			}
-
 			TupleIterator itr = null;
 			if (operation == OP_LS) {
+				// Read if there is also a filter
+				String sFilter = null;
+				if (tuple.getNElements() == 3) {
+					sFilter = ((TString) tuple.get(2)).getValue();
+				}
 				itr = new ListFilesIterator(value, sFilter);
 			} else { // OP_READ
 

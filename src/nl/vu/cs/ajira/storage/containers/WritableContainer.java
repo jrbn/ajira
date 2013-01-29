@@ -518,10 +518,6 @@ public class WritableContainer<K extends Writable> implements Writable,
 		int i = 0;
 		while (nElements > 0) {
 			int length = input.readInt();
-			/*
-			 * if (log.isDebugEnabled()) { if (length > 256) {
-			 * log.debug("OOPS, length = " + length); } }
-			 */
 			coordinates[l] = cb.start;
 			coordinates[l + 1] = length;
 			cb.start = (coordinates[l] + coordinates[l + 1]) % cb.buffer.length;
@@ -587,15 +583,6 @@ public class WritableContainer<K extends Writable> implements Writable,
 			// fb.release(newArray);
 
 		}
-
-		/*
-		 * // Consystency check if (log.isDebugEnabled()) { int savedStart =
-		 * cb.start; for (int j = 0; j < nElements; j++) { int length =
-		 * input.readInt(); if (length != coordinates[indexes[j]+1]) {
-		 * log.debug("OOPS: consistency error: length = " + length +
-		 * ", should be " + coordinates[indexes[j]+1]); } cb.start = (cb.start +
-		 * length) % cb.buffer.length; } cb.start = savedStart; }
-		 */
 
 		log.debug("Time repopulate (\t" + indexes.length + "\t):\t"
 				+ (System.currentTimeMillis() - time) + "\tT:"

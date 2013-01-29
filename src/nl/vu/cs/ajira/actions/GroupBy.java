@@ -3,7 +3,6 @@ package nl.vu.cs.ajira.actions;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.datalayer.Query;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
-import nl.vu.cs.ajira.storage.TupleComparator;
 
 public class GroupBy extends Action {
 
@@ -23,8 +22,7 @@ public class GroupBy extends Action {
 			byte[] fieldsToSort = (byte[]) params[0];
 			ActionConf partition = ActionFactory
 					.getActionConf(PartitionToNodes.class);
-			partition.setParam(PartitionToNodes.SORTING_FUNCTION,
-					TupleComparator.class.getName());
+			partition.setParam(PartitionToNodes.SORT, true);
 			if (fieldsToSort != null)
 				partition.setParam(PartitionToNodes.SORTING_FIELDS,
 						fieldsToSort);

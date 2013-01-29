@@ -256,23 +256,23 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	}
 
 	@Override
-	public Bucket getBucket(final int bucketId, final String sortingFunction,
-			byte[] sortingFields) {
+	public Bucket getBucket(final int bucketId, final boolean sort,
+			byte[] sortingFields, byte[] signature) {
 		return context.getBuckets().getOrCreateBucket(submissionNode,
-				submissionId, bucketId, sortingFunction, sortingFields);
+				submissionId, bucketId, sort, sortingFields, signature);
 	}
 
 	@Override
-	public Bucket startTransfer(int nodeId, int bucketId,
-			String sortingFunction, byte[] sortingFields) {
+	public Bucket startTransfer(int nodeId, int bucketId, boolean sort,
+			byte[] sortingFields, byte[] signature) {
 		return context.getBuckets().startTransfer(submissionNode, submissionId,
-				nodeId, bucketId, sortingFunction, sortingFields, this);
+				nodeId, bucketId, sort, sortingFields, signature, this);
 	}
 
 	@Override
-	public void finishTransfer(int nodeId, int bucketId,
-			String sortingFunction, byte[] sortingFields,
-			boolean decreaseCounter) throws IOException {
+	public void finishTransfer(int nodeId, int bucketId, boolean sort,
+			byte[] sortingFields, boolean decreaseCounter, byte[] signature)
+			throws IOException {
 
 		int children = chain.getTotalChainChildren();
 		if (children != 0 && currentAction < smallestRuntimeAction) {
@@ -287,7 +287,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 		context.getBuckets().finishTransfer(this.submissionNode, submissionId,
 				nodeId, bucketId, chain.getChainId(), chain.getParentChainId(),
-				children, roots[currentAction], sortingFunction, sortingFields,
+				children, roots[currentAction], sort, sortingFields, signature,
 				decreaseCounter);
 	}
 

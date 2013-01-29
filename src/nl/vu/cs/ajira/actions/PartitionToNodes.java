@@ -14,8 +14,8 @@ import org.slf4j.LoggerFactory;
 public class PartitionToNodes extends Action {
 
 	/* PARAMETERS */
-	public static final int SORTING_FUNCTION = 0;
-	public static final String S_SORTING_FUNCTION = "sorting_function";
+	public static final int SORT = 0;
+	public static final String S_SORT = "sort";
 	public static final int PARTITIONER = 1;
 	public static final String S_PARTITIONER = "partitioner";
 	public static final int NPARTITIONS_PER_NODE = 2;
@@ -27,7 +27,7 @@ public class PartitionToNodes extends Action {
 
 	static final Logger log = LoggerFactory.getLogger(PartitionToNodes.class);
 
-	private String sortingFunction = null;
+	private boolean shouldSort;
 	private byte[] sortingFields = null;
 
 	private Bucket[] bucketsCache;
@@ -77,8 +77,7 @@ public class PartitionToNodes extends Action {
 
 	@Override
 	public void registerActionParameters(ActionConf conf) throws Exception {
-		conf.registerParameter(SORTING_FUNCTION, S_SORTING_FUNCTION, null,
-				false);
+		conf.registerParameter(SORT, S_SORT, false, false);
 		conf.registerParameter(PARTITIONER, S_PARTITIONER,
 				HashPartitioner.class.getName(), false);
 		conf.registerParameter(NPARTITIONS_PER_NODE, S_NPARTITIONS_PER_NODE,
@@ -91,7 +90,7 @@ public class PartitionToNodes extends Action {
 
 	@Override
 	public void startProcess(ActionContext context) throws Exception {
-		sortingFunction = getParamString(SORTING_FUNCTION);
+		shouldSort = getParamBoolean(SORT);
 		sortingFields = getParamByteArray(SORTING_FIELDS);
 
 		sPartitioner = getParamString(PARTITIONER);
@@ -128,7 +127,7 @@ public class PartitionToNodes extends Action {
 			if (b == null) {
 				int nodeNo = partition / nPartitionsPerNode;
 				int bucketNo = bucketIds[partition % nPartitionsPerNode];
-				b = context.startTransfer(nodeNo, bucketNo, sortingFunction,
+				b = context.startTransfer(nodeNo, bucketNo, shouldSort,
 						sortingFields);
 				bucketsCache[partition] = b;
 			}
@@ -145,7 +144,7 @@ public class PartitionToNodes extends Action {
 			for (int i = 0; i < nPartitions; ++i) {
 				int nodeNo = i / nPartitionsPerNode;
 				int bucketNo = bucketIds[i % nPartitionsPerNode];
-				context.finishTransfer(nodeNo, bucketNo, sortingFunction,
+				context.finishTransfer(nodeNo, bucketNo, shouldSort,
 						sortingFields, bucketsCache[i] != null);
 			}
 

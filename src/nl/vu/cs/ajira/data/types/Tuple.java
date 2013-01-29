@@ -8,13 +8,14 @@ import nl.vu.cs.ajira.storage.Writable;
 import nl.vu.cs.ajira.utils.Consts;
 
 public class Tuple implements Writable {
-	private final SimpleData[] array = new SimpleData[Consts.MAN_N_DATA_IN_TUPLE];
+
+	private final SimpleData[] signature = new SimpleData[Consts.MAN_N_DATA_IN_TUPLE];
 	private int nElements = 0;
 
-	Tuple() {
+	protected Tuple() {
 	}
 
-	Tuple(SimpleData[] data) {
+	protected Tuple(SimpleData[] data) {
 		set(data);
 	}
 
@@ -23,7 +24,7 @@ public class Tuple implements Writable {
 	}
 
 	public SimpleData get(int pos) {
-		return array[pos];
+		return signature[pos];
 	}
 
 	public void set(SimpleData... elements) {
@@ -42,14 +43,14 @@ public class Tuple implements Writable {
 			return;
 		}
 
-		if (array[pos] == null) {
-			array[pos] = DataProvider.getInstance().get(el.getIdDatatype());
-		} else if (array[pos].getIdDatatype() != el.getIdDatatype()) {
-			DataProvider.getInstance().release(array[pos]);
-			array[pos] = DataProvider.getInstance().get(el.getIdDatatype());
+		if (signature[pos] == null) {
+			signature[pos] = DataProvider.getInstance().get(el.getIdDatatype());
+		} else if (signature[pos].getIdDatatype() != el.getIdDatatype()) {
+			DataProvider.getInstance().release(signature[pos]);
+			signature[pos] = DataProvider.getInstance().get(el.getIdDatatype());
 		}
 
-		el.copyTo(array[pos]);
+		el.copyTo(signature[pos]);
 	}
 
 	public void add(SimpleData el) {
@@ -60,22 +61,22 @@ public class Tuple implements Writable {
 		Tuple t = tuple;
 		t.nElements = nElements;
 		for (int i = 0; i < nElements; ++i) {
-			t.set(array[i], i);
+			t.set(signature[i], i);
 		}
 	}
 
 	public boolean equals(Tuple tuple) {
 		if (nElements == tuple.nElements) {
 			for (int i = 0; i < nElements; ++i) {
-				if (array[i] == null) {
-					if (tuple.array[i] != null) {
+				if (signature[i] == null) {
+					if (tuple.signature[i] != null) {
 						return false;
 					}
-				} else if (tuple.array[i] == null) {
-					if (array[i] != null) {
+				} else if (tuple.signature[i] == null) {
+					if (signature[i] != null) {
 						return false;
 					}
-				} else if (array[i].compareTo(tuple.array[i]) != 0) {
+				} else if (signature[i].compareTo(tuple.signature[i]) != 0) {
 					return false;
 				}
 			}
@@ -86,40 +87,44 @@ public class Tuple implements Writable {
 
 	@Override
 	public void readFrom(DataInput input) throws IOException {
-		nElements = input.readInt();
-		DataProvider dp = DataProvider.getInstance();
 		for (int i = 0; i < nElements; ++i) {
-			int t = input.readByte();
-			if (t != -1) {
-				if (array[i] == null || array[i].getIdDatatype() != t)
-					array[i] = dp.get(t);
-				array[i].readFrom(input);
-			} else {
-				array[i] = null;
-			}
+			signature[i].readFrom(input);
 		}
 	}
 
 	@Override
 	public void writeTo(DataOutput output) throws IOException {
-		output.writeInt(nElements);
 		for (int i = 0; i < nElements; ++i) {
-			if (array[i] != null) {
-				output.writeByte(array[i].getIdDatatype());
-				array[i].writeTo(output);
-			} else {
-				output.writeByte(-1);
-			}
+			signature[i].writeTo(output);
 		}
 	}
 
 	@Override
 	public int bytesToStore() throws IOException {
-		int size = 4;
+		int size = 0;
 		for (int i = 0; i < nElements; ++i) {
-			if (array[i] != null)
-				size += array[i].bytesToStore();
+			if (signature[i] != null)
+				size += signature[i].bytesToStore();
 		}
 		return size;
 	}
+
+	// @Override
+	// public int hashCode() {
+	// int index = hashCodeFields[0];
+	//
+	// int s = indexElements[index];
+	// int e = indexElements[index + 1];
+	//
+	// if (e - s >= 4) {
+	// return (cb.buffer[e - 1] & 0xff) + ((cb.buffer[e - 2] & 0xff) << 8)
+	// + ((cb.buffer[e - 3] & 0xff) << 16)
+	// + (cb.buffer[e - 4] << 24);
+	// }
+	// int hash = 0;
+	// for (int i = s; i < e; i++) {
+	// hash = (hash << 8) + (cb.buffer[i] & 0xff);
+	// }
+	// return hash;
+	// }
 }

@@ -11,16 +11,14 @@ import java.util.List;
 import java.util.Random;
 
 import nl.vu.cs.ajira.buckets.Bucket.FileMetaData;
-import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.data.types.bytearray.FDataInput;
 import nl.vu.cs.ajira.data.types.bytearray.FDataOutput;
-import nl.vu.cs.ajira.storage.RawComparator;
+import nl.vu.cs.ajira.storage.TupleComparator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xerial.snappy.SnappyInputStream;
 import org.xerial.snappy.SnappyOutputStream;
-
 
 public class CachedFilesMerger implements Runnable {
 
@@ -70,7 +68,7 @@ public class CachedFilesMerger implements Runnable {
 			FileMetaData stream2 = null;
 			byte[] min1 = null;
 			byte[] min2 = null;
-			RawComparator<Tuple> comp = null;
+			TupleComparator comp = new TupleComparator();
 
 			synchronized (bucket) {
 				if (bucket.sortedCacheFiles.size() > 3) {
@@ -96,7 +94,6 @@ public class CachedFilesMerger implements Runnable {
 					bucket.minimumSortedList.remove(index2);
 					// stream1 = bucket.sortedCacheFiles.remove(min1);
 					stream2 = bucket.sortedCacheFiles.remove(min2);
-					comp = bucket.comparator;
 					bucket.numCachers++;
 					merge = true;
 					if (log.isDebugEnabled()) {
@@ -120,7 +117,7 @@ public class CachedFilesMerger implements Runnable {
 				try {
 					totalelements = stream1.nElements + stream2.nElements + 2;
 					cacheFile = File.createTempFile("merged_files", "tmp");
-                                        cacheFile.deleteOnExit();
+					cacheFile.deleteOnExit();
 
 					BufferedOutputStream fout = new BufferedOutputStream(
 							new SnappyOutputStream(new FileOutputStream(
