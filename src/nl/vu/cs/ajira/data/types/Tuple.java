@@ -27,7 +27,11 @@ public class Tuple extends Writable {
 	protected DataInput input = new BDataInput(cb);
 
 	public static final Tuple EMPTY_TUPLE = new Tuple();
-
+	
+	/**
+	 * Constructs a new Tuple and adds the elements from the parameter to the Tuple
+	 * @param elements is a array or a sequence of SimpleData objects
+	 */
 	public Tuple(SimpleData... elements) {
 		this();
 		try {
@@ -36,32 +40,44 @@ public class Tuple extends Writable {
 			log.error("Error instantiating tuple.", e);
 		}
 	}
-
+	/**
+	 * Constructs a new Tuple and sets the dimension of the ByteArray cb to Consts.MAX_TUPLE_SIZE
+	 */
 	public Tuple() {
 		byte[] b = new byte[Consts.MAX_TUPLE_SIZE];
 		cb.setBuffer(b);
 	}
 
-	// Constructor with explicit storage.
-	// This constructor can only be used when the tuple is initialized
-	// completely before calling
-	// getEnd(), to figure out where to start the next tuple.
-	// Useful when you need to allocate and initialize a lot of tuples, which
-	// are further on only
-	// used "read-only". In that case, you can allocate a big byte-array once,
-	// and let the tuples
-	// use that.
+	/**
+	 * Constructor with explicit storage.
+	 * This constructor can only be used when the tuple is initialized completely 
+	 * before calling getEnd(), to figure out where to start the next tuple.
+	 * Useful when you need to allocate and initialize a lot of tuples, which
+	 * are further on only used "read-only". In that case, you can allocate a 
+	 * big byte-array once, and let the tuples use that.
+	 * 
+	 * @param buf is a byte array which will be set as the ByteArray of the Tuple
+	 * @param start is used to set the parameters of the buffer
+	 */
 	public Tuple(byte[] buf, int start) {
 		cb.setBuffer(buf);
 		cb.start = start;
 		cb.end = start;
 	}
-
+	
+	/**
+	 * 
+	 * @return the end of the ByteArray
+	 */
 	public int getEnd() {
 		return cb.end;
 	}
-
+	
 	@Override
+	/**
+	 * It is used to set the fields of the Tuple with the informations 
+	 * read from a DataInput.
+	 */
 	public void readFrom(DataInput input) throws IOException {
 		nElements = input.readUnsignedByte();
 
@@ -84,28 +100,51 @@ public class Tuple extends Writable {
 			cb.end = cb.start;
 		}
 	}
-
+	
+	/**
+	 * Compares two Tuples.
+	 * @param buffer is the Tuple to whom the current object is compared
+	 * @return  0 in case of equality 
+	 * 		    a number lower than 0 in case the current object is lower than buffer
+	 * 			a number greater than 0 in case the current object is greater than buffer
+	 */
 	public int compareTo(Tuple buffer) {
 		int len1 = cb.end - cb.start;
 		int len2 = buffer.cb.end - buffer.cb.start;
 		return RawComparator.compareBytes(cb.buffer, cb.start, len1,
 				buffer.cb.buffer, buffer.cb.start, len2);
 	}
-
+	
+	/**
+	 * Resets the fields of the class. 
+	 */
 	public void clear() {
 		nElements = 0;
 		cb.end = cb.start;
 		indexElements[0] = cb.start;
 	}
-
+	
+	/**
+	 * 
+	 * @return the number of elements from indexElements
+	 */
 	public int getNElements() {
 		return nElements;
 	}
 
+	/**
+	 * Removes the last elements from the ByteArray cb.
+	 * @throws Exception
+	 */
 	public void removeLast() throws Exception {
 		cb.end = indexElements[--nElements];
 	}
 
+	/**
+	 * Increases the size of the indexElements. 
+	 * @param nEl influences the new size of the array, which will be the 
+	 * minimum power of two greater than nEl
+	 */
 	private void increaseIndexSize(int nEl) {
 		int newSize = 2 * indexElements.length;
 		while (nEl >= newSize) {
@@ -117,6 +156,9 @@ public class Tuple extends Writable {
 	}
 
 	@Override
+	/**
+	 * Writes the Tuple in a DataOutput.
+	 */
 	public void writeTo(DataOutput output) throws IOException {
 		output.writeByte((byte) nElements);
 		if (nElements > 0) {
@@ -129,14 +171,26 @@ public class Tuple extends Writable {
 			output.write(typeData, 0, nElements);
 		}
 	}
-
+	
 	@Override
+	/**
+	 * Returns the number of bytes that are needed to store the Tuple.
+	 */
 	public int bytesToStore() {
 		return 1
 				+ (nElements > 0 ? (2 + (cb.end - cb.start) + nElements + 1)
 						: 0) + nElements;
 	}
 
+	/**
+	 * 	
+	 * @param buffer
+	 * @param start
+	 * @param position
+	 * @param dp
+	 * @return
+	 * @throws IOException
+	 */
 	public static SimpleData getField(byte[] buffer, int start, int position,
 			DataProvider dp) throws IOException {
 		int elements = buffer[start];
@@ -154,13 +208,32 @@ public class Tuple extends Writable {
 		data.readFrom(input);
 		return data;
 	}
-
+	
+	/**
+	 * Compares the the ByteArray from the Tuple with a byte array. 
+	 * @param buffer is the bytes array to whom cb is compared
+	 * @param start is used to set from what element the buffer is compared 
+	 * @return	0 in case of equality 
+	 * 		    a number lower than 0 in case the current object is lower than buffer
+	 * 			a number greater than 0 in case the current object is greater than buffer
+	 */
 	public int compare(byte[] buffer, int start) {
 		int len = cb.end - cb.start;
 		return RawComparator.compareBytes(this.cb.buffer, this.cb.start, len,
 				buffer, start + 3, len);
 	}
 
+	/**
+	 * If the index does not exceed the size of the array indexElemnts
+	 * the element reads from input starting from the position
+	 * indexElements[index].  
+	 * 
+	 * @param element is an SimpleData object that wants to get informations from input
+	 * @param index is a position from indexElements
+	 * @return  false if the index does exceed the size of the array indexElemnts
+	 * 			true if the index does not exceed the size of the array indexElemnts
+	 * @throws Exception
+	 */
 	public boolean get(SimpleData element, int index) throws Exception {
 		if (index >= nElements) {
 			return false;
@@ -173,10 +246,21 @@ public class Tuple extends Writable {
 		return true;
 	}
 
+	/**
+	 * 
+	 * @param i is the position of the element that is looked
+	 * @return the element from typeData that is found at the position i
+	 */
 	public int getType(int i) {
 		return typeData[i];
 	}
 
+	/**
+	 * Does the same as the other get method but receives an 
+	 * array or a sequence of arguments as parameter
+	 * @param elements is a array or a sequence of SimpleData objects
+	 * @throws Exception
+	 */
 	public void get(SimpleData... elements) throws Exception {
 		int originalStart = cb.start;
 		for (int i = 0; i < elements.length; ++i) {
@@ -188,7 +272,12 @@ public class Tuple extends Writable {
 		}
 		cb.start = originalStart;
 	}
-
+	
+	/**
+	 * Writes the array of elements into the output.
+	 * @param elements is a array or a sequence of SimpleData objects
+	 * @throws Exception
+	 */
 	public void set(SimpleData... elements) throws Exception {
 		nElements = 0;
 		cb.end = cb.start;
@@ -211,7 +300,12 @@ public class Tuple extends Writable {
 			indexElements[nElements] = cb.end;
 		}
 	}
-
+	
+	/**
+	 * Converts the object to its string representation.
+	 * @param dp
+	 * @return the string representation of the Tuple
+	 */
 	public String toString(DataProvider dp) {
 		try {
 			String value = "";
@@ -230,6 +324,10 @@ public class Tuple extends Writable {
 		return null;
 	}
 
+	/**
+	 * Copies the Tuple in the provided parameter.	
+	 * @param buffer is the parameter where the current Tuple is copied
+	 */
 	public void copyTo(Tuple buffer) {
 		buffer.nElements = nElements;
 
@@ -249,6 +347,12 @@ public class Tuple extends Writable {
 		System.arraycopy(typeData, 0, buffer.typeData, 0, nElements);
 	}
 
+	/**
+	 * 
+	 * @param dp
+	 * @param tuple
+	 * @throws Exception
+	 */
 	public void concat(DataProvider dp, Tuple tuple) throws Exception {
 		for (int i = 0; i < tuple.nElements; ++i) {
 			SimpleData d = dp.get(tuple.getType(i));
@@ -257,7 +361,13 @@ public class Tuple extends Writable {
 			dp.release(d);
 		}
 	}
-
+	/**
+	 * It adds the element into the output If there is enough space.
+	 * @param element
+	 * @return  false if there is not enough space to add the element
+	 * 			true if there is enough space to add the element
+	 * @throws Exception
+	 */
 	public boolean add(SimpleData element) throws Exception {
 		int len = element.bytesToStore();
 
@@ -275,11 +385,22 @@ public class Tuple extends Writable {
 		typeData[nElements - 1] = (byte) element.getIdDatatype();
 		return true;
 	}
-
+	
+	/**
+	 * 
+	 * @return the available free space from the ByteArray cb 
+	 */
 	public int remainingCapacity() {
 		return cb.buffer.length - cb.end;
 	}
 
+	/**
+	 * It copies the element i from the Tuple buffer at the end
+	 * of the current Tuple.
+	 * @param buffer is the Tuple from where it is copied one element 
+	 * @param i is the position of the element that is added
+	 * @throws Exception
+	 */
 	public void addRaw(Tuple buffer, int i) throws Exception {
 		int start = buffer.indexElements[i];
 		int length = buffer.indexElements[i + 1] - buffer.indexElements[i];
@@ -298,11 +419,18 @@ public class Tuple extends Writable {
 
 	private int[] hashCodeFields = null;
 
+	/**
+	 * 
+	 * @param fields is used to set the hashCodeFields
+	 */
 	public void setHashCodeFields(int[] fields) {
 		hashCodeFields = fields;
 	}
 
 	@Override
+	/**
+	 * 	Compares a Tuple with an Object
+	 */
 	public boolean equals(Object obj) {
 		try {
 			Tuple other = (Tuple) obj;
@@ -334,6 +462,19 @@ public class Tuple extends Writable {
 		return false;
 	}
 
+	/**
+	 * Compares the element i from the current Tuple
+	 * with element j from the Tuple buffer.
+	 * @param i is the position of the element from the current 
+	 * 		  Tuple that has to be compared
+	 * @param buffer is a Tuple
+	 * @param j is the position of the element from buffer 
+	 * 		  that has to be compared
+	 * @return 0 if the elements are equal 
+	 * 		   a number lower than 0 if the element from position i is lower than the one from position j
+	 * 		   a number greater than 0 if the element from position i is greater than the one from position j 			
+	 * @throws Exception
+	 */
 	public int compareElement(int i, Tuple buffer, int j) throws Exception {
 
 		int start = indexElements[i];
@@ -347,6 +488,9 @@ public class Tuple extends Writable {
 	}
 
 	@Override
+	/**
+	 * 
+	 */
 	public int hashCode() {
 		int index = hashCodeFields[0];
 

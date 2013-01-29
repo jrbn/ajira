@@ -7,6 +7,12 @@ abstract public class SimpleData extends Writable {
 
     abstract public int getIdDatatype();
 
+    /**
+     * 
+     * @param a is a SimpleData object
+     * @param context is a ActionContext object
+     * @return false
+     */
     public boolean equals(SimpleData a, ActionContext context) {
 	return false;
     }
