@@ -743,4 +743,8 @@ public class Bucket {
 
 		return true;
 	}
+
+	public byte[] getSignature() {
+		return signature;
+	}
 }

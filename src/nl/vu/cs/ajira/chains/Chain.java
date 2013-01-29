@@ -11,6 +11,8 @@ import nl.vu.cs.ajira.actions.ActionConf;
 import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.actions.ActionController;
 import nl.vu.cs.ajira.actions.ActionFactory;
+import nl.vu.cs.ajira.data.types.DataProvider;
+import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.data.types.bytearray.BDataInput;
@@ -76,6 +78,13 @@ public class Chain implements Writable, Query {
 			if (inputTuple == null) {
 				inputTuple = TupleFactory.newTuple();
 			}
+			// Read the number of elements and their types
+			int n = input.readByte();
+			SimpleData[] signature = new SimpleData[n];
+			for (int i = 0; i < n; ++i) {
+				signature[i] = DataProvider.getInstance().get(input.readByte());
+			}
+			inputTuple.set(signature);
 			inputTuple.readFrom(input);
 		} else {
 			inputTuple = null;
@@ -88,6 +97,10 @@ public class Chain implements Writable, Query {
 		output.write(buffer, 0, bufferSize);
 		if (inputTuple != null) {
 			output.writeBoolean(true);
+			output.write(inputTuple.getNElements());
+			for (int i = 0; i < inputTuple.getNElements(); ++i) {
+				output.write(inputTuple.get(i).getIdDatatype());
+			}
 			inputTuple.writeTo(output);
 		} else {
 			output.writeBoolean(false);
@@ -98,7 +111,7 @@ public class Chain implements Writable, Query {
 	public int bytesToStore() throws IOException {
 		int size = bufferSize + 9;
 		if (inputTuple != null) {
-			size += inputTuple.bytesToStore();
+			size += inputTuple.bytesToStore() + inputTuple.getNElements() + 1;
 		}
 		return size;
 	}

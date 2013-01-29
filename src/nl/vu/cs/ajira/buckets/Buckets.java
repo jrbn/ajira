@@ -104,14 +104,11 @@ public class Buckets {
 		// bucketsFactory.release(bucket);
 	}
 
-	public TupleIterator getIterator(int idSubmission, int idBucket/*
-																	 * , boolean
-																	 * removeDuplicates
-																	 */) {
+	public TupleIterator getIterator(int idSubmission, int idBucket) {
 		Bucket bucket = null;
 		bucket = getExistingBucket(idSubmission, idBucket);
 		BucketIterator itr = new BucketIterator();
-		itr.init(bucket, idSubmission, idBucket, this/* , removeDuplicates */);
+		itr.init(bucket, idSubmission, idBucket, bucket.getSignature(), this);
 		return itr;
 	}
 

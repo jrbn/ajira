@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import nl.vu.cs.ajira.data.types.TIntArray;
+import nl.vu.cs.ajira.data.types.TStringArray;
 import nl.vu.cs.ajira.data.types.bytearray.BDataOutput;
 import nl.vu.cs.ajira.datalayer.Query;
 import nl.vu.cs.ajira.storage.Writable;
@@ -91,7 +93,8 @@ public class ActionConf implements Writable {
 	private static boolean checkAllowedTypes(Object value) {
 		if (value == null || value instanceof Integer || value instanceof Long
 				|| value instanceof String || value instanceof Boolean
-				|| value instanceof Writable || value instanceof byte[]) {
+				|| value instanceof Writable || value instanceof byte[]
+				|| value instanceof String[]) {
 			return true;
 		} else {
 			return false;
@@ -194,13 +197,8 @@ public class ActionConf implements Writable {
 		return true;
 	}
 
-	public final boolean setParam(int pos, Object value) {
+	public final boolean setParamWritable(int pos, Writable value) {
 		if (!checkPos(pos)) {
-			return false;
-		}
-
-		if (!checkAllowedTypes(value)) {
-			log.error("Action " + className + ":Object type not valid");
 			return false;
 		}
 
@@ -213,6 +211,30 @@ public class ActionConf implements Writable {
 			return false;
 		}
 		valuesParameters[pos] = value;
+		return true;
+	}
+
+	public final boolean setParamStringArray(int pos, String... value) {
+		if (!checkPos(pos)) {
+			return false;
+		}
+		valuesParameters[pos] = new TStringArray(value);
+		return true;
+	}
+
+	public final boolean setParamStringArray(int pos, TStringArray value) {
+		if (!checkPos(pos)) {
+			return false;
+		}
+		valuesParameters[pos] = value;
+		return true;
+	}
+
+	public final boolean setParamIntArray(int pos, int... value) {
+		if (!checkPos(pos)) {
+			return false;
+		}
+		valuesParameters[pos] = new TIntArray(value);
 		return true;
 	}
 

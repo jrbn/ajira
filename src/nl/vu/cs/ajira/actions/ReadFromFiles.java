@@ -61,7 +61,7 @@ public class ReadFromFiles extends Action {
 		}
 
 		ActionConf c = ActionFactory.getActionConf(SetQueryInputLayer.class);
-		c.setParam(SetQueryInputLayer.TUPLE, tuple);
+		c.setParamWritable(SetQueryInputLayer.TUPLE, tuple);
 		output.branch(c);
 
 		currentFileSplit = new FileCollection();

@@ -103,6 +103,8 @@ public class WordCount {
 
 			// Groups the pairs
 			action = ActionFactory.getActionConf(GroupBy.class);
+			action.setParamStringArray(GroupBy.TUPLE_FIELDS,
+					TString.class.getName(), TInt.class.getName());
 			action.setParamByteArray(GroupBy.FIELDS_TO_GROUP, (byte) 0);
 			actions.add(action);
 

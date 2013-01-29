@@ -5,24 +5,34 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Arrays;
 
-import nl.vu.cs.ajira.storage.RawComparator;
 import nl.vu.cs.ajira.utils.Consts;
 
-public class TByteArray extends SimpleData {
+public class TIntArray extends SimpleData {
 
-	byte[] array;
+	int[] array;
 
-	public byte[] getArray() {
+	public TIntArray(int size) {
+		array = new int[size];
+	}
+
+	public TIntArray(int[] array) {
+		this.array = array;
+	}
+
+	public TIntArray() {
+	}
+
+	public int[] getArray() {
 		return array;
 	}
 
-	public void setArray(byte[] array) {
+	public void setArray(int[] array) {
 		this.array = array;
 	}
 
 	@Override
 	public int getIdDatatype() {
-		return Consts.DATATYPE_TBYTEARRAY;
+		return Consts.DATATYPE_TINTARRAY;
 	}
 
 	@Override
@@ -30,9 +40,10 @@ public class TByteArray extends SimpleData {
 		int s = input.readInt();
 		if (s != -1) {
 			if (array == null || array.length != s) {
-				array = new byte[s];
+				array = new int[s];
 			}
-			input.readFully(array);
+			for (int i = 0; i < s; ++i)
+				array[i] = input.readInt();
 		} else {
 			array = null;
 		}
@@ -44,27 +55,28 @@ public class TByteArray extends SimpleData {
 			output.writeInt(-1);
 		} else {
 			output.writeInt(array.length);
-			output.write(array);
+			for (int v : array)
+				output.writeInt(v);
 		}
 	}
 
 	@Override
 	public int bytesToStore() throws IOException {
-		return (array == null) ? 4 : 4 + array.length;
+		return (array == null) ? 4 : 4 + array.length * 4;
 	}
 
 	@Override
 	public void copyTo(SimpleData el) {
 		if (array != null) {
-			((TByteArray) el).array = Arrays.copyOf(array, array.length);
+			((TIntArray) el).array = Arrays.copyOf(array, array.length);
 		} else {
-			((TByteArray) el).array = null;
+			((TIntArray) el).array = null;
 		}
 	}
 
 	@Override
 	public int compareTo(SimpleData el) {
-		byte[] array2 = ((TByteArray) el).array;
+		int[] array2 = ((TIntArray) el).array;
 		if (array == null) {
 			if (array2 == null) {
 				return 0;
@@ -75,8 +87,15 @@ public class TByteArray extends SimpleData {
 			if (array2 == null) {
 				return 1;
 			} else {
-				return RawComparator.compareBytes(array, 0, array.length,
-						array2, 0, array2.length);
+				int i = 0;
+				while (i < array.length && i < array2.length) {
+					int diff = array[i] - array2[i];
+					if (diff != 0) {
+						return diff;
+					}
+					++i;
+				}
+				return array.length - array2.length;
 			}
 		}
 	}

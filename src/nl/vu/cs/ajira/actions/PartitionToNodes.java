@@ -3,9 +3,10 @@ package nl.vu.cs.ajira.actions;
 import nl.vu.cs.ajira.actions.support.HashPartitioner;
 import nl.vu.cs.ajira.actions.support.Partitioner;
 import nl.vu.cs.ajira.buckets.Bucket;
-import nl.vu.cs.ajira.data.types.TInt;
+import nl.vu.cs.ajira.data.types.DataProvider;
+import nl.vu.cs.ajira.data.types.TIntArray;
+import nl.vu.cs.ajira.data.types.TStringArray;
 import nl.vu.cs.ajira.data.types.Tuple;
-import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.datalayer.Query;
 
 import org.slf4j.Logger;
@@ -15,20 +16,24 @@ public class PartitionToNodes extends Action {
 
 	/* PARAMETERS */
 	public static final int SORT = 0;
-	public static final String S_SORT = "sort";
+	private static final String S_SORT = "sort";
 	public static final int PARTITIONER = 1;
-	public static final String S_PARTITIONER = "partitioner";
+	private static final String S_PARTITIONER = "partitioner";
 	public static final int NPARTITIONS_PER_NODE = 2;
-	public static final String S_NPARTITIONS_PER_NODE = "npartitions_per_node";
+	private static final String S_NPARTITIONS_PER_NODE = "npartitions_per_node";
 	private static final int BUCKET_IDS = 3;
 	private static final String S_BUCKET_IDS = "bucket_ids";
 	public static final int SORTING_FIELDS = 4;
-	public static final String S_SORTING_FIELDS = "sorting_fields";
+	private static final String S_SORTING_FIELDS = "sorting_fields";
+	public static final int TUPLE_FIELDS = 5;
+	private static final String S_TUPLE_FIELDS = "tuple_fields";
 
 	static final Logger log = LoggerFactory.getLogger(PartitionToNodes.class);
 
 	private boolean shouldSort;
 	private byte[] sortingFields = null;
+
+	private byte[] tupleFields = null;
 
 	private Bucket[] bucketsCache;
 	private int nPartitionsPerNode;
@@ -52,26 +57,24 @@ public class PartitionToNodes extends Action {
 
 			if (params[BUCKET_IDS] == null) {
 				int np = (Integer) params[NPARTITIONS_PER_NODE];
-				Tuple p = TupleFactory.newTuple();
-				TInt v = new TInt();
-				for (int i = 0; i < np; i++) {
-					v.setValue(context.getNewBucketID());
-					try {
-						p.add(v);
-					} catch (Exception e) {
-						log.error("Oops: could not add bucket id for partition");
-						throw new Error("Could not add bucket id to tuple");
-					}
+				TIntArray array = new TIntArray(np);
+				for (int i = 0; i < np; ++i) {
+					array.getArray()[i] = context.getNewBucketID();
 				}
-				params[BUCKET_IDS] = p;
-			}
-			Tuple t = (Tuple) params[BUCKET_IDS];
-			if (t.getNElements() != (Integer) params[NPARTITIONS_PER_NODE]) {
-				log.error("Oops: inconsistency in number of partitions");
-				throw new Error("inconsistency in number of partitions");
+				params[BUCKET_IDS] = array;
 			}
 
-			controller.continueComputationOn(-1, ((TInt) t.get(0)).getValue());
+			// Convert the tuple fields in numbers
+			TStringArray fields = (TStringArray) params[TUPLE_FIELDS];
+			byte[] f = new byte[fields.getArray().length];
+			int i = 0;
+			for (String v : fields.getArray()) {
+				f[i++] = (byte) DataProvider.getId(v);
+			}
+			params[TUPLE_FIELDS] = f;
+
+			controller.continueComputationOn(-1,
+					((TIntArray) params[BUCKET_IDS]).getArray()[0]);
 		}
 	}
 
@@ -84,6 +87,7 @@ public class PartitionToNodes extends Action {
 				null, false);
 		conf.registerParameter(BUCKET_IDS, S_BUCKET_IDS, null, false);
 		conf.registerParameter(SORTING_FIELDS, S_SORTING_FIELDS, null, false);
+		conf.registerParameter(TUPLE_FIELDS, S_TUPLE_FIELDS, null, true);
 
 		conf.registerCustomConfigurator(ParametersProcessor.class);
 	}
@@ -96,13 +100,10 @@ public class PartitionToNodes extends Action {
 		sPartitioner = getParamString(PARTITIONER);
 		nPartitionsPerNode = getParamInt(NPARTITIONS_PER_NODE);
 
-		Tuple t = TupleFactory.newTuple();
-		getParamWritable(t, BUCKET_IDS);
-		bucketIds = new int[t.getNElements()];
-		for (int i = 0; i < bucketIds.length; i++) {
-			bucketIds[i] = ((TInt) t.get(i)).getValue();
-		}
+		bucketIds = getParamIntArray(BUCKET_IDS);
 		nPartitions = nPartitionsPerNode * context.getNumberNodes();
+
+		tupleFields = getParamByteArray(TUPLE_FIELDS);
 
 		// Init variables
 		bucketsCache = new Bucket[nPartitions];
@@ -128,7 +129,7 @@ public class PartitionToNodes extends Action {
 				int nodeNo = partition / nPartitionsPerNode;
 				int bucketNo = bucketIds[partition % nPartitionsPerNode];
 				b = context.startTransfer(nodeNo, bucketNo, shouldSort,
-						sortingFields);
+						sortingFields, tupleFields);
 				bucketsCache[partition] = b;
 			}
 			b.add(inputTuple);
@@ -145,7 +146,7 @@ public class PartitionToNodes extends Action {
 				int nodeNo = i / nPartitionsPerNode;
 				int bucketNo = bucketIds[i % nPartitionsPerNode];
 				context.finishTransfer(nodeNo, bucketNo, shouldSort,
-						sortingFields, bucketsCache[i] != null);
+						sortingFields, bucketsCache[i] != null, tupleFields);
 			}
 
 			// Send the chains to process the buckets to all the nodes that
@@ -154,8 +155,8 @@ public class PartitionToNodes extends Action {
 				for (int i = 1; i < nPartitionsPerNode; i++) {
 					ActionConf c = ActionFactory
 							.getActionConf(ReadFromBuckets.class);
-					c.setParam(ReadFromBuckets.BUCKET_ID, bucketIds[i]);
-					c.setParam(ReadFromBuckets.NODE_ID, -1);
+					c.setParamInt(ReadFromBuckets.BUCKET_ID, bucketIds[i]);
+					c.setParamInt(ReadFromBuckets.NODE_ID, -1);
 					output.branch(c);
 				}
 			}

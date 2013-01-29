@@ -5,11 +5,10 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 import nl.vu.cs.ajira.storage.Writable;
-import nl.vu.cs.ajira.utils.Consts;
 
 public class Tuple implements Writable {
 
-	private final SimpleData[] signature = new SimpleData[Consts.MAN_N_DATA_IN_TUPLE];
+	private SimpleData[] signature;
 	private int nElements = 0;
 
 	protected Tuple() {
@@ -29,9 +28,10 @@ public class Tuple implements Writable {
 
 	public void set(SimpleData... elements) {
 		if (elements != null) {
-			for (int i = 0; i < elements.length; ++i) {
-				set(elements[i], i);
-			}
+			// for (int i = 0; i < elements.length; ++i) {
+			// set(elements[i], i);
+			// }
+			signature = elements;
 			nElements = elements.length;
 		} else {
 			nElements = 0;
@@ -53,13 +53,12 @@ public class Tuple implements Writable {
 		el.copyTo(signature[pos]);
 	}
 
-	public void add(SimpleData el) {
-		set(el, nElements++);
-	}
-
 	public void copyTo(Tuple tuple) {
 		Tuple t = tuple;
 		t.nElements = nElements;
+		if (tuple.signature == null || tuple.signature.length != nElements) {
+			tuple.signature = new SimpleData[nElements];
+		}
 		for (int i = 0; i < nElements; ++i) {
 			t.set(signature[i], i);
 		}
