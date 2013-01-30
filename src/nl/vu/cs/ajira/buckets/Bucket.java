@@ -469,7 +469,7 @@ public class Bucket {
 			if (log.isInfoEnabled()) {
 				log.info(
 						"Caching buffer, tuples.getNElements = "
-								+ tuples.getNElements(), new Throwable());
+								+ tuples.getNElements());
 			}
 			cacheBuffer(tuples, isBufferSorted, fb);
 			tuples = fb.get();
