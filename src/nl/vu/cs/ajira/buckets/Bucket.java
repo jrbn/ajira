@@ -48,7 +48,7 @@ public class Bucket {
 	 * in the file (lastElement), total elements 
 	 * (nElements), how much space remained in the file 
 	 * (remaining size) and the file stream -- descriptor
-	 * (stream) 
+	 * (stream). 
 	 */
 	static class FileMetaData {
 		String filename;
@@ -216,7 +216,7 @@ public class Bucket {
 	 * again. If this action also fails than an exception is raised.
 	 * 
 	 * @param tuple 
-	 * 		The tuple that has to be inserted in the bucket.
+	 * 		The tuple that has to be inserted in the bucket
 	 * @return 
 	 * 		True if the element could be added into the buffer, 
 	 * 		or false (actually never -- an Exception is thrown
@@ -263,8 +263,9 @@ public class Bucket {
 	 * 		are sorted or not
 	 * @param factory
 	 * 		The factory which is used to create the WritableContainer<T> 
-	 * 		objects (buffer generator)
-	 * 		@see FactoryPattern
+	 * 		objects (buffer factory class)
+	 * 		@see Factory<K>
+	 * 		@see Java - Factory Pattern
 	 * @throws Exception
 	 */
 	public synchronized void addAll(
@@ -518,10 +519,10 @@ public class Bucket {
 
 	/**
 	 * This method is used to copy an entire file from the 
-	 * disk, @see cacheFiles, which contains cached sorted 
-	 * tuples, to an in-memory buffer if the minimum element 
-	 * from the file is less then the minimum element from 
-	 * the sorted list.
+	 * disk, which contains cached sorted tuples, to a buffer, 
+	 * if the minimum element from the file is less then 
+	 * the minimum element from the sorted list.
+	 * 		@see cacheFiles 
 	 * 
 	 * @param meta
 	 * 		The meta information about the file that is 
@@ -616,6 +617,9 @@ public class Bucket {
 		this.iter = iter;
 	}
 
+	/**
+	 * Release the buffer -- GC. 
+	 */
 	void releaseTuples() {
 		if (tuples != null) {
 			tuples = null;
@@ -924,7 +928,7 @@ public class Bucket {
 	/**
 	 * Method used to enter in wait() until the bucket is marked/flagged
 	 * as being finished (the last sequence of tuples / last chunk was
-	 * transferred) 
+	 * transferred).
 	 * 
 	 * @return 
 	 * 		True, when the bucket is finished
