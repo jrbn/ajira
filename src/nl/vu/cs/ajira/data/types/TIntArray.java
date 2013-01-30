@@ -60,10 +60,10 @@ public class TIntArray extends SimpleData {
 		}
 	}
 
-	@Override
-	public int bytesToStore() throws IOException {
-		return (array == null) ? 4 : 4 + array.length * 4;
-	}
+	// @Override
+	// public int bytesToStore() throws IOException {
+	// return (array == null) ? 4 : 4 + array.length * 4;
+	// }
 
 	@Override
 	public void copyTo(SimpleData el) {

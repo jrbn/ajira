@@ -43,9 +43,9 @@ public class TupleInfo implements Writable {
 		output.writeLong(ticket);
 	}
 
-	@Override
-	public int bytesToStore() {
-		return 44;
-	}
+	// @Override
+	// public int bytesToStore() {
+	// return 44;
+	// }
 
 }

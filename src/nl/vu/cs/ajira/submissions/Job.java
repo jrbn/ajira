@@ -51,10 +51,10 @@ public class Job implements Writable {
 		}
 	}
 
-	@Override
-	public int bytesToStore() {
-		return 0;
-	}
+	// @Override
+	// public int bytesToStore() {
+	// return 0;
+	// }
 
 	public void setAssignedOutputBucket(int bucket) {
 		assignedBucket = bucket;

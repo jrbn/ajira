@@ -179,10 +179,10 @@ public class ActionConf implements Writable {
 		}
 	}
 
-	@Override
-	public final int bytesToStore() throws IOException {
-		throw new IOException("Not (yet) implemented");
-	}
+	// @Override
+	// public final int bytesToStore() throws IOException {
+	// throw new IOException("Not (yet) implemented");
+	// }
 
 	private boolean checkPos(int pos) {
 		if (valuesParameters == null) {

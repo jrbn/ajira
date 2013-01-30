@@ -53,10 +53,10 @@ public final class TString extends SimpleData {
 		}
 	}
 
-	@Override
-	public int bytesToStore() {
-		return value == null ? 4 : value.getBytes().length + 4;
-	}
+	// @Override
+	// public int bytesToStore() {
+	// return value == null ? 4 : value.getBytes().length + 4;
+	// }
 
 	@Override
 	public String toString() {

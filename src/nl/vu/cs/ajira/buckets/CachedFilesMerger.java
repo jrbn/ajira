@@ -13,7 +13,6 @@ import java.util.Random;
 import nl.vu.cs.ajira.buckets.Bucket.FileMetaData;
 import nl.vu.cs.ajira.data.types.bytearray.FDataInput;
 import nl.vu.cs.ajira.data.types.bytearray.FDataOutput;
-import nl.vu.cs.ajira.storage.TupleComparator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

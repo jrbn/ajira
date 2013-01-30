@@ -40,10 +40,10 @@ public final class TBoolean extends SimpleData {
 		output.writeBoolean(value);
 	}
 
-	@Override
-	public int bytesToStore() {
-		return 1;
-	}
+	// @Override
+	// public int bytesToStore() {
+	// return 1;
+	// }
 
 	@Override
 	public String toString() {

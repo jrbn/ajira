@@ -20,9 +20,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import nl.vu.cs.ajira.Context;
+import nl.vu.cs.ajira.buckets.SerializedTuple;
 import nl.vu.cs.ajira.chains.Chain;
 import nl.vu.cs.ajira.chains.ChainLocation;
-import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.statistics.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Container;
 import nl.vu.cs.ajira.storage.Factory;
@@ -86,7 +86,7 @@ public class NetworkLayer {
 	Factory<ChainTerminator.ChainInfo> chFactory = new Factory<ChainTerminator.ChainInfo>(
 			ChainTerminator.ChainInfo.class);
 
-	Factory<WritableContainer<Tuple>> bufferFactory = null;
+	Factory<WritableContainer<SerializedTuple>> bufferFactory = null;
 
 	protected boolean monitorCounters = false;
 
@@ -100,7 +100,8 @@ public class NetworkLayer {
 	private NetworkLayer() {
 	}
 
-	public void setBufferFactory(Factory<WritableContainer<Tuple>> bufferFactory) {
+	public void setBufferFactory(
+			Factory<WritableContainer<SerializedTuple>> bufferFactory) {
 		this.bufferFactory = bufferFactory;
 	}
 

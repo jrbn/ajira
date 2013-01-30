@@ -40,10 +40,10 @@ public final class TInt extends SimpleData {
 		output.writeInt(value);
 	}
 
-	@Override
-	public int bytesToStore() {
-		return 4;
-	}
+	// @Override
+	// public int bytesToStore() {
+	// return 4;
+	// }
 
 	@Override
 	public String toString() {

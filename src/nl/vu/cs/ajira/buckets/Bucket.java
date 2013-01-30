@@ -22,7 +22,6 @@ import nl.vu.cs.ajira.data.types.bytearray.FDataOutput;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
 import nl.vu.cs.ajira.statistics.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Factory;
-import nl.vu.cs.ajira.storage.TupleComparator;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.utils.Consts;
 
@@ -91,10 +90,11 @@ public class Bucket {
 	private byte[] sortingFields = null;
 	private final TupleComparator comparator = new TupleComparator();
 	private byte[] signature;
+	private SerializedTuple serializer = new SerializedTuple();
 
 	private long elementsInCache = 0;
 
-	private Factory<WritableContainer<Tuple>> fb = null;
+	private Factory<WritableContainer<SerializedTuple>> fb = null;
 	boolean gettingData;
 	private int highestSequence;
 	private boolean isBufferSorted = true;
@@ -130,7 +130,7 @@ public class Bucket {
 	private StatisticsCollector stats;
 	private int submissionId;
 	private int submissionNode;
-	private WritableContainer<Tuple> tuples = null;
+	private WritableContainer<SerializedTuple> tuples = null;
 
 	public synchronized boolean add(Tuple tuple) throws Exception {
 
@@ -139,13 +139,14 @@ public class Bucket {
 			tuples.clear();
 		}
 
-		boolean response = tuples.add(tuple);
+		serializer.setTuple(tuple);
+		boolean response = tuples.add(serializer);
 
 		if (response) {
 			isBufferSorted = tuples.getNElements() < 2;
 		} else {
 			cacheCurrentBuffer();
-			response = tuples.add(tuple);
+			response = tuples.add(serializer);
 			isBufferSorted = true;
 
 			if (!response) {
@@ -158,8 +159,10 @@ public class Bucket {
 	}
 
 	public synchronized void addAll(
-			WritableContainer<Tuple> newTuplesContainer, boolean isSorted,
-			Factory<WritableContainer<Tuple>> factory) throws Exception {
+			WritableContainer<SerializedTuple> newTuplesContainer,
+			boolean isSorted,
+			Factory<WritableContainer<SerializedTuple>> factory)
+			throws Exception {
 		if (tuples == null) {
 			tuples = fb.get();
 			tuples.clear();
@@ -204,7 +207,7 @@ public class Bucket {
 					cacheBuffer(newTuplesContainer, isSorted, factory);
 				} else {
 					// Copy the container ...
-					WritableContainer<Tuple> box = fb.get();
+					WritableContainer<SerializedTuple> box = fb.get();
 					newTuplesContainer.copyTo(box);
 					cacheBuffer(box, isSorted, fb);
 				}
@@ -219,8 +222,9 @@ public class Bucket {
 				|| (tuples != null && tuples.bytesToStore() > Consts.MIN_SIZE_TO_SEND);
 	}
 
-	private void cacheBuffer(final WritableContainer<Tuple> buffer,
-			final boolean sorted, final Factory<WritableContainer<Tuple>> fb)
+	private void cacheBuffer(final WritableContainer<SerializedTuple> buffer,
+			final boolean sorted,
+			final Factory<WritableContainer<SerializedTuple>> fb)
 			throws IOException {
 
 		if (buffer.getNElements() == 0) {
@@ -365,7 +369,7 @@ public class Bucket {
 	}
 
 	private boolean copyFullFile(FileMetaData meta,
-			WritableContainer<Tuple> tmpBuffer, byte[] minimum)
+			WritableContainer<SerializedTuple> tmpBuffer, byte[] minimum)
 			throws Exception {
 		// Check whether the last element is smaller than the second minimum.
 		// If it is, then we can copy the entire file in the buffer.
@@ -397,8 +401,8 @@ public class Bucket {
 
 	void init(long key, StatisticsCollector stats, int submissionNode,
 			int submissionId, boolean sort, byte[] sortingFields,
-			Factory<WritableContainer<Tuple>> fb, CachedFilesMerger merger,
-			byte[] signature) {
+			Factory<WritableContainer<SerializedTuple>> fb,
+			CachedFilesMerger merger, byte[] signature) {
 		this.key = key;
 		this.fb = fb;
 		this.tuples = null;
@@ -430,6 +434,13 @@ public class Bucket {
 		this.sortingFields = sortingFields;
 		this.comparator.init(signature, sortingFields);
 		this.signature = signature;
+		if (sort) {
+			this.serializer = new SerializedTuple(sortingFields,
+					signature.length);
+		} else {
+			this.serializer = new SerializedTuple();
+		}
+
 	}
 
 	public long inmemory_size() {
@@ -472,7 +483,8 @@ public class Bucket {
 		}
 	}
 
-	public synchronized boolean removeChunk(WritableContainer<Tuple> tmpBuffer) {
+	public synchronized boolean removeChunk(
+			WritableContainer<SerializedTuple> tmpBuffer) {
 
 		gettingData = true;
 

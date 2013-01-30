@@ -32,10 +32,10 @@ public class TByte extends SimpleData {
 		output.writeByte(value);
 	}
 
-	@Override
-	public int bytesToStore() {
-		return 1;
-	}
+	// @Override
+	// public int bytesToStore() {
+	// return 1;
+	// }
 
 	public int getValue() {
 		return value;

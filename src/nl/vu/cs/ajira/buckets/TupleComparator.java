@@ -1,11 +1,11 @@
-package nl.vu.cs.ajira.storage;
+package nl.vu.cs.ajira.buckets;
 
-import nl.vu.cs.ajira.data.types.Tuple;
+import nl.vu.cs.ajira.storage.RawComparator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class TupleComparator extends RawComparator<Tuple> {
+public class TupleComparator extends RawComparator<SerializedTuple> {
 
 	static final Logger log = LoggerFactory.getLogger(TupleComparator.class);
 

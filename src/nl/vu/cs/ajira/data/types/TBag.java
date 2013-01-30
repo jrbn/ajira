@@ -24,12 +24,6 @@ public class TBag extends SimpleData {
 	}
 
 	@Override
-	public int bytesToStore() {
-		// TODO
-		return -1;
-	}
-
-	@Override
 	public void copyTo(SimpleData el) {
 		// TODO Auto-generated method stub
 

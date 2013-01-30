@@ -1,5 +1,6 @@
 package nl.vu.cs.ajira.actions;
 
+import nl.vu.cs.ajira.buckets.SerializedTuple;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.datalayer.Query;
 import nl.vu.cs.ajira.utils.Consts;
@@ -16,7 +17,8 @@ public class SetQueryInputLayer extends Action {
 		void setupConfiguration(Query query, Object[] params,
 				ActionController controller, ActionContext context) {
 			query.setInputLayer(((Integer) params[INPUT_LAYER]).intValue());
-			query.setInputTuple((Tuple) params[TUPLE]);
+			SerializedTuple t = (SerializedTuple) params[TUPLE];
+			query.setInputTuple(t.getTuple());
 			controller.doNotAddCurrentAction();
 		}
 	}

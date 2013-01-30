@@ -11,6 +11,7 @@ import nl.vu.cs.ajira.actions.ActionConf;
 import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.actions.ActionController;
 import nl.vu.cs.ajira.actions.ActionFactory;
+import nl.vu.cs.ajira.buckets.SerializedTuple;
 import nl.vu.cs.ajira.data.types.DataProvider;
 import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.Tuple;
@@ -64,7 +65,7 @@ public class Chain implements Writable, Query {
 
 	private int bufferSize = Consts.CHAIN_RESERVED_SPACE;
 	private final byte[] buffer = new byte[Consts.CHAIN_SIZE];
-	private Tuple inputTuple = null;
+	private final Tuple tuple = TupleFactory.newTuple();
 
 	private final BDataOutput cos = new BDataOutput(buffer);
 	private final BDataInput cis = new BDataInput(buffer);
@@ -75,19 +76,16 @@ public class Chain implements Writable, Query {
 		input.readFully(buffer, 0, bufferSize);
 
 		if (input.readBoolean()) {
-			if (inputTuple == null) {
-				inputTuple = TupleFactory.newTuple();
-			}
 			// Read the number of elements and their types
 			int n = input.readByte();
 			SimpleData[] signature = new SimpleData[n];
 			for (int i = 0; i < n; ++i) {
 				signature[i] = DataProvider.getInstance().get(input.readByte());
 			}
-			inputTuple.set(signature);
-			inputTuple.readFrom(input);
+			tuple.set(signature);
+			new SerializedTuple(tuple).readFrom(input);
 		} else {
-			inputTuple = null;
+			tuple.clear();
 		}
 	}
 
@@ -95,26 +93,24 @@ public class Chain implements Writable, Query {
 	public void writeTo(DataOutput output) throws IOException {
 		output.writeInt(bufferSize);
 		output.write(buffer, 0, bufferSize);
-		if (inputTuple != null) {
+
+		if (tuple.getNElements() > 0) {
 			output.writeBoolean(true);
-			output.write(inputTuple.getNElements());
-			for (int i = 0; i < inputTuple.getNElements(); ++i) {
-				output.write(inputTuple.get(i).getIdDatatype());
+			output.write(tuple.getNElements());
+			for (int i = 0; i < tuple.getNElements(); ++i) {
+				output.write(tuple.get(i).getIdDatatype());
 			}
-			inputTuple.writeTo(output);
+			new SerializedTuple(tuple).writeTo(output);
 		} else {
 			output.writeBoolean(false);
 		}
 	}
 
-	@Override
-	public int bytesToStore() throws IOException {
-		int size = bufferSize + 9;
-		if (inputTuple != null) {
-			size += inputTuple.bytesToStore() + inputTuple.getNElements() + 1;
-		}
-		return size;
-	}
+	// @Override
+	// public int bytesToStore() throws IOException {
+	// return bufferSize + 9 + new SerializedTuple(tuple).bytesToStore()
+	// + tuple.getNElements() + 1;
+	// }
 
 	public void setSubmissionNode(int nodeId) {
 		Utils.encodeInt(buffer, 0, nodeId);
@@ -184,12 +180,12 @@ public class Chain implements Writable, Query {
 
 	@Override
 	public void setInputTuple(Tuple tuple) {
-		inputTuple = tuple;
+		tuple.copyTo(this.tuple);
 	}
 
 	@Override
 	public void getInputTuple(Tuple tuple) {
-		inputTuple.copyTo(tuple);
+		this.tuple.copyTo(tuple);
 	}
 
 	public void addActions(List<ActionConf> actions, ActionContext context)
@@ -284,14 +280,7 @@ public class Chain implements Writable, Query {
 	void copyTo(Chain newChain) {
 		newChain.bufferSize = bufferSize;
 		System.arraycopy(buffer, 0, newChain.buffer, 0, bufferSize);
-		if (inputTuple != null) {
-			if (newChain.inputTuple == null) {
-				newChain.inputTuple = TupleFactory.newTuple();
-			}
-			inputTuple.copyTo(newChain.inputTuple);
-		} else {
-			newChain.inputTuple = null;
-		}
+		tuple.copyTo(newChain.tuple);
 	}
 
 	public void branch(Chain newChain, long newChainId) {

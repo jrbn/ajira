@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 
+import nl.vu.cs.ajira.buckets.TupleComparator;
 import nl.vu.cs.ajira.data.types.bytearray.BDataInput;
 import nl.vu.cs.ajira.data.types.bytearray.BDataOutput;
 import nl.vu.cs.ajira.data.types.bytearray.ByteArray;
@@ -15,7 +16,6 @@ import nl.vu.cs.ajira.data.types.bytearray.FDataInput;
 import nl.vu.cs.ajira.storage.Container;
 import nl.vu.cs.ajira.storage.Factory;
 import nl.vu.cs.ajira.storage.RawComparator;
-import nl.vu.cs.ajira.storage.TupleComparator;
 import nl.vu.cs.ajira.storage.Writable;
 
 import org.slf4j.Logger;
@@ -51,22 +51,22 @@ public class WritableContainer<K extends Writable> implements Writable,
 				buffer, start + 14, len);
 	}
 
-	@Override
-	public int bytesToStore() {
-		if (nElements == 0) {
-			return 10;
-		} else {
-			int size;
-			if (cb.end >= cb.start) {
-				size = 14 + cb.end - cb.start;
-			} else {
-				size = 14 + cb.end + cb.buffer.length - cb.start;
-			}
-			if (enableRandomAccess)
-				size += nElements + 1;
-			return size;
-		}
-	}
+	// @Override
+	// public int bytesToStore() {
+	// if (nElements == 0) {
+	// return 10;
+	// } else {
+	// int size;
+	// if (cb.end >= cb.start) {
+	// size = 14 + cb.end - cb.start;
+	// } else {
+	// size = 14 + cb.end + cb.buffer.length - cb.start;
+	// }
+	// if (enableRandomAccess)
+	// size += nElements + 1;
+	// return size;
+	// }
+	// }
 
 	public long inmemory_size() {
 		return cb.buffer.length;

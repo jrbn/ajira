@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import nl.vu.cs.ajira.actions.ActionContext;
-import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
 import nl.vu.cs.ajira.net.NetworkLayer;
 import nl.vu.cs.ajira.statistics.StatisticsCollector;
@@ -23,7 +22,7 @@ public class Buckets {
 	private final Map<Long, Bucket> buckets = new HashMap<Long, Bucket>();
 	private final Factory<Bucket> bucketsFactory = new Factory<Bucket>(
 			Bucket.class);
-	Factory<WritableContainer<Tuple>> fb = null;
+	Factory<WritableContainer<SerializedTuple>> fb = null;
 	CachedFilesMerger merger = null;
 	NetworkLayer net = null;
 	private final Map<Long, TransferInfo>[] activeTransfers;
@@ -34,8 +33,8 @@ public class Buckets {
 
 	@SuppressWarnings("unchecked")
 	public Buckets(StatisticsCollector stats,
-			Factory<WritableContainer<Tuple>> fb, CachedFilesMerger merger,
-			NetworkLayer net) {
+			Factory<WritableContainer<SerializedTuple>> fb,
+			CachedFilesMerger merger, NetworkLayer net) {
 		this.stats = stats;
 		this.fb = fb;
 		this.merger = merger;
@@ -108,7 +107,7 @@ public class Buckets {
 		Bucket bucket = null;
 		bucket = getExistingBucket(idSubmission, idBucket);
 		BucketIterator itr = new BucketIterator();
-		itr.init(bucket, idSubmission, idBucket, bucket.getSignature(), this);
+		itr.init(bucket, bucket.getSignature(), this);
 		return itr;
 	}
 

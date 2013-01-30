@@ -52,10 +52,10 @@ class ChainTerminator implements Runnable {
 			output.writeBoolean(failed);
 		}
 
-		@Override
-		public int bytesToStore() {
-			return 33;
-		}
+		// @Override
+		// public int bytesToStore() {
+		// return 33;
+		// }
 	}
 
 	static final Logger log = LoggerFactory.getLogger(ChainTerminator.class);

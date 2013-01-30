@@ -56,10 +56,10 @@ public class TStringArray extends SimpleData {
 		}
 	}
 
-	@Override
-	public int bytesToStore() throws IOException {
-		throw new IOException("Not (yet) implemented");
-	}
+	// @Override
+	// public int bytesToStore() throws IOException {
+	// throw new IOException("Not (yet) implemented");
+	// }
 
 	@Override
 	public void copyTo(SimpleData el) {

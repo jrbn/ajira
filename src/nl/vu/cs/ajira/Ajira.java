@@ -12,11 +12,11 @@ import java.util.List;
 import nl.vu.cs.ajira.actions.ActionFactory;
 import nl.vu.cs.ajira.buckets.Buckets;
 import nl.vu.cs.ajira.buckets.CachedFilesMerger;
+import nl.vu.cs.ajira.buckets.SerializedTuple;
 import nl.vu.cs.ajira.chains.Chain;
 import nl.vu.cs.ajira.chains.ChainHandler;
 import nl.vu.cs.ajira.chains.ChainNotifier;
 import nl.vu.cs.ajira.data.types.DataProvider;
-import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.datalayer.InputLayer;
 import nl.vu.cs.ajira.datalayer.InputLayerRegistry;
 import nl.vu.cs.ajira.datalayer.buckets.BucketsLayer;
@@ -124,8 +124,8 @@ public class Ajira {
 
 			/***** BUFFER FACTORY *****/
 			@SuppressWarnings("unchecked")
-			Class<WritableContainer<Tuple>> clazz = (Class<WritableContainer<Tuple>>) (Class<?>) WritableContainer.class;
-			Factory<WritableContainer<Tuple>> bufferFactory = new Factory<WritableContainer<Tuple>>(
+			Class<WritableContainer<SerializedTuple>> clazz = (Class<WritableContainer<SerializedTuple>>) (Class<?>) WritableContainer.class;
+			Factory<WritableContainer<SerializedTuple>> bufferFactory = new Factory<WritableContainer<SerializedTuple>>(
 					clazz, true, false, Consts.TUPLES_CONTAINER_BUFFER_SIZE);
 
 			/***** NET *******/
@@ -152,7 +152,7 @@ public class Ajira {
 
 				net.setBufferFactory(bufferFactory);
 				net.startIbis();
-				ArrayList<WritableContainer<Tuple>> l = new ArrayList<WritableContainer<Tuple>>(
+				ArrayList<WritableContainer<SerializedTuple>> l = new ArrayList<WritableContainer<SerializedTuple>>(
 						Consts.STARTING_SIZE_FACTORY);
 				for (int i = 0; i < Consts.STARTING_SIZE_FACTORY; i++) {
 					l.add(bufferFactory.get());
@@ -199,7 +199,7 @@ public class Ajira {
 					net, stats, ap, dp, cache, conf);
 
 			/**** START PROCESSING THREADS ****/
-			int i = conf.getInt(Consts.N_PROC_THREADS, 2);
+			int i = conf.getInt(Consts.N_PROC_THREADS, 1);
 			for (int j = 0; j < i; ++j) {
 				log.debug("Starting Chain Handler " + j + " ...");
 				ChainHandler handler = new ChainHandler(globalContext);

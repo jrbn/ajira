@@ -10,7 +10,7 @@ import java.util.List;
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.buckets.Bucket;
 import nl.vu.cs.ajira.buckets.Buckets;
-import nl.vu.cs.ajira.data.types.Tuple;
+import nl.vu.cs.ajira.buckets.SerializedTuple;
 import nl.vu.cs.ajira.storage.Factory;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.utils.Consts;
@@ -30,10 +30,10 @@ class TupleSender {
 	private final List<TupleInfo> sendList = new LinkedList<TupleInfo>();
 	private int checkerTime = 1;
 
-	Factory<WritableContainer<Tuple>> bufferFactory;
+	Factory<WritableContainer<SerializedTuple>> bufferFactory;
 
 	public TupleSender(Context context,
-			Factory<WritableContainer<Tuple>> bufferFactory) {
+			Factory<WritableContainer<SerializedTuple>> bufferFactory) {
 		this.net = context.getNetworkLayer();
 		this.buckets = context.getBuckets();
 		this.bufferFactory = bufferFactory;
@@ -152,7 +152,7 @@ class TupleSender {
 
 	private void sendTuple(TupleInfo info) throws IOException {
 		// long time = System.currentTimeMillis();
-		WritableContainer<Tuple> tmpBuffer = bufferFactory.get();
+		WritableContainer<SerializedTuple> tmpBuffer = bufferFactory.get();
 		tmpBuffer.clear();
 		Bucket bucket = buckets.getExistingBucket(info.bucketKey, false);
 		// long timeMsg = System.currentTimeMillis();
@@ -183,8 +183,7 @@ class TupleSender {
 
 		if (log.isDebugEnabled()) {
 			log.debug("Sent chunk to " + net.getPeerLocation(info.remoteNodeId)
-					+ " of size " + tmpBuffer.getNElements() + " ("
-					+ tmpBuffer.bytesToStore() + ") " + " be copied at "
+					+ " of size " + tmpBuffer.getNElements() + " be copied at "
 					+ info.bucketKey + " req.=" + info.nrequests
 					+ " isTransfered=" + isTransfered
 			// + " Total t.: "

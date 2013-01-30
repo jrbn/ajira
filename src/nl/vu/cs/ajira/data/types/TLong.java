@@ -40,10 +40,10 @@ public final class TLong extends SimpleData {
 		output.writeLong(value);
 	}
 
-	@Override
-	public int bytesToStore() {
-		return 8;
-	}
+	// @Override
+	// public int bytesToStore() {
+	// return 8;
+	// }
 
 	@Override
 	public String toString() {

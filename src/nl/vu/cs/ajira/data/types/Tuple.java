@@ -1,15 +1,9 @@
 package nl.vu.cs.ajira.data.types;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
+public class Tuple {
 
-import nl.vu.cs.ajira.storage.Writable;
-
-public class Tuple implements Writable {
-
-	private SimpleData[] signature;
-	private int nElements = 0;
+	protected SimpleData[] signature;
+	protected int nElements = 0;
 
 	protected Tuple() {
 	}
@@ -28,9 +22,6 @@ public class Tuple implements Writable {
 
 	public void set(SimpleData... elements) {
 		if (elements != null) {
-			// for (int i = 0; i < elements.length; ++i) {
-			// set(elements[i], i);
-			// }
 			signature = elements;
 			nElements = elements.length;
 		} else {
@@ -84,28 +75,9 @@ public class Tuple implements Writable {
 		return false;
 	}
 
-	@Override
-	public void readFrom(DataInput input) throws IOException {
-		for (int i = 0; i < nElements; ++i) {
-			signature[i].readFrom(input);
-		}
-	}
-
-	@Override
-	public void writeTo(DataOutput output) throws IOException {
-		for (int i = 0; i < nElements; ++i) {
-			signature[i].writeTo(output);
-		}
-	}
-
-	@Override
-	public int bytesToStore() throws IOException {
-		int size = 0;
-		for (int i = 0; i < nElements; ++i) {
-			if (signature[i] != null)
-				size += signature[i].bytesToStore();
-		}
-		return size;
+	public void clear() {
+		nElements = 0;
+		signature = null;
 	}
 
 	// @Override

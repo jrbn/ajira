@@ -48,10 +48,10 @@ public class TByteArray extends SimpleData {
 		}
 	}
 
-	@Override
-	public int bytesToStore() throws IOException {
-		return (array == null) ? 4 : 4 + array.length;
-	}
+	// @Override
+	// public int bytesToStore() throws IOException {
+	// return (array == null) ? 4 : 4 + array.length;
+	// }
 
 	@Override
 	public void copyTo(SimpleData el) {
