@@ -264,7 +264,7 @@ public class Bucket {
 	 * @param factory
 	 * 		The factory which is used to create the WritableContainer<T> 
 	 * 		objects (buffer generator)
-	 * 		@see FactoryPattern
+	 * 		@see Factory
 	 * @throws Exception
 	 */
 	public synchronized void addAll(

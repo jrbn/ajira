@@ -8,8 +8,6 @@ import java.util.LinkedList;
 import java.util.List;
 
 import nl.vu.cs.ajira.Context;
-import nl.vu.cs.ajira.storage.Container;
-import nl.vu.cs.ajira.storage.Writable;
 import nl.vu.cs.ajira.chains.Chain;
 
 import org.slf4j.Logger;
@@ -137,6 +135,7 @@ class ChainTerminator implements Runnable {
 						msg.writeBoolean(true);
 						msg.writeInt(header.submissionId);
 						msg.writeInt(header.nodeId);
+						msg.writeObject(header.exception);
 						ibis.finishMessage(msg, header.submissionId);
 					}
 				}

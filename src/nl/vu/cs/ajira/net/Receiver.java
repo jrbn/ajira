@@ -126,6 +126,7 @@ class Receiver implements MessageUpcall {
 			} else {
 				// Cleanup submission
 				submissionNode = message.readInt();
+				Throwable e = (Throwable) message.readObject();
 				// FIXME:
 				// context.cleanupSubmission(submissionNode, idSubmission);
 			}
