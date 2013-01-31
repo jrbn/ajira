@@ -17,9 +17,21 @@ import nl.vu.cs.ajira.storage.container.WritableContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+/**
+ * This class contains the node's primary primitives for 
+ * managing the buckets layer: 
+ * 	- create a bucket,
+ * 	- release a bucket,
+ * 	- get a bucket, 
+ *  - get the iterator,
+ *  - broadcast a signal if there are tuples to 
+ *  transfer (start, finish, clean transfer)
+ *  
+ *  Basically is a wrapper class that is used to control 
+ *  all the primary functions regarding the bucket's data 
+ *  structure.
+ */
 public class Buckets {
-
 	static final Logger log = LoggerFactory.getLogger(Buckets.class);
 	private final Map<Long, Bucket> buckets = new HashMap<Long, Bucket>();
 	private final Factory<Bucket> bucketsFactory = new Factory<Bucket>(
@@ -33,6 +45,22 @@ public class Buckets {
 
 	int myPartition = 0;
 
+	/**
+	 * Custom constructor.
+	 * 
+	 * @param stats
+	 * 		Collection in which we add/aggregate
+	 * 		counters (statistics)
+	 * @param fb
+	 * 		Factory (a pool of unused buffers)
+	 * 		from which we generate buffers
+	 * @param merger
+	 * 		Merger that is being used for merging
+	 * 		the cached files created by the buckets
+	 * 		of this node
+	 * @param net
+	 * 		Network layer
+	 */
 	@SuppressWarnings("unchecked")
 	public Buckets(StatisticsCollector stats,
 			Factory<WritableContainer<Tuple>> fb, CachedFilesMerger merger,
@@ -49,12 +77,33 @@ public class Buckets {
 		}
 	}
 
-	// Ceriel: added getKey method which ensures that high-order int contains
-	// submissionId, even if bucketID < 0.
+	/**
+	 * Method that generates a key for uniquely identifying
+	 * a buffer -- is generated using the bucket's submission 
+	 * identifier and also its own identifier. 
+	 * Ensures that high-order int contains submissionId, 
+	 * even if bucketID < 0.
+	 * 
+	 * @param submissionId
+	 * 		Submission id
+	 * @param bucketId
+	 * 		Bucket id
+	 * @return
+	 */
 	private static long getKey(int submissionId, int bucketId) {
 		return ((long) submissionId << 32) + (bucketId & 0xFFFFFFFFL);
 	}
 
+	/**
+	 * Removes all the buckets (the local and remote ones) 
+	 * owned by this node.
+	 * For each finished registered bucket we call the  
+	 * releaseBucket() method.
+	 * 		@see #releaseBucket
+	 * 
+	 * @param submissionId
+	 * 		Submission id -- used to identify the bucket
+	 */
 	public synchronized void removeBucketsOfSubmission(int submissionId) {
 		if (buckets.size() > 0) {
 			Bucket[] values = buckets.values().toArray(
@@ -64,7 +113,7 @@ public class Buckets {
 			for (Bucket b : values) {
 				if ((int) (b.getKey() >> 32) == submissionId) {
 					// Sometimes happens with HashJoin which never gets
-					// executed. --Ceriel
+					// executed.
 					if (b.isFinished()) {
 						releaseBucket(b);
 						count++;
@@ -79,6 +128,28 @@ public class Buckets {
 		}
 	}
 
+	/**
+	 * This method is used to get (if it does already exists) 
+	 * or create (if it does not) a bucket. 
+	 * Each bucket has associated a unique key which is used
+	 * to check if it has been already created -- if not, then
+	 * we generate a new one using the factory.
+	 * 
+	 * @param submissionNode
+	 * 		Submission node - remote node responsible 
+	 * 		with this remote-bucket (we create a 
+	 * 		remote-bucket on this node's side)
+	 * @param idSubmission
+	 * 		Submission id
+	 * @param idBucket
+	 * 		Bucket id
+	 * @param sortingFunction
+	 * 		Function to sort with
+	 * @param sortingParams
+	 * 		Sorting parameters given along with
+	 * 		the sorting function
+	 * @return
+	 */
 	public synchronized Bucket getOrCreateBucket(int submissionNode,
 			int idSubmission, int idBucket, String sortingFunction,
 			byte[] sortingParams) {
@@ -96,32 +167,60 @@ public class Buckets {
 		return bucket;
 	}
 
+	/**
+	 * Releases a bucket: removes the bucket from the buckets'
+	 * collection and releases the internal buffer also.
+	 * 
+	 * @param bucket 
+	 * 		Bucket to be released
+	 */
 	public synchronized void releaseBucket(Bucket bucket) {
 		if (log.isDebugEnabled()) {
 			log.debug("releaseBucket: " + bucket.getKey());
 		}
+		
 		bucket.releaseTuples();
 		buckets.remove(bucket.getKey());
-		// bucketsFactory.release(bucket);
 	}
 
-	public TupleIterator getIterator(int idSubmission, int idBucket/*
-																	 * , boolean
-																	 * removeDuplicates
-																	 */) {
+	/**
+	 * Returns the iterator of a bucket. 
+	 * The bucket, which iterator is retrieved, is identified 
+	 * by the submission id and its id.
+	 * 
+	 * @param idSubmission
+	 * 		Submission id
+	 * @param idBucket
+	 * 		Bucket id
+	 * @return
+	 * 		Bucket's iterator
+	 */
+	public TupleIterator getIterator(int idSubmission, int idBucket) {
 		Bucket bucket = null;
 		bucket = getExistingBucket(idSubmission, idBucket);
+		
 		BucketIterator itr = new BucketIterator();
-		itr.init(bucket, idSubmission, idBucket, this/* , removeDuplicates */);
+		itr.init(bucket, idSubmission, idBucket, this);
+		
 		return itr;
 	}
 
+	/**
+	 * Releases a bucket-iterator given by parameter
+	 * -- only if the iterator is not used and the
+	 * buckets is flagged with finished and emptied
+	 * of its content.  
+	 * 
+	 * @param itr
+	 * 		Iterator to be released (passing by value)
+	 */
 	public void releaseIterator(BucketIterator itr) {
-		// Ceriel: changed order: read bucket from iterator and release it
+		// Changed order: read bucket from iterator and release it
 		// before releasing the iterator (which may corrupt the bucket field).
 		if (log.isDebugEnabled()) {
 			log.debug("Releasing " + itr);
 		}
+		
 		// If itr.isUsed is false, this iterator was just there to wait for
 		// availability.
 		// So, don't kill the bucket!
@@ -130,11 +229,25 @@ public class Buckets {
 		}
 	}
 
+	/**
+	 * Method that gets an existent bucket given it's key.
+	 * If it does not exist 'null' and if we do not want
+	 * to wait until is created 'null' is returned, otherwise
+	 * we enter into wait() until someone created the bucket.
+	 * 
+	 * @param bucketKey
+	 * 		Bucket's key - to identify the bucket
+	 * @param wait
+	 * 		True/false if we want to wait or not for the
+	 * 		bucket's 'external' creation 
+	 * @return
+	 * 		The bucket that was requested
+	 */
 	public synchronized Bucket getExistingBucket(long bucketKey, boolean wait) {
 		Bucket bucket = buckets.get(bucketKey);
 
 		while (wait && bucket == null) {
-			// wait until somebody else will create it
+			// Wait until somebody else will create it
 			try {
 				if (log.isDebugEnabled()) {
 					log.debug("Waiting for bucket " + bucketKey + " to appear");
@@ -154,16 +267,67 @@ public class Buckets {
 		return bucket;
 	}
 
+	/**
+	 * Method that gets an existent bucket given the
+	 * submission id and its bucket id. 
+	 * With those two identifiers we compose the key
+	 * and we use the other getExistentBuckets(key, wait)
+	 * to retrieve the bucket's reference.
+	 * 		 
+	 * @param submissionId
+	 * 		Submission id
+	 * @param bucketId
+	 * 		Bucket id
+	 * @return
+	 * 		The bucket that was requested
+	 */
 	public synchronized Bucket getExistingBucket(int submissionId, int bucketId) {
 		return getExistingBucket(getKey(submissionId, bucketId), true);
 	}
 
+	/**
+	 *  This class contains transfer information
+	 *  about the remote-bucket:
+	 *  	count: how many transfers have been started
+	 *  	bucket: the remote-bucket being involved
+	 *  			in the transfer
+	 *  	alerted: if the node responsible for the
+	 *  	remote-bucket was alerted or not
+	 */
 	private static class TransferInfo {
 		int count = 1;
 		Bucket bucket;
 		boolean alerted = false;
 	}
 
+	/**
+	 * This method setups the bucket that is going to be
+	 * used for the tuples' transfer. For each one of the 
+	 * remote-buckets it also creates transfer info 
+	 * records (stored in a hash map using the bucket's 
+	 * key)
+	 * 		@see TransferInfo 
+	 * 
+	 * @param submissionNode
+	 * 		The remote node's id
+	 * @param submission
+	 * 		Submission id
+	 * @param node
+	 * 		Node's id (is a simple number 
+	 * 		from 0 to N) 
+	 * 		(--local node)
+	 * @param bucketID
+	 * 		Bucket id
+	 * @param sortingFunction
+	 * 		Function to sort with
+	 * @param sortingParams
+	 * 		Sorting parameters given along with
+	 * 		the sorting function
+	 * @param context
+	 * 		Context of the action
+	 * @return
+	 * 		The bucket prepared for the transfer
+	 */
 	public Bucket startTransfer(int submissionNode, int submission, int node,
 			int bucketID, String sortingFunction, byte[] sortingParams,
 			ActionContext context) {
@@ -174,12 +338,12 @@ public class Buckets {
 		}
 
 		Map<Long, TransferInfo> map = activeTransfers[node];
-
 		long key = getKey(submission, bucketID);
 		TransferInfo info = null;
 
 		synchronized (map) {
 			info = map.get(key);
+			
 			if (info == null) {
 				// There is no transfer active. Create one.
 				info = new TransferInfo();
@@ -191,9 +355,45 @@ public class Buckets {
 				info.count++;
 			}
 		}
+		
 		return info.bucket;
 	}
 
+	/**
+	 * This method is used, at the end of a partition reading,
+	 * to update the counters on the local-bucket and to broadcast
+	 * alerts/signals about the active transfer of the remote-buckets.
+	 * In the alert/signal being sent we also indicate that there
+	 * are tuples available for transfer. Before broadcasting the 
+	 * message, the information about the transfer is updated. 
+	 * 
+	 * @param submissionNode
+	 * 		Node responsible for the remote-bucket
+	 * @param submission
+	 * 		Submission id
+	 * @param node
+	 * 		Node's id
+	 * @param bucketID
+	 * 		Bucket id
+	 * @param chainId
+	 * 		Chain id
+	 * @param parentChainId
+	 * 		Chain's parent id
+	 * @param nchildren
+	 * 		Number of chain's children
+	 * @param responsible
+	 * 		True/false if the current chain is a 
+	 * 		root-chain or not
+	 * @param sortingFunction
+	 * 		Function to sort with
+	 * @param sortingParams	
+	 * 		Sorting parameters given along with
+	 * 		the sorting function
+	 * @param decreaseCounter
+	 * 		True/false if we need to decrease the
+	 * 		transfer info counter or not
+	 * @throws IOException
+	 */
 	public void finishTransfer(int submissionNode, int submission, int node,
 			int bucketID, long chainId, long parentChainId, int nchildren,
 			boolean responsible, String sortingFunction, byte[] sortingParams,
@@ -260,10 +460,21 @@ public class Buckets {
 		net.finishMessage(message, submission);
 	}
 
+	/**
+	 * This method is used to clean all the transfer
+	 * information recorded for a remote-bucket.
+	 * 
+	 * @param nodeId
+	 * 		Node's id (--local node)
+	 * @param submissionId
+	 * 		Submission id
+	 * @param bucketId
+	 * 		Bucket id
+	 * @return
+	 * 		True/false whether the clean was successful or not 
+	 */
 	public boolean cleanTransfer(int nodeId, int submissionId, int bucketId) {
-
 		Map<Long, TransferInfo> map = activeTransfers[nodeId];
-
 		long key = getKey(submissionId, bucketId);
 		TransferInfo info = null;
 
@@ -281,15 +492,29 @@ public class Buckets {
 		}
 	}
 
+	/**
+	 * Checks if the bucket's transfer is still active
+	 * -- if there are anymore buckets in the middle of
+	 * a transfer.
+	 * 
+	 * @param submissionId
+	 * 		Submission id
+	 * @param nodeId
+	 * 		Node's id (--local node)
+	 * @param bucketId
+	 * 		Bucket id
+	 * @return
+	 * 		True/false whether the transfer is still 
+	 * 		active or not
+	 */
 	public boolean isActiveTransfer(int submissionId, int nodeId, int bucketId) {
 		Map<Long, TransferInfo> map = activeTransfers[nodeId];
-
 		long key = getKey(submissionId, bucketId);
 		TransferInfo info = null;
+		
 		synchronized (map) {
 			info = map.get(key);
 			return info != null && info.count > 0;
 		}
-
 	}
 }

@@ -48,7 +48,7 @@ public class Bucket {
 	 * in the file (lastElement), total elements 
 	 * (nElements), how much space remained in the file 
 	 * (remaining size) and the file stream -- descriptor
-	 * (stream) 
+	 * (stream). 
 	 */
 	static class FileMetaData {
 		String filename;
@@ -156,13 +156,24 @@ public class Bucket {
 	 * variables and objects.
 	 * 
 	 * @param key
+	 * 		Bucket key
 	 * @param stats
+	 * 		Statistics collection -- where to aggregate
+	 * 		the statistics
 	 * @param submissionNode
+	 * 		Node responsible with the remote-bucket
 	 * @param submissionId
+	 * 		Submission id
 	 * @param comparator
+	 * 		Comparator - function to compare with
 	 * @param params
+	 * 		Sorting parameters given along with t
+	 * 		he sorting function
 	 * @param fb
+	 * 		Factory used to generate buffers 
+	 * 		-- a pool of unused buffers 
 	 * @param merger
+	 * 		Cache file merger
 	 */
 	@SuppressWarnings("unchecked")
 	void init(long key, StatisticsCollector stats, int submissionNode,
@@ -216,7 +227,7 @@ public class Bucket {
 	 * again. If this action also fails than an exception is raised.
 	 * 
 	 * @param tuple 
-	 * 		The tuple that has to be inserted in the bucket.
+	 * 		The tuple that has to be inserted in the bucket
 	 * @return 
 	 * 		True if the element could be added into the buffer, 
 	 * 		or false (actually never -- an Exception is thrown
@@ -257,13 +268,13 @@ public class Bucket {
 	 * remote bucket.
 	 * 
 	 * @param newTuplesContainer
-	 * 		The new buffer that has to be inserted
+	 * 		New buffer that has to be inserted
 	 * @param isSorted
 	 * 		True/false if whether the tuples from inside the container 
 	 * 		are sorted or not
 	 * @param factory
-	 * 		The factory which is used to create the WritableContainer<T> 
-	 * 		objects (buffer generator)
+	 * 		Factory which is used to generate WritableContainer<T> 
+	 * 		objects -- a pool of unused	buffers
 	 * 		@see Factory
 	 * @throws Exception
 	 */
@@ -349,7 +360,7 @@ public class Bucket {
 	 * @param sorted
 	 * 		True/false if the tuples inside the buffer are sorted or not
 	 * @param fb
-	 * 		The factory used for the buffer creation
+	 * 		Factory used for the buffer generation
 	 * 		@see FactoryPattern
 	 * @throws IOException
 	 */
@@ -518,10 +529,10 @@ public class Bucket {
 
 	/**
 	 * This method is used to copy an entire file from the 
-	 * disk, @see cacheFiles, which contains cached sorted 
-	 * tuples, to an in-memory buffer if the minimum element 
-	 * from the file is less then the minimum element from 
-	 * the sorted list.
+	 * disk, which contains cached sorted tuples, to a buffer, 
+	 * if the minimum element from the file is less then 
+	 * the minimum element from the sorted list.
+	 * 		@see cacheFiles 
 	 * 
 	 * @param meta
 	 * 		The meta information about the file that is 
@@ -616,6 +627,9 @@ public class Bucket {
 		this.iter = iter;
 	}
 
+	/**
+	 * Release the buffer -- GC. 
+	 */
 	void releaseTuples() {
 		if (tuples != null) {
 			tuples = null;
@@ -681,6 +695,7 @@ public class Bucket {
 					int tuplesFromBuffer = 0;
 					int tuplesFromStream = 0;
 					long time = System.currentTimeMillis();
+					
 					do {
 						// Remove the minimum of the tuples and try to add it to
 						// the buffer.
@@ -924,7 +939,7 @@ public class Bucket {
 	/**
 	 * Method used to enter in wait() until the bucket is marked/flagged
 	 * as being finished (the last sequence of tuples / last chunk was
-	 * transferred) 
+	 * transferred).
 	 * 
 	 * @return 
 	 * 		True, when the bucket is finished
