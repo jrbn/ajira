@@ -49,16 +49,17 @@ public class Buckets {
 	 * Custom constructor.
 	 * 
 	 * @param stats
-	 * 		The collection in which we add many sorts of
+	 * 		Collection in which we add/aggregate
 	 * 		counters (statistics)
 	 * @param fb
-	 * 		The buckets' factory/generator
+	 * 		Factory (a pool of unused buffers)
+	 * 		from which we generate buffers
 	 * @param merger
-	 * 		The merger that is being used for merging
+	 * 		Merger that is being used for merging
 	 * 		the cached files created by the buckets
 	 * 		of this node
 	 * @param net
-	 * 		The network layer
+	 * 		Network layer
 	 */
 	@SuppressWarnings("unchecked")
 	public Buckets(StatisticsCollector stats,
@@ -135,8 +136,9 @@ public class Buckets {
 	 * we generate a new one using the factory.
 	 * 
 	 * @param submissionNode
-	 * 		Submission node - the remote node for which we
-	 * 		create a remote-bucket on this node's side
+	 * 		Submission node - remote node responsible 
+	 * 		with this remote-bucket (we create a 
+	 * 		remote-bucket on this node's side)
 	 * @param idSubmission
 	 * 		Submission id
 	 * @param idBucket
@@ -319,7 +321,7 @@ public class Buckets {
 	 * @param sortingFunction
 	 * 		Function to sort with
 	 * @param sortingParams
-	 * 		Sorting parameters used along with
+	 * 		Sorting parameters given along with
 	 * 		the sorting function
 	 * @param context
 	 * 		Context of the action
@@ -385,7 +387,7 @@ public class Buckets {
 	 * @param sortingFunction
 	 * 		Function to sort with
 	 * @param sortingParams	
-	 * 		Sorting parameters used along with
+	 * 		Sorting parameters given along with
 	 * 		the sorting function
 	 * @param decreaseCounter
 	 * 		True/false if we need to decrease the

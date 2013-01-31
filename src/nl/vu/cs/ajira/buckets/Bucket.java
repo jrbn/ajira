@@ -156,13 +156,24 @@ public class Bucket {
 	 * variables and objects.
 	 * 
 	 * @param key
+	 * 		Bucket key
 	 * @param stats
+	 * 		Statistics collection -- where to aggregate
+	 * 		the statistics
 	 * @param submissionNode
+	 * 		Node responsible with the remote-bucket
 	 * @param submissionId
+	 * 		Submission id
 	 * @param comparator
+	 * 		Comparator - function to compare with
 	 * @param params
+	 * 		Sorting parameters given along with t
+	 * 		he sorting function
 	 * @param fb
+	 * 		Factory used to generate buffers 
+	 * 		-- a pool of unused buffers 
 	 * @param merger
+	 * 		Cache file merger
 	 */
 	@SuppressWarnings("unchecked")
 	void init(long key, StatisticsCollector stats, int submissionNode,
@@ -257,15 +268,14 @@ public class Bucket {
 	 * remote bucket.
 	 * 
 	 * @param newTuplesContainer
-	 * 		The new buffer that has to be inserted
+	 * 		New buffer that has to be inserted
 	 * @param isSorted
 	 * 		True/false if whether the tuples from inside the container 
 	 * 		are sorted or not
 	 * @param factory
-	 * 		The factory which is used to create the WritableContainer<T> 
-	 * 		objects (buffer factory class)
+	 * 		Factory which is used to generate WritableContainer<T> 
+	 * 		objects -- a pool of unused	buffers
 	 * 		@see Factory<K>
-	 * 		@see Java - Factory Pattern
 	 * @throws Exception
 	 */
 	public synchronized void addAll(
@@ -350,7 +360,7 @@ public class Bucket {
 	 * @param sorted
 	 * 		True/false if the tuples inside the buffer are sorted or not
 	 * @param fb
-	 * 		The factory used for the buffer creation
+	 * 		Factory used for the buffer generation
 	 * 		@see FactoryPattern
 	 * @throws IOException
 	 */
@@ -685,6 +695,7 @@ public class Bucket {
 					int tuplesFromBuffer = 0;
 					int tuplesFromStream = 0;
 					long time = System.currentTimeMillis();
+					
 					do {
 						// Remove the minimum of the tuples and try to add it to
 						// the buffer.

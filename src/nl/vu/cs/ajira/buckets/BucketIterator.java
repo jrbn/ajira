@@ -49,9 +49,10 @@ public class BucketIterator extends TupleIterator {
 	}
 
 	/**
-	 * Next: fetches a chunk from the bucket to iterate
-	 * over (the chunk gets stored in the iterator's
-	 * buffer, 'tuples')
+	 * Fetches a chunk from the bucket  
+	 * and stores it in the iterator's
+	 * buffer, 'tuples' -- fetch & read
+	 * 		@see getTuple()
 	 * 
 	 * @return	
 	 * 		True/false if the buffer still contains 
@@ -107,7 +108,7 @@ public class BucketIterator extends TupleIterator {
 	 * Checks if the bucket is finished.
 	 * 
 	 * @return
-	 * 		True/false wether the bucket is finished
+	 * 		True/false whether the bucket is finished
 	 * 		or not
 	 */
 	@Override
