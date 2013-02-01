@@ -151,13 +151,10 @@ class TupleSender {
 	}
 
 	private void sendTuple(TupleInfo info) throws IOException {
-		// long time = System.currentTimeMillis();
 		WritableContainer<SerializedTuple> tmpBuffer = bufferFactory.get();
 		tmpBuffer.clear();
 		Bucket bucket = buckets.getExistingBucket(info.bucketKey, false);
-		// long timeMsg = System.currentTimeMillis();
 		bucket.removeChunk(tmpBuffer);
-		// long timeRetrieve = System.currentTimeMillis() - timeMsg;
 		WriteMessage msg = net.getMessageToSend(net
 				.getPeerLocation(info.remoteNodeId));
 		msg.writeByte((byte) 5);
@@ -185,16 +182,10 @@ class TupleSender {
 			log.debug("Sent chunk to " + net.getPeerLocation(info.remoteNodeId)
 					+ " of size " + tmpBuffer.getNElements() + " be copied at "
 					+ info.bucketKey + " req.=" + info.nrequests
-					+ " isTransfered=" + isTransfered
-			// + " Total t.: "
-			// + (System.currentTimeMillis() - time)
-			// + " time w. msg: "
-			// + (System.currentTimeMillis() - timeMsg)
-			// + " time r. buffer: " + timeRetrieve
-			);
+					+ " isTransfered=" + isTransfered);
 		}
 
-		// bufferFactory.release(tmpBuffer);
+		bufferFactory.release(tmpBuffer);
 		tuFactory.release(info);
 	}
 }

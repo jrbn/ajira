@@ -246,7 +246,7 @@ public class Chain implements Writable, Query {
 		int totalSize = bufferSize;
 		cos.setCurrentPosition(bufferSize);
 		action.writeTo(cos);
-		int sizeAction = cos.cb.end - totalSize;
+		int sizeAction = cos.cb.getEnd() - totalSize;
 		bufferSize += sizeAction;
 		Utils.encodeInt(buffer, bufferSize, sizeAction);
 		bufferSize += 4;

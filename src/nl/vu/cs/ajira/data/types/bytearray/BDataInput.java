@@ -128,6 +128,11 @@ public class BDataInput implements DataInput {
 
 	@Override
 	public int skipBytes(int n) throws IOException {
-		throw new IOException("Not supported");
+		if (cb.start + n < cb.buffer.length) {
+			cb.start += n;
+		} else {
+			cb.start = n - (cb.buffer.length - cb.start);
+		}
+		return n;
 	}
 }

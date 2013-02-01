@@ -8,8 +8,6 @@ public interface Container<K extends Writable> {
 
 	public boolean addAll(WritableContainer<K> elements) throws Exception;
 
-	public boolean get(K element, int index) throws Exception;
-
 	public boolean remove(K element) throws Exception;
 
 	public int getNElements();

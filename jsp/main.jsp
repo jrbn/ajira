@@ -112,8 +112,8 @@ div {
 			</tr>
 			<tr>
 				<td><b>Size of ChainRes. Buffer</b></td>
-				<td class="values"><%=context.getChainsToResolve().getRawElementsSize() / 1024 / 1024%>
-					/ <%=context.getChainsToResolve().inmemory_size() / 1024%> KB</td>
+				<td class="values"><%=context.getChainsToResolve().getRawSize() / 1024 / 1024%>
+					/ <%=context.getChainsToResolve().getTotalCapacity() / 1024%> KB</td>
 			</tr>
 			<tr>
 				<td><b># Elements in ChainHandl. Buffer</b></td>
@@ -121,8 +121,8 @@ div {
 			</tr>
 			<tr>
 				<td><b>Size of ChainHandl. Buffer</b></td>
-				<td class="values"><%=context.getChainsToProcess().getRawElementsSize() / 1024 / 1024%>
-					/ <%=context.getChainsToProcess().inmemory_size() / 1024%> KB</td>
+				<td class="values"><%=context.getChainsToProcess().getRawSize() / 1024 / 1024%>
+					/ <%=context.getChainsToProcess().getTotalCapacity() / 1024%> KB</td>
 			</tr>
 		</table>
 	</div>

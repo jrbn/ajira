@@ -16,7 +16,7 @@ public class BucketIterator extends TupleIterator {
 	static final Logger log = LoggerFactory.getLogger(BucketIterator.class);
 
 	WritableContainer<SerializedTuple> tuples = new WritableContainer<SerializedTuple>(
-			true, false, Consts.TUPLES_CONTAINER_BUFFER_SIZE);
+			Consts.TUPLES_CONTAINER_BUFFER_SIZE);
 
 	Bucket bucket;
 	boolean isUsed;

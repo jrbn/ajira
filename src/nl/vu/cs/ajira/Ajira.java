@@ -122,12 +122,6 @@ public class Ajira {
 				}
 			}
 
-			/***** BUFFER FACTORY *****/
-			@SuppressWarnings("unchecked")
-			Class<WritableContainer<SerializedTuple>> clazz = (Class<WritableContainer<SerializedTuple>>) (Class<?>) WritableContainer.class;
-			Factory<WritableContainer<SerializedTuple>> bufferFactory = new Factory<WritableContainer<SerializedTuple>>(
-					clazz, true, false, Consts.TUPLES_CONTAINER_BUFFER_SIZE);
-
 			/***** NET *******/
 			NetworkLayer net = NetworkLayer.getInstance();
 			boolean serverMode = true;
@@ -150,6 +144,10 @@ public class Ajira {
 					}
 				}
 
+				@SuppressWarnings("unchecked")
+				Class<WritableContainer<SerializedTuple>> clazz = (Class<WritableContainer<SerializedTuple>>) (Class<?>) WritableContainer.class;
+				Factory<WritableContainer<SerializedTuple>> bufferFactory = new Factory<WritableContainer<SerializedTuple>>(
+						clazz, Consts.TUPLES_CONTAINER_BUFFER_SIZE);
 				net.setBufferFactory(bufferFactory);
 				net.startIbis();
 				ArrayList<WritableContainer<SerializedTuple>> l = new ArrayList<WritableContainer<SerializedTuple>>(
@@ -175,8 +173,7 @@ public class Ajira {
 			List<ChainHandler> listHandlers = new ArrayList<ChainHandler>();
 			StatisticsCollector stats = new StatisticsCollector(conf, net);
 			CachedFilesMerger merger = new CachedFilesMerger();
-			Buckets tuplesContainer = new Buckets(stats, bufferFactory, merger,
-					net);
+			Buckets tuplesContainer = new Buckets(stats, merger, net);
 			ActionFactory ap = new ActionFactory();
 			DataProvider dp = new DataProvider();
 			SubmissionCache cache = new SubmissionCache(net);

@@ -12,6 +12,7 @@ import nl.vu.cs.ajira.net.NetworkLayer;
 import nl.vu.cs.ajira.statistics.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Factory;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
+import nl.vu.cs.ajira.utils.Consts;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,7 +23,15 @@ public class Buckets {
 	private final Map<Long, Bucket> buckets = new HashMap<Long, Bucket>();
 	private final Factory<Bucket> bucketsFactory = new Factory<Bucket>(
 			Bucket.class);
-	Factory<WritableContainer<SerializedTuple>> fb = null;
+
+	// Buffer factories
+	@SuppressWarnings("unchecked")
+	Class<WritableContainer<SerializedTuple>> clazz = (Class<WritableContainer<SerializedTuple>>) (Class<?>) WritableContainer.class;
+	Factory<WritableContainer<SerializedTuple>> fb_not_sorted = new Factory<WritableContainer<SerializedTuple>>(
+			clazz, Consts.TUPLES_CONTAINER_BUFFER_SIZE);;
+	Factory<WritableContainer<SerializedTuple>> fb_sorted = new Factory<WritableContainer<SerializedTuple>>(
+			clazz, true, Consts.TUPLES_CONTAINER_BUFFER_SIZE);;
+
 	CachedFilesMerger merger = null;
 	NetworkLayer net = null;
 	private final Map<Long, TransferInfo>[] activeTransfers;
@@ -32,14 +41,11 @@ public class Buckets {
 	int myPartition = 0;
 
 	@SuppressWarnings("unchecked")
-	public Buckets(StatisticsCollector stats,
-			Factory<WritableContainer<SerializedTuple>> fb,
-			CachedFilesMerger merger, NetworkLayer net) {
+	public Buckets(StatisticsCollector stats, CachedFilesMerger merger,
+			NetworkLayer net) {
 		this.stats = stats;
-		this.fb = fb;
 		this.merger = merger;
 		this.myPartition = net.getMyPartition();
-
 		this.net = net;
 		activeTransfers = new Map[net.getNumberNodes()];
 		for (int i = 0; i < activeTransfers.length; ++i) {
@@ -85,8 +91,13 @@ public class Buckets {
 
 		if (bucket == null) {
 			bucket = bucketsFactory.get();
-			bucket.init(key, stats, submissionNode, idSubmission, sort,
-					sortingParams, fb, merger, signature);
+			if (sort) {
+				bucket.init(key, stats, submissionNode, idSubmission, sort,
+						sortingParams, fb_sorted, merger, signature);
+			} else {
+				bucket.init(key, stats, submissionNode, idSubmission, sort,
+						sortingParams, fb_not_sorted, merger, signature);
+			}
 			buckets.put(key, bucket);
 			this.notifyAll();
 		}
@@ -100,7 +111,6 @@ public class Buckets {
 		}
 		bucket.releaseTuples();
 		buckets.remove(bucket.getKey());
-		// bucketsFactory.release(bucket);
 	}
 
 	public TupleIterator getIterator(int idSubmission, int idBucket) {

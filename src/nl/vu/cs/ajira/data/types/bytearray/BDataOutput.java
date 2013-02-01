@@ -6,17 +6,17 @@ import java.io.IOException;
 public class BDataOutput implements DataOutput {
 
 	public ByteArray cb;
+	protected boolean grow;
 
-	public BDataOutput() {
-	}
-
-	public BDataOutput(ByteArray cb) {
+	public BDataOutput(ByteArray cb, boolean grow) {
 		this.cb = cb;
+		this.grow = grow;
 	}
 
 	public BDataOutput(byte[] buffer) {
 		cb = new ByteArray();
 		cb.buffer = buffer;
+		grow = false;
 	}
 
 	public void setCurrentPosition(int bufferSize) {
@@ -25,16 +25,25 @@ public class BDataOutput implements DataOutput {
 
 	@Override
 	public void write(int b) throws IOException {
+		if (grow && !cb.grow(1)) {
+			throw new IOException("Not enough space");
+		}
 		cb.buffer[cb.end++] = (byte) b;
 	}
 
 	@Override
 	public void write(byte[] b) throws IOException {
+		if (grow && !cb.grow(b.length)) {
+			throw new IOException("Not enough space");
+		}
 		write(b, 0, b.length);
 	}
 
 	@Override
 	public void write(byte[] b, int off, int len) throws IOException {
+		if (grow && !cb.grow(len)) {
+			throw new IOException("Not enough space");
+		}
 		System.arraycopy(b, off, cb.buffer, cb.end, len);
 		cb.end += len;
 	}
@@ -49,6 +58,9 @@ public class BDataOutput implements DataOutput {
 
 	@Override
 	public void writeByte(int v) throws IOException {
+		if (grow && !cb.grow(1)) {
+			throw new IOException("Not enough space");
+		}
 		write(v);
 	}
 
@@ -79,6 +91,9 @@ public class BDataOutput implements DataOutput {
 
 	@Override
 	public void writeInt(int value) throws IOException {
+		if (grow && !cb.grow(4)) {
+			throw new IOException("Not enough space");
+		}
 		int end = cb.end;
 		cb.buffer[end] = (byte) (value >> 24);
 		cb.buffer[end + 1] = (byte) (value >> 16);
@@ -89,6 +104,9 @@ public class BDataOutput implements DataOutput {
 
 	@Override
 	public void writeLong(long value) throws IOException {
+		if (grow && !cb.grow(8)) {
+			throw new IOException("Not enough space");
+		}
 		int end = cb.end;
 		cb.buffer[end] = (byte) (value >> 56);
 		cb.buffer[end + 1] = (byte) (value >> 48);
@@ -103,6 +121,9 @@ public class BDataOutput implements DataOutput {
 
 	@Override
 	public void writeShort(int value) throws IOException {
+		if (grow && !cb.grow(2)) {
+			throw new IOException("Not enough space");
+		}
 		int end = cb.end;
 		cb.buffer[end] = (byte) (value >> 8);
 		cb.buffer[end + 1] = (byte) (value);

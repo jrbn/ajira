@@ -219,7 +219,7 @@ public class Bucket {
 
 	public synchronized boolean availableToTransmit() {
 		return elementsInCache > 0
-				|| (tuples != null && tuples.bytesToStore() > Consts.MIN_SIZE_TO_SEND);
+				|| (tuples != null && tuples.getRawSize() > Consts.MIN_SIZE_TO_SEND);
 	}
 
 	private void cacheBuffer(final WritableContainer<SerializedTuple> buffer,
@@ -228,7 +228,6 @@ public class Bucket {
 			throws IOException {
 
 		if (buffer.getNElements() == 0) {
-			// nothing to cache.
 			return;
 		}
 
@@ -267,16 +266,10 @@ public class Bucket {
 
 					cacheOutputStream.close();
 
-					/*
-					 * if (log.isDebugEnabled()) { checkFile(cacheFile); }
-					 */
-
 					// Register file in the list of cachedBuffers
 					FDataInput is = new FDataInput(new BufferedInputStream(
 							new SnappyInputStream(
 									new FileInputStream(cacheFile)), 65536));
-					// FDataInput is = new FDataInput(new BufferedInputStream(
-					// new FileInputStream(cacheFile), 65536));
 
 					synchronized (Bucket.this) {
 						if (!sort) {
@@ -292,15 +285,15 @@ public class Bucket {
 								meta.filename = cacheFile.getAbsolutePath();
 								meta.stream = is;
 								meta.nElements = buffer.getNElements() - 1;
-								meta.lastElement = buffer.returnLastElement();
+								meta.lastElement = buffer.removeLastElement();
 								if (log.isDebugEnabled()) {
 									log.debug("Size of first element is "
 											+ length
 											+ ", size of last element is "
 											+ meta.lastElement.length);
 								}
-								meta.remainingSize = buffer
-										.getRawElementsSize() - 4 - length;
+								meta.remainingSize = buffer.getRawSize() - 4
+										- length;
 
 								sortedCacheFiles.put(rawValue, meta);
 								minimumSortedList.add(rawValue);
@@ -314,7 +307,6 @@ public class Bucket {
 							}
 						}
 					}
-					// fb.release(buffer);
 				} catch (IOException e) {
 					// TODO: what to do now?
 					log.error("Got exception while writing cache!", e);
@@ -447,7 +439,7 @@ public class Bucket {
 		if (tuples == null) {
 			return 0;
 		} else {
-			return tuples.inmemory_size();
+			return tuples.getTotalCapacity();
 		}
 
 	}
@@ -506,7 +498,7 @@ public class Bucket {
 							"Time spent reading from cache (ms)",
 							System.currentTimeMillis() - time);
 					stats.addCounter(submissionNode, submissionId,
-							"Bytes read from cache", tmpBuffer.bytesToStore());
+							"Bytes read from cache", tmpBuffer.getRawSize());
 					elementsInCache -= tmpBuffer.getNElements();
 					di.close();
 				} else { // Need to sort
