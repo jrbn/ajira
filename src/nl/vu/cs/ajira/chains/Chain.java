@@ -11,7 +11,7 @@ import nl.vu.cs.ajira.actions.ActionConf;
 import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.actions.ActionController;
 import nl.vu.cs.ajira.actions.ActionFactory;
-import nl.vu.cs.ajira.buckets.SerializedTuple;
+import nl.vu.cs.ajira.buckets.TupleSerializer;
 import nl.vu.cs.ajira.data.types.DataProvider;
 import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.Tuple;
@@ -83,7 +83,7 @@ public class Chain implements Writable, Query {
 				signature[i] = DataProvider.getInstance().get(input.readByte());
 			}
 			tuple.set(signature);
-			new SerializedTuple(tuple).readFrom(input);
+			new TupleSerializer(tuple).readFrom(input);
 		} else {
 			tuple.clear();
 		}
@@ -100,7 +100,7 @@ public class Chain implements Writable, Query {
 			for (int i = 0; i < tuple.getNElements(); ++i) {
 				output.write(tuple.get(i).getIdDatatype());
 			}
-			new SerializedTuple(tuple).writeTo(output);
+			new TupleSerializer(tuple).writeTo(output);
 		} else {
 			output.writeBoolean(false);
 		}

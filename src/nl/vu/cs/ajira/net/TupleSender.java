@@ -10,7 +10,7 @@ import java.util.List;
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.buckets.Bucket;
 import nl.vu.cs.ajira.buckets.Buckets;
-import nl.vu.cs.ajira.buckets.SerializedTuple;
+import nl.vu.cs.ajira.buckets.TupleSerializer;
 import nl.vu.cs.ajira.storage.Factory;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.utils.Consts;
@@ -30,10 +30,10 @@ class TupleSender {
 	private final List<TupleInfo> sendList = new LinkedList<TupleInfo>();
 	private int checkerTime = 1;
 
-	Factory<WritableContainer<SerializedTuple>> bufferFactory;
+	Factory<WritableContainer<TupleSerializer>> bufferFactory;
 
 	public TupleSender(Context context,
-			Factory<WritableContainer<SerializedTuple>> bufferFactory) {
+			Factory<WritableContainer<TupleSerializer>> bufferFactory) {
 		this.net = context.getNetworkLayer();
 		this.buckets = context.getBuckets();
 		this.bufferFactory = bufferFactory;
@@ -151,7 +151,7 @@ class TupleSender {
 	}
 
 	private void sendTuple(TupleInfo info) throws IOException {
-		WritableContainer<SerializedTuple> tmpBuffer = bufferFactory.get();
+		WritableContainer<TupleSerializer> tmpBuffer = bufferFactory.get();
 		tmpBuffer.clear();
 		Bucket bucket = buckets.getExistingBucket(info.bucketKey, false);
 		bucket.removeChunk(tmpBuffer);

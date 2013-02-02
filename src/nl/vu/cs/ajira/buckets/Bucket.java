@@ -16,12 +16,14 @@ import java.util.List;
 import java.util.Map;
 
 import nl.vu.cs.ajira.chains.ChainNotifier;
+import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.data.types.bytearray.FDataInput;
 import nl.vu.cs.ajira.data.types.bytearray.FDataOutput;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
 import nl.vu.cs.ajira.statistics.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Factory;
+import nl.vu.cs.ajira.storage.RawComparator;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.utils.Consts;
 
@@ -90,11 +92,11 @@ public class Bucket {
 	private byte[] sortingFields = null;
 	private final TupleComparator comparator = new TupleComparator();
 	private byte[] signature;
-	private SerializedTuple serializer = new SerializedTuple();
+	private TupleSerializer serializer = new TupleSerializer();
 
 	private long elementsInCache = 0;
 
-	private Factory<WritableContainer<SerializedTuple>> fb = null;
+	private Factory<WritableContainer<TupleSerializer>> fb = null;
 	boolean gettingData;
 	private int highestSequence;
 	private boolean isBufferSorted = true;
@@ -130,7 +132,7 @@ public class Bucket {
 	private StatisticsCollector stats;
 	private int submissionId;
 	private int submissionNode;
-	private WritableContainer<SerializedTuple> tuples = null;
+	private WritableContainer<TupleSerializer> tuples = null;
 
 	public synchronized boolean add(Tuple tuple) throws Exception {
 
@@ -159,9 +161,9 @@ public class Bucket {
 	}
 
 	public synchronized void addAll(
-			WritableContainer<SerializedTuple> newTuplesContainer,
+			WritableContainer<TupleSerializer> newTuplesContainer,
 			boolean isSorted,
-			Factory<WritableContainer<SerializedTuple>> factory)
+			Factory<WritableContainer<TupleSerializer>> factory)
 			throws Exception {
 		if (tuples == null) {
 			tuples = fb.get();
@@ -207,7 +209,7 @@ public class Bucket {
 					cacheBuffer(newTuplesContainer, isSorted, factory);
 				} else {
 					// Copy the container ...
-					WritableContainer<SerializedTuple> box = fb.get();
+					WritableContainer<TupleSerializer> box = fb.get();
 					newTuplesContainer.copyTo(box);
 					cacheBuffer(box, isSorted, fb);
 				}
@@ -222,9 +224,9 @@ public class Bucket {
 				|| (tuples != null && tuples.getRawSize() > Consts.MIN_SIZE_TO_SEND);
 	}
 
-	private void cacheBuffer(final WritableContainer<SerializedTuple> buffer,
+	private void cacheBuffer(final WritableContainer<TupleSerializer> buffer,
 			final boolean sorted,
-			final Factory<WritableContainer<SerializedTuple>> fb)
+			final Factory<WritableContainer<TupleSerializer>> fb)
 			throws IOException {
 
 		if (buffer.getNElements() == 0) {
@@ -361,7 +363,7 @@ public class Bucket {
 	}
 
 	private boolean copyFullFile(FileMetaData meta,
-			WritableContainer<SerializedTuple> tmpBuffer, byte[] minimum)
+			WritableContainer<TupleSerializer> tmpBuffer, byte[] minimum)
 			throws Exception {
 		// Check whether the last element is smaller than the second minimum.
 		// If it is, then we can copy the entire file in the buffer.
@@ -391,9 +393,10 @@ public class Bucket {
 		return sortingFields;
 	}
 
+	@SuppressWarnings("unchecked")
 	void init(long key, StatisticsCollector stats, int submissionNode,
 			int submissionId, boolean sort, byte[] sortingFields,
-			Factory<WritableContainer<SerializedTuple>> fb,
+			Factory<WritableContainer<TupleSerializer>> fb,
 			CachedFilesMerger merger, byte[] signature) {
 		this.key = key;
 		this.fb = fb;
@@ -423,14 +426,30 @@ public class Bucket {
 
 		isBufferSorted = true;
 		this.sort = sort;
-		this.sortingFields = sortingFields;
-		this.comparator.init(signature, sortingFields);
 		this.signature = signature;
 		if (sort) {
-			this.serializer = new SerializedTuple(sortingFields,
+			this.sortingFields = sortingFields;
+			// Retrieve suitable comparators for the fields to sort
+			RawComparator<? extends SimpleData>[] array = null;
+
+			if (sortingFields != null) {
+				array = new RawComparator[sortingFields.length];
+				for (int i = 0; i < sortingFields.length; ++i) {
+					array[i] = RawComparator
+							.getComparator(signature[sortingFields[i]]);
+				}
+			} else {
+				array = new RawComparator[signature.length];
+				for (int i = 0; i < signature.length; ++i) {
+					array[i] = RawComparator.getComparator(signature[i]);
+				}
+			}
+
+			this.comparator.init(array);
+			this.serializer = new TupleSerializer(sortingFields,
 					signature.length);
 		} else {
-			this.serializer = new SerializedTuple();
+			this.serializer = new TupleSerializer();
 		}
 
 	}
@@ -476,7 +495,7 @@ public class Bucket {
 	}
 
 	public synchronized boolean removeChunk(
-			WritableContainer<SerializedTuple> tmpBuffer) {
+			WritableContainer<TupleSerializer> tmpBuffer) {
 
 		gettingData = true;
 
@@ -743,5 +762,9 @@ public class Bucket {
 
 	public byte[] getSignature() {
 		return signature;
+	}
+
+	public TupleSerializer getTupleSerializer() {
+		return serializer;
 	}
 }

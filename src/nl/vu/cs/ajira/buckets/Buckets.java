@@ -26,10 +26,10 @@ public class Buckets {
 
 	// Buffer factories
 	@SuppressWarnings("unchecked")
-	Class<WritableContainer<SerializedTuple>> clazz = (Class<WritableContainer<SerializedTuple>>) (Class<?>) WritableContainer.class;
-	Factory<WritableContainer<SerializedTuple>> fb_not_sorted = new Factory<WritableContainer<SerializedTuple>>(
+	Class<WritableContainer<TupleSerializer>> clazz = (Class<WritableContainer<TupleSerializer>>) (Class<?>) WritableContainer.class;
+	Factory<WritableContainer<TupleSerializer>> fb_not_sorted = new Factory<WritableContainer<TupleSerializer>>(
 			clazz, Consts.TUPLES_CONTAINER_BUFFER_SIZE);;
-	Factory<WritableContainer<SerializedTuple>> fb_sorted = new Factory<WritableContainer<SerializedTuple>>(
+	Factory<WritableContainer<TupleSerializer>> fb_sorted = new Factory<WritableContainer<TupleSerializer>>(
 			clazz, true, Consts.TUPLES_CONTAINER_BUFFER_SIZE);;
 
 	CachedFilesMerger merger = null;

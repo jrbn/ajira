@@ -3,7 +3,7 @@ package nl.vu.cs.ajira.actions;
 import java.io.File;
 
 import nl.vu.cs.ajira.actions.support.FilterHiddenFiles;
-import nl.vu.cs.ajira.buckets.SerializedTuple;
+import nl.vu.cs.ajira.buckets.TupleSerializer;
 import nl.vu.cs.ajira.data.types.TInt;
 import nl.vu.cs.ajira.data.types.TString;
 import nl.vu.cs.ajira.data.types.Tuple;
@@ -62,7 +62,7 @@ public class ReadFromFiles extends Action {
 		}
 
 		ActionConf c = ActionFactory.getActionConf(SetQueryInputLayer.class);
-		c.setParamWritable(SetQueryInputLayer.TUPLE, new SerializedTuple(tuple));
+		c.setParamWritable(SetQueryInputLayer.TUPLE, new TupleSerializer(tuple));
 		output.branch(c);
 
 		currentFileSplit = new FileCollection();

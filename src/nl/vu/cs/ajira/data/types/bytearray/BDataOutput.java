@@ -136,4 +136,11 @@ public class BDataOutput implements DataOutput {
 		writeInt(b.length);
 		write(b);
 	}
+
+	public void skipBytes(int bytes) throws IOException {
+		if (grow && !cb.grow(bytes)) {
+			throw new IOException("Not enough space");
+		}
+		cb.end += bytes;
+	}
 }

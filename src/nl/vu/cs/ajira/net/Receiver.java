@@ -9,7 +9,7 @@ import java.io.IOException;
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.buckets.Bucket;
 import nl.vu.cs.ajira.buckets.Buckets;
-import nl.vu.cs.ajira.buckets.SerializedTuple;
+import nl.vu.cs.ajira.buckets.TupleSerializer;
 import nl.vu.cs.ajira.chains.Chain;
 import nl.vu.cs.ajira.statistics.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Container;
@@ -26,7 +26,7 @@ class Receiver implements MessageUpcall {
 	static final Logger log = LoggerFactory.getLogger(Receiver.class);
 
 	Factory<Chain> chainFactory = new Factory<Chain>(Chain.class);
-	Factory<WritableContainer<SerializedTuple>> bufferFactory;
+	Factory<WritableContainer<TupleSerializer>> bufferFactory;
 
 	Context context;
 	Container<Chain> chainsToProcess;
@@ -36,7 +36,7 @@ class Receiver implements MessageUpcall {
 	int myId;
 
 	public Receiver(Context context,
-			Factory<WritableContainer<SerializedTuple>> bufferFactory) {
+			Factory<WritableContainer<TupleSerializer>> bufferFactory) {
 		this.context = context;
 		this.chainsToProcess = context.getChainsToProcess();
 		this.buckets = context.getBuckets();
@@ -160,7 +160,7 @@ class Receiver implements MessageUpcall {
 			if (data) {
 				net.removeActiveRequest(ticket);
 
-				WritableContainer<SerializedTuple> container = bufferFactory
+				WritableContainer<TupleSerializer> container = bufferFactory
 						.get();
 				container.readFrom(new ReadMessageWrapper(message));
 				boolean isFinished = message.readBoolean();
@@ -233,7 +233,7 @@ class Receiver implements MessageUpcall {
 
 				net.stopMonitorCounters();
 				net.broadcastStopMonitoring();
-				WritableContainer<SerializedTuple> tmpBuffer = bufferFactory
+				WritableContainer<TupleSerializer> tmpBuffer = bufferFactory
 						.get();
 				tmpBuffer.clear();
 				boolean isFinished = bucket.removeChunk(tmpBuffer);
@@ -284,7 +284,7 @@ class Receiver implements MessageUpcall {
 			message.finish();
 
 			bucket = buckets.getExistingBucket(bucketKey, true);
-			WritableContainer<SerializedTuple> tmpBuffer = bufferFactory.get();
+			WritableContainer<TupleSerializer> tmpBuffer = bufferFactory.get();
 			tmpBuffer.clear();
 			boolean isFinished = bucket.removeChunk(tmpBuffer);
 

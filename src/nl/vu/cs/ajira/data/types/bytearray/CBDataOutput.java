@@ -112,4 +112,15 @@ public class CBDataOutput extends BDataOutput {
 		}
 	}
 
+	@Override
+	public void skipBytes(int bytes) throws IOException {
+		if (grow && !cb.grow(bytes)) {
+			throw new IOException("Not enough space");
+		}
+		if (cb.end + bytes < cb.buffer.length) {
+			cb.end += bytes;
+		} else {
+			cb.end = bytes - (cb.buffer.length - cb.end);
+		}
+	}
 }

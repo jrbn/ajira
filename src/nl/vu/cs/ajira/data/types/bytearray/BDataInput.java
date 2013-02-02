@@ -20,6 +20,10 @@ public class BDataInput implements DataInput {
 		this.cb.buffer = buffer;
 	}
 
+	public void setBuffer(byte[] b1) {
+		cb.buffer = b1;
+	}
+
 	public void setCurrentPosition(byte[] b1, int s1) {
 		cb.buffer = b1;
 		cb.start = s1;

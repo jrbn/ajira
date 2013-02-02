@@ -15,13 +15,13 @@ public class BucketIterator extends TupleIterator {
 
 	static final Logger log = LoggerFactory.getLogger(BucketIterator.class);
 
-	WritableContainer<SerializedTuple> tuples = new WritableContainer<SerializedTuple>(
+	WritableContainer<TupleSerializer> tuples = new WritableContainer<TupleSerializer>(
 			Consts.TUPLES_CONTAINER_BUFFER_SIZE);
 
 	Bucket bucket;
 	boolean isUsed;
 	private SimpleData[] signature;
-	private SerializedTuple serializer = new SerializedTuple();
+	private TupleSerializer serializer;
 
 	void init(Bucket bucket, byte[] signature, Buckets buckets) {
 		tuples.clear();
@@ -31,6 +31,7 @@ public class BucketIterator extends TupleIterator {
 		for (int i = 0; i < signature.length; ++i) {
 			this.signature[i] = DataProvider.getInstance().get(signature[i]);
 		}
+		serializer = bucket.getTupleSerializer();
 	}
 
 	@Override
