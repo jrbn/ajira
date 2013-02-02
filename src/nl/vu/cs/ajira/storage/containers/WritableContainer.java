@@ -116,10 +116,10 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 				int tmpPointerLastElement = end;
 				element.writeTo(output);
 				int length;
-				if (end >= lastPos) {
-					length = end - lastPos;
+				if (end >= tmpPointerLastElement) {
+					length = end - tmpPointerLastElement;
 				} else {
-					length = end + buffer.length - lastPos;
+					length = end + buffer.length - tmpPointerLastElement;
 				}
 
 				// Rewrite the length
@@ -149,7 +149,8 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 
 		try {
 
-			if (enableFieldDelimitors != buffer.enableFieldDelimitors) {
+			if (enableFieldDelimitors != buffer.enableFieldDelimitors
+					&& nElements > 0) {
 				throw new Exception(
 						"addAll works only if the two buffers share the parameter FieldDelimiters");
 			}
@@ -169,6 +170,7 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 				output.write(buffer.buffer, 0, buffer.end);
 			}
 			nElements += buffer.getNElements();
+			enableFieldDelimitors = buffer.enableFieldDelimitors;
 
 			if (buffer.pointerLastElement >= 0) {
 				lengthLastElement = buffer.lengthLastElement;
@@ -372,7 +374,7 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 				newArray.nElements++;
 			}
 			newArray.copyTo(this);
-			// fb.release(newArray);
+			fb.release(newArray);
 
 		}
 

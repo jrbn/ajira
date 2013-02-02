@@ -19,10 +19,7 @@ public class TupleComparator extends RawComparator<SerializedTuple> {
 
 	@Override
 	public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
-		// Depending on the fields to consider I select the good ones.
-
 		return 0;
-
 		// if (lenFields == 0) {
 		// return compareBytes(b1, s1, l1, b2, s2, l2);
 		// }
