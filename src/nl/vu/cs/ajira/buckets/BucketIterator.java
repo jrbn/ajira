@@ -61,8 +61,7 @@ public class BucketIterator extends TupleIterator {
 	public void getTuple(Tuple tuple) throws Exception {
 		tuple.set(signature);
 		serializer.setTuple(tuple);
-		if (!tuples.remove(serializer))
-			throw new Exception("error");
+		tuples.remove(serializer);
 	}
 
 	@Override

@@ -24,6 +24,11 @@ public class TupleComparator extends RawComparator<TupleSerializer> {
 		length_positions = comparators.length * 2;
 	}
 
+	public void copyTo(TupleComparator comp) {
+		comp.comparators = comparators;
+		comp.length_positions = length_positions;
+	}
+
 	@Override
 	public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
 		try {

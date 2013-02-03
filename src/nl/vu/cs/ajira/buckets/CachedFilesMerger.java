@@ -67,7 +67,6 @@ public class CachedFilesMerger implements Runnable {
 			FileMetaData stream2 = null;
 			byte[] min1 = null;
 			byte[] min2 = null;
-			TupleComparator comp = new TupleComparator();
 
 			synchronized (bucket) {
 				if (bucket.sortedCacheFiles.size() > 3) {
@@ -106,12 +105,15 @@ public class CachedFilesMerger implements Runnable {
 				}
 			}
 
-			File cacheFile = null;
-			FDataOutput cacheOutputStream = null;
-			byte[] lastElement = null;
-			long totalSize = 0;
-			long totalelements = 0;
 			if (merge) {
+				TupleComparator comp = new TupleComparator();
+				bucket.getComparator().copyTo(comp);
+
+				File cacheFile = null;
+				FDataOutput cacheOutputStream = null;
+				byte[] lastElement = null;
+				long totalSize = 0;
+				long totalelements = 0;
 
 				try {
 					totalelements = stream1.nElements + stream2.nElements + 2;
@@ -247,7 +249,7 @@ public class CachedFilesMerger implements Runnable {
 						}
 					}
 
-					log.info("Finished merging two segments. Sum="
+					log.debug("Finished merging two segments. Sum="
 							+ meta.nElements + ", remainingSize = "
 							+ meta.remainingSize);
 

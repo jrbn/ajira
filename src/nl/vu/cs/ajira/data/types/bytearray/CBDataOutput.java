@@ -117,6 +117,7 @@ public class CBDataOutput extends BDataOutput {
 		if (grow && !cb.grow(bytes)) {
 			throw new IOException("Not enough space");
 		}
+
 		if (cb.end + bytes < cb.buffer.length) {
 			cb.end += bytes;
 		} else {

@@ -105,7 +105,7 @@ public class Bucket {
 
 	private TupleIterator iter;
 	private long key;
-	CachedFilesMerger merger;
+	private CachedFilesMerger merger;
 
 	SortedList<byte[]> minimumSortedList = new SortedList<byte[]>(100,
 			new Comparator<byte[]>() {
@@ -230,6 +230,7 @@ public class Bucket {
 			throws IOException {
 
 		if (buffer.getNElements() == 0) {
+			fb.release(buffer);
 			return;
 		}
 
@@ -242,8 +243,10 @@ public class Bucket {
 			@Override
 			public void run() {
 				try {
+					TupleComparator c = new TupleComparator();
+					comparator.copyTo(c);
 					if (sort && !sorted) {
-						buffer.sort(comparator, fb);
+						buffer.sort(c, fb);
 					}
 
 					File cacheFile = File.createTempFile("cache", "tmp");
@@ -309,6 +312,8 @@ public class Bucket {
 							}
 						}
 					}
+
+					fb.release(buffer);
 				} catch (IOException e) {
 					// TODO: what to do now?
 					log.error("Got exception while writing cache!", e);
@@ -327,9 +332,10 @@ public class Bucket {
 	private void cacheCurrentBuffer() throws IOException {
 
 		if (tuples.getNElements() > 0) {
-			cacheBuffer(tuples, isBufferSorted, fb);
+			WritableContainer<TupleSerializer> oldTuple = tuples;
 			tuples = fb.get();
 			tuples.clear();
+			cacheBuffer(oldTuple, isBufferSorted, fb);
 		}
 	}
 
@@ -522,6 +528,8 @@ public class Bucket {
 					di.close();
 				} else { // Need to sort
 
+					tmpBuffer.setFieldsDelimiter();
+
 					// Add the first triple from the in-memory ds to the pool
 					if (tuples.getNElements() > 0
 							&& minimumSortedList.size() == sortedCacheFiles
@@ -539,10 +547,12 @@ public class Bucket {
 					int tuplesFromBuffer = 0;
 					int tuplesFromStream = 0;
 					long time = System.currentTimeMillis();
+
 					do {
 						// Remove the minimum of the tuples and try to add it to
 						// the buffer.
 						byte[] minimum = minimumSortedList.removeLastElement();
+
 						insertResponse = tmpBuffer.addRaw(minimum);
 
 						if (insertResponse) {
@@ -766,5 +776,9 @@ public class Bucket {
 
 	public TupleSerializer getTupleSerializer() {
 		return serializer;
+	}
+
+	public TupleComparator getComparator() {
+		return comparator;
 	}
 }

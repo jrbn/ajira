@@ -25,11 +25,10 @@ public class GroupBy extends Action {
 			ActionConf partition = ActionFactory
 					.getActionConf(PartitionToNodes.class);
 
-			byte[] fieldsToSort = (byte[]) params[FIELDS_TO_GROUP];
 			partition.setParamBoolean(PartitionToNodes.SORT, true);
-			if (fieldsToSort != null)
-				partition.setParamByteArray(PartitionToNodes.SORTING_FIELDS,
-						fieldsToSort);
+			byte[] fieldsToSort = (byte[]) params[FIELDS_TO_GROUP];
+			partition.setParamByteArray(PartitionToNodes.SORTING_FIELDS,
+					fieldsToSort);
 
 			partition.setParamStringArray(PartitionToNodes.TUPLE_FIELDS,
 					(TStringArray) params[TUPLE_FIELDS]);

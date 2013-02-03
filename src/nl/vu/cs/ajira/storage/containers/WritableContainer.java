@@ -201,6 +201,7 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 			--nElements;
 			return true;
 		} catch (Exception e) {
+			log.error("Error in parsing the element from the buffer", e);
 			return false;
 		}
 	}
@@ -303,12 +304,11 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 
 		// 1) Populate
 		long time = System.currentTimeMillis();
+		long size = getRawSize();
 
 		int l = 0;
 		final int[] coordinates = new int[(nElements * 2)];
 		Integer[] indexes = new Integer[nElements];
-
-		long size = getRawSize();
 
 		int i = 0;
 		while (nElements > 0) {
@@ -329,7 +329,6 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 		time = System.currentTimeMillis();
 		((TupleComparator) c).timeConverting = 0;
 		Arrays.sort(indexes, new Comparator<Integer>() {
-
 			@Override
 			public int compare(Integer o1, Integer o2) {
 				int response = c.compare(buffer, coordinates[o1],
@@ -450,5 +449,9 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 		}
 
 		return true;
+	}
+
+	public void setFieldsDelimiter() {
+		enableFieldDelimitors = true;
 	}
 }

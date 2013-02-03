@@ -66,13 +66,24 @@ public class TupleSerializer implements Writable {
 			// First skip a number of bytes
 			if (fieldsToSort != null) {
 				input.skipBytes(2 * fieldsToSort.length);
+
+				for (int i = 0; i < fieldsToSort.length; ++i) {
+					tuple.get(fieldsToSort[i]).readFrom(input);
+				}
+				for (int i = 0; i < otherFields.length; ++i) {
+					tuple.get(otherFields[i]).readFrom(input);
+				}
+
 			} else {
 				input.skipBytes(2 * nFields);
+				for (int i = 0; i < tuple.getNElements(); ++i) {
+					tuple.get(i).readFrom(input);
+				}
 			}
-		}
-
-		for (int i = 0; i < tuple.getNElements(); ++i) {
-			tuple.get(i).readFrom(input);
+		} else {
+			for (int i = 0; i < tuple.getNElements(); ++i) {
+				tuple.get(i).readFrom(input);
+			}
 		}
 
 	}
@@ -131,10 +142,12 @@ public class TupleSerializer implements Writable {
 				}
 
 				// Write the lengths at the beginning
+				int e = o.cb.getEnd();
 				o.setCurrentPosition(startLength);
 				for (int i = 0; i < nFields; ++i) {
 					o.writeShort(lengths[i]);
 				}
+				o.setCurrentPosition(e);
 			}
 		} else {
 			for (int i = 0; i < tuple.getNElements(); ++i) {

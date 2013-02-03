@@ -91,11 +91,11 @@ public class ByteArray {
 		int len = buffer.length;
 		int remaining = len - currentSize;
 
-		while (remaining < sz) {
+		while (remaining <= sz) {
 			len <<= 1;
 			remaining = len - currentSize;
 		}
-		if (len != buffer.length) {
+		if (len > buffer.length) {
 			growBuffer(len);
 		}
 		return true;
