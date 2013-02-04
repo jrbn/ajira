@@ -12,7 +12,9 @@ import nl.vu.cs.ajira.actions.ActionOutput;
 import nl.vu.cs.ajira.actions.GroupBy;
 import nl.vu.cs.ajira.actions.ReadFromFiles;
 import nl.vu.cs.ajira.actions.WriteToFiles;
+import nl.vu.cs.ajira.data.types.TBag;
 import nl.vu.cs.ajira.data.types.TInt;
+import nl.vu.cs.ajira.data.types.TLong;
 import nl.vu.cs.ajira.data.types.TString;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.submissions.Job;
@@ -28,10 +30,6 @@ public class WordCount {
 	 * 
 	 */
 	public static class CountWords extends Action {
-
-		private final TString oWord = new TString();
-		private static final TInt oCount = new TInt(1);
-
 		@Override
 		public void process(Tuple tuple, ActionContext context,
 				ActionOutput actionOutput) throws Exception {
@@ -40,32 +38,26 @@ public class WordCount {
 			if (sText != null && sText.length() > 0) {
 				String[] words = sText.split(" ");
 				for (String word : words) {
-					oWord.setValue(word);
-					actionOutput.output(oWord, oCount);
+					TString oWord = new TString(word);
+					actionOutput.output(oWord, new TInt(1));
 				}
 			}
 		}
 	}
 
 	public static class SumCounts extends Action {
-
-		private long sum;
-		private String currentWord;
-		private final TInt count = new TInt();
-		private final TString word = new TString();
-
-		@Override
-		public void startProcess(ActionContext context) throws Exception {
-			sum = 0;
-			currentWord = null;
-		}
-
 		@Override
 		public void process(Tuple tuple, ActionContext context,
 				ActionOutput actionOutput) throws Exception {
-			actionOutput.output(tuple);
-		}
+			TString key = (TString) tuple.get(0);
+			TBag values = (TBag) tuple.get(1);
 
+			long sum = 0;
+			for (Tuple t : values) {
+				sum += ((TInt) t.get(0)).getValue();
+			}
+			actionOutput.output(key, new TLong(sum));
+		}
 	}
 
 	/**

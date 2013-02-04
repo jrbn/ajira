@@ -59,4 +59,9 @@ public final class TLong extends SimpleData {
 	public int compareTo(SimpleData el) {
 		return (int) (value - ((TLong) el).value);
 	}
+
+	@Override
+	public boolean equals(SimpleData el) {
+		return ((TLong) el).value == value;
+	}
 }

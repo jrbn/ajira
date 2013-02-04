@@ -99,4 +99,9 @@ public class TIntArray extends SimpleData {
 			}
 		}
 	}
+
+	@Override
+	public boolean equals(SimpleData el) {
+		return compareTo(el) == 0;
+	}
 }

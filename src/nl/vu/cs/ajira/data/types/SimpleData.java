@@ -10,4 +10,6 @@ abstract public class SimpleData implements Writable {
 
 	abstract public int compareTo(SimpleData el);
 
+	abstract public boolean equals(SimpleData el);
+
 }

@@ -72,4 +72,9 @@ public final class TString extends SimpleData {
 	public int compareTo(SimpleData el) {
 		return value.compareTo(((TString) el).value);
 	}
+
+	@Override
+	public boolean equals(SimpleData el) {
+		return ((TString) el).value.equals(value);
+	}
 }

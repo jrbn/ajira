@@ -67,23 +67,19 @@ public class TupleSerializer implements Writable {
 			if (fieldsToSort != null) {
 				input.skipBytes(2 * fieldsToSort.length);
 
-				for (int i = 0; i < fieldsToSort.length; ++i) {
-					tuple.get(fieldsToSort[i]).readFrom(input);
-				}
-				for (int i = 0; i < otherFields.length; ++i) {
-					tuple.get(otherFields[i]).readFrom(input);
-				}
+				// for (int i = 0; i < fieldsToSort.length; ++i) {
+				// tuple.get(fieldsToSort[i]).readFrom(input);
+				// }
+				// for (int i = 0; i < otherFields.length; ++i) {
+				// tuple.get(otherFields[i]).readFrom(input);
+				// }
 
 			} else {
 				input.skipBytes(2 * nFields);
-				for (int i = 0; i < tuple.getNElements(); ++i) {
-					tuple.get(i).readFrom(input);
-				}
 			}
-		} else {
-			for (int i = 0; i < tuple.getNElements(); ++i) {
-				tuple.get(i).readFrom(input);
-			}
+		}
+		for (int i = 0; i < tuple.getNElements(); ++i) {
+			tuple.get(i).readFrom(input);
 		}
 
 	}

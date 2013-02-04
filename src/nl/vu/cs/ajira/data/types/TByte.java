@@ -59,4 +59,9 @@ public class TByte extends SimpleData {
 	public int compareTo(SimpleData el) {
 		return value - ((TByte) el).value;
 	}
+
+	@Override
+	public boolean equals(SimpleData el) {
+		return ((TByte) el).value == value;
+	}
 }

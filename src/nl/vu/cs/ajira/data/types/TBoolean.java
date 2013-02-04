@@ -66,4 +66,10 @@ public final class TBoolean extends SimpleData {
 			return -1;
 		}
 	}
+
+	@Override
+	public boolean equals(SimpleData el) {
+		return ((TBoolean) el).value == value;
+	}
+
 }
