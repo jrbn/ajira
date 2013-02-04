@@ -3,17 +3,17 @@ package nl.vu.cs.ajira.chains;
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.actions.ActionFactory;
 import nl.vu.cs.ajira.data.types.Tuple;
+import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.datalayer.InputLayer;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
 import nl.vu.cs.ajira.net.NetworkLayer;
 import nl.vu.cs.ajira.statistics.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Container;
-import nl.vu.cs.ajira.storage.container.WritableContainer;
+import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.utils.Consts;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public class ChainHandler implements Runnable {
 
@@ -39,7 +39,7 @@ public class ChainHandler implements Runnable {
 	public void run() {
 
 		Chain chain = new Chain();
-		Tuple tuple = new Tuple();
+		Tuple tuple = TupleFactory.newTuple();
 		WritableContainer<Chain> chainsBuffer = new WritableContainer<Chain>(
 				Consts.SIZE_BUFFERS_CHILDREN_CHAIN_PROCESS);
 		ChainExecutor actions = new ChainExecutor(context, chainsBuffer);
@@ -75,28 +75,16 @@ public class ChainHandler implements Runnable {
 
 					/***** START CHAIN *****/
 					long timeCycle = System.currentTimeMillis();
+					actions.setInputIterator(itr);
 					actions.startProcess();
-					String counter = "Records Read From Input "
-							+ input.getName();
 
 					// Process the data on the chain
 					boolean eof = false;
-					long nRecords = 0;
-
 					do {
-						eof = !itr.next();
+						eof = !itr.nextTuple();
 						if (!eof) {
-							nRecords++;
-							if (nRecords == 10000) {
-								stats.addCounter(chain.getSubmissionNode(),
-										chain.getSubmissionId(), counter,
-										nRecords);
-								nRecords = 0;
-							}
-
 							itr.getTuple(tuple);
 							actions.output(tuple);
-
 						} else { // EOF Case
 							actions.stopProcess();
 						}
@@ -123,12 +111,6 @@ public class ChainHandler implements Runnable {
 					}
 
 					input.releaseIterator(itr, actions);
-
-					// Update eventual records
-					if (nRecords > 0) {
-						stats.addCounter(chain.getSubmissionNode(),
-								chain.getSubmissionId(), counter, nRecords);
-					}
 				}
 
 				// Send the termination signal to the node responsible of

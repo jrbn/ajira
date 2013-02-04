@@ -12,11 +12,11 @@ import java.util.List;
 import nl.vu.cs.ajira.actions.ActionFactory;
 import nl.vu.cs.ajira.buckets.Buckets;
 import nl.vu.cs.ajira.buckets.CachedFilesMerger;
+import nl.vu.cs.ajira.buckets.TupleSerializer;
 import nl.vu.cs.ajira.chains.Chain;
 import nl.vu.cs.ajira.chains.ChainHandler;
 import nl.vu.cs.ajira.chains.ChainNotifier;
 import nl.vu.cs.ajira.data.types.DataProvider;
-import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.datalayer.InputLayer;
 import nl.vu.cs.ajira.datalayer.InputLayerRegistry;
 import nl.vu.cs.ajira.datalayer.buckets.BucketsLayer;
@@ -25,8 +25,8 @@ import nl.vu.cs.ajira.net.NetworkLayer;
 import nl.vu.cs.ajira.statistics.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Factory;
 import nl.vu.cs.ajira.storage.SubmissionCache;
-import nl.vu.cs.ajira.storage.container.CheckedConcurrentWritableContainer;
-import nl.vu.cs.ajira.storage.container.WritableContainer;
+import nl.vu.cs.ajira.storage.containers.CheckedConcurrentWritableContainer;
+import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.submissions.Job;
 import nl.vu.cs.ajira.submissions.Submission;
 import nl.vu.cs.ajira.submissions.SubmissionRegistry;
@@ -92,8 +92,11 @@ public class Ajira {
 				log.error("Error in shutting down", e);
 				System.exit(1);
 			}
+			log.info("...done");
+		} else {
+			log.info("...done");
+			System.exit(0);
 		}
-		log.info("...done");
 	}
 
 	/**
@@ -119,12 +122,6 @@ public class Ajira {
 				}
 			}
 
-			/***** BUFFER FACTORY *****/
-			@SuppressWarnings("unchecked")
-			Class<WritableContainer<Tuple>> clazz = (Class<WritableContainer<Tuple>>) (Class<?>) WritableContainer.class;
-			Factory<WritableContainer<Tuple>> bufferFactory = new Factory<WritableContainer<Tuple>>(
-					clazz, true, false, Consts.TUPLES_CONTAINER_BUFFER_SIZE);
-
 			/***** NET *******/
 			NetworkLayer net = NetworkLayer.getInstance();
 			boolean serverMode = true;
@@ -147,9 +144,13 @@ public class Ajira {
 					}
 				}
 
+				@SuppressWarnings("unchecked")
+				Class<WritableContainer<TupleSerializer>> clazz = (Class<WritableContainer<TupleSerializer>>) (Class<?>) WritableContainer.class;
+				Factory<WritableContainer<TupleSerializer>> bufferFactory = new Factory<WritableContainer<TupleSerializer>>(
+						clazz, Consts.TUPLES_CONTAINER_BUFFER_SIZE);
 				net.setBufferFactory(bufferFactory);
 				net.startIbis();
-				ArrayList<WritableContainer<Tuple>> l = new ArrayList<WritableContainer<Tuple>>(
+				ArrayList<WritableContainer<TupleSerializer>> l = new ArrayList<WritableContainer<TupleSerializer>>(
 						Consts.STARTING_SIZE_FACTORY);
 				for (int i = 0; i < Consts.STARTING_SIZE_FACTORY; i++) {
 					l.add(bufferFactory.get());
@@ -172,12 +173,9 @@ public class Ajira {
 			List<ChainHandler> listHandlers = new ArrayList<ChainHandler>();
 			StatisticsCollector stats = new StatisticsCollector(conf, net);
 			CachedFilesMerger merger = new CachedFilesMerger();
-			Buckets tuplesContainer = new Buckets(stats, bufferFactory, merger,
-					net);
+			Buckets tuplesContainer = new Buckets(stats, merger, net);
 			ActionFactory ap = new ActionFactory();
 			DataProvider dp = new DataProvider();
-			Factory<Tuple> defaultTupleFactory = new Factory<Tuple>(
-					Tuple.class, (Object[]) null);
 			SubmissionCache cache = new SubmissionCache(net);
 
 			SubmissionRegistry registry = new SubmissionRegistry(net, stats,
@@ -195,7 +193,7 @@ public class Ajira {
 			ChainNotifier notifier = new ChainNotifier(globalContext);
 			globalContext.init(localMode, inputRegistry, tuplesContainer,
 					registry, chainsToProcess, listHandlers, notifier, merger,
-					net, stats, ap, dp, defaultTupleFactory, cache, conf);
+					net, stats, ap, dp, cache, conf);
 
 			/**** START PROCESSING THREADS ****/
 			int i = conf.getInt(Consts.N_PROC_THREADS, 1);
@@ -279,7 +277,7 @@ public class Ajira {
 	public Submission waitForCompletion(Job job) {
 		Submission sub = globalContext.getSubmissionsRegistry()
 				.waitForCompletion(globalContext, job);
-		globalContext.getSubmissionsRegistry().getStatistics(job, sub);
+		globalContext.getSubmissionsRegistry().getStatistics(sub);
 		return sub;
 	}
 }

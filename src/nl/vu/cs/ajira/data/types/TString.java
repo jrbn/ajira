@@ -4,8 +4,8 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
+import nl.vu.cs.ajira.storage.RawComparator;
 import nl.vu.cs.ajira.utils.Consts;
-
 
 public final class TString extends SimpleData {
 
@@ -55,12 +55,34 @@ public final class TString extends SimpleData {
 	}
 
 	@Override
-	public int bytesToStore() {
-		return value == null ? 4 : value.getBytes().length + 4;
-	}
-
 	public String toString() {
 		return value;
 	}
 
+	@Override
+	public void copyTo(SimpleData el) {
+		((TString) el).value = value;
+	}
+
+	@Override
+	public int compareTo(SimpleData el) {
+		return value.compareTo(((TString) el).value);
+	}
+
+	@Override
+	public boolean equals(SimpleData el) {
+		return ((TString) el).value.equals(value);
+	}
+
+	static {
+		RawComparator.registerComparator(Consts.DATATYPE_TSTRING,
+				new RawComparator<SimpleData>() {
+					@Override
+					public int compare(byte[] b1, int s1, int l1, byte[] b2,
+							int s2, int l2) {
+						return super.compare(b1, s1 + 4, l1 - 4, b2, s2 + 4,
+								l2 - 4);
+					}
+				});
+	}
 }

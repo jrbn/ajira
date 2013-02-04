@@ -12,6 +12,7 @@ import nl.vu.cs.ajira.chains.ChainLocation;
 import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.TInt;
 import nl.vu.cs.ajira.data.types.Tuple;
+import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.datalayer.InputLayer;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
 
@@ -92,7 +93,7 @@ public class ChainSplitLayer extends InputLayer {
 		// FIXME: Very very inefficient. Need to fix it!
 		@Override
 		public void output(SimpleData... data) throws Exception {
-			this.tuple = new Tuple(data);
+			this.tuple = TupleFactory.newTuple(data);
 			notify();
 			wait();
 		}
@@ -123,9 +124,9 @@ public class ChainSplitLayer extends InputLayer {
 	@Override
 	public TupleIterator getIterator(Tuple tuple, ActionContext context) {
 		try {
-			TInt v = new TInt();
-			tuple.get(v, 0);
-			return existingSplits.get(0);
+			SplitIterator itr = existingSplits.get(((TInt) tuple.get(0))
+					.getValue());
+			itr.init(context, "ChainSplitsLayer");
 		} catch (Exception e) {
 			log.error("Error in processing the input tuple", e);
 		}
@@ -140,10 +141,5 @@ public class ChainSplitLayer extends InputLayer {
 	@Override
 	public ChainLocation getLocations(Tuple tuple, ActionContext context) {
 		return new ChainLocation(context.getMyNodeId());
-	}
-
-	@Override
-	public String getName() {
-		return "ChainSplitLayer";
 	}
 }

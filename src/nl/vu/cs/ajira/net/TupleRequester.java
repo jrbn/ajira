@@ -12,7 +12,6 @@ import nl.vu.cs.ajira.storage.Factory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 class TupleRequester {
 
 	static final Logger log = LoggerFactory.getLogger(TupleRequester.class);

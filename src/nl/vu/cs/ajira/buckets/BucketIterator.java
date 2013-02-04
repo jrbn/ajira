@@ -1,73 +1,75 @@
 package nl.vu.cs.ajira.buckets;
 
+import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.chains.ChainNotifier;
+import nl.vu.cs.ajira.data.types.DataProvider;
+import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
-import nl.vu.cs.ajira.storage.container.WritableContainer;
+import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.utils.Consts;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This class represents the implementation of 
- * the bucket's iterator; allows to traverse/read 
- * all its tuples.
+ * This class represents the implementation of the bucket's iterator; allows to
+ * traverse/read all its tuples.
  */
 public class BucketIterator extends TupleIterator {
 	static final Logger log = LoggerFactory.getLogger(BucketIterator.class);
 
-	WritableContainer<Tuple> tuples = new WritableContainer<Tuple>(true, false,
+	WritableContainer<TupleSerializer> tuples = new WritableContainer<TupleSerializer>(
 			Consts.TUPLES_CONTAINER_BUFFER_SIZE);
 
 	Bucket bucket;
-	int idSubmission;
-	int idBucket;
-	Buckets buckets;
 	boolean isUsed;
+	private SimpleData[] signature;
+	private TupleSerializer serializer;
 
 	/**
 	 * Initialization function.
 	 * 
 	 * @param bucket
-	 * 		Bucket to iterate on.
+	 *            Bucket to iterate on.
 	 * @param idSubmission
-	 * 		Submission id
+	 *            Submission id
 	 * @param idBucket
-	 * 		Bucket id
-	 * @param buckets (not used)
-	 * 		Bucket's wrapper class
-	 * 		@see Buckets
+	 *            Bucket id
+	 * @param buckets
+	 *            (not used) Bucket's wrapper class
+	 * @see Buckets
 	 */
-	void init(Bucket bucket, int idSubmission, int idBucket, Buckets buckets) {
+	void init(ActionContext c, Bucket bucket, byte[] signature, Buckets buckets) {
+		super.init(c, "Buckets");
 		tuples.clear();
 		this.bucket = bucket;
-		this.idSubmission = idSubmission;
-		this.idBucket = idBucket;
-		this.buckets = buckets;
 		this.isUsed = false;
+		this.signature = new SimpleData[signature.length];
+		for (int i = 0; i < signature.length; ++i) {
+			this.signature[i] = DataProvider.getInstance().get(signature[i]);
+		}
+		serializer = bucket.getTupleSerializer();
 	}
 
 	/**
-	 * Fetches a chunk from the bucket  
-	 * and stores it in the iterator's
-	 * buffer, 'tuples' -- fetch & read
-	 * 		@see #getTuple
+	 * Fetches a chunk from the bucket and stores it in the iterator's buffer,
+	 * 'tuples' -- fetch & read
 	 * 
-	 * @return	
-	 * 		True/false if the buffer still contains 
-	 * 		elements or not
+	 * @see #getTuple
+	 * 
+	 * @return True/false if the buffer still contains elements or not
 	 */
 	@Override
 	public boolean next() throws Exception {
 		isUsed = true;
-		
+
 		// If the local buffer is finished, get tuples from the bucket
 		if (tuples.getNElements() == 0) {
 			long time = System.currentTimeMillis();
-			
+
 			bucket.removeChunk(tuples);
-			
+
 			if (log.isDebugEnabled()) {
 				log.debug("Bucket  " + bucket.getKey() + " delivering "
 						+ tuples.getNElements() + " entries, time merging: "
@@ -79,13 +81,12 @@ public class BucketIterator extends TupleIterator {
 	}
 
 	/**
-	 * Registers both, this iterator and the chain's notifier
-	 * into the bucket. When the bucket is finished the 
-	 * iterator will be marked as ready by the chain's
-	 * notifier.
+	 * Registers both, this iterator and the chain's notifier into the bucket.
+	 * When the bucket is finished the iterator will be marked as ready by the
+	 * chain's notifier.
 	 * 
-	 * @param notifier 
-	 * 		Chain's notifier
+	 * @param notifier
+	 *            Chain's notifier
 	 */
 	@Override
 	public void registerReadyNotifier(ChainNotifier notifier) {
@@ -96,20 +97,19 @@ public class BucketIterator extends TupleIterator {
 	 * Gets a tuple from the iterator's buffer.
 	 * 
 	 * @param tuple
-	 * 		The tuple that is being removed
+	 *            The tuple that is being removed
 	 */
 	@Override
 	public void getTuple(Tuple tuple) throws Exception {
-		if (!tuples.remove(tuple))
-			throw new Exception("error");
+		tuple.set(signature);
+		serializer.setTuple(tuple);
+		tuples.remove(serializer);
 	}
-	
+
 	/**
 	 * Checks if the bucket is finished.
 	 * 
-	 * @return
-	 * 		True/false whether the bucket is finished
-	 * 		or not
+	 * @return True/false whether the bucket is finished or not
 	 */
 	@Override
 	public boolean isReady() {

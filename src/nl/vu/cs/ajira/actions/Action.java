@@ -1,5 +1,7 @@
 package nl.vu.cs.ajira.actions;
 
+import nl.vu.cs.ajira.data.types.TIntArray;
+import nl.vu.cs.ajira.data.types.TStringArray;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.data.types.bytearray.BDataInput;
 import nl.vu.cs.ajira.storage.Writable;
@@ -67,9 +69,6 @@ public abstract class Action {
 			throw new Exception("Position not valid (" + pos + ")");
 		}
 
-		if (valuesParameters[pos] instanceof byte[])
-			throw new Exception(
-					"This parameter is of type Writable. Should be invoked using getParamWritable");
 		return valuesParameters[pos];
 	}
 
@@ -86,4 +85,31 @@ public abstract class Action {
 		b.readFrom(new BDataInput((byte[]) valuesParameters[pos]));
 	}
 
+	protected final byte[] getParamByteArray(int pos) throws Exception {
+		Object o = getParam(pos);
+		if (o != null) {
+			return (byte[]) o;
+		}
+		return null;
+	}
+
+	protected final int[] getParamIntArray(int pos) throws Exception {
+		Object o = getParam(pos);
+		if (o != null) {
+			TIntArray v = new TIntArray();
+			v.readFrom(new BDataInput((byte[]) o));
+			return v.getArray();
+		}
+		return null;
+	}
+
+	protected final String[] getParamStringArray(int pos) throws Exception {
+		Object o = getParam(pos);
+		if (o != null) {
+			TStringArray v = new TStringArray();
+			v.readFrom(new BDataInput((byte[]) o));
+			return v.getArray();
+		}
+		return null;
+	}
 }

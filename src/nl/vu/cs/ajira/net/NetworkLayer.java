@@ -20,14 +20,14 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import nl.vu.cs.ajira.Context;
+import nl.vu.cs.ajira.buckets.TupleSerializer;
 import nl.vu.cs.ajira.chains.Chain;
 import nl.vu.cs.ajira.chains.ChainLocation;
-import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.statistics.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Container;
 import nl.vu.cs.ajira.storage.Factory;
-import nl.vu.cs.ajira.storage.container.CheckedConcurrentWritableContainer;
-import nl.vu.cs.ajira.storage.container.WritableContainer;
+import nl.vu.cs.ajira.storage.containers.CheckedConcurrentWritableContainer;
+import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.utils.Consts;
 
 import org.slf4j.Logger;
@@ -82,7 +82,7 @@ public class NetworkLayer {
 	Container<Chain> chainsToSend = new CheckedConcurrentWritableContainer<Chain>(
 			Consts.SIZE_BUFFERS_CHAIN_SEND);
 
-	Factory<WritableContainer<Tuple>> bufferFactory = null;
+	Factory<WritableContainer<TupleSerializer>> bufferFactory = null;
 
 	protected boolean monitorCounters = false;
 
@@ -98,7 +98,8 @@ public class NetworkLayer {
 	private NetworkLayer() {
 	}
 
-	public void setBufferFactory(Factory<WritableContainer<Tuple>> bufferFactory) {
+	public void setBufferFactory(
+			Factory<WritableContainer<TupleSerializer>> bufferFactory) {
 		this.bufferFactory = bufferFactory;
 	}
 

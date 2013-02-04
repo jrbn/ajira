@@ -11,7 +11,11 @@ import nl.vu.cs.ajira.actions.ActionConf;
 import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.actions.ActionController;
 import nl.vu.cs.ajira.actions.ActionFactory;
+import nl.vu.cs.ajira.buckets.TupleSerializer;
+import nl.vu.cs.ajira.data.types.DataProvider;
+import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.Tuple;
+import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.data.types.bytearray.BDataInput;
 import nl.vu.cs.ajira.data.types.bytearray.BDataOutput;
 import nl.vu.cs.ajira.datalayer.Query;
@@ -22,7 +26,7 @@ import nl.vu.cs.ajira.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Chain extends Writable implements Query {
+public class Chain implements Writable, Query {
 
 	static final Logger log = LoggerFactory.getLogger(Chain.class);
 
@@ -61,7 +65,7 @@ public class Chain extends Writable implements Query {
 
 	private int bufferSize = Consts.CHAIN_RESERVED_SPACE;
 	private final byte[] buffer = new byte[Consts.CHAIN_SIZE];
-	private Tuple inputTuple = null;
+	private final Tuple tuple = TupleFactory.newTuple();
 
 	private final BDataOutput cos = new BDataOutput(buffer);
 	private final BDataInput cis = new BDataInput(buffer);
@@ -72,12 +76,16 @@ public class Chain extends Writable implements Query {
 		input.readFully(buffer, 0, bufferSize);
 
 		if (input.readBoolean()) {
-			if (inputTuple == null) {
-				inputTuple = new Tuple();
+			// Read the number of elements and their types
+			int n = input.readByte();
+			SimpleData[] signature = new SimpleData[n];
+			for (int i = 0; i < n; ++i) {
+				signature[i] = DataProvider.getInstance().get(input.readByte());
 			}
-			inputTuple.readFrom(input);
+			tuple.set(signature);
+			new TupleSerializer(tuple).readFrom(input);
 		} else {
-			inputTuple = null;
+			tuple.clear();
 		}
 	}
 
@@ -85,22 +93,24 @@ public class Chain extends Writable implements Query {
 	public void writeTo(DataOutput output) throws IOException {
 		output.writeInt(bufferSize);
 		output.write(buffer, 0, bufferSize);
-		if (inputTuple != null) {
+
+		if (tuple.getNElements() > 0) {
 			output.writeBoolean(true);
-			inputTuple.writeTo(output);
+			output.write(tuple.getNElements());
+			for (int i = 0; i < tuple.getNElements(); ++i) {
+				output.write(tuple.get(i).getIdDatatype());
+			}
+			new TupleSerializer(tuple).writeTo(output);
 		} else {
 			output.writeBoolean(false);
 		}
 	}
 
-	@Override
-	public int bytesToStore() {
-		int size = bufferSize + 9;
-		if (inputTuple != null) {
-			size += inputTuple.bytesToStore();
-		}
-		return size;
-	}
+	// @Override
+	// public int bytesToStore() throws IOException {
+	// return bufferSize + 9 + new SerializedTuple(tuple).bytesToStore()
+	// + tuple.getNElements() + 1;
+	// }
 
 	public void setSubmissionNode(int nodeId) {
 		Utils.encodeInt(buffer, 0, nodeId);
@@ -170,12 +180,12 @@ public class Chain extends Writable implements Query {
 
 	@Override
 	public void setInputTuple(Tuple tuple) {
-		inputTuple = tuple;
+		tuple.copyTo(this.tuple);
 	}
 
 	@Override
 	public void getInputTuple(Tuple tuple) {
-		inputTuple.copyTo(tuple);
+		this.tuple.copyTo(tuple);
 	}
 
 	public void addActions(List<ActionConf> actions, ActionContext context)
@@ -204,6 +214,16 @@ public class Chain extends Writable implements Query {
 			action.getConfigurator().process(this, action, controller, context);
 
 			if (controller.doNotAddAction) {
+				if (action.getConfigurator() != null
+						&& controller.listActions.size() > 0) {
+					// Add the actions from the last
+					List<ActionConf> list = controller.listActions;
+					controller.listActions = new ArrayList<>();
+					for (int i = list.size() - 1; i >= 0; --i) {
+						addAction(list.get(i), context);
+					}
+				}
+
 				return;
 			}
 
@@ -226,7 +246,7 @@ public class Chain extends Writable implements Query {
 		int totalSize = bufferSize;
 		cos.setCurrentPosition(bufferSize);
 		action.writeTo(cos);
-		int sizeAction = cos.cb.end - totalSize;
+		int sizeAction = cos.cb.getEnd() - totalSize;
 		bufferSize += sizeAction;
 		Utils.encodeInt(buffer, bufferSize, sizeAction);
 		bufferSize += 4;
@@ -260,14 +280,7 @@ public class Chain extends Writable implements Query {
 	void copyTo(Chain newChain) {
 		newChain.bufferSize = bufferSize;
 		System.arraycopy(buffer, 0, newChain.buffer, 0, bufferSize);
-		if (inputTuple != null) {
-			if (newChain.inputTuple == null) {
-				newChain.inputTuple = new Tuple();
-			}
-			inputTuple.copyTo(newChain.inputTuple);
-		} else {
-			newChain.inputTuple = null;
-		}
+		tuple.copyTo(newChain.tuple);
 	}
 
 	public void branch(Chain newChain, long newChainId) {

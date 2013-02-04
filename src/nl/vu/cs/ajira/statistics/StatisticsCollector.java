@@ -14,7 +14,6 @@ import nl.vu.cs.ajira.utils.Consts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class StatisticsCollector implements Runnable {
 
 	private static final Logger log = LoggerFactory
@@ -51,7 +50,10 @@ public class StatisticsCollector implements Runnable {
 	public synchronized Map<String, Long> removeCountersSubmission(
 			int idSubmission) {
 		Map<Integer, Map<String, Long>> mines = counters.get(myId);
-		return mines.remove(idSubmission);
+		if (mines != null)
+			return mines.remove(idSubmission);
+		else
+			return null;
 	}
 
 	public synchronized void addCounter(int nodeId, int submissionId,

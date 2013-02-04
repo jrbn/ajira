@@ -9,12 +9,12 @@ import java.io.IOException;
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.buckets.Bucket;
 import nl.vu.cs.ajira.buckets.Buckets;
+import nl.vu.cs.ajira.buckets.TupleSerializer;
 import nl.vu.cs.ajira.chains.Chain;
-import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.statistics.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Container;
 import nl.vu.cs.ajira.storage.Factory;
-import nl.vu.cs.ajira.storage.container.WritableContainer;
+import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.submissions.Job;
 import nl.vu.cs.ajira.submissions.Submission;
 
@@ -26,7 +26,7 @@ class Receiver implements MessageUpcall {
 	static final Logger log = LoggerFactory.getLogger(Receiver.class);
 
 	Factory<Chain> chainFactory = new Factory<Chain>(Chain.class);
-	Factory<WritableContainer<Tuple>> bufferFactory;
+	Factory<WritableContainer<TupleSerializer>> bufferFactory;
 
 	Context context;
 	Container<Chain> chainsToProcess;
@@ -36,7 +36,7 @@ class Receiver implements MessageUpcall {
 	int myId;
 
 	public Receiver(Context context,
-			Factory<WritableContainer<Tuple>> bufferFactory) {
+			Factory<WritableContainer<TupleSerializer>> bufferFactory) {
 		this.context = context;
 		this.chainsToProcess = context.getChainsToProcess();
 		this.buckets = context.getBuckets();
@@ -83,10 +83,8 @@ class Receiver implements MessageUpcall {
 			int children = message.readInt();
 			boolean isResponsible = message.readBoolean();
 			boolean isSorted = message.readBoolean();
-			String cf = null;
 			byte[] cfParams = null;
 			if (isSorted) {
-				cf = message.readString();
 				int lengthSortingParams = message.readInt();
 				if (lengthSortingParams > 0) {
 					cfParams = new byte[lengthSortingParams];
@@ -94,8 +92,12 @@ class Receiver implements MessageUpcall {
 				}
 			}
 			long bufferKey = message.readLong();
+			int lSignature = message.readByte();
+			byte[] signature = new byte[lSignature];
+			message.readArray(signature);
+
 			Bucket bucket = buckets.getOrCreateBucket(submissionNode,
-					idSubmission, idBucket, cf, cfParams);
+					idSubmission, idBucket, isSorted, cfParams, signature);
 			bucket.updateCounters(idChain, idParentChain, children,
 					isResponsible);
 
@@ -155,29 +157,19 @@ class Receiver implements MessageUpcall {
 			bucketKey = message.readLong();
 			nrequest = message.readInt();
 			isSorted = message.readBoolean();
-			String cFunction = null;
-			byte[] cParams = null;
-			if (isSorted) {
-				cFunction = message.readString();
-				int lengthSortingParams = message.readInt();
-				if (lengthSortingParams > 0) {
-					cParams = new byte[lengthSortingParams];
-					message.readArray(cParams);
-				}
-			}
 			boolean data = message.readBoolean();
-
 			if (data) {
 				net.removeActiveRequest(ticket);
-				WritableContainer<Tuple> container = bufferFactory.get();
+
+				WritableContainer<TupleSerializer> container = bufferFactory
+						.get();
 				container.readFrom(new ReadMessageWrapper(message));
 				boolean isFinished = message.readBoolean();
 
-				bucket = buckets.getOrCreateBucket(myId, submissionId,
-						bucketId, cFunction, cParams);
+				bucket = buckets.getExistingBucket(submissionId, bucketId);
 
 				try {
-					bucket.addAll(container, cFunction != null, bufferFactory);
+					bucket.addAll(container, isSorted, bufferFactory);
 				} catch (Exception e) {
 					log.error("Failed in adding the elements", e);
 				}
@@ -242,7 +234,8 @@ class Receiver implements MessageUpcall {
 
 				net.stopMonitorCounters();
 				net.broadcastStopMonitoring();
-				WritableContainer<Tuple> tmpBuffer = bufferFactory.get();
+				WritableContainer<TupleSerializer> tmpBuffer = bufferFactory
+						.get();
 				tmpBuffer.clear();
 				boolean isFinished = bucket.removeChunk(tmpBuffer);
 				// Write a reply to the origin containing the results of this
@@ -257,12 +250,7 @@ class Receiver implements MessageUpcall {
 					reply.writeLong(bucket.getKey());
 				}
 				reply.finish();
-
-				if (log.isDebugEnabled()) {
-					log.debug("Sent reply");
-				}
-
-				context.getSubmissionsRegistry().getStatistics(job, submission);
+				context.getSubmissionsRegistry().getStatistics(submission);
 
 				tmpBuffer = null;
 				if (isFinished) {
@@ -297,7 +285,7 @@ class Receiver implements MessageUpcall {
 			message.finish();
 
 			bucket = buckets.getExistingBucket(bucketKey, true);
-			WritableContainer<Tuple> tmpBuffer = bufferFactory.get();
+			WritableContainer<TupleSerializer> tmpBuffer = bufferFactory.get();
 			tmpBuffer.clear();
 			boolean isFinished = bucket.removeChunk(tmpBuffer);
 
