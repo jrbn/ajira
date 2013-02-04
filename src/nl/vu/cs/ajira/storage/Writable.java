@@ -10,6 +10,4 @@ public interface Writable {
 
 	public void writeTo(DataOutput output) throws IOException;
 
-	// public int bytesToStore() throws IOException;
-
 }
