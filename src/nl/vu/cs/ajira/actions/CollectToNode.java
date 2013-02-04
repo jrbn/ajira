@@ -48,7 +48,7 @@ public class CollectToNode extends Action {
 	public void registerActionParameters(ActionConf conf) throws Exception {
 		conf.registerParameter(NODE_ID, S_NODE_ID, null, false);
 		conf.registerParameter(BUCKET_ID, S_BUCKET_ID, null, false);
-		conf.registerParameter(SORT, S_SORT, null, false);
+		conf.registerParameter(SORT, S_SORT, false, false);
 		conf.registerParameter(SORTING_FIELDS, S_SORTING_FIELDS, null, false);
 		conf.registerParameter(TUPLE_FIELDS, S_TUPLE_FIELDS, null, true);
 		conf.registerCustomConfigurator(ParametersProcessor.class);
