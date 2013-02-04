@@ -105,7 +105,7 @@ public class ChainHandler implements Runnable {
 						if (chainsBuffer.getNElements() > 0) {
 							stats.addCounter(chain.getSubmissionNode(),
 									chain.getSubmissionId(),
-									"Chains Dinamically Generated",
+									"Chains Dynamically Generated",
 									chainsBuffer.getNElements());
 							if (localMode) {
 								chainsToProcess.addAll(chainsBuffer);
@@ -138,15 +138,12 @@ public class ChainHandler implements Runnable {
 				stats.addCounter(chain.getSubmissionNode(),
 						chain.getSubmissionId(), "Chains Processed", 1);
 
-			} catch (Exception e) {
+			} catch (Throwable e) {
 				// Broadcast all the nodes that a chain part of a job has
 				// failed.
 				log.error("Chain failed. Cancelling the job ...", e);
 				try {
-					// FIXME:
-					// context.cleanupSubmission(chain.getSubmissionNode(),
-					// chain.getSubmissionId());
-					net.signalChainFailed(chain);
+					net.signalChainFailed(chain, e);
 				} catch (Exception e1) {
 					log.error("Failed in managing to cancel the job."
 							+ "This instance will be terminated.", e);
