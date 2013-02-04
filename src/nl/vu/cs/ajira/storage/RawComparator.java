@@ -1,13 +1,11 @@
 package nl.vu.cs.ajira.storage;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import nl.vu.cs.ajira.data.types.SimpleData;
 
 public class RawComparator<T> {
 
-	private static final List<RawComparator<? extends SimpleData>> cmps = new ArrayList<>();
+	@SuppressWarnings("unchecked")
+	private static final RawComparator<? extends SimpleData>[] cmps = new RawComparator[256];
 	private static RawComparator<? extends SimpleData> defaultComparator = new RawComparator<>();
 
 	public static int compareBytes(byte[] b1, int s1, int l1, byte[] b2,
@@ -61,11 +59,10 @@ public class RawComparator<T> {
 
 	public static synchronized void registerComparator(int idSimpleData,
 			RawComparator<? extends SimpleData> cmp) {
-		cmps.add(idSimpleData, cmp);
+		cmps[idSimpleData] = cmp;
 	}
 
 	public static RawComparator<? extends SimpleData> getComparator(int id) {
-		return (id < cmps.size() && cmps.get(id) != null) ? cmps.get(id)
-				: defaultComparator;
+		return (cmps[id] != null) ? cmps[id] : defaultComparator;
 	}
 }

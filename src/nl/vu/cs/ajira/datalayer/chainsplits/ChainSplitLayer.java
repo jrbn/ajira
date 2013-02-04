@@ -124,7 +124,9 @@ public class ChainSplitLayer extends InputLayer {
 	@Override
 	public TupleIterator getIterator(Tuple tuple, ActionContext context) {
 		try {
-			return existingSplits.get(((TInt) tuple.get(0)).getValue());
+			SplitIterator itr = existingSplits.get(((TInt) tuple.get(0))
+					.getValue());
+			itr.init(context, "ChainSplitsLayer");
 		} catch (Exception e) {
 			log.error("Error in processing the input tuple", e);
 		}
@@ -139,10 +141,5 @@ public class ChainSplitLayer extends InputLayer {
 	@Override
 	public ChainLocation getLocations(Tuple tuple, ActionContext context) {
 		return new ChainLocation(context.getMyNodeId());
-	}
-
-	@Override
-	public String getName() {
-		return "ChainSplitLayer";
 	}
 }

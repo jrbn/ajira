@@ -55,6 +55,4 @@ public abstract class InputLayer {
 
 	public abstract ChainLocation getLocations(Tuple tuple,
 			ActionContext context);
-
-	public abstract String getName();
 }

@@ -113,11 +113,11 @@ public class Buckets {
 		buckets.remove(bucket.getKey());
 	}
 
-	public TupleIterator getIterator(int idSubmission, int idBucket) {
+	public TupleIterator getIterator(ActionContext c, int idBucket) {
 		Bucket bucket = null;
-		bucket = getExistingBucket(idSubmission, idBucket);
+		bucket = getExistingBucket(c.getSubmissionId(), idBucket);
 		BucketIterator itr = new BucketIterator();
-		itr.init(bucket, bucket.getSignature(), this);
+		itr.init(c, bucket, bucket.getSignature(), this);
 		return itr;
 	}
 

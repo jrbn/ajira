@@ -1,5 +1,6 @@
 package nl.vu.cs.ajira.buckets;
 
+import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.chains.ChainNotifier;
 import nl.vu.cs.ajira.data.types.DataProvider;
 import nl.vu.cs.ajira.data.types.SimpleData;
@@ -23,7 +24,8 @@ public class BucketIterator extends TupleIterator {
 	private SimpleData[] signature;
 	private TupleSerializer serializer;
 
-	void init(Bucket bucket, byte[] signature, Buckets buckets) {
+	void init(ActionContext c, Bucket bucket, byte[] signature, Buckets buckets) {
+		super.init(c, "Buckets");
 		tuples.clear();
 		this.bucket = bucket;
 		this.isUsed = false;

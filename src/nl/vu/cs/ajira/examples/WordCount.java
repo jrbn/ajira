@@ -45,6 +45,14 @@ public class WordCount {
 		}
 	}
 
+	/**
+	 * 
+	 * This action simply sums up the counts for each word. The result is a pair
+	 * of the form <word, count>
+	 * 
+	 * @author Jacopo Urbani
+	 * 
+	 */
 	public static class SumCounts extends Action {
 		@Override
 		public void process(Tuple tuple, ActionContext context,

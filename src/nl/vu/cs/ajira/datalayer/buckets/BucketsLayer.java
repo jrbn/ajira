@@ -30,8 +30,8 @@ public class BucketsLayer extends InputLayer {
 	public TupleIterator getIterator(Tuple tuple, ActionContext context) {
 		TupleIterator itr = null;
 		try {
-			itr = buckets.getIterator(context.getSubmissionId(),
-					((TInt) tuple.get(0)).getValue());
+			itr = buckets
+					.getIterator(context, ((TInt) tuple.get(0)).getValue());
 		} catch (Exception e) {
 			log.error("Error retrieving the tuple iterator", e);
 		}
@@ -59,10 +59,5 @@ public class BucketsLayer extends InputLayer {
 	@Override
 	public void releaseIterator(TupleIterator itr, ActionContext context) {
 		buckets.releaseIterator((BucketIterator) itr);
-	}
-
-	@Override
-	public String getName() {
-		return "BucketsLayer";
 	}
 }

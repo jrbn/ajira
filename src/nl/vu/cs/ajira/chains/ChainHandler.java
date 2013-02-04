@@ -77,27 +77,14 @@ public class ChainHandler implements Runnable {
 					long timeCycle = System.currentTimeMillis();
 					actions.setInputIterator(itr);
 					actions.startProcess();
-					String counter = "Records Read From Input "
-							+ input.getName();
 
 					// Process the data on the chain
 					boolean eof = false;
-					long nRecords = 0;
-
 					do {
-						eof = !itr.next();
+						eof = !itr.nextTuple();
 						if (!eof) {
-							nRecords++;
-							if (nRecords == 10000) {
-								stats.addCounter(chain.getSubmissionNode(),
-										chain.getSubmissionId(), counter,
-										nRecords);
-								nRecords = 0;
-							}
-
 							itr.getTuple(tuple);
 							actions.output(tuple);
-
 						} else { // EOF Case
 							actions.stopProcess();
 						}
@@ -124,12 +111,6 @@ public class ChainHandler implements Runnable {
 					}
 
 					input.releaseIterator(itr, actions);
-
-					// Update eventual records
-					if (nRecords > 0) {
-						stats.addCounter(chain.getSubmissionNode(),
-								chain.getSubmissionId(), counter, nRecords);
-					}
 				}
 
 				// Send the termination signal to the node responsible of

@@ -20,7 +20,8 @@ public class DummyLayer extends InputLayer {
 		Tuple tuple = TupleFactory.newTuple();
 		boolean first = true;
 
-		public DummyIterator(Tuple tuple) {
+		public DummyIterator(ActionContext c, Tuple tuple) {
+			super.init(c, "DummyInput");
 			tuple.copyTo(this.tuple);
 		}
 
@@ -55,7 +56,7 @@ public class DummyLayer extends InputLayer {
 
 	@Override
 	public TupleIterator getIterator(Tuple tuple, ActionContext context) {
-		return new DummyIterator(tuple);
+		return new DummyIterator(context, tuple);
 	}
 
 	@Override
@@ -65,10 +66,5 @@ public class DummyLayer extends InputLayer {
 
 	@Override
 	public void releaseIterator(TupleIterator itr, ActionContext context) {
-	}
-
-	@Override
-	public String getName() {
-		return "DummyLayer";
 	}
 }

@@ -71,7 +71,7 @@ public class GroupBy extends Action {
 
 			// Move to the next element
 			try {
-				if (itr.next()) {
+				if (itr.nextTuple()) {
 
 					itr.getTuple(inputTuple);
 					for (int i = 0; i < sizeKey && elementAvailable; ++i) {

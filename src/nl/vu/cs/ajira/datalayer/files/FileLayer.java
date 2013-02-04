@@ -85,6 +85,7 @@ public class FileLayer extends InputLayer {
 
 			}
 
+			itr.init(context, "Files");
 			return itr;
 		} catch (Exception e) {
 			log.error("Unable getting tuple iterator", e);
@@ -113,10 +114,4 @@ public class FileLayer extends InputLayer {
 	@Override
 	public void releaseIterator(TupleIterator itr, ActionContext context) {
 	}
-
-	@Override
-	public String getName() {
-		return "FilesLayer";
-	}
-
 }
