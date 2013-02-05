@@ -188,18 +188,18 @@ public class Chain implements Writable, Query {
 		this.tuple.copyTo(tuple);
 	}
 
-	public void addActions(List<ActionConf> actions, ActionContext context)
+	public void setActions(List<ActionConf> actions, ActionContext context)
 			throws Exception {
 		if (actions != null) {
 			for (int i = actions.size() - 1; i >= 0; i--) {
-				addAction(actions.get(i), context);
+				setAction(actions.get(i), context);
 			}
 		} else {
 			throw new Exception("actions is null");
 		}
 	}
 
-	void addAction(ActionConf action, ActionContext context) throws Exception {
+	void setAction(ActionConf action, ActionContext context) throws Exception {
 
 		// Validate the action
 		if (!action.validateParameters()) {
@@ -220,7 +220,7 @@ public class Chain implements Writable, Query {
 					List<ActionConf> list = controller.listActions;
 					controller.listActions = new ArrayList<>();
 					for (int i = list.size() - 1; i >= 0; --i) {
-						addAction(list.get(i), context);
+						setAction(list.get(i), context);
 					}
 				}
 
@@ -268,7 +268,7 @@ public class Chain implements Writable, Query {
 			List<ActionConf> list = controller.listActions;
 			controller.listActions = new ArrayList<>();
 			for (int i = list.size() - 1; i >= 0; --i) {
-				addAction(list.get(i), context);
+				setAction(list.get(i), context);
 			}
 		}
 	}

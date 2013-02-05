@@ -132,7 +132,7 @@ public class SubmissionRegistry {
 			Chain chain = new Chain();
 			chain.setParentChainId(-1);
 			chain.setInputLayer(Consts.DEFAULT_INPUT_LAYER_ID);
-			chain.addActions(job.getActions(), new ChainExecutor(context, null,
+			chain.setActions(job.getActions(), new ChainExecutor(context, null,
 					chain));
 
 			chain.setSubmissionNode(context.getNetworkLayer().getMyPartition());

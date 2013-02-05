@@ -1,6 +1,5 @@
 package nl.vu.cs.ajira.data.types;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -11,7 +10,8 @@ public class DataProvider {
 
 	static private DataProvider defaultInstance = null;
 
-	private ArrayList<Factory<SimpleData>> list = new ArrayList<Factory<SimpleData>>();
+	@SuppressWarnings("unchecked")
+	private Factory<SimpleData>[] list = new Factory[256];
 	private static Map<Integer, Class<? extends SimpleData>> registeredTypes = new HashMap<Integer, Class<? extends SimpleData>>();
 	private static Map<String, Integer> retrieveIds = new HashMap<>();
 
@@ -22,19 +22,22 @@ public class DataProvider {
 	}
 
 	public DataProvider() {
-		list.add(new Factory<SimpleData>(TLong.class)); // TLong has ID 0
-		list.add(new Factory<SimpleData>(TString.class)); // TString has ID 1
-		list.add(new Factory<SimpleData>(TInt.class)); // TInt has ID 2
-		list.add(new Factory<SimpleData>(TBag.class)); // TSet has ID 3
-		list.add(new Factory<SimpleData>(TBoolean.class)); // TBoolean has ID 4
-		list.add(new Factory<SimpleData>(TByte.class)); // TByte has ID 5
-		list.add(new Factory<SimpleData>(TByteArray.class)); // TByteArray has
-																// ID 6
-		list.add(new Factory<SimpleData>(TIntArray.class)); // TIntArray has ID
-															// 7
-		list.add(new Factory<SimpleData>(TStringArray.class)); // TStringArray
-																// has
-																// ID 8
+		list[Consts.DATATYPE_TLONG] = new Factory<SimpleData>(TLong.class);
+		list[Consts.DATATYPE_TSTRING] = new Factory<SimpleData>(TString.class);
+		list[Consts.DATATYPE_TINT] = new Factory<SimpleData>(TInt.class);
+		list[Consts.DATATYPE_TBAG] = new Factory<SimpleData>(TBag.class);
+		list[Consts.DATATYPE_TBOOLEAN] = new Factory<SimpleData>(TBoolean.class);
+		list[Consts.DATATYPE_TBYTE] = new Factory<SimpleData>(TByte.class);
+		list[Consts.DATATYPE_TBYTEARRAY] = new Factory<SimpleData>(
+				TByteArray.class);
+		list[Consts.DATATYPE_TINTARRAY] = new Factory<SimpleData>(
+				TIntArray.class);
+		list[Consts.DATATYPE_TSTRINGARRAY] = new Factory<SimpleData>(
+				TStringArray.class);
+		list[Consts.DATATYPE_TLONGARRAY] = new Factory<SimpleData>(
+				TLongArray.class);
+		list[Consts.DATATYPE_TBOOLEANARRAY] = new Factory<SimpleData>(
+				TBooleanArray.class);
 
 		retrieveIds.put(TLong.class.getName(), Consts.DATATYPE_TLONG);
 		retrieveIds.put(TInt.class.getName(), Consts.DATATYPE_TINT);
@@ -46,10 +49,13 @@ public class DataProvider {
 		retrieveIds.put(TIntArray.class.getName(), Consts.DATATYPE_TINTARRAY);
 		retrieveIds.put(TStringArray.class.getName(),
 				Consts.DATATYPE_TSTRINGARRAY);
+		retrieveIds.put(TLongArray.class.getName(), Consts.DATATYPE_TLONGARRAY);
+		retrieveIds.put(TBooleanArray.class.getName(),
+				Consts.DATATYPE_TBOOLEANARRAY);
 
 		for (Map.Entry<Integer, Class<? extends SimpleData>> entry : registeredTypes
 				.entrySet()) {
-			list.add(entry.getKey(), new Factory<SimpleData>(entry.getValue()));
+			list[entry.getKey()] = new Factory<SimpleData>(entry.getValue());
 		}
 	}
 
@@ -65,10 +71,10 @@ public class DataProvider {
 	}
 
 	public SimpleData get(int type) {
-		return list.get(type).get();
+		return list[type].get();
 	}
 
 	public void release(SimpleData data) {
-		list.get(data.getIdDatatype()).release(data);
+		list[data.getIdDatatype()].release(data);
 	}
 }

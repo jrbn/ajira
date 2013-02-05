@@ -1,6 +1,8 @@
 package nl.vu.cs.ajira.actions;
 
 import nl.vu.cs.ajira.buckets.Bucket;
+import nl.vu.cs.ajira.data.types.DataProvider;
+import nl.vu.cs.ajira.data.types.TStringArray;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.datalayer.Query;
 
@@ -32,7 +34,7 @@ public class CollectToNode extends Action {
 
 	static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
-		public void setupConfiguration(Query query, Object[] params,
+		public void setupAction(Query query, Object[] params,
 				ActionController controller, ActionContext context) {
 			if (params[NODE_ID] == null) {
 				params[NODE_ID] = context.getMyNodeId();
@@ -41,6 +43,15 @@ public class CollectToNode extends Action {
 			controller.continueComputationOn(
 					((Integer) params[NODE_ID]).intValue(),
 					(Integer) params[BUCKET_ID]);
+
+			// Convert the tuple fields in numbers
+			TStringArray fields = (TStringArray) params[TUPLE_FIELDS];
+			byte[] f = new byte[fields.getArray().length];
+			int i = 0;
+			for (String v : fields.getArray()) {
+				f[i++] = (byte) DataProvider.getId(v);
+			}
+			params[TUPLE_FIELDS] = f;
 		}
 	}
 
@@ -83,16 +94,6 @@ public class CollectToNode extends Action {
 		try {
 			context.finishTransfer(nodeId, bucketId, sort, sortingFields,
 					bucket != null, fields);
-
-			// // Send the chains to process the buckets to all the nodes that
-			// // will host the buckets
-			// if (output.isRootBranch()) {
-			// ActionConf c = ActionFactory
-			// .getActionConf(ReadFromBucket.class);
-			// c.setParam(ReadFromBucket.BUCKET_ID, bucketId);
-			// c.setParam(ReadFromBucket.NODE_ID, nodeId);
-			// output.branch(c);
-			// }
 		} catch (Exception e) {
 			log.error("Error", e);
 		}

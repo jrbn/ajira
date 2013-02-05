@@ -96,9 +96,7 @@ public abstract class Action {
 	protected final int[] getParamIntArray(int pos) throws Exception {
 		Object o = getParam(pos);
 		if (o != null) {
-			TIntArray v = new TIntArray();
-			v.readFrom(new BDataInput((byte[]) o));
-			return v.getArray();
+			return ((TIntArray) o).getArray();
 		}
 		return null;
 	}
@@ -106,9 +104,7 @@ public abstract class Action {
 	protected final String[] getParamStringArray(int pos) throws Exception {
 		Object o = getParam(pos);
 		if (o != null) {
-			TStringArray v = new TStringArray();
-			v.readFrom(new BDataInput((byte[]) o));
-			return v.getArray();
+			return ((TStringArray) o).getArray();
 		}
 		return null;
 	}

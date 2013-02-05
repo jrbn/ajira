@@ -115,7 +115,7 @@ public class GroupBy extends Action {
 	public static class Configurator extends ActionConf.Configurator {
 
 		@Override
-		void setupConfiguration(Query query, Object[] params,
+		void setupAction(Query query, Object[] params,
 				ActionController controller, ActionContext context)
 				throws Exception {
 

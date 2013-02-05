@@ -1,7 +1,10 @@
 package nl.vu.cs.ajira.actions;
 
 import nl.vu.cs.ajira.buckets.Bucket;
+import nl.vu.cs.ajira.data.types.DataProvider;
+import nl.vu.cs.ajira.data.types.TStringArray;
 import nl.vu.cs.ajira.data.types.Tuple;
+import nl.vu.cs.ajira.datalayer.Query;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,10 +23,26 @@ public class PutIntoLocalBucket extends Action {
 	private int bucketID;
 	private byte[] fields;
 
+	static class ParametersProcessor extends ActionConf.Configurator {
+		@Override
+		public void setupAction(Query query, Object[] params,
+				ActionController controller, ActionContext context) {
+			// Convert the tuple fields in numbers
+			TStringArray fields = (TStringArray) params[TUPLE_FIELDS];
+			byte[] f = new byte[fields.getArray().length];
+			int i = 0;
+			for (String v : fields.getArray()) {
+				f[i++] = (byte) DataProvider.getId(v);
+			}
+			params[TUPLE_FIELDS] = f;
+		}
+	}
+
 	@Override
 	public void registerActionParameters(ActionConf conf) throws Exception {
 		conf.registerParameter(BUCKET_ID, S_BUCKET_ID, null, true);
 		conf.registerParameter(TUPLE_FIELDS, S_TUPLE_FIELDS, null, true);
+		conf.registerCustomConfigurator(ParametersProcessor.class);
 	}
 
 	@Override

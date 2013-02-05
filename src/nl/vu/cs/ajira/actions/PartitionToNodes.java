@@ -44,7 +44,7 @@ public class PartitionToNodes extends Action {
 
 	public static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
-		public void setupConfiguration(Query query, Object[] params,
+		public void setupAction(Query query, Object[] params,
 				ActionController controller, ActionContext context) {
 			if (params[NPARTITIONS_PER_NODE] == null) {
 				if (params[BUCKET_IDS] == null) {

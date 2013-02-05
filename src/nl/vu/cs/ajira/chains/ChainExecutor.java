@@ -211,7 +211,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	public void branch(List<ActionConf> actions) throws Exception {
 		chain.setRawSize(rawSizes[currentAction]);
 		chain.branch(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
-		supportChain.addActions(actions, this);
+		supportChain.setActions(actions, this);
 		if (!stopProcess && currentAction > 0) {
 			cRuntimeBranching[currentAction]++;
 			if (currentAction > smallestRuntimeAction) {
@@ -225,7 +225,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	public void branch(ActionConf action) throws Exception {
 		chain.setRawSize(rawSizes[currentAction]);
 		chain.branch(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
-		supportChain.addAction(action, this);
+		supportChain.setAction(action, this);
 		if (!stopProcess && currentAction > 0) {
 			cRuntimeBranching[currentAction]++;
 			if (currentAction > smallestRuntimeAction) {
@@ -238,7 +238,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	@Override
 	public ActionOutput split(List<ActionConf> actions) throws Exception {
 		chain.branchFromRoot(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
-		supportChain.addActions(actions, this);
+		supportChain.setActions(actions, this);
 
 		// TODO
 
@@ -248,7 +248,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	@Override
 	public ActionOutput split(ActionConf action) throws Exception {
 		chain.branchFromRoot(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
-		supportChain.addAction(action, this);
+		supportChain.setAction(action, this);
 
 		// TODO
 

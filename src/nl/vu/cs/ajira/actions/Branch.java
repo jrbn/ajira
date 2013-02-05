@@ -44,12 +44,6 @@ public class Branch extends Action {
 				action.writeTo(output);
 			}
 		}
-
-		// @Override
-		// public int bytesToStore() throws IOException {
-		// throw new IOException("Not supported");
-		// }
-
 	}
 
 	/***** PARAMETERS *****/

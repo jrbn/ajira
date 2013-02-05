@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import nl.vu.cs.ajira.data.types.DataProvider;
+import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.TIntArray;
 import nl.vu.cs.ajira.data.types.TStringArray;
 import nl.vu.cs.ajira.data.types.bytearray.BDataOutput;
@@ -23,11 +25,10 @@ public class ActionConf implements Writable {
 		public void process(Query query, ActionConf conf,
 				ActionController controller, ActionContext context)
 				throws Exception {
-			setupConfiguration(query, conf.valuesParameters, controller,
-					context);
+			setupAction(query, conf.valuesParameters, controller, context);
 		}
 
-		abstract void setupConfiguration(Query query, Object[] params,
+		abstract void setupAction(Query query, Object[] params,
 				ActionController controller, ActionContext context)
 				throws Exception;
 	}
@@ -84,6 +85,12 @@ public class ActionConf implements Writable {
 				byte[] b = new byte[input.readInt()];
 				input.readFully(b);
 				valuesParameters[i] = b;
+				break;
+			case 5:
+				SimpleData data = DataProvider.getInstance().get(
+						input.readByte());
+				data.readFrom(input);
+				valuesParameters[i] = data;
 				break;
 			}
 		}
@@ -158,6 +165,11 @@ public class ActionConf implements Writable {
 				} else if (value instanceof Boolean) {
 					output.writeByte(3);
 					output.writeBoolean(((Boolean) value).booleanValue());
+				} else if (value instanceof SimpleData) {
+					SimpleData v = (SimpleData) value;
+					output.writeByte(5);
+					output.writeByte(v.getIdDatatype());
+					v.writeTo(output);
 				} else if (value instanceof Writable) {
 					output.writeByte(4);
 					BDataOutput o = new BDataOutput(new byte[Consts.CHAIN_SIZE]);
@@ -170,19 +182,14 @@ public class ActionConf implements Writable {
 					output.writeInt(v.length);
 					output.write(v);
 				} else {
-					throw new IOException(
-							"Format of one parameter is not recognized");
+					throw new IOException("Format " + value + "  of parameter "
+							+ i + " is not recognized");
 				}
 			} else {
 				output.writeByte(-1);
 			}
 		}
 	}
-
-	// @Override
-	// public final int bytesToStore() throws IOException {
-	// throw new IOException("Not (yet) implemented");
-	// }
 
 	private boolean checkPos(int pos) {
 		if (valuesParameters == null) {
