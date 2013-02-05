@@ -136,8 +136,8 @@ public class SubmissionRegistry {
 			Chain chain = new Chain();
 			chain.setParentChainId(-1);
 			chain.setInputLayer(Consts.DEFAULT_INPUT_LAYER_ID);
-			chain.setActions(job.getActions(), new ChainExecutor(context, null,
-					chain));
+			chain.setActions(job.getActions(), new ChainExecutor(context,
+					context.isLocalMode(), chain));
 
 			chain.setSubmissionNode(context.getNetworkLayer().getMyPartition());
 			chain.setSubmissionId(submissionId);

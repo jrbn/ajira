@@ -40,7 +40,8 @@ class ChainSender implements Runnable {
 
 			while (true) {
 				chainsToSend.remove(chain);
-				ChainExecutor ac = new ChainExecutor(context, null, chain);
+				ChainExecutor ac = new ChainExecutor(context,
+						context.isLocalMode(), chain);
 
 				chain.getInputTuple(tuple);
 				ChainLocation loc = context

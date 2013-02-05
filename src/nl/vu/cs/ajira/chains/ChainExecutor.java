@@ -17,6 +17,7 @@ import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
 import nl.vu.cs.ajira.datalayer.chainsplits.ChainSplitLayer;
 import nl.vu.cs.ajira.datalayer.chainsplits.ChainSplitLayer.SplitIterator;
+import nl.vu.cs.ajira.net.NetworkLayer;
 import nl.vu.cs.ajira.statistics.StatisticsCollector;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.utils.Consts;
@@ -43,6 +44,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	private int submissionId;
 	private Chain chain;
 	private WritableContainer<Chain> chainsBuffer;
+	private NetworkLayer net;
 
 	private final Chain supportChain = new Chain();
 	private final Tuple supportTuple = TupleFactory.newTuple();
@@ -50,16 +52,18 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	private boolean transferComputation = false;
 	private int transferNodeId;
 	private int transferBucketId;
+	private boolean localMode;
 
-	public ChainExecutor(Context context, WritableContainer<Chain> chainsBuffer) {
+	public ChainExecutor(Context context, boolean localMode) {
 		this.context = context;
-		this.chainsBuffer = chainsBuffer;
+		this.localMode = localMode;
+		this.chainsBuffer = context.getChainsToProcess();
+		this.net = context.getNetworkLayer();
 		this.stats = context.getStatisticsCollector();
 	}
 
-	public ChainExecutor(Context context,
-			WritableContainer<Chain> chainsBuffer, Chain chain) {
-		this(context, chainsBuffer);
+	public ChainExecutor(Context context, boolean localMode, Chain chain) {
+		this(context, localMode);
 		init(chain);
 	}
 
@@ -213,7 +217,10 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 				supportTuple.set(new TInt(transferBucketId), new TInt(
 						transferNodeId));
 				supportChain.setInputTuple(supportTuple);
-				chainsBuffer.add(supportChain);
+				if (localMode)
+					chainsBuffer.add(supportChain);
+				else
+					net.sendChain(supportChain);
 			} else {
 				transferComputation = false;
 			}
@@ -236,7 +243,11 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 				smallestRuntimeAction = currentAction;
 			}
 		}
-		chainsBuffer.add(supportChain);
+
+		if (localMode)
+			chainsBuffer.add(supportChain);
+		else
+			net.sendChain(supportChain);
 
 		stats.addCounter(chain.getSubmissionNode(), chain.getSubmissionId(),
 				"Chains Dynamically Generated", 1);
@@ -253,7 +264,11 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 				smallestRuntimeAction = currentAction;
 			}
 		}
-		chainsBuffer.add(supportChain);
+
+		if (localMode)
+			chainsBuffer.add(supportChain);
+		else
+			net.sendChain(supportChain);
 
 		stats.addCounter(chain.getSubmissionNode(), chain.getSubmissionId(),
 				"Chains Dynamically Generated", 1);
@@ -267,8 +282,10 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		supportChain.setInputLayer(Consts.SPLITS_INPUT_LAYER);
 		supportChain
 				.setInputTuple(TupleFactory.newTuple(new TInt(itr.getId())));
-		chainsBuffer.add(supportChain);
-
+		if (localMode)
+			chainsBuffer.add(supportChain);
+		else
+			net.sendChain(supportChain);
 		stats.addCounter(chain.getSubmissionNode(), chain.getSubmissionId(),
 				"Chains Dynamically Generated", 1);
 
@@ -290,8 +307,10 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 				"Chains Dynamically Generated", 1);
 
 		openedStreams.add(itr);
-
-		chainsBuffer.add(supportChain);
+		if (localMode)
+			chainsBuffer.add(supportChain);
+		else
+			net.sendChain(supportChain);
 		return itr;
 	}
 

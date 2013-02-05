@@ -11,7 +11,6 @@ import nl.vu.cs.ajira.datalayer.TupleIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class ChainNotifier {
 
 	static final Logger log = LoggerFactory.getLogger(ChainNotifier.class);
@@ -22,7 +21,7 @@ public class ChainNotifier {
 
 	public ChainNotifier(Context context) {
 		this.context = context;
-		ac = new ChainExecutor(context, null);
+		ac = new ChainExecutor(context, context.isLocalMode());
 	}
 
 	public synchronized void addWaiter(TupleIterator iter, Chain chain) {

@@ -38,8 +38,7 @@ public class ChainHandler implements Runnable {
 
 		Chain chain = new Chain();
 		Tuple tuple = TupleFactory.newTuple();
-
-		ChainExecutor actions = new ChainExecutor(context, chainsToProcess);
+		ChainExecutor actions = new ChainExecutor(context, localMode);
 
 		// if (localMode) {
 		// actions = new ChainExecutor(context, chainsToProcess);
