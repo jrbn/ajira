@@ -6,7 +6,7 @@ public class RawComparator<T> {
 
 	@SuppressWarnings("unchecked")
 	private static final RawComparator<? extends SimpleData>[] cmps = new RawComparator[256];
-	private static RawComparator<? extends SimpleData> defaultComparator = new RawComparator<>();
+	private static RawComparator<? extends SimpleData> defaultComparator = new RawComparator<SimpleData>();
 
 	public static int compareBytes(byte[] b1, int s1, int l1, byte[] b2,
 			int s2, int l2) {

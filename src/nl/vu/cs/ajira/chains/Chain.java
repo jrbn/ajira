@@ -36,7 +36,7 @@ public class Chain implements Writable, Query {
 		public boolean stopProcessing;
 		public int destination;
 		public int bucketId;
-		public List<ActionConf> listActions = new ArrayList<>();
+		public List<ActionConf> listActions = new ArrayList<ActionConf>();
 
 		public void init() {
 			stopProcessing = doNotAddAction = false;
@@ -218,7 +218,7 @@ public class Chain implements Writable, Query {
 						&& controller.listActions.size() > 0) {
 					// Add the actions from the last
 					List<ActionConf> list = controller.listActions;
-					controller.listActions = new ArrayList<>();
+					controller.listActions = new ArrayList<ActionConf>();
 					for (int i = list.size() - 1; i >= 0; --i) {
 						setAction(list.get(i), context);
 					}
@@ -266,7 +266,7 @@ public class Chain implements Writable, Query {
 				&& controller.listActions.size() > 0) {
 			// Add the actions from the last
 			List<ActionConf> list = controller.listActions;
-			controller.listActions = new ArrayList<>();
+			controller.listActions = new ArrayList<ActionConf>();
 			for (int i = list.size() - 1; i >= 0; --i) {
 				setAction(list.get(i), context);
 			}

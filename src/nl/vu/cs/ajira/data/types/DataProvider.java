@@ -13,7 +13,7 @@ public class DataProvider {
 	@SuppressWarnings("unchecked")
 	private Factory<SimpleData>[] list = new Factory[256];
 	private static Map<Integer, Class<? extends SimpleData>> registeredTypes = new HashMap<Integer, Class<? extends SimpleData>>();
-	private static Map<String, Integer> retrieveIds = new HashMap<>();
+	private static Map<String, Integer> retrieveIds = new HashMap<String, Integer>();
 
 	static synchronized public void addType(int type,
 			Class<? extends SimpleData> clazz) {
