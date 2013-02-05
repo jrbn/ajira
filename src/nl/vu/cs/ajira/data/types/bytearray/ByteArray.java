@@ -5,10 +5,18 @@ public class ByteArray {
 	public int start = 0;
 	public int end = 0;
 
+		/**
+		 * 
+		 * @param buffer is the new buffer of the class.
+		 */
         public void setBuffer(byte[] buffer) {
             this.buffer = buffer;
         }
         
+        /**
+         * The method increases the size of the buffer to sz.
+         * @param sz is the new length of the buffer.
+         */
         public void growBuffer(int sz) {
             byte[] b = new byte[sz];
             if (end >= start) {

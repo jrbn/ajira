@@ -18,6 +18,10 @@ public class TupleComparator extends RawComparator<Tuple> {
 	int[] rawFields = new int[10];
 
 	@Override
+	/**
+	 * Initialize the fields of the class using the parameter.
+	 * The parameter are used for the comparison of the Tuples.  
+	 */
 	public void init(byte[] params) {
 		if (params != null && params.length > 0) {
 			if (fields.length < params.length) {
@@ -34,6 +38,9 @@ public class TupleComparator extends RawComparator<Tuple> {
 	}
 
 	@Override
+	/**
+	 * Returns a copy of the array fields.
+	 */
 	public byte[] getSortingParams() {
 		return Arrays.copyOf(fields, lenFields);
 	}
@@ -41,6 +48,10 @@ public class TupleComparator extends RawComparator<Tuple> {
 	public long timeConverting;
 
 	@Override
+	/**
+	 * Compares the bytes from b1 and b2 taking in consideration that 
+	 * they have a Tuple structure.
+	 */
 	public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
 		// Depending on the fields to consider I select the good ones.
 

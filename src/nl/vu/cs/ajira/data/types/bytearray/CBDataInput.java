@@ -5,6 +5,11 @@ import java.io.IOException;
 public class CBDataInput extends BDataInput {
 
 	@Override
+	/**
+	 * If the starting position of the buffer is greater than it's 
+	 * length then the staring position is reset to 0. The method 
+	 * returns the first byte from the beginning of the buffer. 
+	 */
 	public byte readByte() throws IOException {
 		if (cb.start >= cb.buffer.length)
 			cb.start = 0;
@@ -12,6 +17,14 @@ public class CBDataInput extends BDataInput {
 	}
 
 	@Override
+	/**
+	 * If len is greater than the number of elements that are at the 
+	 * end of the buffer then it copies in b the elements at the end 
+	 * of the buffer and resets the starting position of the buffer
+	 * and copies the remaining elements from the beginning. If there
+	 * are len elements at the end of the buffer then it calls the 
+	 * readFully method from the extended class. 
+	 */
 	public void readFully(byte[] b, int off, int len) throws IOException {
 		if (len > cb.buffer.length - cb.start) {
 			System.arraycopy(cb.buffer, cb.start, b, off, cb.buffer.length
@@ -26,6 +39,11 @@ public class CBDataInput extends BDataInput {
 	}
 
 	@Override
+	/**
+	 * If there are 4 bytes at the end of the buffer then it reads 
+	 * the int value. If there are not 4 bytes at the end of the 
+	 * buffer then the starting position of the buffer is reset. 
+	 */
 	public int readInt() throws IOException {
 		if (cb.start + 4 <= cb.buffer.length)
 			return super.readInt();
@@ -46,6 +64,11 @@ public class CBDataInput extends BDataInput {
 	}
 	
 	@Override
+	/**
+	 * If there are 2 bytes at the end of the buffer then it reads 
+	 * the short value. If there are not 2 bytes at the end of the 
+	 * buffer then the starting position of the buffer is reset.
+	 */
 	public short readShort() throws IOException {
 		if (cb.start + 2 <= cb.buffer.length)
 			return super.readShort();
@@ -63,6 +86,11 @@ public class CBDataInput extends BDataInput {
 	}
 
 	@Override
+	/**
+	 * If there are 8 bytes at the end of the buffer then it reads 
+	 * the long value. If there are not 8 bytes at the end of the 
+	 * buffer then the starting position of the buffer is reset.
+	 */
 	public long readLong() throws IOException {
 
 		if (cb.start + 8 <= cb.buffer.length) {
@@ -84,6 +112,10 @@ public class CBDataInput extends BDataInput {
 		}
 	}
 
+	/**
+	 * Creates a new CBDataInput an sets the field of the extended class.
+	 * @param cb is the ByteArray of the extended class
+	 */
 	public CBDataInput(ByteArray cb) {
 		super(cb);
 	}
