@@ -44,7 +44,7 @@ public class Bucket {
 	 * Keeps information about the content (tuples) cached/stored on the disk,
 	 * such as where it was stored (filename), the last element written in the
 	 * file (lastElement), total elements (nElements), how much space remained
-	 * in the file (remaining size) and the file stream -- descriptor (stream).
+	 * in the file (remaining size) and the file stream -- file descriptor.
 	 */
 	static class FileMetaData {
 		String filename;
@@ -205,7 +205,6 @@ public class Bucket {
 	 * @param factory
 	 *            Factory which is used to generate WritableContainer<T> objects
 	 *            -- a pool of unused buffers
-	 * @see Factory
 	 * @throws Exception
 	 */
 	public synchronized void addAll(
@@ -277,12 +276,11 @@ public class Bucket {
 	 * 'sorted' param) and then we open a temporary file (input stream) for
 	 * writing it's content down. All the information/details (filename, size,
 	 * etc) about the caching operation are kept as metadata into a hash
-	 * data-structure.
-	 * 
-	 * @see FileMetaData If the number of temporary files are greater than a
-	 *      fixed limit, a background thread that merges those files is started
-	 *      in order to get their number back to normal.
-	 * @see CachedFilesMerger
+	 * data-structure. @see FileMetaData 
+	 *  
+	 * If the number of temporary files are greater than a fixed limit, 
+	 * a background thread that merges those files is started in order 
+	 * to get their number back to normal. @see CachedFilesMerger
 	 * 
 	 * @param buffer
 	 *            Buffer (tuples container) to be cached
@@ -290,7 +288,6 @@ public class Bucket {
 	 *            True/false if the tuples inside the buffer are sorted or not
 	 * @param fb
 	 *            Factory used for the buffer generation
-	 * @see FactoryPattern
 	 * @throws IOException
 	 */
 	private void cacheBuffer(final WritableContainer<TupleSerializer> buffer,
@@ -455,7 +452,7 @@ public class Bucket {
 	 * cached sorted tuples, to a buffer, if the minimum element from the file
 	 * is less then the minimum element from the sorted list.
 	 * 
-	 * @see cacheFiles
+	 * @see #cacheFiles
 	 * 
 	 * @param meta
 	 *            The meta information about the file that is checked if can
@@ -512,14 +509,17 @@ public class Bucket {
 	 *            Node responsible with the remote-bucket
 	 * @param submissionId
 	 *            Submission id
-	 * @param comparator
-	 *            Comparator - function to compare with
-	 * @param params
-	 *            Sorting parameters given along with t he sorting function
+	 * @param sort
+	 *            Activate sort or not on the bucket
+	 * @param sortingFields
+	 *            What fields to sort on
 	 * @param fb
 	 *            Factory used to generate buffers -- a pool of unused buffers
 	 * @param merger
 	 *            Cache file merger
+	 * @param signature
+	 * 			  The signature used for defining the sort order
+	 * 			  between the fields 
 	 */
 	@SuppressWarnings("unchecked")
 	void init(long key, StatisticsCollector stats, int submissionNode,

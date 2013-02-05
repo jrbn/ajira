@@ -30,12 +30,13 @@ public class BucketIterator extends TupleIterator {
 	/**
 	 * Initialization function.
 	 * 
+	 * @param c
+	 * 			  Current action context
 	 * @param bucket
 	 *            Bucket to iterate on.
-	 * @param idSubmission
-	 *            Submission id
-	 * @param idBucket
-	 *            Bucket id
+	 * @param signature
+	 * 			  The signature used for defining the sort order
+	 * 			  between the fields           
 	 * @param buckets
 	 *            (not used) Bucket's wrapper class
 	 * @see Buckets

@@ -53,9 +53,6 @@ public class Buckets {
 	 * 
 	 * @param stats
 	 *            Collection in which we add/aggregate counters (statistics)
-	 * @param fb
-	 *            Factory (a pool of unused buffers) from which we generate
-	 *            buffers
 	 * @param merger
 	 *            Merger that is being used for merging the cached files created
 	 *            by the buckets of this node
@@ -78,8 +75,8 @@ public class Buckets {
 	/**
 	 * Method that generates a key for uniquely identifying a buffer -- is
 	 * generated using the bucket's submission identifier and also its own
-	 * identifier. Ensures that high-order int contains submissionId, even if
-	 * bucketID < 0.
+	 * identifier. Ensures that high-order int contains submissionId, even 
+	 * if bucketID < 0.
 	 * 
 	 * @param submissionId
 	 *            Submission id
@@ -137,14 +134,17 @@ public class Buckets {
 	 *            Submission id
 	 * @param idBucket
 	 *            Bucket id
-	 * @param sortingFunction
-	 *            Function to sort with
-	 * @param sortingParams
-	 *            Sorting parameters given along with the sorting function
+	 * @param sort
+	 * 			  Activate sort or not on the bucket
+	 * @param sortingFields
+	 *            What fields to sort on
+	 * @param signature
+	 * 			  The signature used for defining the sort order
+	 * 			  between the fields 
 	 * @return
 	 */
 	public synchronized Bucket getOrCreateBucket(int submissionNode,
-			int idSubmission, int idBucket, boolean sort, byte[] sortingParams,
+			int idSubmission, int idBucket, boolean sort, byte[] sortingFields,
 			byte[] signature) {
 		long key = getKey(idSubmission, idBucket);
 		Bucket bucket = buckets.get(key);
@@ -153,10 +153,10 @@ public class Buckets {
 			bucket = bucketsFactory.get();
 			if (sort) {
 				bucket.init(key, stats, submissionNode, idSubmission, sort,
-						sortingParams, fb_sorted, merger, signature);
+						sortingFields, fb_sorted, merger, signature);
 			} else {
 				bucket.init(key, stats, submissionNode, idSubmission, sort,
-						sortingParams, fb_not_sorted, merger, signature);
+						sortingFields, fb_not_sorted, merger, signature);
 			}
 			buckets.put(key, bucket);
 			this.notifyAll();
@@ -300,21 +300,24 @@ public class Buckets {
 	 *            Node's id (is a simple number from 0 to N) (--local node)
 	 * @param bucketID
 	 *            Bucket id
-	 * @param sortingFunction
-	 *            Function to sort with
-	 * @param sortingParams
-	 *            Sorting parameters given along with the sorting function
+	 * @param sort
+	 * 			  Activate sort or not on the bucket
+	 * @param sortingFields
+	 *            What fields to sort on
+	 * @param signature
+	 * 			  The signature used for defining the sort order
+	 * 			  between the fields 
 	 * @param context
 	 *            Context of the action
 	 * @return The bucket prepared for the transfer
 	 */
 	public Bucket startTransfer(int submissionNode, int submission, int node,
-			int bucketID, boolean sort, byte[] sortingParams, byte[] signature,
+			int bucketID, boolean sort, byte[] sortingFields, byte[] signature,
 			ActionContext context) {
 
 		if (node == myPartition || net.getNumberNodes() == 1) {
 			return getOrCreateBucket(submissionNode, submission, bucketID,
-					sort, sortingParams, signature);
+					sort, sortingFields, signature);
 		}
 
 		Map<Long, TransferInfo> map = activeTransfers[node];
@@ -328,7 +331,7 @@ public class Buckets {
 				// There is no transfer active. Create one.
 				info = new TransferInfo();
 				info.bucket = getOrCreateBucket(submissionNode, submission,
-						context.getNewBucketID(), sort, sortingParams,
+						context.getNewBucketID(), sort, sortingFields,
 						signature);
 				map.put(key, info);
 			} else {
@@ -362,10 +365,13 @@ public class Buckets {
 	 *            Number of chain's children
 	 * @param responsible
 	 *            True/false if the current chain is a root-chain or not
-	 * @param sortingFunction
-	 *            Function to sort with
-	 * @param sortingParams
-	 *            Sorting parameters given along with the sorting function
+	 * @param sort
+	 * 			  Activate sort or not on the bucket
+	 * @param sortingFields
+	 *            What fields to sort on
+	 * @param signature
+	 * 			  The signature used for defining the sort order
+	 * 			  between the fields 
 	 * @param decreaseCounter
 	 *            True/false if we need to decrease the transfer info counter or
 	 *            not
@@ -373,12 +379,12 @@ public class Buckets {
 	 */
 	public void finishTransfer(int submissionNode, int submission, int node,
 			int bucketID, long chainId, long parentChainId, int nchildren,
-			boolean responsible, boolean sort, byte[] sortingParams,
+			boolean responsible, boolean sort, byte[] sortingFields,
 			byte[] signature, boolean decreaseCounter) throws IOException {
 
 		if (node == myPartition || net.getNumberNodes() == 1) {
 			Bucket bucket = getOrCreateBucket(submissionNode, submission,
-					bucketID, sort, sortingParams, signature);
+					bucketID, sort, sortingFields, signature);
 
 			bucket.updateCounters(chainId, parentChainId, nchildren,
 					responsible);
@@ -406,9 +412,9 @@ public class Buckets {
 			message.writeBoolean(false);
 		} else {
 			message.writeBoolean(true);
-			if (sortingParams != null && sortingParams.length > 0) {
-				message.writeInt(sortingParams.length);
-				message.writeArray(sortingParams);
+			if (sortingFields != null && sortingFields.length > 0) {
+				message.writeInt(sortingFields.length);
+				message.writeArray(sortingFields);
 			} else {
 				message.writeInt(0);
 			}
