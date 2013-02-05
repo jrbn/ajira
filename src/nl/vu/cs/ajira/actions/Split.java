@@ -29,9 +29,4 @@ public class Split extends Action {
 		alternativePath.output(inputTuple);
 		output.output(inputTuple);
 	}
-
-	@Override
-	public void stopProcess(ActionContext context, ActionOutput output)
-			throws Exception {
-	}
 }

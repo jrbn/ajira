@@ -127,6 +127,7 @@ public class ChainSplitLayer extends InputLayer {
 			SplitIterator itr = existingSplits.get(((TInt) tuple.get(0))
 					.getValue());
 			itr.init(context, "ChainSplitsLayer");
+			return itr;
 		} catch (Exception e) {
 			log.error("Error in processing the input tuple", e);
 		}

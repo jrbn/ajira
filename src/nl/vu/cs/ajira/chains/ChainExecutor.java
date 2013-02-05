@@ -1,6 +1,7 @@
 package nl.vu.cs.ajira.chains;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import nl.vu.cs.ajira.Context;
@@ -16,13 +17,16 @@ import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
 import nl.vu.cs.ajira.datalayer.chainsplits.ChainSplitLayer;
 import nl.vu.cs.ajira.datalayer.chainsplits.ChainSplitLayer.SplitIterator;
+import nl.vu.cs.ajira.statistics.StatisticsCollector;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.utils.Consts;
 
 public class ChainExecutor implements ActionContext, ActionOutput {
 
 	private Context context;
+	private StatisticsCollector stats;
 
+	private List<SplitIterator> openedStreams = new ArrayList<>();
 	private int[] rawSizes = new int[Consts.MAX_N_ACTIONS];
 	private Action[] actions = new Action[Consts.MAX_N_ACTIONS];
 	private boolean[] roots = new boolean[Consts.MAX_N_ACTIONS];
@@ -50,6 +54,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	public ChainExecutor(Context context, WritableContainer<Chain> chainsBuffer) {
 		this.context = context;
 		this.chainsBuffer = chainsBuffer;
+		this.stats = context.getStatisticsCollector();
 	}
 
 	public ChainExecutor(Context context,
@@ -146,6 +151,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		this.smallestRuntimeAction = -1;
 		this.stopProcess = false;
 		this.transferComputation = false;
+		openedStreams.clear();
 	}
 
 	void addAction(Action action, boolean root, int chainRawSize) {
@@ -192,6 +198,12 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			currentAction++;
 		}
 
+		if (openedStreams.size() > 0) {
+			for (SplitIterator itr : openedStreams) {
+				itr.close();
+			}
+		}
+
 		if (transferComputation && roots[nActions - 1]) {
 			chain.setRawSize(rawSizes[nActions - 1]);
 			chain.copyTo(supportChain);
@@ -221,6 +233,9 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			}
 		}
 		chainsBuffer.add(supportChain);
+
+		stats.addCounter(chain.getSubmissionNode(), chain.getSubmissionId(),
+				"Chains Dynamically Generated", 1);
 	}
 
 	@Override
@@ -235,6 +250,9 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			}
 		}
 		chainsBuffer.add(supportChain);
+
+		stats.addCounter(chain.getSubmissionNode(), chain.getSubmissionId(),
+				"Chains Dynamically Generated", 1);
 	}
 
 	@Override
@@ -242,8 +260,16 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		chain.branchFromRoot(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
 		supportChain.setActions(actions, this);
 		SplitIterator itr = ChainSplitLayer.getInstance().registerNewSplit();
-		chain.setInputLayer(Consts.SPLITS_INPUT_LAYER);
-		chain.setInputTuple(TupleFactory.newTuple(new TInt(itr.getId())));
+		supportChain.setInputLayer(Consts.SPLITS_INPUT_LAYER);
+		supportChain
+				.setInputTuple(TupleFactory.newTuple(new TInt(itr.getId())));
+		chainsBuffer.add(supportChain);
+
+		stats.addCounter(chain.getSubmissionNode(), chain.getSubmissionId(),
+				"Chains Dynamically Generated", 1);
+
+		openedStreams.add(itr);
+
 		return itr;
 	}
 
@@ -252,8 +278,16 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		chain.branchFromRoot(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
 		supportChain.setAction(action, this);
 		SplitIterator itr = ChainSplitLayer.getInstance().registerNewSplit();
-		chain.setInputLayer(Consts.SPLITS_INPUT_LAYER);
-		chain.setInputTuple(TupleFactory.newTuple(new TInt(itr.getId())));
+		supportChain.setInputLayer(Consts.SPLITS_INPUT_LAYER);
+		supportChain
+				.setInputTuple(TupleFactory.newTuple(new TInt(itr.getId())));
+
+		stats.addCounter(chain.getSubmissionNode(), chain.getSubmissionId(),
+				"Chains Dynamically Generated", 1);
+
+		openedStreams.add(itr);
+
+		chainsBuffer.add(supportChain);
 		return itr;
 	}
 

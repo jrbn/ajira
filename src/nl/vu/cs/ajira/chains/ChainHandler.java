@@ -8,9 +8,7 @@ import nl.vu.cs.ajira.datalayer.InputLayer;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
 import nl.vu.cs.ajira.net.NetworkLayer;
 import nl.vu.cs.ajira.statistics.StatisticsCollector;
-import nl.vu.cs.ajira.storage.Container;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
-import nl.vu.cs.ajira.utils.Consts;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +19,7 @@ public class ChainHandler implements Runnable {
 
 	private Context context = null;
 	private NetworkLayer net = null;
-	private Container<Chain> chainsToProcess = null;
+	private WritableContainer<Chain> chainsToProcess = null;
 	private ActionFactory ap = null;
 	private StatisticsCollector stats = null;
 	private boolean localMode;
@@ -40,9 +38,14 @@ public class ChainHandler implements Runnable {
 
 		Chain chain = new Chain();
 		Tuple tuple = TupleFactory.newTuple();
-		WritableContainer<Chain> chainsBuffer = new WritableContainer<Chain>(
-				Consts.SIZE_BUFFERS_CHILDREN_CHAIN_PROCESS);
-		ChainExecutor actions = new ChainExecutor(context, chainsBuffer);
+
+		ChainExecutor actions = new ChainExecutor(context, chainsToProcess);
+
+		// if (localMode) {
+		// actions = new ChainExecutor(context, chainsToProcess);
+		// } else {
+		// // net.sendChains(chainsBuffer); //FIXME
+		// }
 
 		while (true) {
 
@@ -87,20 +90,6 @@ public class ChainHandler implements Runnable {
 							actions.output(tuple);
 						} else { // EOF Case
 							actions.stopProcess();
-						}
-
-						// Update the children generated in this action
-						if (chainsBuffer.getNElements() > 0) {
-							stats.addCounter(chain.getSubmissionNode(),
-									chain.getSubmissionId(),
-									"Chains Dynamically Generated",
-									chainsBuffer.getNElements());
-							if (localMode) {
-								chainsToProcess.addAll(chainsBuffer);
-							} else {
-								net.sendChains(chainsBuffer);
-							}
-							chainsBuffer.clear();
 						}
 					} while (!eof);
 

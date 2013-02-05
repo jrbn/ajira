@@ -20,6 +20,7 @@ import nl.vu.cs.ajira.data.types.DataProvider;
 import nl.vu.cs.ajira.datalayer.InputLayer;
 import nl.vu.cs.ajira.datalayer.InputLayerRegistry;
 import nl.vu.cs.ajira.datalayer.buckets.BucketsLayer;
+import nl.vu.cs.ajira.datalayer.chainsplits.ChainSplitLayer;
 import nl.vu.cs.ajira.datalayer.dummy.DummyLayer;
 import nl.vu.cs.ajira.net.NetworkLayer;
 import nl.vu.cs.ajira.statistics.StatisticsCollector;
@@ -187,6 +188,8 @@ public class Ajira {
 			inputRegistry.add(Consts.DEFAULT_INPUT_LAYER_ID, input);
 			inputRegistry.add(Consts.BUCKET_INPUT_LAYER_ID, new BucketsLayer());
 			inputRegistry.add(Consts.DUMMY_INPUT_LAYER_ID, new DummyLayer());
+			inputRegistry.add(Consts.SPLITS_INPUT_LAYER,
+					ChainSplitLayer.getInstance());
 
 			/**** INIT CONTEXT ****/
 			globalContext = new Context();
