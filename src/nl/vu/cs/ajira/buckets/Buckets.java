@@ -52,7 +52,7 @@ public class Buckets {
 	 * Custom constructor.
 	 * 
 	 * @param stats
-	 *            Collection in which we add/aggregate counters (statistics)
+	 * 			  Collection in which we add/aggregate counters (statistics)
 	 * @param merger
 	 *            Merger that is being used for merging the cached files created
 	 *            by the buckets of this node
