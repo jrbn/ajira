@@ -21,6 +21,7 @@ public class Submission {
 	Map<String, Long> counters = null;
 	int assignedBucket = -1;
 	int rootChainsReceived = -1;
+	boolean mainRootReceived;
 
 	Map<Long, Integer> monitors = new HashMap<Long, Integer>();
 
@@ -31,6 +32,7 @@ public class Submission {
 		rootChainsReceived = -1;
 		assignedBucket = assignedOutputBucket;
 		this.submissionId = submissionId;
+		mainRootReceived = false;
 	}
 
 	public double getExecutionTimeInMs() {

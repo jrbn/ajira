@@ -81,6 +81,9 @@ public class SubmissionRegistry {
 
 			if (parentChainId == -1) { // It is one of the root chains
 				sub.rootChainsReceived++;
+				if (chainId == 0) {
+					sub.mainRootReceived = true;
+				}
 			} else {
 				// Change the children field of the parent chain
 				Integer c = sub.monitors.get(parentChainId);
@@ -96,7 +99,8 @@ public class SubmissionRegistry {
 				}
 			}
 
-			if (sub.rootChainsReceived == 0 && sub.monitors.size() == 0) {
+			if (sub.rootChainsReceived == 0 && sub.mainRootReceived
+					&& sub.monitors.size() == 0) {
 				if (sub.assignedBucket != -1) {
 					Bucket bucket = buckets.getExistingBucket(submissionId,
 							sub.assignedBucket);

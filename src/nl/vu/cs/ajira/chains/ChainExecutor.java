@@ -204,15 +204,19 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			}
 		}
 
-		if (transferComputation && roots[nActions - 1]) {
-			chain.setRawSize(rawSizes[nActions - 1]);
-			chain.copyTo(supportChain);
-			supportChain.setTotalChainChildren(0);
-			supportChain.setInputLayer(Consts.BUCKET_INPUT_LAYER_ID);
-			supportTuple.set(new TInt(transferBucketId), new TInt(
-					transferNodeId));
-			supportChain.setInputTuple(supportTuple);
-			chainsBuffer.add(supportChain);
+		if (transferComputation) {
+			if (roots[nActions - 1]) {
+				chain.setRawSize(rawSizes[nActions - 1]);
+				chain.copyTo(supportChain);
+				// supportChain.setTotalChainChildren(0);
+				supportChain.setInputLayer(Consts.BUCKET_INPUT_LAYER_ID);
+				supportTuple.set(new TInt(transferBucketId), new TInt(
+						transferNodeId));
+				supportChain.setInputTuple(supportTuple);
+				chainsBuffer.add(supportChain);
+			} else {
+				transferComputation = false;
+			}
 		}
 	}
 
