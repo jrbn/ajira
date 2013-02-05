@@ -34,7 +34,7 @@ public class ChainSplitLayer extends InputLayer {
 			this.id = id;
 		}
 
-		int getId() {
+		public int getId() {
 			return id;
 		}
 
@@ -113,7 +113,7 @@ public class ChainSplitLayer extends InputLayer {
 	public synchronized SplitIterator registerNewSplit() {
 		SplitIterator itr = new SplitIterator(counter);
 		existingSplits.put(counter++, itr);
-		return null;
+		return itr;
 	}
 
 	@Override

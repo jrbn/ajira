@@ -9,9 +9,9 @@ import nl.vu.cs.ajira.datalayer.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PutIntoLocalBucket extends Action {
+public class WriteToBucket extends Action {
 
-	static final Logger log = LoggerFactory.getLogger(PutIntoLocalBucket.class);
+	static final Logger log = LoggerFactory.getLogger(WriteToBucket.class);
 	public static final int ALL_NODES = -1;
 
 	public static final int BUCKET_ID = 0;

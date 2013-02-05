@@ -57,14 +57,14 @@ public class WordCount {
 		@Override
 		public void process(Tuple tuple, ActionContext context,
 				ActionOutput actionOutput) throws Exception {
-			TString key = (TString) tuple.get(0);
+			TString word = (TString) tuple.get(0);
 			TBag values = (TBag) tuple.get(1);
 
 			long sum = 0;
 			for (Tuple t : values) {
 				sum += ((TInt) t.get(0)).getValue();
 			}
-			actionOutput.output(key, new TLong(sum));
+			actionOutput.output(word, new TLong(sum));
 		}
 	}
 

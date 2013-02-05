@@ -14,6 +14,8 @@ import nl.vu.cs.ajira.data.types.TInt;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
+import nl.vu.cs.ajira.datalayer.chainsplits.ChainSplitLayer;
+import nl.vu.cs.ajira.datalayer.chainsplits.ChainSplitLayer.SplitIterator;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.utils.Consts;
 
@@ -239,20 +241,20 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	public ActionOutput split(List<ActionConf> actions) throws Exception {
 		chain.branchFromRoot(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
 		supportChain.setActions(actions, this);
-
-		// TODO
-
-		return null;
+		SplitIterator itr = ChainSplitLayer.getInstance().registerNewSplit();
+		chain.setInputLayer(Consts.SPLITS_INPUT_LAYER);
+		chain.setInputTuple(TupleFactory.newTuple(new TInt(itr.getId())));
+		return itr;
 	}
 
 	@Override
 	public ActionOutput split(ActionConf action) throws Exception {
 		chain.branchFromRoot(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
 		supportChain.setAction(action, this);
-
-		// TODO
-
-		return null;
+		SplitIterator itr = ChainSplitLayer.getInstance().registerNewSplit();
+		chain.setInputLayer(Consts.SPLITS_INPUT_LAYER);
+		chain.setInputTuple(TupleFactory.newTuple(new TInt(itr.getId())));
+		return itr;
 	}
 
 	@Override

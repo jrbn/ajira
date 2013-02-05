@@ -6,7 +6,7 @@ import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.datalayer.Query;
 import nl.vu.cs.ajira.utils.Consts;
 
-public class ReadFromBuckets extends Action {
+public class ReadFromBucket extends Action {
 
 	int node;
 	int bucketId;

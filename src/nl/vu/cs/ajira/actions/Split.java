@@ -3,33 +3,35 @@ package nl.vu.cs.ajira.actions;
 import nl.vu.cs.ajira.actions.support.WritableListActions;
 import nl.vu.cs.ajira.data.types.Tuple;
 
-public class Branch extends Action {
+public class Split extends Action {
 
-	/***** PARAMETERS *****/
-	public static final int BRANCH = 0;
-	public static final String S_BRANCH = "branch";
+	public static final int SPLIT = 0;
+	private WritableListActions actions = new WritableListActions();
+	private ActionOutput alternativePath = null;
 
 	@Override
 	public void registerActionParameters(ActionConf conf) throws Exception {
-		conf.registerParameter(BRANCH, S_BRANCH, null, true);
+		conf.registerParameter(SPLIT, "split", null, true);
 	}
 
 	@Override
 	public void startProcess(ActionContext context) throws Exception {
+		getParamWritable(actions, SPLIT);
+		alternativePath = null;
 	}
 
 	@Override
 	public void process(Tuple inputTuple, ActionContext context,
 			ActionOutput output) throws Exception {
+		if (alternativePath == null) {
+			alternativePath = output.split(actions.getActions());
+		}
+		alternativePath.output(inputTuple);
+		output.output(inputTuple);
 	}
 
 	@Override
 	public void stopProcess(ActionContext context, ActionOutput output)
 			throws Exception {
-		if (context.isPrincipalBranch()) {
-			WritableListActions branch = new WritableListActions();
-			getParamWritable(branch, BRANCH);
-			output.branch(branch.getActions());
-		}
 	}
 }
