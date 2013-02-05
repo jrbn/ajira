@@ -6,9 +6,8 @@ import java.io.IOException;
 
 import nl.vu.cs.ajira.utils.Consts;
 
-
 public final class TBoolean extends SimpleData {
-	
+
 	boolean value;
 
 	/**
@@ -65,14 +64,18 @@ public final class TBoolean extends SimpleData {
 		output.writeBoolean(value);
 	}
 
-	@Override
+
+	
 	/**
 	 * Returns the number of bytes that are needed to store the
 	 * field of the class.
 	 */
-	public int bytesToStore() {
-		return 1;
-	}
+
+	// @Override
+	// public int bytesToStore() {
+	// return 1;
+	// }
+
 
 	@Override
 	/**
@@ -80,6 +83,28 @@ public final class TBoolean extends SimpleData {
 	 */
 	public String toString() {
 		return Boolean.toString(value);
+	}
+
+	@Override
+	public void copyTo(SimpleData el) {
+		((TBoolean) el).value = value;
+	}
+
+	@Override
+	public int compareTo(SimpleData el) {
+		if ((value && ((TBoolean) el).value)
+				|| (!value && !((TBoolean) el).value)) {
+			return 0;
+		} else if (value) {
+			return 1;
+		} else {
+			return -1;
+		}
+	}
+
+	@Override
+	public boolean equals(SimpleData el) {
+		return ((TBoolean) el).value == value;
 	}
 
 }

@@ -1,10 +1,11 @@
 package nl.vu.cs.ajira.actions;
 
+import nl.vu.cs.ajira.buckets.TupleSerializer;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.datalayer.Query;
 import nl.vu.cs.ajira.utils.Consts;
 
-public class QueryInput extends Action {
+public class SetQueryInputLayer extends Action {
 
 	public static final int TUPLE = 0;
 	public static final String S_TUPLE = "tuple";
@@ -13,11 +14,12 @@ public class QueryInput extends Action {
 
 	static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
-		void setupConfiguration(Query query, Object[] params,
+		void setupAction(Query query, Object[] params,
 				ActionController controller, ActionContext context) {
 			query.setInputLayer(((Integer) params[INPUT_LAYER]).intValue());
-			query.setInputTuple((Tuple) params[TUPLE]);
-			controller.doNotAddAction();
+			TupleSerializer t = (TupleSerializer) params[TUPLE];
+			query.setInputTuple(t.getTuple());
+			controller.doNotAddCurrentAction();
 		}
 	}
 

@@ -1,4 +1,4 @@
-package nl.vu.cs.ajira.storage.container;
+package nl.vu.cs.ajira.storage.containers;
 
 import java.io.IOException;
 

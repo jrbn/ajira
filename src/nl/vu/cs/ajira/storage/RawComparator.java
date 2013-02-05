@@ -1,13 +1,12 @@
 package nl.vu.cs.ajira.storage;
 
-public class RawComparator<K extends Writable> {
+import nl.vu.cs.ajira.data.types.SimpleData;
 
-	public void init(byte[] params) {
-	}
+public class RawComparator<T> {
 
-	public byte[] getSortingParams() {
-		return null;
-	}
+	@SuppressWarnings("unchecked")
+	private static final RawComparator<? extends SimpleData>[] cmps = new RawComparator[256];
+	private static RawComparator<? extends SimpleData> defaultComparator = new RawComparator<SimpleData>();
 
 	/**
 	 * Compares the bytes from b1 and b2.
@@ -30,8 +29,6 @@ public class RawComparator<K extends Writable> {
 		if (end1 <= b1.length && end2 <= b2.length) {
 			// this is probably the common case.
 			while (s1 < end1 && s2 < end2) {
-				// int a = (b1[s1] & 0xff);
-				// int b = (b2[s2] & 0xff);
 				if (b1[s1] != b2[s2]) {
 					return (b1[s1] & 0xff) - (b2[s2] & 0xff);
 				}
@@ -84,4 +81,12 @@ public class RawComparator<K extends Writable> {
 		return compareBytes(b1, s1, l1, b2, s2, l2);
 	}
 
+	public static synchronized void registerComparator(int idSimpleData,
+			RawComparator<? extends SimpleData> cmp) {
+		cmps[idSimpleData] = cmp;
+	}
+
+	public static RawComparator<? extends SimpleData> getComparator(int id) {
+		return (cmps[id] != null) ? cmps[id] : defaultComparator;
+	}
 }

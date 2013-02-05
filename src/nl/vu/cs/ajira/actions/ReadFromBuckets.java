@@ -2,10 +2,11 @@ package nl.vu.cs.ajira.actions;
 
 import nl.vu.cs.ajira.data.types.TInt;
 import nl.vu.cs.ajira.data.types.Tuple;
+import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.datalayer.Query;
 import nl.vu.cs.ajira.utils.Consts;
 
-public class ReadFromBucket extends Action {
+public class ReadFromBuckets extends Action {
 
 	int node;
 	int bucketId;
@@ -18,18 +19,18 @@ public class ReadFromBucket extends Action {
 
 	static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
-		void setupConfiguration(Query query, Object[] params,
+		void setupAction(Query query, Object[] params,
 				ActionController controller, ActionContext context) {
 			if (params[NODE_ID] == null) {
 				params[NODE_ID] = -1;
 			}
 
 			query.setInputLayer(Consts.BUCKET_INPUT_LAYER_ID);
-			query.setInputTuple(new Tuple(
-					new TInt((Integer) params[BUCKET_ID]), new TInt(
-							(Integer) params[NODE_ID])));
+			query.setInputTuple(TupleFactory.newTuple(new TInt(
+					(Integer) params[BUCKET_ID]), new TInt(
+					(Integer) params[NODE_ID])));
 
-			controller.doNotAddAction();
+			controller.doNotAddCurrentAction();
 		}
 	}
 

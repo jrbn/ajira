@@ -11,7 +11,7 @@ import nl.vu.cs.ajira.storage.Writable;
 
 public class Branch extends Action {
 
-	public static class BranchContent extends Writable {
+	public static class BranchContent implements Writable {
 
 		private List<ActionConf> actions;
 
@@ -44,12 +44,6 @@ public class Branch extends Action {
 				action.writeTo(output);
 			}
 		}
-
-		@Override
-		public int bytesToStore() throws IOException {
-			throw new IOException("Not supported");
-		}
-
 	}
 
 	/***** PARAMETERS *****/
@@ -73,7 +67,7 @@ public class Branch extends Action {
 	@Override
 	public void stopProcess(ActionContext context, ActionOutput output)
 			throws Exception {
-		if (context.isRootBranch()) {
+		if (context.isPrincipalBranch()) {
 			BranchContent branch = new BranchContent();
 			getParamWritable(branch, BRANCH);
 			output.branch(branch.getActions());

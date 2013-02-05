@@ -9,9 +9,12 @@ import nl.vu.cs.ajira.actions.ActionConf;
 import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.actions.ActionOutput;
 import nl.vu.cs.ajira.buckets.Bucket;
+import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.TInt;
 import nl.vu.cs.ajira.data.types.Tuple;
-import nl.vu.cs.ajira.storage.container.WritableContainer;
+import nl.vu.cs.ajira.data.types.TupleFactory;
+import nl.vu.cs.ajira.datalayer.TupleIterator;
+import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.utils.Consts;
 
 public class ChainExecutor implements ActionContext, ActionOutput {
@@ -27,6 +30,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	private int[] cRuntimeBranching = new int[Consts.MAX_N_ACTIONS];
 	private int smallestRuntimeAction;
 	private boolean stopProcess;
+	private TupleIterator itr;
 
 	private int currentAction;
 	private int submissionNode;
@@ -35,7 +39,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	private WritableContainer<Chain> chainsBuffer;
 
 	private final Chain supportChain = new Chain();
-	private final Tuple supportTuple = new Tuple();
+	private final Tuple supportTuple = TupleFactory.newTuple();
 
 	private boolean transferComputation = false;
 	private int transferNodeId;
@@ -171,6 +175,12 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		}
 	}
 
+	@Override
+	public void output(SimpleData... data) throws Exception {
+		supportTuple.set(data);
+		output(supportTuple);
+	}
+
 	void stopProcess() throws Exception {
 		currentAction = 0;
 		stopProcess = true;
@@ -193,7 +203,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	}
 
 	@Override
-	public boolean isRootBranch() {
+	public boolean isPrincipalBranch() {
 		return roots[currentAction];
 	}
 
@@ -201,7 +211,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	public void branch(List<ActionConf> actions) throws Exception {
 		chain.setRawSize(rawSizes[currentAction]);
 		chain.branch(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
-		supportChain.addActions(actions, this);
+		supportChain.setActions(actions, this);
 		if (!stopProcess && currentAction > 0) {
 			cRuntimeBranching[currentAction]++;
 			if (currentAction > smallestRuntimeAction) {
@@ -215,7 +225,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	public void branch(ActionConf action) throws Exception {
 		chain.setRawSize(rawSizes[currentAction]);
 		chain.branch(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
-		supportChain.addAction(action, this);
+		supportChain.setAction(action, this);
 		if (!stopProcess && currentAction > 0) {
 			cRuntimeBranching[currentAction]++;
 			if (currentAction > smallestRuntimeAction) {
@@ -228,7 +238,9 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	@Override
 	public ActionOutput split(List<ActionConf> actions) throws Exception {
 		chain.branchFromRoot(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
-		supportChain.addActions(actions, this);
+		supportChain.setActions(actions, this);
+
+		// TODO
 
 		return null;
 	}
@@ -236,26 +248,31 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	@Override
 	public ActionOutput split(ActionConf action) throws Exception {
 		chain.branchFromRoot(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
-		supportChain.addAction(action, this);
+		supportChain.setAction(action, this);
+
+		// TODO
 
 		return null;
 	}
 
 	@Override
-	public Bucket getBucket(final int bucketId, final String sortingFunction) {
+	public Bucket getBucket(final int bucketId, final boolean sort,
+			byte[] sortingFields, byte[] signature) {
 		return context.getBuckets().getOrCreateBucket(submissionNode,
-				submissionId, bucketId, sortingFunction, null);
+				submissionId, bucketId, sort, sortingFields, signature);
 	}
 
 	@Override
-	public Bucket startTransfer(int nodeId, int bucketId, String sortingFunction) {
+	public Bucket startTransfer(int nodeId, int bucketId, boolean sort,
+			byte[] sortingFields, byte[] signature) {
 		return context.getBuckets().startTransfer(submissionNode, submissionId,
-				nodeId, bucketId, sortingFunction, null, this);
+				nodeId, bucketId, sort, sortingFields, signature, this);
 	}
 
 	@Override
-	public void finishTransfer(int nodeId, int bucketId,
-			String sortingFunction, boolean decreaseCounter) throws IOException {
+	public void finishTransfer(int nodeId, int bucketId, boolean sort,
+			byte[] sortingFields, boolean decreaseCounter, byte[] signature)
+			throws IOException {
 
 		int children = chain.getTotalChainChildren();
 		if (children != 0 && currentAction < smallestRuntimeAction) {
@@ -270,7 +287,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 		context.getBuckets().finishTransfer(this.submissionNode, submissionId,
 				nodeId, bucketId, chain.getChainId(), chain.getParentChainId(),
-				children, roots[currentAction], sortingFunction, null,
+				children, roots[currentAction], sort, sortingFields, signature,
 				decreaseCounter);
 	}
 
@@ -285,5 +302,14 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 	boolean isChainFullyExecuted() {
 		return !transferComputation;
+	}
+
+	void setInputIterator(TupleIterator itr) {
+		this.itr = itr;
+	}
+
+	@Override
+	public TupleIterator getInputIterator() {
+		return itr;
 	}
 }

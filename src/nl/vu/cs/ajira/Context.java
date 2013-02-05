@@ -9,14 +9,12 @@ import nl.vu.cs.ajira.chains.Chain;
 import nl.vu.cs.ajira.chains.ChainHandler;
 import nl.vu.cs.ajira.chains.ChainNotifier;
 import nl.vu.cs.ajira.data.types.DataProvider;
-import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.datalayer.InputLayer;
 import nl.vu.cs.ajira.datalayer.InputLayerRegistry;
 import nl.vu.cs.ajira.net.NetworkLayer;
 import nl.vu.cs.ajira.statistics.StatisticsCollector;
-import nl.vu.cs.ajira.storage.Factory;
 import nl.vu.cs.ajira.storage.SubmissionCache;
-import nl.vu.cs.ajira.storage.container.WritableContainer;
+import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.submissions.Submission;
 import nl.vu.cs.ajira.submissions.SubmissionRegistry;
 import nl.vu.cs.ajira.utils.Configuration;
@@ -46,7 +44,6 @@ public class Context {
 	private StatisticsCollector stats;
 	private ActionFactory actionProvider;
 	private DataProvider dataProvider;
-	private Factory<Tuple> defaultTupleFactory;
 	private SubmissionCache cache;
 	private ChainNotifier chainNotifier;
 	private List<ChainHandler> handlers;
@@ -81,8 +78,7 @@ public class Context {
 			List<ChainHandler> listHandlers, ChainNotifier notifier,
 			CachedFilesMerger merger, NetworkLayer net,
 			StatisticsCollector stats, ActionFactory actionProvider,
-			DataProvider dataProvider, Factory<Tuple> defaultTupleFactory,
-			SubmissionCache cache, Configuration conf) {
+			DataProvider dataProvider, SubmissionCache cache, Configuration conf) {
 		counter = localMode ? new UniqueCounter() : new UniqueCounter(
 				net.getNumberNodes(), net.getMyPartition());
 
@@ -97,7 +93,6 @@ public class Context {
 		this.stats = stats;
 		this.actionProvider = actionProvider;
 		this.dataProvider = dataProvider;
-		this.defaultTupleFactory = defaultTupleFactory;
 		this.cache = cache;
 		this.merger = merger;
 		this.handlers = listHandlers;
@@ -116,10 +111,6 @@ public class Context {
 
 	public SubmissionCache getSubmissionCache() {
 		return cache;
-	}
-
-	public Factory<Tuple> getDeFaultTupleFactory() {
-		return defaultTupleFactory;
 	}
 
 	public StatisticsCollector getStatisticsCollector() {

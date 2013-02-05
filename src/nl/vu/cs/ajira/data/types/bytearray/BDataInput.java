@@ -13,7 +13,7 @@ public class BDataInput implements DataInput {
 	public BDataInput() {
 		this.cb = new ByteArray();
 	}
-
+	
 	/**
 	 * Creates a new BDataInput an sets the field of the class.
 	 * @param cb is the ByteArray of the object.
@@ -31,16 +31,16 @@ public class BDataInput implements DataInput {
 		this.cb.buffer = buffer;
 	}
 
-	/**
-	 * Sets the starting position and the buffer of the ByteArray.
-	 * @param b1 is the new buffer of the ByteArray
-	 * @param s1 is the new start position of the ByteArray
-	 */
+	public void setBuffer(byte[] b1) {
+		cb.buffer = b1;
+	}
+
+	
 	public void setCurrentPosition(byte[] b1, int s1) {
 		cb.buffer = b1;
 		cb.start = s1;
 	}
-
+	
 	/**
 	 * Sets the start position of the ByteArray
 	 * @param i is the new start position of the ByteArray
@@ -168,21 +168,26 @@ public class BDataInput implements DataInput {
 	}
 
 	@Override
-	/**
-	 * Returns the first unsigned byte from the
-	 * beginning of the ByteArray's buffer. 
-	 */
 	public int readUnsignedByte() throws IOException {
 		return readByte() & 0xFF;
 	}
 
 	@Override
+	/**
+	 * Returns the first unsigned byte from the
+	 * beginning of the ByteArray's buffer. 
+	 */
 	public int readUnsignedShort() throws IOException {
 		throw new IOException("Not supported");
 	}
 
 	@Override
 	public int skipBytes(int n) throws IOException {
-		throw new IOException("Not supported");
+		if (cb.start + n < cb.buffer.length) {
+			cb.start += n;
+		} else {
+			cb.start = n - (cb.buffer.length - cb.start);
+		}
+		return n;
 	}
 }

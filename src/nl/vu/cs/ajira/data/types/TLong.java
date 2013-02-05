@@ -6,7 +6,6 @@ import java.io.IOException;
 
 import nl.vu.cs.ajira.utils.Consts;
 
-
 public final class TLong extends SimpleData {
 
 	protected long value;
@@ -64,14 +63,15 @@ public final class TLong extends SimpleData {
 		output.writeLong(value);
 	}
 
-	@Override
 	/**
 	 * Returns the number of bytes that are needed to store the
 	 * field of the class.
 	 */
-	public int bytesToStore() {
-		return 8;
-	}
+	// @Override
+	// public int bytesToStore() {
+	// return 8;
+	// }
+
 
 	@Override
 	/**
@@ -79,5 +79,20 @@ public final class TLong extends SimpleData {
 	 */
 	public String toString() {
 		return Long.toString(value);
+	}
+
+	@Override
+	public void copyTo(SimpleData el) {
+		((TLong) el).value = value;
+	}
+
+	@Override
+	public int compareTo(SimpleData el) {
+		return (int) (value - ((TLong) el).value);
+	}
+
+	@Override
+	public boolean equals(SimpleData el) {
+		return ((TLong) el).value == value;
 	}
 }

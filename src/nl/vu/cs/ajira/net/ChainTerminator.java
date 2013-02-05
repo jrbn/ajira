@@ -8,13 +8,10 @@ import java.util.LinkedList;
 import java.util.List;
 
 import nl.vu.cs.ajira.Context;
-import nl.vu.cs.ajira.storage.Container;
-import nl.vu.cs.ajira.storage.Writable;
 import nl.vu.cs.ajira.chains.Chain;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 class ChainTerminator implements Runnable {
 
@@ -24,23 +21,26 @@ class ChainTerminator implements Runnable {
 		public final int submissionId;
 		public final long chainId;
 		public final long parentChainId;
-                public final int generatedRootChains;
+		public final int generatedRootChains;
 		public final int nchildren;
 		public final boolean failed;
 		public final Throwable exception;
-		
-		public ChainInfo(int nodeId, int submissionId, long chainId, long parentChainId, int nchildren, int generatedRootChains) {
-			this(nodeId, submissionId, chainId, parentChainId, nchildren, generatedRootChains, null);
+
+		public ChainInfo(int nodeId, int submissionId, long chainId,
+				long parentChainId, int nchildren, int generatedRootChains) {
+			this(nodeId, submissionId, chainId, parentChainId, nchildren,
+					generatedRootChains, null);
 		}
 
 		public ChainInfo(int nodeId, int submissionId, long chainId,
-				long parentChainId, int nchildren, int generatedRootChains, Throwable exception) {
+				long parentChainId, int nchildren, int generatedRootChains,
+				Throwable exception) {
 			this.nodeId = nodeId;
 			this.submissionId = submissionId;
 			this.chainId = chainId;
 			this.parentChainId = parentChainId;
 			this.nchildren = nchildren;
-                        this.generatedRootChains = generatedRootChains;
+			this.generatedRootChains = generatedRootChains;
 			if (exception != null) {
 				failed = true;
 				this.exception = exception;
@@ -54,33 +54,33 @@ class ChainTerminator implements Runnable {
 	static final Logger log = LoggerFactory.getLogger(ChainTerminator.class);
 
 	Context context;
-	private final List<ChainInfo> chainsTerminated = Collections.synchronizedList(new LinkedList<ChainTerminator.ChainInfo>());
+	private final List<ChainInfo> chainsTerminated = Collections
+			.synchronizedList(new LinkedList<ChainTerminator.ChainInfo>());
 
 	public ChainTerminator(Context context) {
 		this.context = context;
 	}
-	
+
 	public void addInfo(ChainInfo ch) {
-		synchronized(chainsTerminated) {
+		synchronized (chainsTerminated) {
 			chainsTerminated.add(ch);
 			chainsTerminated.notify();
 		}
 	}
-	
+
 	public void addFailedChain(Chain chain, Throwable e) {
 		ChainInfo ch = new ChainInfo(chain.getSubmissionNode(),
 				chain.getSubmissionId(), chain.getChainId(),
 				chain.getParentChainId(), chain.getTotalChainChildren(),
-                                chain.getGeneratedRootChains(),
-				e);
+				chain.getGeneratedRootChains(), e);
 		addInfo(ch);
 	}
-	
+
 	public void addChain(Chain chain) {
 		ChainInfo ch = new ChainInfo(chain.getSubmissionNode(),
 				chain.getSubmissionId(), chain.getChainId(),
 				chain.getParentChainId(), chain.getTotalChainChildren(),
-                                chain.getGeneratedRootChains());
+				chain.getGeneratedRootChains());
 		addInfo(ch);
 	}
 
@@ -93,7 +93,7 @@ class ChainTerminator implements Runnable {
 
 		while (true) {
 			try {
-				synchronized(chainsTerminated) {
+				synchronized (chainsTerminated) {
 					while (chainsTerminated.size() == 0) {
 						chainsTerminated.wait();
 					}
@@ -137,6 +137,7 @@ class ChainTerminator implements Runnable {
 						msg.writeBoolean(true);
 						msg.writeInt(header.submissionId);
 						msg.writeInt(header.nodeId);
+						msg.writeObject(header.exception);
 						ibis.finishMessage(msg, header.submissionId);
 					}
 				}

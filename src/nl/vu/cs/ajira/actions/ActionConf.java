@@ -6,6 +6,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import nl.vu.cs.ajira.data.types.DataProvider;
+import nl.vu.cs.ajira.data.types.SimpleData;
+import nl.vu.cs.ajira.data.types.TIntArray;
+import nl.vu.cs.ajira.data.types.TStringArray;
 import nl.vu.cs.ajira.data.types.bytearray.BDataOutput;
 import nl.vu.cs.ajira.datalayer.Query;
 import nl.vu.cs.ajira.storage.Writable;
@@ -14,19 +18,17 @@ import nl.vu.cs.ajira.utils.Consts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
-public class ActionConf extends Writable {
+public class ActionConf implements Writable {
 
 	public static abstract class Configurator {
 
 		public void process(Query query, ActionConf conf,
 				ActionController controller, ActionContext context)
 				throws Exception {
-			setupConfiguration(query, conf.valuesParameters, controller,
-					context);
+			setupAction(query, conf.valuesParameters, controller, context);
 		}
 
-		abstract void setupConfiguration(Query query, Object[] params,
+		abstract void setupAction(Query query, Object[] params,
 				ActionController controller, ActionContext context)
 				throws Exception;
 	}
@@ -84,6 +86,12 @@ public class ActionConf extends Writable {
 				input.readFully(b);
 				valuesParameters[i] = b;
 				break;
+			case 5:
+				SimpleData data = DataProvider.getInstance().get(
+						input.readByte());
+				data.readFrom(input);
+				valuesParameters[i] = data;
+				break;
 			}
 		}
 		return valuesParameters;
@@ -92,7 +100,8 @@ public class ActionConf extends Writable {
 	private static boolean checkAllowedTypes(Object value) {
 		if (value == null || value instanceof Integer || value instanceof Long
 				|| value instanceof String || value instanceof Boolean
-				|| value instanceof Writable) {
+				|| value instanceof Writable || value instanceof byte[]
+				|| value instanceof String[]) {
 			return true;
 		} else {
 			return false;
@@ -156,46 +165,116 @@ public class ActionConf extends Writable {
 				} else if (value instanceof Boolean) {
 					output.writeByte(3);
 					output.writeBoolean(((Boolean) value).booleanValue());
+				} else if (value instanceof SimpleData) {
+					SimpleData v = (SimpleData) value;
+					output.writeByte(5);
+					output.writeByte(v.getIdDatatype());
+					v.writeTo(output);
 				} else if (value instanceof Writable) {
 					output.writeByte(4);
 					BDataOutput o = new BDataOutput(new byte[Consts.CHAIN_SIZE]);
 					((Writable) value).writeTo(o);
-					output.writeInt(o.cb.end);
-					output.write(o.cb.buffer, 0, o.cb.end);
+					output.writeInt(o.cb.getEnd());
+					output.write(o.cb.getBuffer(), 0, o.cb.getEnd());
 				} else if (value instanceof byte[]) {
 					output.writeByte(4);
 					byte[] v = (byte[]) value;
 					output.writeInt(v.length);
 					output.write(v);
 				} else {
-					throw new IOException(
-							"Format of one parameter is not recognized");
+					throw new IOException("Format " + value + "  of parameter "
+							+ i + " is not recognized");
 				}
 			} else {
-				// Check to see whether there is a required field
 				output.writeByte(-1);
 			}
 		}
 	}
 
-	@Override
-	public final int bytesToStore() throws IOException {
-		throw new IOException("Not (yet) implemented");
-	}
-
-	public final void setParam(int pos, Object value) throws Exception {
+	private boolean checkPos(int pos) {
 		if (valuesParameters == null) {
-			throw new Exception("No parameters are allowed");
+			log.error("Action " + className + ": No parameters are allowed. ");
+			return false;
 		}
 		if (pos < 0 || pos >= valuesParameters.length) {
-			throw new Exception("Position not valid (" + pos + ")");
+			log.error("Action " + className + ": Position not valid (" + pos
+					+ ")");
+			return false;
 		}
+		return true;
+	}
 
-		if (!checkAllowedTypes(value)) {
-			throw new Exception("Object type not valid");
+	public final boolean setParamWritable(int pos, Writable value) {
+		if (!checkPos(pos)) {
+			return false;
 		}
 
 		valuesParameters[pos] = value;
+		return true;
+	}
+
+	public final boolean setParamByteArray(int pos, byte... value) {
+		if (!checkPos(pos)) {
+			return false;
+		}
+		valuesParameters[pos] = value;
+		return true;
+	}
+
+	public final boolean setParamStringArray(int pos, String... value) {
+		if (!checkPos(pos)) {
+			return false;
+		}
+		valuesParameters[pos] = new TStringArray(value);
+		return true;
+	}
+
+	public final boolean setParamStringArray(int pos, TStringArray value) {
+		if (!checkPos(pos)) {
+			return false;
+		}
+		valuesParameters[pos] = value;
+		return true;
+	}
+
+	public final boolean setParamIntArray(int pos, int... value) {
+		if (!checkPos(pos)) {
+			return false;
+		}
+		valuesParameters[pos] = new TIntArray(value);
+		return true;
+	}
+
+	public final boolean setParamInt(int pos, int value) {
+		if (!checkPos(pos)) {
+			return false;
+		}
+		valuesParameters[pos] = value;
+		return true;
+	}
+
+	public final boolean setParamBoolean(int pos, boolean value) {
+		if (!checkPos(pos)) {
+			return false;
+		}
+		valuesParameters[pos] = value;
+		return true;
+	}
+
+	public final boolean setParamLong(int pos, long value) {
+		if (!checkPos(pos)) {
+			return false;
+		}
+		valuesParameters[pos] = value;
+		return true;
+	}
+
+	public final boolean setParamString(int pos, String value) {
+		if (!checkPos(pos)) {
+			return false;
+		}
+		valuesParameters[pos] = value;
+		return true;
 	}
 
 	public String getClassName() {

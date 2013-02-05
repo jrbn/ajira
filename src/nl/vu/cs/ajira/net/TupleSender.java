@@ -10,15 +10,13 @@ import java.util.List;
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.buckets.Bucket;
 import nl.vu.cs.ajira.buckets.Buckets;
-import nl.vu.cs.ajira.data.types.Tuple;
+import nl.vu.cs.ajira.buckets.TupleSerializer;
 import nl.vu.cs.ajira.storage.Factory;
-import nl.vu.cs.ajira.storage.RawComparator;
-import nl.vu.cs.ajira.storage.container.WritableContainer;
+import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.utils.Consts;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 class TupleSender {
 
@@ -32,10 +30,10 @@ class TupleSender {
 	private final List<TupleInfo> sendList = new LinkedList<TupleInfo>();
 	private int checkerTime = 1;
 
-	Factory<WritableContainer<Tuple>> bufferFactory;
+	Factory<WritableContainer<TupleSerializer>> bufferFactory;
 
 	public TupleSender(Context context,
-			Factory<WritableContainer<Tuple>> bufferFactory) {
+			Factory<WritableContainer<TupleSerializer>> bufferFactory) {
 		this.net = context.getNetworkLayer();
 		this.buckets = context.getBuckets();
 		this.bufferFactory = bufferFactory;
@@ -153,13 +151,10 @@ class TupleSender {
 	}
 
 	private void sendTuple(TupleInfo info) throws IOException {
-		// long time = System.currentTimeMillis();
-		WritableContainer<Tuple> tmpBuffer = bufferFactory.get();
+		WritableContainer<TupleSerializer> tmpBuffer = bufferFactory.get();
 		tmpBuffer.clear();
 		Bucket bucket = buckets.getExistingBucket(info.bucketKey, false);
-		// long timeMsg = System.currentTimeMillis();
 		bucket.removeChunk(tmpBuffer);
-		// long timeRetrieve = System.currentTimeMillis() - timeMsg;
 		WriteMessage msg = net.getMessageToSend(net
 				.getPeerLocation(info.remoteNodeId));
 		msg.writeByte((byte) 5);
@@ -169,18 +164,8 @@ class TupleSender {
 		msg.writeInt(info.sequence);
 		msg.writeLong(info.bucketKey);
 		msg.writeInt(info.nrequests);
-		RawComparator<Tuple> c = bucket.getSortingFunction();
-		if (c != null) {
+		if (bucket.shouldSort()) {
 			msg.writeBoolean(true);
-			msg.writeString(c.getClass().getName());
-			byte[] params = c.getSortingParams();
-			if (params != null) {
-				msg.writeInt(params.length);
-				if (params.length > 0)
-					msg.writeArray(params);
-			} else {
-				msg.writeInt(0);
-			}
 		} else {
 			msg.writeBoolean(false);
 		}
@@ -195,19 +180,12 @@ class TupleSender {
 
 		if (log.isDebugEnabled()) {
 			log.debug("Sent chunk to " + net.getPeerLocation(info.remoteNodeId)
-					+ " of size " + tmpBuffer.getNElements() + " ("
-					+ tmpBuffer.bytesToStore() + ") " + " be copied at "
+					+ " of size " + tmpBuffer.getNElements() + " be copied at "
 					+ info.bucketKey + " req.=" + info.nrequests
-					+ " isTransfered=" + isTransfered
-			// + " Total t.: "
-			// + (System.currentTimeMillis() - time)
-			// + " time w. msg: "
-			// + (System.currentTimeMillis() - timeMsg)
-			// + " time r. buffer: " + timeRetrieve
-			);
+					+ " isTransfered=" + isTransfered);
 		}
 
-		// bufferFactory.release(tmpBuffer);
+		bufferFactory.release(tmpBuffer);
 		tuFactory.release(info);
 	}
 }
