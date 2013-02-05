@@ -3,6 +3,7 @@ package nl.vu.cs.ajira.actions;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -281,23 +282,39 @@ public class ActionConf implements Writable {
 		return className;
 	}
 
-	public final boolean validateParameters() {
+	public final int validateParameters() {
 		if (allowedParameters != null) {
 			for (int i = 0; i < allowedParameters.size(); ++i) {
 				ParamItem item = allowedParameters.get(i);
 				if (valuesParameters[i] == null) {
 					if (item.required)
-						return false;
+						return i;
 					if (item.defaultValue != null) {
 						valuesParameters[i] = item.defaultValue;
 					}
 				}
 			}
 		}
-		return true;
+		return -1;
 	}
 
 	public Configurator getConfigurator() {
 		return proc;
+	}
+
+	public String getParamName(int paramMissing) {
+		String text = paramMissing + " (";
+		try {
+			for (Field field : Class.forName(className).getFields()) {
+				if (field.getType().equals(int.class)
+						&& field.getInt(field) == paramMissing) {
+					text += "maybe " + field.getName() + "?)";
+					return text;
+				}
+			}
+		} catch (Exception e) {
+		}
+		text += "unknown)";
+		return text;
 	}
 }

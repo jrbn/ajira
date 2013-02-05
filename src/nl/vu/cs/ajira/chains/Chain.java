@@ -191,28 +191,47 @@ public class Chain implements Writable, Query {
 	public void setActions(List<ActionConf> actions, ActionContext context)
 			throws Exception {
 		if (actions != null) {
+
+			for (int i = 0; i < actions.size(); ++i) {
+				ActionConf action = actions.get(i);
+				int paramMissing = action.validateParameters();
+				if (paramMissing != -1) {
+					String actionName = action.getClassName();
+					String paramName = action.getParamName(paramMissing);
+					throw new Exception("Action " + actionName + " (" + i
+							+ "): the required parameter " + paramName
+							+ " is not set.");
+				}
+			}
+
 			for (int i = actions.size() - 1; i >= 0; i--) {
-				setAction(actions.get(i), context);
+				addAction(actions.get(i), context);
 			}
 		} else {
-			throw new Exception("actions is null");
+			throw new Exception("No action is defined");
 		}
 	}
 
-	void setAction(ActionConf action, ActionContext context) throws Exception {
-
-		// Validate the action
-		if (!action.validateParameters()) {
-			throw new Exception("Some required parameters for the action "
-					+ action.getClassName() + " are not set.");
+	public void setAction(ActionConf action, ActionContext context)
+			throws Exception {
+		int paramMissing = action.validateParameters();
+		if (paramMissing != -1) {
+			String actionName = action.getClassName();
+			String paramName = action.getParamName(paramMissing);
+			throw new Exception("Action " + actionName
+					+ ": the required parameter " + paramName + " is not set.");
 		}
+		addAction(action, context);
+	}
+
+	private void addAction(ActionConf action, ActionContext context)
+			throws Exception {
 
 		// Process the parameters and possibly insert instructions to control
 		// the flow.
 		if (action.getConfigurator() != null) {
 			controller.init();
 			action.getConfigurator().process(this, action, controller, context);
-
 			if (controller.doNotAddAction) {
 				if (action.getConfigurator() != null
 						&& controller.listActions.size() > 0) {
@@ -223,7 +242,6 @@ public class Chain implements Writable, Query {
 						setAction(list.get(i), context);
 					}
 				}
-
 				return;
 			}
 
