@@ -90,7 +90,7 @@ public class WordCount {
 
 			// Configure the job
 			Job job = new Job();
-			List<ActionConf> actions = new ArrayList<>();
+			List<ActionConf> actions = new ArrayList<ActionConf>();
 
 			// Read the input files
 			ActionConf action = ActionFactory

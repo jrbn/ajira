@@ -19,25 +19,31 @@ public abstract class ObjectComparator<T extends Writable> extends
     BDataInput in = new BDataInput();
 
     @SuppressWarnings("unchecked")
+    /**
+     * Creates a new ObjectComparator with two instances.
+     */
     public ObjectComparator() {
-	try {
-	    t1 = (T) t1.getClass().newInstance();
-	    t2 = (T) t2.getClass().newInstance();
-	} catch (Exception e) {
-	}
+		try {
+		    t1 = (T) t1.getClass().newInstance();
+		    t2 = (T) t2.getClass().newInstance();
+		} catch (Exception e) {
+		}
     }
 
     @Override
+    /**
+     * Compares the objects t1 and t2 using a BDataInput object.
+     */
     public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
-	// Create two objects from the arrays
-	try {
-	    in.setCurrentPosition(b1, s1);
-	    t1.readFrom(in);
-	    in.setCurrentPosition(b2, s2);
-	    t2.readFrom(in);
-	} catch (Exception e) {
-	    log.error("Error", e);
-	}
-	return compare(t1, t2);
+		// Create two objects from the arrays
+		try {
+		    in.setCurrentPosition(b1, s1);
+		    t1.readFrom(in);
+		    in.setCurrentPosition(b2, s2);
+		    t2.readFrom(in);
+		} catch (Exception e) {
+		    log.error("Error", e);
+		}
+		return compare(t1, t2);
     }
 }

@@ -8,20 +8,34 @@ public class FDataInput implements DataInput {
 
 	InputStream is = null;
 
+	/**
+	 * Creates a new FDataInput and sets the field of the class.
+	 * @param is the new InputStream of the class
+	 */
 	public FDataInput(InputStream is) {
 		this.is = is;
 	}
 
+	/**
+	 * Closes the InputStream of the class.
+	 * @throws IOException
+	 */
 	public void close() throws IOException {
 		is.close();
 	}
 
 	@Override
+	/**
+	 * Reads one boolean value from the InputStream.
+	 */
 	public boolean readBoolean() throws IOException {
 		return is.read() == 1;
 	}
 
 	@Override
+	/**
+	 * Reads one byte value from the InputStream.
+	 */
 	public byte readByte() throws IOException {
 		return (byte) is.read();
 	}
@@ -42,11 +56,17 @@ public class FDataInput implements DataInput {
 	}
 
 	@Override
+	/**
+	 * Reads in b, b.length bytes from the InputStream.
+	 */
 	public void readFully(byte[] b) throws IOException {
 		readFully(b, 0, b.length);
 	}
 
 	@Override
+	/**
+	 * Reads len bytes from the InputStream in b from the offset off.
+	 */
 	public void readFully(byte[] b, int off, int len) throws IOException {
                 int remaining = len;
                 while (remaining > 0) {
@@ -60,6 +80,9 @@ public class FDataInput implements DataInput {
 	}
 
 	@Override
+	/**
+	 * Reads one int value from the InputStream and returns this value.
+	 */
 	public int readInt() throws IOException {
 		int value = 0;
 		value += (byte) is.read() << 24;
@@ -75,6 +98,9 @@ public class FDataInput implements DataInput {
 	}
 
 	@Override
+	/**
+	 * Reads one long value from the InputStream and returns this value.
+	 */
 	public long readLong() throws IOException {
 		long value = 0;
 		value = (long) is.read() << 56;
@@ -89,6 +115,9 @@ public class FDataInput implements DataInput {
 	}
 
 	@Override
+	/**
+	 * Reads one short value from the InputStream and returns this value.
+	 */
 	public short readShort() throws IOException {
 		short value = 0;
 		value += (byte) is.read() << 8;
@@ -102,6 +131,9 @@ public class FDataInput implements DataInput {
 	}
 
 	@Override
+	/**
+	 * Reads one unsigned byte value from the InputStream and returns this value.
+	 */
 	public int readUnsignedByte() throws IOException {
 		return is.read();
 	}

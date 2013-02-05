@@ -11,27 +11,47 @@ public final class TString extends SimpleData {
 
 	String value = null;
 
+	/**
+	 * It creates a new TString.
+	 * @param value is the new value of the field value
+	 */
 	public TString(String value) {
 		this.value = value;
 	}
-
+	/**
+	 * It creates an empty TString. 
+	 */
 	public TString() {
 	}
 
+	/**
+	 * 
+	 * @return the value of the filed value.
+	 */
 	public String getValue() {
 		return value;
 	}
-
+	/**
+	 * Sets the field value.
+	 * @param value is the new value of the field value
+	 */
 	public void setValue(String value) {
 		this.value = value;
 	}
 
 	@Override
+	/**
+	 * returns the id of data class type.
+	 */
 	public int getIdDatatype() {
 		return Consts.DATATYPE_TSTRING;
 	}
 
 	@Override
+	/**
+	 * Reads from a DataInput the size and then size bytes that are used 
+	 * to create a new String for the field value.
+	 */
 	public void readFrom(DataInput input) throws IOException {
 		int size = input.readInt();
 		if (size > 0) {
@@ -44,6 +64,9 @@ public final class TString extends SimpleData {
 	}
 
 	@Override
+	/**
+	 * Writes the length and then the value into a DataOutput.
+	 */
 	public void writeTo(DataOutput output) throws IOException {
 		if (value == null) {
 			output.writeInt(0);
@@ -54,7 +77,11 @@ public final class TString extends SimpleData {
 		}
 	}
 
-	@Override
+	
+
+	/**
+	 * Converts the object to its string representation.
+	 */
 	public String toString() {
 		return value;
 	}
