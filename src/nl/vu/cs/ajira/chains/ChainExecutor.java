@@ -98,7 +98,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 	@Override
 	public List<Object[]> retrieveCacheObjects(Object... keys) {
-		if (context.getNetworkLayer().getNumberNodes() > 1) {
+		if (!localMode) {
 			return context.getSubmissionCache().retrieveCacheObjects(
 					submissionId, keys);
 		}
@@ -107,7 +107,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 	@Override
 	public void broadcastCacheObjects(Object... keys) {
-		if (context.getNetworkLayer().getNumberNodes() > 1) {
+		if (!localMode) {
 			context.getSubmissionCache().broadcastCacheObjects(submissionId,
 					keys);
 		}
@@ -115,7 +115,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 	@Override
 	public boolean isLocalMode() {
-		return context.isLocalMode();
+		return localMode;
 	}
 
 	@Override
@@ -210,23 +210,20 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			}
 		}
 
-		if (transferComputation) {
-			if (roots[nActions - 1]) {
-				chain.setRawSize(rawSizes[nActions - 1]);
-				chain.copyTo(supportChain);
-				// supportChain.setTotalChainChildren(0);
-				supportChain.setInputLayer(Consts.BUCKET_INPUT_LAYER_ID);
-				supportTuple.set(new TInt(transferBucketId), new TInt(
-						transferNodeId));
-				supportChain.setInputTuple(supportTuple);
-				if (localMode)
-					chainsBuffer.add(supportChain);
-				else
-					net.sendChain(supportChain);
-			} else {
-				transferComputation = false;
-			}
+		if (transferComputation && roots[nActions - 1]) {
+			chain.setRawSize(rawSizes[nActions - 1]);
+			chain.copyTo(supportChain);
+			supportChain.setTotalChainChildren(0);
+			supportChain.setInputLayer(Consts.BUCKET_INPUT_LAYER_ID);
+			supportTuple.set(new TInt(transferBucketId), new TInt(
+					transferNodeId));
+			supportChain.setInputTuple(supportTuple);
+			if (localMode)
+				chainsBuffer.add(supportChain);
+			else
+				net.sendChain(supportChain);
 		}
+
 	}
 
 	@Override
@@ -284,6 +281,12 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		supportChain.setInputLayer(Consts.SPLITS_INPUT_LAYER);
 		supportChain
 				.setInputTuple(TupleFactory.newTuple(new TInt(itr.getId())));
+
+		cRuntimeBranching[currentAction]++;
+		if (currentAction > smallestRuntimeAction) {
+			smallestRuntimeAction = currentAction;
+		}
+
 		if (localMode)
 			chainsBuffer.add(supportChain);
 		else
@@ -304,6 +307,11 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		supportChain.setInputLayer(Consts.SPLITS_INPUT_LAYER);
 		supportChain
 				.setInputTuple(TupleFactory.newTuple(new TInt(itr.getId())));
+
+		cRuntimeBranching[currentAction]++;
+		if (currentAction > smallestRuntimeAction) {
+			smallestRuntimeAction = currentAction;
+		}
 
 		stats.addCounter(chain.getSubmissionNode(), chain.getSubmissionId(),
 				"Chains Dynamically Generated", 1);
@@ -336,6 +344,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			throws IOException {
 
 		int children = chain.getTotalChainChildren();
+
 		if (children != 0 && currentAction < smallestRuntimeAction) {
 			// Check whether some intermediate nodes after have derived some
 			// info. If they do, we need to decrease the counter.
@@ -378,13 +387,16 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	public void waitFor(int token) {
 		// Check whether the token is in the object cache. If not, we wait...
 		context.getSubmissionCache().getObjectFromCache(submissionId,
-				TOKENPREFIX + "_" + token);
+				TOKENPREFIX + "_" + token, true);
 	}
 
 	@Override
 	public void signal(int token) {
 		String key = TOKENPREFIX + "_" + token;
 		context.getSubmissionCache().putObjectInCache(submissionId, key, 1);
-		context.getSubmissionCache().broadcastCacheObjects(submissionId, key);
+		if (!localMode) {
+			context.getSubmissionCache().broadcastCacheObjects(submissionId,
+					key);
+		}
 	}
 }

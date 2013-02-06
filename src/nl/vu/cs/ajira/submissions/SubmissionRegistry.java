@@ -84,7 +84,7 @@ public class SubmissionRegistry {
 				if (chainId == 0) {
 					sub.mainRootReceived = true;
 				}
-			} else {
+			} else if (parentChainId >= 0) {
 				// Change the children field of the parent chain
 				Integer c = sub.monitors.get(parentChainId);
 				if (c == null) {

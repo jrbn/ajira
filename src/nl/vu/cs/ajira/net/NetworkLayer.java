@@ -697,4 +697,8 @@ public class NetworkLayer {
 	public void signalChainFailed(Chain chain, Throwable exception) {
 		terminator.addFailedChain(chain, exception);
 	}
+
+	public void signalChainHasRootChains(Chain chain, int generatedChains) {
+		terminator.addChainGeneratedRoots(chain, generatedChains);
+	}
 }

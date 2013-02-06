@@ -64,7 +64,7 @@ public class SubmissionCache {
 
 				Object value = null;
 				synchronized (sc) {
-					while ((value = sc.get(key)) != null) {
+					while ((value = sc.get(key)) == null) {
 						sc.wait();
 					}
 				}

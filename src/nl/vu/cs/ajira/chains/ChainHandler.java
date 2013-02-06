@@ -40,12 +40,6 @@ public class ChainHandler implements Runnable {
 		Tuple tuple = TupleFactory.newTuple();
 		ChainExecutor actions = new ChainExecutor(context, localMode);
 
-		// if (localMode) {
-		// actions = new ChainExecutor(context, chainsToProcess);
-		// } else {
-		// // net.sendChains(chainsBuffer); //FIXME
-		// }
-
 		while (true) {
 
 			// Get a new chain to process
@@ -103,8 +97,14 @@ public class ChainHandler implements Runnable {
 
 				// Send the termination signal to the node responsible of
 				// the submission
-				if (actions.isChainFullyExecuted())
+				if (actions.isChainFullyExecuted()) {
 					net.signalChainTerminated(chain);
+				} else {
+					int generatedChains = chain.getGeneratedRootChains();
+					if (generatedChains > 0) {
+						net.signalChainHasRootChains(chain, generatedChains);
+					}
+				}
 				stats.addCounter(chain.getSubmissionNode(),
 						chain.getSubmissionId(), "Chains Processed", 1);
 

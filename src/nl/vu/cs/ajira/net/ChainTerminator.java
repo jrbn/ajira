@@ -49,6 +49,17 @@ class ChainTerminator implements Runnable {
 				this.exception = null;
 			}
 		}
+
+		public ChainInfo(int nodeId, int submissionId, int generatedRootChains) {
+			this.nodeId = nodeId;
+			this.submissionId = submissionId;
+			this.chainId = -1;
+			this.generatedRootChains = generatedRootChains;
+			this.parentChainId = -2;
+			this.failed = false;
+			this.exception = null;
+			this.nchildren = 0;
+		}
 	}
 
 	static final Logger log = LoggerFactory.getLogger(ChainTerminator.class);
@@ -81,6 +92,12 @@ class ChainTerminator implements Runnable {
 				chain.getSubmissionId(), chain.getChainId(),
 				chain.getParentChainId(), chain.getTotalChainChildren(),
 				chain.getGeneratedRootChains());
+		addInfo(ch);
+	}
+
+	public void addChainGeneratedRoots(Chain chain, int generatedChains) {
+		ChainInfo ch = new ChainInfo(chain.getSubmissionNode(),
+				chain.getSubmissionId(), chain.getGeneratedRootChains());
 		addInfo(ch);
 	}
 
