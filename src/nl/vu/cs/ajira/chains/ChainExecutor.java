@@ -29,7 +29,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	private Context context;
 	private StatisticsCollector stats;
 
-	private List<SplitIterator> openedStreams = new ArrayList<>();
+	private List<SplitIterator> openedStreams = new ArrayList<SplitIterator>();
 	private int[] rawSizes = new int[Consts.MAX_N_ACTIONS];
 	private Action[] actions = new Action[Consts.MAX_N_ACTIONS];
 	private boolean[] roots = new boolean[Consts.MAX_N_ACTIONS];
