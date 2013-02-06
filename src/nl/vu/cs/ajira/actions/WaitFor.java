@@ -4,9 +4,17 @@ import nl.vu.cs.ajira.data.types.Tuple;
 
 public class WaitFor extends Action {
 
+	public static final int TOKEN = 0;
+
+	@Override
+	public void registerActionParameters(ActionConf conf) throws Exception {
+		conf.registerParameter(TOKEN, "token", null, true);
+	}
+
 	@Override
 	public void startProcess(ActionContext context) throws Exception {
-		// TODO: Wait until the token is inserted in the object
+		int token = getParamInt(TOKEN);
+		context.waitFor(token);
 	}
 
 	@Override

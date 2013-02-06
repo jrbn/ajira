@@ -24,6 +24,8 @@ import nl.vu.cs.ajira.utils.Consts;
 
 public class ChainExecutor implements ActionContext, ActionOutput {
 
+	private static String TOKENPREFIX = "synchronization_token";
+
 	private Context context;
 	private StatisticsCollector stats;
 
@@ -370,5 +372,19 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	@Override
 	public TupleIterator getInputIterator() {
 		return itr;
+	}
+
+	@Override
+	public void waitFor(int token) {
+		// Check whether the token is in the object cache. If not, we wait...
+		context.getSubmissionCache().getObjectFromCache(submissionId,
+				TOKENPREFIX + "_" + token);
+	}
+
+	@Override
+	public void signal(int token) {
+		String key = TOKENPREFIX + "_" + token;
+		context.getSubmissionCache().putObjectInCache(submissionId, key, 1);
+		context.getSubmissionCache().broadcastCacheObjects(submissionId, key);
 	}
 }

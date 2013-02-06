@@ -613,6 +613,37 @@ public class NetworkLayer {
 		}
 	}
 
+	public void broadcastObject(int submissionId, Object key, Object value) {
+		try {
+			int c;
+			CountInfo remaining = new CountInfo();
+			remaining.count = assignedPartitions.length - 1;
+			synchronized (activeBroadcasts) {
+				c = activeBroadcastCount++;
+				activeBroadcasts.put(c, remaining);
+			}
+
+			WriteMessage msg = broadcastPort.newMessage();
+			msg.writeByte((byte) 10);
+			msg.writeInt(c);
+			msg.writeInt(submissionId);
+			msg.writeObject(key);
+			msg.writeObject(value);
+			msg.finish();
+
+			synchronized (remaining) {
+				while (remaining.count > 0) {
+					remaining.wait();
+				}
+			}
+			synchronized (activeBroadcasts) {
+				activeBroadcasts.remove(c);
+			}
+		} catch (Exception e) {
+			log.error("Failed broadcasting object", e);
+		}
+	}
+
 	public void broadcastStartMonitoring() throws IOException {
 		if (ibisMonitor != null) {
 			WriteMessage msg = broadcastPort.newMessage();

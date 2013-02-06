@@ -40,6 +40,10 @@ public interface ActionContext {
 
 	public boolean isPrincipalBranch();
 
+	void waitFor(int token);
+
+	void signal(int token);
+
 	// TODO: To remove in something safer
 	TupleIterator getInputIterator();
 

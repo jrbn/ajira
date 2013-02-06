@@ -1,13 +1,8 @@
 package nl.vu.cs.ajira.actions;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import nl.vu.cs.ajira.data.types.Tuple;
 
-public class Signal extends Action {
-
-	private static final String TOKENS_OBJ = "Signal.TOKENS_OBJ";
+public class NotifyAll extends Action {
 
 	public static final int TOKEN = 0;
 	int token;
@@ -31,17 +26,7 @@ public class Signal extends Action {
 	@Override
 	public void stopProcess(ActionContext context, ActionOutput actionOutput)
 			throws Exception {
-		if (context.isPrincipalBranch()) {
-			@SuppressWarnings("unchecked")
-			Set<Integer> set = (Set<Integer>) context
-					.getObjectFromCache(TOKENS_OBJ);
-			if (set == null) {
-				set = new HashSet<>();
-				context.putObjectInCache(TOKENS_OBJ, set);
-			}
-			set.add(token);
-			context.broadcastCacheObjects(TOKENS_OBJ);
-		}
+		context.signal(token);
 	}
 
 }
