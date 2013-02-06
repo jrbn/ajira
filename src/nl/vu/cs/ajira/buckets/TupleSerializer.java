@@ -8,8 +8,14 @@ import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.data.types.bytearray.BDataOutput;
 import nl.vu.cs.ajira.storage.Writable;
 
+/**
+ * This class serializes the tuple along with the new
+ * information regarding on how it can be sorted (sort
+ * order, which fields, etc) --- if are given by params
+ * into the custom constructor, otherwise it acts as 
+ * a simple byte serializer
+ */
 public class TupleSerializer implements Writable {
-
 	private boolean shouldSort = false;
 	private byte[] fieldsToSort;
 	private byte[] otherFields;
@@ -17,6 +23,15 @@ public class TupleSerializer implements Writable {
 	private Tuple tuple;
 	private int[] lengths;
 
+	/**
+	 * Custom constructor.
+	 * 
+	 * @param fieldsToSort
+	 * 			  Fields to sort on (fields implied in
+	 * 			  sorting)
+	 * @param nFields
+	 * 			  Number of fields implied in sorting
+	 */
 	public TupleSerializer(byte[] fieldsToSort, int nFields) {
 		shouldSort = true;
 		this.fieldsToSort = fieldsToSort;
@@ -44,9 +59,19 @@ public class TupleSerializer implements Writable {
 
 	}
 
+	/**
+	 * Default constructor.
+	 */
 	public TupleSerializer() {
 	}
 
+	/**
+	 * Custom constructor.
+	 * 
+	 * @param tuple 
+	 * 			  Initial tuple
+	 * 			  (acts as a transfer buffer)		  
+	 */
 	public TupleSerializer(Tuple tuple) {
 		this.tuple = tuple;
 	}
@@ -59,6 +84,9 @@ public class TupleSerializer implements Writable {
 		return tuple;
 	}
 
+	/**
+	 * Reads a tuple from an input data stream.
+	 */
 	@Override
 	public void readFrom(DataInput input) throws IOException {
 
@@ -78,12 +106,18 @@ public class TupleSerializer implements Writable {
 				input.skipBytes(2 * nFields);
 			}
 		}
+		
 		for (int i = 0; i < tuple.getNElements(); ++i) {
 			tuple.get(i).readFrom(input);
 		}
-
 	}
-
+	
+	/**
+	 * Writes the new serialized tuple (the one that also contains
+	 * extra information about how it should be sorted) into a data
+	 * output stream --- only if those information are specified 
+	 * upwards, otherwise it will simply write the tuple as it is.
+	 */
 	@Override
 	public void writeTo(DataOutput output) throws IOException {
 		if (shouldSort) {
@@ -102,8 +136,8 @@ public class TupleSerializer implements Writable {
 					if (e >= currentPosition) {
 						lengths[i] = e - currentPosition;
 					} else {
-						lengths[i] = o.cb.getBuffer().length - currentPosition
-								+ e;
+						lengths[i] = o.cb.getBuffer().length - 
+								currentPosition	+ e;
 					}
 					currentPosition = e;
 				}
@@ -130,8 +164,8 @@ public class TupleSerializer implements Writable {
 					if (e >= currentPosition) {
 						lengths[i] = e - currentPosition;
 					} else {
-						lengths[i] = o.cb.getBuffer().length - currentPosition
-								+ e;
+						lengths[i] = o.cb.getBuffer().length - 
+								currentPosition	+ e;
 					}
 
 					currentPosition = e;
@@ -139,10 +173,13 @@ public class TupleSerializer implements Writable {
 
 				// Write the lengths at the beginning
 				int e = o.cb.getEnd();
+				
 				o.setCurrentPosition(startLength);
+				
 				for (int i = 0; i < nFields; ++i) {
 					o.writeShort(lengths[i]);
 				}
+				
 				o.setCurrentPosition(e);
 			}
 		} else {
