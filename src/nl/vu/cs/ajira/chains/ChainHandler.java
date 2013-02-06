@@ -24,6 +24,8 @@ public class ChainHandler implements Runnable {
 	private StatisticsCollector stats = null;
 	private boolean localMode;
 
+	public boolean active;
+
 	public ChainHandler(Context context) {
 		this.context = context;
 		this.net = context.getNetworkLayer();
@@ -41,7 +43,7 @@ public class ChainHandler implements Runnable {
 		ChainExecutor actions = new ChainExecutor(context, localMode);
 
 		while (true) {
-
+			active = false;
 			// Get a new chain to process
 			try {
 				chainsToProcess.remove(chain);
@@ -50,6 +52,7 @@ public class ChainHandler implements Runnable {
 						+ "This handler will be terminated", e);
 				return;
 			}
+			active = true;
 
 			try {
 				// Init the environment

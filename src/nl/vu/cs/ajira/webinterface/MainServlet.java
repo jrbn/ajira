@@ -31,8 +31,7 @@ public class MainServlet extends HttpServlet {
 			}
 
 			if (request.getServletPath().equals("/")) {
-				RequestDispatcher r = request
-						.getRequestDispatcher("jsp/main.jsp");
+				RequestDispatcher r = request.getRequestDispatcher("main.jsp");
 				r.forward(request, response);
 			}
 		} catch (Exception e1) {

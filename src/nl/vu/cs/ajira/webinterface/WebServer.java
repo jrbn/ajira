@@ -10,7 +10,6 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class WebServer implements Runnable {
 
 	public static final String WEBSERVER_START = "webserver.start";
@@ -43,9 +42,12 @@ public class WebServer implements Runnable {
 				handler.setContextPath("/");
 				handler.setClassLoader(Thread.currentThread()
 						.getContextClassLoader());
-				handler.setResourceBase(System.getProperty("user.dir"));
-				handler.setAttribute("context", context);
 
+				String mainDir = this.getClass().getClassLoader()
+						.getResource("jsp/").toExternalForm();
+				handler.setResourceBase(mainDir);
+
+				handler.setAttribute("context", context);
 				handler.addServlet(MainServlet.class, "/");
 				handler.addServlet(JspServlet.class, "*.jsp");
 				Server server = new Server(serverPort);

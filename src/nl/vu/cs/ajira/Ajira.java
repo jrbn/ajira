@@ -234,10 +234,10 @@ public class Ajira {
 			inputRegistry.startup(globalContext);
 
 			/***** LOAD WEB INTERFACE *****/
-			if (conf.getBoolean(WebServer.WEBSERVER_START, false)) {
-				log.debug("Starting Web Server on port " + 8080 + "...");
+			if (conf.getBoolean(WebServer.WEBSERVER_START, true)) {
 				WebServer www = new WebServer();
 				www.startWebServer(globalContext);
+				log.info("Starting Web Server on port " + 8080 + "...");
 			}
 
 			if (serverMode) {

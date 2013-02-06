@@ -1,6 +1,6 @@
 .project
 .classpath
-arch.jar
+ajira-*.jar
 logback.xml
 bin
 tmp-eclipse

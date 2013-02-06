@@ -1,10 +1,8 @@
-<%@page import="nl.vu.cs.ajira.chains.ChainResolver"%>
+<%@page import="nl.vu.cs.ajira.Context"%>
 <%@page import="nl.vu.cs.ajira.chains.ChainHandler"%>
 <%@page import="java.util.List"%>
 <%@page import="nl.vu.cs.ajira.utils.Consts"%>
 <%@page import="nl.vu.cs.ajira.net.NetworkLayer"%>
-<%@page import="arch.Context"%>
-<%@page import="arch.Arch"%>
 <html>
 
 <%
@@ -19,14 +17,6 @@
 	for (ChainHandler handler : context.getListChainHandlers()) {
 		if (handler.active) {
 			activeChainHandlers++;
-		}
-	}
-
-	//Get active chain resolvers
-	int activeChainResolvers = 0;
-	for (ChainResolver handler : context.getListChainResolvers()) {
-		if (handler.active) {
-			activeChainResolvers++;
 		}
 	}
 %>
@@ -66,12 +56,7 @@ div {
 
 	<div>
 		<h2>Execution Details</h2>
-		<table border="1">
-			<tr>
-				<td><b># Active Chain Resolvers</b></td>
-				<td class="values"><%=activeChainResolvers%> / <%=context.getConfiguration()
-					.getInt(Consts.N_RES_THREADS, 1)%></td>
-			</tr>
+		<table border="1">			
 			<tr>
 				<td><b># Active Chain Handlers</b></td>
 				<td class="values"><%=activeChainHandlers%> / <%=context.getConfiguration().getInt(Consts.N_PROC_THREADS,
@@ -105,16 +90,7 @@ div {
 				<td class="values"><%=Runtime.getRuntime().totalMemory() / 1024 / 1024%>
 					/ <%=Runtime.getRuntime().maxMemory() / 1024 / 1024%> MB (<a
 					href="/gc">Launch GC</a>)</td>
-			</tr>
-			<tr>
-				<td><b># Elements in ChainRes. Buffer</b></td>
-				<td class="values"><%=context.getChainsToResolve().getNElements()%></td>
-			</tr>
-			<tr>
-				<td><b>Size of ChainRes. Buffer</b></td>
-				<td class="values"><%=context.getChainsToResolve().getRawSize() / 1024 / 1024%>
-					/ <%=context.getChainsToResolve().getTotalCapacity() / 1024%> KB</td>
-			</tr>
+			</tr>			
 			<tr>
 				<td><b># Elements in ChainHandl. Buffer</b></td>
 				<td class="values"><%=context.getChainsToProcess().getNElements()%></td>
