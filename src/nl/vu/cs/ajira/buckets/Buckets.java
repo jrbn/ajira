@@ -148,7 +148,7 @@ public class Buckets {
 	 * @param sortingParams
 	 * 		Sorting parameters given along with
 	 * 		the sorting function
-	 * @return
+	 * @return the bucket
 	 */
 	public synchronized Bucket getOrCreateBucket(int submissionNode,
 			int idSubmission, int idBucket, String sortingFunction,

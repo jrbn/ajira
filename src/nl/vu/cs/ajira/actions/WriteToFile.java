@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.text.NumberFormat;
 
 import nl.vu.cs.ajira.data.types.DataProvider;
@@ -91,21 +92,34 @@ public class WriteToFile extends Action {
 		f = new File(f, "part-" + nf.format(context.getCounter("OutputFile"))
 				+ "_" + nf.format(0));
 
-		try {
-			if (customWriter != null) {
-				Constructor<? extends StandardFileWriter> constr = Class
+		if (customWriter != null) {
+			Constructor<? extends StandardFileWriter> constr;
+			try {
+				constr = Class
 						.forName(customWriter)
 						.asSubclass(StandardFileWriter.class)
 						.getConstructor(ActionContext.class, File.class);
-				file = constr.newInstance(context, f);
-			} else {
-				log.debug("No custom writer is specified. Using standard one");
-				file = new StandardFileWriter(context, f);
+			} catch (Throwable e) {
+				log.error("Could not load class " + customWriter, e);
+				throw new IOException("Could not load class " + customWriter, e);
 			}
-		} catch (Exception e) {
-			log.error("Error instantiating writer for file " + file + "("
-					+ customWriter + ")", e);
-			file = null;
+			try {
+				file = constr.newInstance(context, f);
+			} catch (InvocationTargetException e) {
+				Throwable ex = e.getCause();
+				if (ex instanceof IOException) {
+					log.error("got IOException", e);
+					throw (IOException) ex;
+				}
+				log.error("Could not instantiate class " + customWriter, e);
+				throw new IOException("Could not instantiate", e);
+			} catch (Throwable e) {
+				log.error("Could not instantiate class " + customWriter, e);
+				throw new IOException("Could not instantiate", e);
+			}
+		} else {
+			log.debug("No custom writer is specified. Using standard one");
+			file = new StandardFileWriter(context, f);
 		}
 	}
 

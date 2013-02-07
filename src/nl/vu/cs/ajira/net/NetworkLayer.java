@@ -149,7 +149,7 @@ public class NetworkLayer {
 				bucketId, ticket, sequence, nrequest);
 	}
 
-	public void waitUntilAllReady() throws InterruptedException {
+	public void waitUntilAllReady() {
 		int n = getNumberNodes() - 1;
 		int currentSignals = 0;
 		while (currentSignals < n) {
@@ -161,7 +161,11 @@ public class NetworkLayer {
 					}
 				}
 			}
-			Thread.sleep(100);
+			try {
+			    Thread.sleep(100);
+			} catch (InterruptedException e) {
+			    // ignore
+			}
 		}
 	}
 

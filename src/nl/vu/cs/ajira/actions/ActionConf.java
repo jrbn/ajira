@@ -179,8 +179,8 @@ public class ActionConf extends Writable {
 	}
 
 	@Override
-	public final int bytesToStore() throws IOException {
-		throw new IOException("Not (yet) implemented");
+	public final int bytesToStore() {
+		throw new UnsupportedOperationException("Not (yet) implemented");
 	}
 
 	public final void setParam(int pos, Object value) throws Exception {

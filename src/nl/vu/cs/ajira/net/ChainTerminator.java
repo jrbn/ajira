@@ -126,9 +126,7 @@ class ChainTerminator implements Runnable {
 					// Broadcast to all the nodes that the submission ID
 					// should be removed.
 					if (localMode) {
-						// FIXME:
-						// context.cleanupSubmission(header.nodeId,
-						// header.submissionId);
+						context.cleanupSubmission(header.nodeId, header.submissionId, header.exception);
 					} else {
 						WriteMessage msg = ibis.getMessageToBroadcast();
 						msg.writeByte((byte) 2);

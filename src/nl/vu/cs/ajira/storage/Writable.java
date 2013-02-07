@@ -10,6 +10,6 @@ public abstract class Writable {
 
 	abstract public void writeTo(DataOutput output) throws IOException;
 
-	abstract public int bytesToStore() throws IOException;
+	abstract public int bytesToStore();
 
 }

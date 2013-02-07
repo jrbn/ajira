@@ -46,8 +46,8 @@ public class Branch extends Action {
 		}
 
 		@Override
-		public int bytesToStore() throws IOException {
-			throw new IOException("Not supported");
+		public int bytesToStore() {
+			throw new UnsupportedOperationException("Not supported");
 		}
 
 	}

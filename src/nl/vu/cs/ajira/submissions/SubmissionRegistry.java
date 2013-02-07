@@ -109,6 +109,21 @@ public class SubmissionRegistry {
 			}
 		}
 	}
+	
+	public void killSubmission(int submissionId, Throwable e) {
+	    Submission sub = submissions.get(submissionId);
+	    if (sub == null) {
+		return;
+	    }
+	    synchronized(sub) {
+		if (sub.getState() == Consts.STATE_FINISHED) {
+		    return;
+		}
+		sub.setFinished();
+		sub.setException(e);
+		sub.notifyAll();
+	    }
+	}
 
 	public Submission getSubmission(int submissionId) {
 		return submissions.get(submissionId);
@@ -152,44 +167,63 @@ public class SubmissionRegistry {
 		submissions.get(submissionId).setState(state);
 	}
 
-	public void cleanupSubmission(Submission submission) throws IOException,
-			InterruptedException {
+	public void cleanupSubmission(int submissionId) throws IOException {
 
 		for (int i = 0; i < net.getNumberNodes(); ++i) {
 			if (i == net.getMyPartition()) {
-				cache.clearAll(submission.getSubmissionId());
+				cache.clearAll(submissionId);
 			} else {
 				WriteMessage msg = net.getMessageToSend(net.getPeerLocation(i),
 						NetworkLayer.nameMgmtReceiverPort);
 				msg.writeByte((byte) 8);
-				msg.writeInt(submission.getSubmissionId());
+				msg.writeInt(submissionId);
 				msg.finish();
 			}
 		}
 	}
 
-	public Submission waitForCompletion(Context context, Job job)
-			throws Exception {
+	public Submission waitForCompletion(Context context, Job job) throws JobFailedException {
 
-		Submission submission = submitNewJob(context, job);
+		Submission submission;
+		try {
+		    submission = submitNewJob(context, job);
+		} catch (Throwable e1) {
+		    throw new JobFailedException("Job submission failed", e1);
+		}
 		int waitInterval = conf.getInt(Consts.STATISTICAL_INTERVAL,
 				Consts.DEFAULT_STATISTICAL_INTERVAL);
 		// Pool the submission registry to know when it is present and return it
 		synchronized (submission) {
 			while (!submission.getState().equalsIgnoreCase(
 					Consts.STATE_FINISHED)) {
+			    try {
 				submission.wait(waitInterval);
+			    } catch(Throwable e) {
+				// ignore
+			    }
 			}
 		}
 
 		// Clean up the eventual things going on in the nodes
-		cleanupSubmission(submission);
+		try {
+		    cleanupSubmission(submission.getSubmissionId());
+		} catch(Throwable e) {
+		    // TODO: what to do here?
+		    // Should probably not affect the job.
+		}
+		Throwable e = submission.getException();
+		if (e != null) {
+		    throw new JobFailedException(e);
+		}
 		return submission;
 	}
 
-	public void getStatistics(Job job, Submission submission)
-			throws InterruptedException {
-		Thread.sleep(500);
+	public void getStatistics(Job job, Submission submission) {
+		try {
+		    Thread.sleep(500);
+		} catch (InterruptedException e) {
+		    // ignore
+		}
 		submission.counters = stats.removeCountersSubmission(submission
 				.getSubmissionId());
 

@@ -1,6 +1,5 @@
 package nl.vu.cs.ajira.storage.container;
 
-import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Arrays;
@@ -38,8 +37,8 @@ public class WritableContainer<K extends Writable> extends Writable implements
 	protected boolean enableRandomAccess = false;
 	protected int[] indexElements = null;
 
-	protected DataOutput output = null;
-	protected DataInput input = null;
+	protected BDataOutput output = null;
+	protected BDataInput input = null;
 
 	public int compare(byte[] buffer, int start) {
 		int len;
@@ -246,44 +245,48 @@ public class WritableContainer<K extends Writable> extends Writable implements
 	}
 
 	@Override
-	public boolean add(K element) throws Exception {
+	public boolean add(K element) {
+		
+			int len = element.bytesToStore();
 
-		int len = element.bytesToStore();
-
-		if (!grow(len + 5)) {
-			return false;
-		}
-
-		// Write the length of the element in the buffer
-		if (enableFieldDelimitors) {
-			output.writeInt(len);
-			pointerLastElement = cb.end;
-			lengthLastElement = len;
-		}
-
-		element.writeTo(output);
-
-		nElements++;
-		if (enableRandomAccess) {
-			if (nElements >= indexElements.length) {
-				increaseIndexSize(nElements + 1);
+			if (!grow(len + 5)) {
+				return false;
 			}
-			indexElements[nElements] = cb.end;
-		}
+
+			// Write the length of the element in the buffer
+			if (enableFieldDelimitors) {
+				output.writeInt(len);
+				pointerLastElement = cb.end;
+				lengthLastElement = len;
+			}
+
+			try {
+				element.writeTo(output);
+			} catch (IOException e) {
+				log.error("Got exception that should not happen", e);
+			}
+
+			nElements++;
+			if (enableRandomAccess) {
+				if (nElements >= indexElements.length) {
+					increaseIndexSize(nElements + 1);
+				}
+				indexElements[nElements] = cb.end;
+			}
 
 		return true;
 	}
 
 	@Override
-	public boolean addAll(WritableContainer<K> buffer) throws Exception {
+	public boolean addAll(WritableContainer<K> buffer) {
 
 		if (enableRandomAccess) {
-			throw new Exception(
+			throw new UnsupportedOperationException(
 					"addAll is not supported if randomAccess is active");
 		}
 
 		if (enableFieldDelimitors != buffer.enableFieldDelimitors) {
-			throw new Exception(
+			throw new UnsupportedOperationException(
 					"addAll works only if the two buffers share the parameter FieldDelimiters");
 		}
 
@@ -301,6 +304,7 @@ public class WritableContainer<K extends Writable> extends Writable implements
 					buffer.cb.buffer.length - buffer.cb.start);
 			output.write(buffer.cb.buffer, 0, buffer.cb.end);
 		}
+
 		nElements += buffer.getNElements();
 
 		if (buffer.pointerLastElement >= 0) {
@@ -316,21 +320,26 @@ public class WritableContainer<K extends Writable> extends Writable implements
 	}
 
 	@Override
-	public boolean remove(K element) throws Exception {
+	public boolean remove(K element) {
 		if (cb.start == cb.end)
 			return false;
 
 		if (enableFieldDelimitors) // Skip the length of the element
 			input.readInt();
 
-		element.readFrom(input);
+		try {
+			element.readFrom(input);
+		} catch (IOException e) {
+			log.error("Got exception that should not happen", e);
+		}
+
 		--nElements;
 		return true;
 	}
 
-	public byte[] removeRaw(byte[] value) throws Exception {
+	public byte[] removeRaw(byte[] value) {
 		if (!enableFieldDelimitors)
-			throw new Exception("Method not supported");
+			throw new UnsupportedOperationException("Method not supported");
 
 		if (cb.start == cb.end)
 			return null;
@@ -348,7 +357,7 @@ public class WritableContainer<K extends Writable> extends Writable implements
 		return v;
 	}
 
-	public boolean get(K element) throws Exception {
+	public boolean get(K element) {
 		if (cb.start == cb.end)
 			return false;
 
@@ -356,7 +365,11 @@ public class WritableContainer<K extends Writable> extends Writable implements
 
 		if (enableFieldDelimitors) // Skip the length of the element
 			input.readInt();
-		element.readFrom(input);
+		try {
+			element.readFrom(input);
+		} catch (IOException e) {
+			log.error("Got exception that should not happen");
+		}
 
 		cb.start = originalStart;
 		return true;
@@ -368,9 +381,9 @@ public class WritableContainer<K extends Writable> extends Writable implements
 	}
 
 	@Override
-	public boolean get(K element, int index) throws Exception {
+	public boolean get(K element, int index) {
 		if (!enableRandomAccess) {
-			throw new Exception(
+			throw new UnsupportedOperationException(
 					"Method not supported if random access is disabled");
 		}
 
@@ -380,7 +393,11 @@ public class WritableContainer<K extends Writable> extends Writable implements
 
 		int originalStart = cb.start;
 		cb.start = indexElements[index];
-		element.readFrom(input);
+		try {
+			element.readFrom(input);
+		} catch (IOException e) {
+			log.error("This exception should not happen", e);
+		}
 		cb.start = originalStart;
 		return true;
 	}
@@ -499,8 +516,7 @@ public class WritableContainer<K extends Writable> extends Writable implements
 		}
 	}
 
-	public void sort(final RawComparator<K> c, Factory<WritableContainer<K>> fb)
-			throws IOException {
+	public void sort(final RawComparator<K> c, Factory<WritableContainer<K>> fb) {
 
 		if (!enableFieldDelimitors) {
 			throw new Error(
@@ -632,7 +648,7 @@ public class WritableContainer<K extends Writable> extends Writable implements
 		}
 	}
 
-	public boolean addRaw(byte[] key) throws IOException {
+	public boolean addRaw(byte[] key) {
 
 		if (!grow(key.length + 4)) {
 			return false;
@@ -665,11 +681,11 @@ public class WritableContainer<K extends Writable> extends Writable implements
 				buffer.cb.buffer, buffer.cb.start, len2);
 	}
 
-	public void addRaw(WritableContainer<K> buffer, int i) throws Exception {
+	public void addRaw(WritableContainer<K> buffer, int i) {
 		// This method works only if the buffers are not circulars
 
 		if (!buffer.enableRandomAccess || buffer.enableFieldDelimitors) {
-			throw new Exception("Not supported");
+			throw new UnsupportedOperationException("Not supported");
 		}
 
 		int start = buffer.indexElements[i];
@@ -684,7 +700,7 @@ public class WritableContainer<K extends Writable> extends Writable implements
 		indexElements[nElements] = cb.end;
 	}
 
-	public byte[] returnLastElement() throws IOException {
+	public byte[] returnLastElement() {
 		if (pointerLastElement < 0) {
 			// Not available.
 			return null;
@@ -698,9 +714,9 @@ public class WritableContainer<K extends Writable> extends Writable implements
 	}
 
 	public boolean addAll(FDataInput originalStream, byte[] lastEl,
-			long nElements, long size) throws Exception {
+			long nElements, long size) throws IOException {
 		if (enableRandomAccess) {
-			throw new Exception("Not supported!");
+			throw new UnsupportedOperationException("Not supported!");
 		}
 
 		if (!grow((int) size)) {

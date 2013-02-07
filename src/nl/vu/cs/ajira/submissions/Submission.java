@@ -13,6 +13,7 @@ public class Submission {
 	private final int submissionId;
 	private int finalStatsReceived;
 	private String state;
+	private Throwable exception;
 
 	Map<String, Long> counters = null;
 	int assignedBucket = -1;
@@ -64,5 +65,13 @@ public class Submission {
 	public void setFinished() {
 		setState(Consts.STATE_FINISHED);
 		endTime = System.nanoTime();
+	}
+	
+	public Throwable getException() {
+	    return exception;
+	}
+
+	public void setException(Throwable exception) {
+	    this.exception = exception;
 	}
 }

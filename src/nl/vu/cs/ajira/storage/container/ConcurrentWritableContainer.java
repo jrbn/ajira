@@ -31,12 +31,12 @@ public class ConcurrentWritableContainer<K extends Writable> extends
 	 * output) throws IOException { super.writeContentTo(output); }
 	 */
 
-	public synchronized void readTo(java.io.DataInput input) throws IOException {
+	public synchronized void readFrom(java.io.DataInput input) throws IOException {
 		super.readFrom(input);
 	}
 
 	@Override
-	public synchronized boolean add(K element) throws Exception {
+	public synchronized boolean add(K element) {
 		boolean response = super.add(element);
 		if (response && waiters > 0)
 			this.notify();
@@ -44,8 +44,7 @@ public class ConcurrentWritableContainer<K extends Writable> extends
 	}
 
 	@Override
-	public synchronized boolean addAll(WritableContainer<K> buffer)
-			throws Exception {
+	public synchronized boolean addAll(WritableContainer<K> buffer) {
 		boolean response = super.addAll(buffer);
 		if (response && waiters > 0)
 			this.notifyAll();
@@ -53,10 +52,14 @@ public class ConcurrentWritableContainer<K extends Writable> extends
 	}
 
 	@Override
-	public synchronized boolean remove(K element) throws Exception {
+	public synchronized boolean remove(K element) {
 		while (super.getNElements() == 0) {
 			waiters++;
-			this.wait();
+			try {
+				this.wait();
+			} catch (InterruptedException e) {
+				// ignore
+			}
 			waiters--;
 		}
 		return super.remove(element);

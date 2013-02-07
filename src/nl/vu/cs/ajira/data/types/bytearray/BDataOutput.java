@@ -1,7 +1,6 @@
 package nl.vu.cs.ajira.data.types.bytearray;
 
 import java.io.DataOutput;
-import java.io.IOException;
 
 public class BDataOutput implements DataOutput {
 
@@ -24,23 +23,23 @@ public class BDataOutput implements DataOutput {
 	}
 
 	@Override
-	public void write(int b) throws IOException {
+	public void write(int b) {
 		cb.buffer[cb.end++] = (byte) b;
 	}
 
 	@Override
-	public void write(byte[] b) throws IOException {
+	public void write(byte[] b) {
 		write(b, 0, b.length);
 	}
 
 	@Override
-	public void write(byte[] b, int off, int len) throws IOException {
+	public void write(byte[] b, int off, int len) {
 		System.arraycopy(b, off, cb.buffer, cb.end, len);
 		cb.end += len;
 	}
 
 	@Override
-	public void writeBoolean(boolean v) throws IOException {
+	public void writeBoolean(boolean v) {
 		if (v)
 			writeByte(1);
 		else
@@ -48,37 +47,37 @@ public class BDataOutput implements DataOutput {
 	}
 
 	@Override
-	public void writeByte(int v) throws IOException {
+	public void writeByte(int v) {
 		write(v);
 	}
 
 	@Override
-	public void writeBytes(String s) throws IOException {
-		throw new IOException("Not supported");
+	public void writeBytes(String s) {
+		throw new UnsupportedOperationException("Not supported");
 	}
 
 	@Override
-	public void writeChar(int v) throws IOException {
-		throw new IOException("Not supported");
+	public void writeChar(int v) {
+		throw new UnsupportedOperationException("Not supported");
 	}
 
 	@Override
-	public void writeChars(String s) throws IOException {
-		throw new IOException("Not supported");
+	public void writeChars(String s) {
+		throw new UnsupportedOperationException("Not supported");
 	}
 
 	@Override
-	public void writeDouble(double v) throws IOException {
-		throw new IOException("Not supported");
+	public void writeDouble(double v) {
+		throw new UnsupportedOperationException("Not supported");
 	}
 
 	@Override
-	public void writeFloat(float v) throws IOException {
-		throw new IOException("Not supported");
+	public void writeFloat(float v) {
+		throw new UnsupportedOperationException("Not supported");
 	}
 
 	@Override
-	public void writeInt(int value) throws IOException {
+	public void writeInt(int value) {
 		int end = cb.end;
 		cb.buffer[end] = (byte) (value >> 24);
 		cb.buffer[end + 1] = (byte) (value >> 16);
@@ -88,7 +87,7 @@ public class BDataOutput implements DataOutput {
 	}
 
 	@Override
-	public void writeLong(long value) throws IOException {
+	public void writeLong(long value) {
 		int end = cb.end;
 		cb.buffer[end] = (byte) (value >> 56);
 		cb.buffer[end + 1] = (byte) (value >> 48);
@@ -102,7 +101,7 @@ public class BDataOutput implements DataOutput {
 	}
 
 	@Override
-	public void writeShort(int value) throws IOException {
+	public void writeShort(int value) {
 		int end = cb.end;
 		cb.buffer[end] = (byte) (value >> 8);
 		cb.buffer[end + 1] = (byte) (value);
@@ -110,7 +109,7 @@ public class BDataOutput implements DataOutput {
 	}
 
 	@Override
-	public void writeUTF(String s) throws IOException {
+	public void writeUTF(String s) {
 		byte[] b = s.getBytes();
 		writeInt(b.length);
 		write(b);

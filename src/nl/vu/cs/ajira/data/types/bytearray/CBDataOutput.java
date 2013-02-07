@@ -1,7 +1,5 @@
 package nl.vu.cs.ajira.data.types.bytearray;
 
-import java.io.IOException;
-
 public class CBDataOutput extends BDataOutput {
 
 	public CBDataOutput(ByteArray cb) {
@@ -9,7 +7,7 @@ public class CBDataOutput extends BDataOutput {
 	}
 
 	@Override
-	public void write(int b) throws IOException {
+	public void write(int b) {
 		if (cb.end >= cb.buffer.length) {
 			cb.end = 0;
 		}
@@ -17,8 +15,7 @@ public class CBDataOutput extends BDataOutput {
 	}
 
 	@Override
-	public void write(byte[] buffer2, int offset, int length)
-			throws IOException {
+	public void write(byte[] buffer2, int offset, int length) {
 		if (length > cb.buffer.length - cb.end) {
 			System.arraycopy(buffer2, offset, cb.buffer, cb.end,
 					cb.buffer.length - cb.end);
@@ -31,7 +28,7 @@ public class CBDataOutput extends BDataOutput {
 	}
 
 	@Override
-	public void writeInt(int value) throws IOException {
+	public void writeInt(int value) {
 		if (cb.end + 4 <= cb.buffer.length) {
 			super.writeInt(value);
 		} else {
@@ -46,7 +43,7 @@ public class CBDataOutput extends BDataOutput {
 
 
 	@Override
-	public void writeShort(int value) throws IOException {
+	public void writeShort(int value) {
 		if (cb.end + 2 <= cb.buffer.length) {
 			super.writeShort(value);
 		} else {
@@ -62,7 +59,7 @@ public class CBDataOutput extends BDataOutput {
 	}
 
 	@Override
-	public void writeLong(long value) throws IOException {
+	public void writeLong(long value) {
 		if (cb.end + 8 <= cb.buffer.length) {
 			super.writeLong(value);
 		} else {

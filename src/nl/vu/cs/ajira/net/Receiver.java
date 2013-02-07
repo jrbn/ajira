@@ -127,8 +127,7 @@ class Receiver implements MessageUpcall {
 				// Cleanup submission
 				submissionNode = message.readInt();
 				Throwable e = (Throwable) message.readObject();
-				// FIXME:
-				// context.cleanupSubmission(submissionNode, idSubmission);
+				context.cleanupSubmission(submissionNode, idSubmission, e);
 			}
 			break;
 		case 3: // Termination

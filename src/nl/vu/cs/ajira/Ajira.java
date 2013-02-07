@@ -28,6 +28,7 @@ import nl.vu.cs.ajira.storage.SubmissionCache;
 import nl.vu.cs.ajira.storage.container.CheckedConcurrentWritableContainer;
 import nl.vu.cs.ajira.storage.container.WritableContainer;
 import nl.vu.cs.ajira.submissions.Job;
+import nl.vu.cs.ajira.submissions.JobFailedException;
 import nl.vu.cs.ajira.submissions.Submission;
 import nl.vu.cs.ajira.submissions.SubmissionRegistry;
 import nl.vu.cs.ajira.utils.Configuration;
@@ -262,9 +263,9 @@ public class Ajira {
 	 *            The specification of the job to launch
 	 * @return The corresponding submission object that contains informations
 	 *         and statistics about the processed job.
-	 * @throws Exception
+	 * @throws JobFailedException in case the job fails for some reason.
 	 */
-	public Submission waitForCompletion(Job job) throws Exception {
+	public Submission waitForCompletion(Job job) throws JobFailedException {
 		Submission sub = globalContext.getSubmissionsRegistry()
 				.waitForCompletion(globalContext, job);
 		globalContext.getSubmissionsRegistry().getStatistics(job, sub);
