@@ -1,6 +1,7 @@
 package nl.vu.cs.ajira.webinterface;
 
 import java.net.BindException;
+import java.net.InetAddress;
 
 import nl.vu.cs.ajira.Context;
 
@@ -68,5 +69,14 @@ public class WebServer implements Runnable {
 			}
 		}
 
+	}
+
+	public String getAddress() {
+		try {
+			return "http://" + InetAddress.getLocalHost().getHostAddress()
+					+ ":" + serverPort;
+		} catch (Exception e) {
+			return "<null>:" + serverPort;
+		}
 	}
 }

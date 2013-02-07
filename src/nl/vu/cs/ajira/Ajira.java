@@ -237,7 +237,7 @@ public class Ajira {
 			if (conf.getBoolean(WebServer.WEBSERVER_START, true)) {
 				WebServer www = new WebServer();
 				www.startWebServer(globalContext);
-				log.info("Starting Web Server on port " + 8080 + "...");
+				log.info("Ajira WebInterface available at: " + www.getAddress());
 			}
 
 			if (serverMode) {
