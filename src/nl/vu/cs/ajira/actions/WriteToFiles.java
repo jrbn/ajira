@@ -15,9 +15,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class WriteToFile extends Action {
+public class WriteToFiles extends Action {
 
-	final static Logger log = LoggerFactory.getLogger(WriteToFile.class);
+	final static Logger log = LoggerFactory.getLogger(WriteToFiles.class);
 
 	public static final int CUSTOM_WRITER = 0;
 	public static final String S_CUSTOM_WRITER = "custom_writer";

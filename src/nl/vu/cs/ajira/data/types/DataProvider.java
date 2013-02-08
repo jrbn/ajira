@@ -22,7 +22,7 @@ public class DataProvider {
 		list.add(new Factory<SimpleData>(TLong.class)); // TLong has ID 0
 		list.add(new Factory<SimpleData>(TString.class)); // TString has ID 1
 		list.add(new Factory<SimpleData>(TInt.class)); // TInt has ID 2
-		list.add(new Factory<SimpleData>(TSet.class)); // TSet has ID 3
+		list.add(new Factory<SimpleData>(TBag.class)); // TSet has ID 3
 		list.add(new Factory<SimpleData>(TBoolean.class)); // TBoolean has ID 4
 		list.add(new Factory<SimpleData>(TByte.class)); // TByte has ID 5
 

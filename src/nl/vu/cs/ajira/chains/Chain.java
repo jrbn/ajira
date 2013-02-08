@@ -3,6 +3,7 @@ package nl.vu.cs.ajira.chains;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import nl.vu.cs.ajira.actions.Action;
@@ -25,15 +26,17 @@ public class Chain extends Writable implements Query {
 
 	static final Logger log = LoggerFactory.getLogger(Chain.class);
 
-	private static class FlowController implements ActionController {
+	private class FlowController implements ActionController {
 
 		public boolean doNotAddAction;
 		public boolean stopProcessing;
 		public int destination;
 		public int bucketId;
+		public List<ActionConf> listActions = new ArrayList<ActionConf>();
 
 		public void init() {
 			stopProcessing = doNotAddAction = false;
+			listActions.clear();
 		}
 
 		@Override
@@ -44,16 +47,21 @@ public class Chain extends Writable implements Query {
 		}
 
 		@Override
-		public void doNotAddAction() {
+		public void doNotAddCurrentAction() {
 			doNotAddAction = true;
 		}
+
+		@Override
+		public void addAction(ActionConf conf) {
+			listActions.add(conf);
+		}
 	}
+
+	private FlowController controller = new FlowController();
 
 	private int bufferSize = Consts.CHAIN_RESERVED_SPACE;
 	private final byte[] buffer = new byte[Consts.CHAIN_SIZE];
 	private Tuple inputTuple = null;
-
-	private FlowController controller = new FlowController();
 
 	private final BDataOutput cos = new BDataOutput(buffer);
 	private final BDataInput cis = new BDataInput(buffer);
@@ -181,19 +189,19 @@ public class Chain extends Writable implements Query {
 		}
 	}
 
-	void addAction(ActionConf params, ActionContext context) throws Exception {
+	void addAction(ActionConf action, ActionContext context) throws Exception {
 
 		// Validate the action
-		if (!params.validateParameters()) {
+		if (!action.validateParameters()) {
 			throw new Exception("Some required parameters for the action "
-					+ params.getClassName() + " are not set.");
+					+ action.getClassName() + " are not set.");
 		}
 
 		// Process the parameters and possibly insert instructions to control
 		// the flow.
-		if (params.getConfigurator() != null) {
+		if (action.getConfigurator() != null) {
 			controller.init();
-			params.getConfigurator().process(this, params, controller, context);
+			action.getConfigurator().process(this, action, controller, context);
 
 			if (controller.doNotAddAction) {
 				return;
@@ -217,7 +225,7 @@ public class Chain extends Writable implements Query {
 		// Serialize the action configuration
 		int totalSize = bufferSize;
 		cos.setCurrentPosition(bufferSize);
-		params.writeTo(cos);
+		action.writeTo(cos);
 		int sizeAction = cos.cb.end - totalSize;
 		bufferSize += sizeAction;
 		Utils.encodeInt(buffer, bufferSize, sizeAction);
@@ -228,11 +236,21 @@ public class Chain extends Writable implements Query {
 		bufferSize += 8;
 
 		// Serialize the class name
-		byte[] sAction = params.getClassName().getBytes();
+		byte[] sAction = action.getClassName().getBytes();
 		System.arraycopy(sAction, 0, buffer, bufferSize, sAction.length);
 		bufferSize += sAction.length;
 		Utils.encodeInt(buffer, bufferSize, sAction.length);
 		bufferSize += 4;
+
+		if (action.getConfigurator() != null
+				&& controller.listActions.size() > 0) {
+			// Add the actions from the last
+			List<ActionConf> list = controller.listActions;
+			controller.listActions = new ArrayList<ActionConf>();
+			for (int i = list.size() - 1; i >= 0; --i) {
+				addAction(list.get(i), context);
+			}
+		}
 	}
 
 	void setRawSize(int size) {

@@ -39,10 +39,7 @@ import nl.vu.cs.ajira.webinterface.WebServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 /**
- * @author Jacopo Urbani
- * 
  *         This is the main class that allows the user to interface with the
  *         program. It allows the user to start the cluster, submit the jobs,
  *         wait to their completion and so on. Starting the cluster using this
@@ -52,17 +49,31 @@ public class Ajira {
 
 	static final Logger log = LoggerFactory.getLogger(Ajira.class);
 
-	private Context globalContext;
+	private Configuration conf = new Configuration();
+	private Context globalContext = null;
 	private boolean localMode;
 
 	/**
 	 * Returns whether the current instance was the elected server of the
-	 * cluster. Only one node of the cluster will return true to this call.
+	 * cluster and therefore can accept submissions. Only one node of the
+	 * cluster will return true to this call.
 	 * 
 	 * @return true if it is, false otherwise.
 	 */
-	public boolean isFirst() {
+	public boolean amItheServer() {
 		return localMode || globalContext.getNetworkLayer().isServer();
+	}
+
+	/**
+	 * This method returns an object that contains all the configuration
+	 * parameters of the cluster. This object can be modified before the cluster
+	 * is started in order to change some built-in parameters or add custom
+	 * parameters that should be visible to all the cluster.
+	 * 
+	 * @return the configuration file
+	 */
+	public Configuration getConfiguration() {
+		return conf;
 	}
 
 	/**
@@ -88,12 +99,8 @@ public class Ajira {
 	 * This method starts the entire cluster. Should be invoked on every node
 	 * that participate in the computation. After it is finished, the cluster is
 	 * ready to accept incoming jobs.
-	 * 
-	 * @param conf
-	 *            A configuration object that contains some possible
-	 *            initialization parameters.
 	 */
-	public void startup(Configuration conf) {
+	public void startup() {
 		try {
 			long time = System.currentTimeMillis();
 

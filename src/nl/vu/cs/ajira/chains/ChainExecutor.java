@@ -9,6 +9,7 @@ import nl.vu.cs.ajira.actions.ActionConf;
 import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.actions.ActionOutput;
 import nl.vu.cs.ajira.buckets.Bucket;
+import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.TInt;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.storage.container.WritableContainer;
@@ -171,6 +172,12 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		}
 	}
 
+	@Override
+	public void output(SimpleData... data) throws Exception {
+		supportTuple.set(data);
+		output(supportTuple);
+	}
+
 	void stopProcess() throws Exception {
 		currentAction = 0;
 		stopProcess = true;
@@ -230,6 +237,8 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		chain.branchFromRoot(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
 		supportChain.addActions(actions, this);
 
+		// TODO
+
 		return null;
 	}
 
@@ -237,6 +246,8 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	public ActionOutput split(ActionConf action) throws Exception {
 		chain.branchFromRoot(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
 		supportChain.addAction(action, this);
+
+		// TODO
 
 		return null;
 	}

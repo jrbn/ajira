@@ -4,5 +4,7 @@ public interface ActionController {
 
 	public void continueComputationOn(int destination, int bucketId);
 
-	public void doNotAddAction();
+	public void addAction(ActionConf conf);
+
+	public void doNotAddCurrentAction();
 }

@@ -43,11 +43,13 @@ public class Consts {
 	public static final String STATE_OPEN = "OPEN";
 	public static final String STATE_RESULTS_RECEIVED = "RESULTS_RECEIVED";
 	public static final String STATE_FINISHED = "FINISHED";
+	public static final String STATE_INIT_FAILED = "INIT_FAILED";
 
 	public static final int DEFAULT_INPUT_LAYER_ID = 0;
 	public static final int BUCKET_INPUT_LAYER_ID = 1;
 	public static final int DUMMY_INPUT_LAYER_ID = 2;
-	public static final int MAX_N_INPUT_LAYERS = 3;
+	public static final int SPLITS_INPUT_LAYER = 3;
+	public static final int MAX_N_INPUT_LAYERS = 4;
 
 	public static final int MAX_N_PARAMS = 1024;
 	public static final int MAX_CONCURRENT_TRANSFERS = 128;

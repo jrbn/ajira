@@ -17,9 +17,9 @@ public abstract class Action {
 	}
 
 	public abstract void process(Tuple tuple, ActionContext context,
-			ActionOutput output) throws Exception;
+			ActionOutput actionOutput) throws Exception;
 
-	public void stopProcess(ActionContext context, ActionOutput output)
+	public void stopProcess(ActionContext context, ActionOutput actionOutput)
 			throws Exception {
 	}
 
