@@ -99,10 +99,6 @@ public class StatisticsCollector implements Runnable {
 					Map<String, Long> submissionCounters = entry2.getValue();
 					// If there are counters
 					if (submissionCounters.size() > 0) {
-						if (log.isDebugEnabled()) {
-							printStatistics(entry2.getKey(), entry.getKey()
-									.intValue());
-						}
 						if (msg == null) {
 							receiver = net.getPeerLocation(entry.getKey());
 							msg = net.getMessageToSend(receiver,
@@ -131,33 +127,9 @@ public class StatisticsCollector implements Runnable {
 				if (msg != null) {
 					msg.writeByte((byte) 0);
 					msg.finish();
-					// if (log.isDebugEnabled()) {
-					// log.debug("Sent message id 6 to " + receiver);
-					// }
 					msg = null;
 				}
 			}
-		}
-	}
-
-	private synchronized void printStatistics(int submissionId, int nodeId) {
-		Map<Integer, Map<String, Long>> localMap = counters.get(nodeId);
-		if (localMap != null) {
-			String stats = "";
-			// for (Map.Entry<Integer, Map<String, Long>> entry : localMap
-			// .entrySet()) {
-			stats += "\nSubmission ID: " + submissionId + "\n";
-			Map<String, Long> submissionCounters = localMap.get(submissionId);
-			if (submissionCounters != null) {
-				for (Map.Entry<String, Long> entry2 : submissionCounters
-						.entrySet()) {
-					stats += " " + entry2.getKey() + " = " + entry2.getValue()
-							+ "\n";
-
-				}
-			}
-			// }
-			log.info(stats);
 		}
 	}
 }

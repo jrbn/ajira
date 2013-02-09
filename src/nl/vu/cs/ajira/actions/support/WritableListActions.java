@@ -14,6 +14,13 @@ public class WritableListActions implements Writable {
 
 	private List<ActionConf> actions;
 
+	public WritableListActions() {
+	}
+
+	public WritableListActions(List<ActionConf> listActions) {
+		setActions(listActions);
+	}
+
 	public void setActions(List<ActionConf> actions) {
 		this.actions = actions;
 	}
@@ -36,7 +43,6 @@ public class WritableListActions implements Writable {
 
 	@Override
 	public void writeTo(DataOutput output) throws IOException {
-		// Write the actions
 		output.writeByte(actions.size());
 		for (ActionConf action : actions) {
 			output.writeUTF(action.getClassName());

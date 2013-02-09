@@ -125,6 +125,7 @@ public class Ajira {
 
 			/***** NET *******/
 			NetworkLayer net = NetworkLayer.getInstance();
+			StatisticsCollector stats = new StatisticsCollector(conf, net);
 			boolean serverMode = true;
 
 			String ibisPoolSize = System.getProperty("ibis.pool.size");
@@ -162,6 +163,12 @@ public class Ajira {
 
 				serverMode = net.isServer();
 				log.debug("...done");
+
+				/**** START STATISTICS THREAD ****/
+				log.debug("Starting statistics thread ...");
+				Thread thread = new Thread(stats);
+				thread.setName("Statistics Printer");
+				thread.start();
 			}
 
 			if (serverMode) {
@@ -172,7 +179,6 @@ public class Ajira {
 			WritableContainer<Chain> chainsToProcess = new CheckedConcurrentWritableContainer<Chain>(
 					Consts.SIZE_BUFFERS_CHAINS_PROCESS);
 			List<ChainHandler> listHandlers = new ArrayList<ChainHandler>();
-			StatisticsCollector stats = new StatisticsCollector(conf, net);
 			CachedFilesMerger merger = new CachedFilesMerger();
 			Buckets tuplesContainer = new Buckets(stats, merger, net);
 			ActionFactory ap = new ActionFactory();
@@ -222,12 +228,6 @@ public class Ajira {
 			/**** START COMMUNICATION THREADS ****/
 			log.debug("Starting Sending/receiving threads ...");
 			net.startupConnections(globalContext);
-
-			/**** START STATISTICS THREAD ****/
-			log.debug("Starting statistics thread ...");
-			Thread thread = new Thread(stats);
-			thread.setName("Statistics Printer");
-			thread.start();
 
 			/***** LOAD STORAGE *****/
 			log.debug("Starting registered input layers ...");

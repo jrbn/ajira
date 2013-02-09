@@ -1,5 +1,7 @@
 package nl.vu.cs.ajira.chains;
 
+import ibis.util.ThreadPool;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -231,6 +233,10 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		return roots[currentAction];
 	}
 
+	boolean wasPrincipalBranch() {
+		return roots[currentAction - 1];
+	}
+
 	@Override
 	public void branch(List<ActionConf> actions) throws Exception {
 		chain.setRawSize(rawSizes[currentAction]);
@@ -282,21 +288,19 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		supportChain
 				.setInputTuple(TupleFactory.newTuple(new TInt(itr.getId())));
 
-		cRuntimeBranching[currentAction]++;
-		if (currentAction > smallestRuntimeAction) {
-			smallestRuntimeAction = currentAction;
-		}
+		startNewChainHandler(context, supportChain);
 
-		if (localMode)
-			chainsBuffer.add(supportChain);
-		else
-			net.sendChain(supportChain);
 		stats.addCounter(chain.getSubmissionNode(), chain.getSubmissionId(),
 				"Chains Dynamically Generated", 1);
 
 		openedStreams.add(itr);
 
 		return itr;
+	}
+
+	private void startNewChainHandler(Context context, Chain chain) {
+		ChainHandler handler = new ChainHandler(context, chain);
+		ThreadPool.createNew(handler, "split-ChainHandler");
 	}
 
 	@Override
@@ -308,19 +312,12 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		supportChain
 				.setInputTuple(TupleFactory.newTuple(new TInt(itr.getId())));
 
-		cRuntimeBranching[currentAction]++;
-		if (currentAction > smallestRuntimeAction) {
-			smallestRuntimeAction = currentAction;
-		}
+		startNewChainHandler(context, supportChain);
 
 		stats.addCounter(chain.getSubmissionNode(), chain.getSubmissionId(),
 				"Chains Dynamically Generated", 1);
 
 		openedStreams.add(itr);
-		if (localMode)
-			chainsBuffer.add(supportChain);
-		else
-			net.sendChain(supportChain);
 		return itr;
 	}
 
@@ -371,7 +368,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	}
 
 	boolean isChainFullyExecuted() {
-		return !transferComputation;
+		return !transferComputation && roots[nActions - 1];
 	}
 
 	void setInputIterator(TupleIterator itr) {

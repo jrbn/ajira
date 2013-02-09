@@ -23,8 +23,12 @@ public class ChainHandler implements Runnable {
 	private ActionFactory ap = null;
 	private StatisticsCollector stats = null;
 	private boolean localMode;
-
 	public boolean active;
+	public boolean singleChain = false;
+
+	private Chain chain = new Chain();
+	private Tuple tuple = TupleFactory.newTuple();
+	private ChainExecutor actions;
 
 	public ChainHandler(Context context) {
 		this.context = context;
@@ -33,14 +37,93 @@ public class ChainHandler implements Runnable {
 		this.stats = context.getStatisticsCollector();
 		this.ap = context.getActionsProvider();
 		localMode = context.isLocalMode();
+		actions = new ChainExecutor(context, localMode);
+	}
+
+	public ChainHandler(Context context, Chain chain) {
+		this(context);
+		singleChain = true;
+		chain.copyTo(this.chain);
+	}
+
+	private void processChain() {
+		try {
+			// Init the environment
+			actions.init(chain);
+			chain.getActions(actions, ap);
+
+			if (actions.getNActions() > 0) {
+
+				// Read the input tuple from the knowledge base
+				chain.getInputTuple(tuple);
+				InputLayer input = context.getInputLayer(chain.getInputLayer());
+				TupleIterator itr = input.getIterator(tuple, actions);
+				if (!itr.isReady()) {
+					context.getChainNotifier().addWaiter(itr, chain);
+					chain = new Chain();
+					return;
+				}
+
+				/***** START CHAIN *****/
+				long timeCycle = System.currentTimeMillis();
+				actions.setInputIterator(itr);
+				actions.startProcess();
+
+				// Process the data on the chain
+				boolean eof = false;
+				do {
+					eof = !itr.nextTuple();
+					if (!eof) {
+						itr.getTuple(tuple);
+						actions.output(tuple);
+					} else { // EOF Case
+						actions.stopProcess();
+					}
+				} while (!eof);
+
+				if (log.isDebugEnabled()) {
+					timeCycle = System.currentTimeMillis() - timeCycle;
+					log.debug("Chain " + chain.getChainId() + "runtime cycle: "
+							+ timeCycle);
+				}
+
+				input.releaseIterator(itr, actions);
+			}
+
+			// Send the termination signal to the node responsible of
+			// the submission
+			if (actions.isChainFullyExecuted()) {
+				net.signalChainTerminated(chain);
+			} else if (!actions.wasPrincipalBranch()) {
+				int generatedChains = chain.getGeneratedRootChains();
+				if (generatedChains > 0) {
+					net.signalChainHasRootChains(chain, generatedChains);
+				}
+			}
+			stats.addCounter(chain.getSubmissionNode(),
+					chain.getSubmissionId(), "Chains Processed", 1);
+
+		} catch (Throwable e) {
+			// Broadcast all the nodes that a chain part of a job has
+			// failed.
+			log.error("Chain failed. Cancelling the job ...", e);
+			try {
+				net.signalChainFailed(chain, e);
+			} catch (Exception e1) {
+				log.error("Failed in managing to cancel the job."
+						+ "This instance will be terminated.", e);
+				System.exit(1);
+			}
+		}
 	}
 
 	@Override
 	public void run() {
 
-		Chain chain = new Chain();
-		Tuple tuple = TupleFactory.newTuple();
-		ChainExecutor actions = new ChainExecutor(context, localMode);
+		if (singleChain) {
+			processChain();
+			return;
+		}
 
 		while (true) {
 			active = false;
@@ -53,76 +136,8 @@ public class ChainHandler implements Runnable {
 				return;
 			}
 			active = true;
+			processChain();
 
-			try {
-				// Init the environment
-				actions.init(chain);
-				chain.getActions(actions, ap);
-
-				if (actions.getNActions() > 0) {
-
-					// Read the input tuple from the knowledge base
-					chain.getInputTuple(tuple);
-					InputLayer input = context.getInputLayer(chain
-							.getInputLayer());
-					TupleIterator itr = input.getIterator(tuple, actions);
-					if (!itr.isReady()) {
-						context.getChainNotifier().addWaiter(itr, chain);
-						chain = new Chain();
-						continue;
-					}
-
-					/***** START CHAIN *****/
-					long timeCycle = System.currentTimeMillis();
-					actions.setInputIterator(itr);
-					actions.startProcess();
-
-					// Process the data on the chain
-					boolean eof = false;
-					do {
-						eof = !itr.nextTuple();
-						if (!eof) {
-							itr.getTuple(tuple);
-							actions.output(tuple);
-						} else { // EOF Case
-							actions.stopProcess();
-						}
-					} while (!eof);
-
-					if (log.isDebugEnabled()) {
-						timeCycle = System.currentTimeMillis() - timeCycle;
-						log.debug("Chain " + chain.getChainId()
-								+ "runtime cycle: " + timeCycle);
-					}
-
-					input.releaseIterator(itr, actions);
-				}
-
-				// Send the termination signal to the node responsible of
-				// the submission
-				if (actions.isChainFullyExecuted()) {
-					net.signalChainTerminated(chain);
-				} else {
-					int generatedChains = chain.getGeneratedRootChains();
-					if (generatedChains > 0) {
-						net.signalChainHasRootChains(chain, generatedChains);
-					}
-				}
-				stats.addCounter(chain.getSubmissionNode(),
-						chain.getSubmissionId(), "Chains Processed", 1);
-
-			} catch (Throwable e) {
-				// Broadcast all the nodes that a chain part of a job has
-				// failed.
-				log.error("Chain failed. Cancelling the job ...", e);
-				try {
-					net.signalChainFailed(chain, e);
-				} catch (Exception e1) {
-					log.error("Failed in managing to cancel the job."
-							+ "This instance will be terminated.", e);
-					System.exit(1);
-				}
-			}
 		}
 	}
 }

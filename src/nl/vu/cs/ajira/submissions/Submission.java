@@ -72,6 +72,11 @@ public class Submission {
 		endTime = System.nanoTime();
 	}
 
+	@Override
+	public String toString() {
+		return "Submission-" + submissionId;
+	}
+
 	public void printStatistics() {
 
 		String stats = "\n**************************************************\nOUTPUT OF JOB "

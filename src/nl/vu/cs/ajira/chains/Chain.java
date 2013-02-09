@@ -205,7 +205,13 @@ public class Chain implements Writable, Query {
 			}
 
 			for (int i = actions.size() - 1; i >= 0; i--) {
-				addAction(actions.get(i), context);
+				ActionConf c = actions.get(i);
+				try {
+					addAction(c, context);
+				} catch (Exception e) {
+					log.error("Error in adding action " + c, e);
+					throw new Exception("The setup of the action " + c);
+				}
 			}
 		} else {
 			throw new Exception("No action is defined");

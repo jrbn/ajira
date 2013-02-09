@@ -317,4 +317,9 @@ public class ActionConf implements Writable {
 		text += "unknown)";
 		return text;
 	}
+
+	@Override
+	public String toString() {
+		return className;
+	}
 }
