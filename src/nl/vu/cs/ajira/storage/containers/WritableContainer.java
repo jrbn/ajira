@@ -373,6 +373,7 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 				newArray.nElements++;
 			}
 			newArray.copyTo(this);
+			newArray.clear();
 			fb.release(newArray);
 
 		}

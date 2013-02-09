@@ -379,6 +379,7 @@ public class Bucket {
 							}
 						}
 					}
+					buffer.clear();
 					fb.release(buffer);
 				} catch (IOException e) {
 					// TODO: what to do now?
