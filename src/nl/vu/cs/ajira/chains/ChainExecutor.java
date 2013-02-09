@@ -57,6 +57,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	private int transferNodeId;
 	private int transferBucketId;
 	private boolean localMode;
+	private int childrenToTransfer;
 
 	public ChainExecutor(Context context, boolean localMode) {
 		this.context = context;
@@ -155,6 +156,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		this.chain = chain;
 		this.submissionNode = chain.getSubmissionNode();
 		this.submissionId = chain.getSubmissionId();
+		this.childrenToTransfer = 0;
 
 		this.smallestRuntimeAction = -1;
 		this.stopProcess = false;
@@ -215,7 +217,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		if (transferComputation && roots[nActions - 1]) {
 			chain.setRawSize(rawSizes[nActions - 1]);
 			chain.copyTo(supportChain);
-			supportChain.setTotalChainChildren(0);
+			supportChain.setTotalChainChildren(childrenToTransfer);
 			supportChain.setInputLayer(Consts.BUCKET_INPUT_LAYER_ID);
 			supportTuple.set(new TInt(transferBucketId), new TInt(
 					transferNodeId));
@@ -249,6 +251,10 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			}
 		}
 
+		if (transferComputation && currentAction == nActions - 1) {
+			childrenToTransfer++;
+		}
+
 		if (localMode)
 			chainsBuffer.add(supportChain);
 		else
@@ -268,6 +274,10 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			if (currentAction > smallestRuntimeAction) {
 				smallestRuntimeAction = currentAction;
 			}
+		}
+
+		if (transferComputation && currentAction == nActions - 1) {
+			childrenToTransfer++;
 		}
 
 		if (localMode)
