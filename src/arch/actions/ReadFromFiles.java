@@ -17,7 +17,7 @@ import arch.utils.Consts;
 public class ReadFromFiles extends Action {
 
 	public static final String MINIMUM_SPLIT_SIZE = "splitinput.minimumsize";
-	public static final int MINIMUM_FILE_SPLIT = (2047 * 1024 * 1024); // ~ 2 GB
+	public static final int MINIMUM_FILE_SPLIT = (2047 * 1024 * 1024); // ~ 2 GB => ~4 GB
 
 	public static final int PATH = 0;
 	public static final String S_PATH = "path";
@@ -92,7 +92,7 @@ public class ReadFromFiles extends Action {
 		File file = new File(path.getValue());
 
 		long sizeFile = file.length();
-		if (currentFileSplit.getSize() + sizeFile >= minimumFileSplitSize) {
+		if ((long)(currentFileSplit.getSize() + sizeFile) >= (2 * ((long) minimumFileSplitSize))) {
 			processSplit(context, output);
 		}
 		currentFileSplit.addFile(file);
