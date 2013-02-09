@@ -11,8 +11,10 @@ public final class TBoolean extends SimpleData {
 	boolean value;
 
 	/**
-	 * Creates a new TBoolean and sets the filed value. 
-	 * @param b is the new value of the filed value
+	 * Creates a new TBoolean and sets the filed value.
+	 * 
+	 * @param b
+	 *            is the new value of the filed value
 	 */
 	public TBoolean(boolean b) {
 		value = b;
@@ -34,7 +36,9 @@ public final class TBoolean extends SimpleData {
 
 	/**
 	 * Sets the field value.
-	 * @param value is the new value of the field value
+	 * 
+	 * @param value
+	 *            is the new value of the field value
 	 */
 	public void setValue(boolean value) {
 		this.value = value;
@@ -64,18 +68,10 @@ public final class TBoolean extends SimpleData {
 		output.writeBoolean(value);
 	}
 
-
-	
-	/**
-	 * Returns the number of bytes that are needed to store the
-	 * field of the class.
-	 */
-
-	// @Override
-	// public int bytesToStore() {
-	// return 1;
-	// }
-
+	@Override
+	public int hashCode() {
+		return value ? 1 : 0;
+	}
 
 	@Override
 	/**

@@ -17,20 +17,23 @@ public final class TInt extends SimpleData {
 	public int getIdDatatype() {
 		return Consts.DATATYPE_TINT;
 	}
-	
+
 	/**
 	 * Creates an empty TInt.
 	 */
-	public TInt() {}
-	
+	public TInt() {
+	}
+
 	/**
-	 * Creates a new TInt and sets the filed value. 
-	 * @param i is the new value of the filed value
+	 * Creates a new TInt and sets the filed value.
+	 * 
+	 * @param i
+	 *            is the new value of the filed value
 	 */
 	public TInt(int i) {
 		value = i;
 	}
-	
+
 	/**
 	 * 
 	 * @return the value of the filed value.
@@ -41,8 +44,10 @@ public final class TInt extends SimpleData {
 
 	/**
 	 * Sets the field value.
-	 * @param value is the new value of the field value
-	 */ 
+	 * 
+	 * @param value
+	 *            is the new value of the field value
+	 */
 	public void setValue(int value) {
 		this.value = value;
 	}
@@ -63,18 +68,15 @@ public final class TInt extends SimpleData {
 		output.writeInt(value);
 	}
 
-	/**
-	 * Returns the number of bytes that are needed to store the
-	 * field of the class.
-	 */
-	// @Override
-	// public int bytesToStore() {
-	// return 4;
-	// }
+	@Override
+	public int hashCode() {
+		return value;
+	}
 
 	/**
 	 * Converts the object to its string representation.
 	 */
+	@Override
 	public String toString() {
 		return Integer.toString(value);
 	}

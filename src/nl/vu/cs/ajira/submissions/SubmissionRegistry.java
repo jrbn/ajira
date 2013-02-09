@@ -59,6 +59,10 @@ public class SubmissionRegistry {
 			long parentChainId, int nchildren, int generatedRootChains) {
 		Submission sub = getSubmission(submissionId);
 
+		System.out.println("subId=" + submissionId + " chainId=" + chainId
+				+ " parentChainId=" + parentChainId + " nchildren=" + nchildren
+				+ " generatedRoots=" + generatedRootChains);
+
 		synchronized (sub) {
 			if (nchildren > 0) { // Set the expected children in the
 				// map

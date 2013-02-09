@@ -368,7 +368,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	}
 
 	boolean isChainFullyExecuted() {
-		return !transferComputation && roots[nActions - 1];
+		return !transferComputation;
 	}
 
 	void setInputIterator(TupleIterator itr) {

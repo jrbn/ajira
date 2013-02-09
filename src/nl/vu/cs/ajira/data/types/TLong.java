@@ -6,6 +6,8 @@ import java.io.IOException;
 
 import nl.vu.cs.ajira.utils.Consts;
 
+import com.google.common.primitives.Longs;
+
 public final class TLong extends SimpleData {
 
 	protected long value;
@@ -17,14 +19,17 @@ public final class TLong extends SimpleData {
 	public int getIdDatatype() {
 		return Consts.DATATYPE_TLONG;
 	}
-	
+
 	/**
-	 * Creates a new TLong and sets the filed value. 
-	 * @param value is the new value of the filed value
+	 * Creates a new TLong and sets the filed value.
+	 * 
+	 * @param value
+	 *            is the new value of the filed value
 	 */
 	public TLong(long value) {
 		this.value = value;
 	}
+
 	/**
 	 * Creates a empty TLong.
 	 */
@@ -41,7 +46,9 @@ public final class TLong extends SimpleData {
 
 	/**
 	 * Sets the field value.
-	 * @param value is the new value of the field value
+	 * 
+	 * @param value
+	 *            is the new value of the field value
 	 */
 	public void setValue(long value) {
 		this.value = value;
@@ -63,15 +70,11 @@ public final class TLong extends SimpleData {
 		output.writeLong(value);
 	}
 
-	/**
-	 * Returns the number of bytes that are needed to store the
-	 * field of the class.
-	 */
-	// @Override
-	// public int bytesToStore() {
-	// return 8;
-	// }
+	@Override
+	public int hashCode() {
+		return Longs.hashCode(value);
 
+	}
 
 	@Override
 	/**

@@ -1,5 +1,7 @@
 package nl.vu.cs.ajira.data.types;
 
+import java.util.Arrays;
+
 public class Tuple {
 
 	protected SimpleData[] signature;
@@ -80,22 +82,8 @@ public class Tuple {
 		signature = null;
 	}
 
-	// @Override
-	// public int hashCode() {
-	// int index = hashCodeFields[0];
-	//
-	// int s = indexElements[index];
-	// int e = indexElements[index + 1];
-	//
-	// if (e - s >= 4) {
-	// return (cb.buffer[e - 1] & 0xff) + ((cb.buffer[e - 2] & 0xff) << 8)
-	// + ((cb.buffer[e - 3] & 0xff) << 16)
-	// + (cb.buffer[e - 4] << 24);
-	// }
-	// int hash = 0;
-	// for (int i = s; i < e; i++) {
-	// hash = (hash << 8) + (cb.buffer[i] & 0xff);
-	// }
-	// return hash;
-	// }
+	@Override
+	public int hashCode() {
+		return Arrays.hashCode((Object[]) signature);
+	}
 }

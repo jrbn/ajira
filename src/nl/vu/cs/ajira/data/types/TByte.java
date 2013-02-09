@@ -11,8 +11,10 @@ public class TByte extends SimpleData {
 	int value;
 
 	/**
-	 * Creates a new TByte and sets the filed value. 
-	 * @param b is the new value of the filed value
+	 * Creates a new TByte and sets the filed value.
+	 * 
+	 * @param b
+	 *            is the new value of the filed value
 	 */
 	public TByte(int b) {
 		value = b;
@@ -48,16 +50,10 @@ public class TByte extends SimpleData {
 		output.writeByte(value);
 	}
 
-	/**
-	 * Returns the number of bytes that are needed to store the
-	 * field of the class.
-	 */
-
-	// @Override
-	// public int bytesToStore() {
-	// return 1;
-	// }
-
+	@Override
+	public int hashCode() {
+		return value;
+	}
 
 	/**
 	 * 
@@ -69,7 +65,9 @@ public class TByte extends SimpleData {
 
 	/**
 	 * Sets the field value.
-	 * @param value is the new value of the field value
+	 * 
+	 * @param value
+	 *            is the new value of the field value
 	 */
 	public void setValue(int value) {
 		this.value = value;

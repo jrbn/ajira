@@ -276,11 +276,11 @@ public class Bucket {
 	 * 'sorted' param) and then we open a temporary file (input stream) for
 	 * writing it's content down. All the information/details (filename, size,
 	 * etc) about the caching operation are kept as metadata into a hash
-	 * data-structure. @see FileMetaData 
-	 *  
-	 * If the number of temporary files are greater than a fixed limit, 
-	 * a background thread that merges those files is started in order 
-	 * to get their number back to normal. @see CachedFilesMerger
+	 * data-structure. @see FileMetaData
+	 * 
+	 * If the number of temporary files are greater than a fixed limit, a
+	 * background thread that merges those files is started in order to get
+	 * their number back to normal. @see CachedFilesMerger
 	 * 
 	 * @param buffer
 	 *            Buffer (tuples container) to be cached
@@ -297,6 +297,7 @@ public class Bucket {
 	throws IOException {
 
 		if (buffer.getNElements() == 0) {
+			buffer.clear();
 			fb.release(buffer);
 			return;
 		}
@@ -518,8 +519,8 @@ public class Bucket {
 	 * @param merger
 	 *            Cache file merger
 	 * @param signature
-	 * 			  The signature used for defining the sort order
-	 * 			  between the fields 
+	 *            The signature used for defining the sort order between the
+	 *            fields
 	 */
 	@SuppressWarnings("unchecked")
 	void init(long key, StatisticsCollector stats, int submissionNode,
@@ -639,6 +640,8 @@ public class Bucket {
 	 */
 	void releaseTuples() {
 		if (tuples != null) {
+			tuples.clear();
+			fb.release(tuples);
 			tuples = null;
 		}
 	}

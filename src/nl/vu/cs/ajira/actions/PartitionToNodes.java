@@ -41,6 +41,7 @@ public class PartitionToNodes extends Action {
 	private Partitioner partitioner = null;
 	private int nPartitions;
 	private int[] bucketIds;
+	private boolean partition;
 
 	public static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
@@ -102,6 +103,11 @@ public class PartitionToNodes extends Action {
 
 		bucketIds = getParamIntArray(BUCKET_IDS);
 		nPartitions = nPartitionsPerNode * context.getNumberNodes();
+		if (nPartitions > 1) {
+			partition = true;
+		} else {
+			partition = false;
+		}
 
 		tupleFields = getParamByteArray(TUPLE_FIELDS);
 
@@ -115,23 +121,33 @@ public class PartitionToNodes extends Action {
 			ActionOutput output) {
 		try {
 
-			// First partition the data
-			if (partitioner == null) {
-				partitioner = (Partitioner) Class.forName(sPartitioner)
-						.newInstance();
-				partitioner.init(context);
+			Bucket b = null;
+			if (partition) {
+				// First partition the data
+				if (partitioner == null) {
+					partitioner = (Partitioner) Class.forName(sPartitioner)
+							.newInstance();
+					partitioner.init(context);
+				}
+
+				int partition = partitioner.partition(inputTuple, nPartitions);
+				b = bucketsCache[partition];
+				if (b == null) {
+					int nodeNo = partition / nPartitionsPerNode;
+					int bucketNo = bucketIds[partition % nPartitionsPerNode];
+					b = context.startTransfer(nodeNo, bucketNo, shouldSort,
+							sortingFields, tupleFields);
+					bucketsCache[partition] = b;
+				}
+			} else {
+				b = bucketsCache[0];
+				if (b == null) {
+					b = context.startTransfer(0, bucketIds[0], shouldSort,
+							sortingFields, tupleFields);
+					bucketsCache[0] = b;
+				}
 			}
 
-			int partition = partitioner.partition(inputTuple, nPartitions);
-
-			Bucket b = bucketsCache[partition];
-			if (b == null) {
-				int nodeNo = partition / nPartitionsPerNode;
-				int bucketNo = bucketIds[partition % nPartitionsPerNode];
-				b = context.startTransfer(nodeNo, bucketNo, shouldSort,
-						sortingFields, tupleFields);
-				bucketsCache[partition] = b;
-			}
 			b.add(inputTuple);
 		} catch (Exception e) {
 			log.error("Failed processing tuple.", e);

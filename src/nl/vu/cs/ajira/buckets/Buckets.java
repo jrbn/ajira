@@ -29,8 +29,6 @@ import org.slf4j.LoggerFactory;
 public class Buckets {
 	static final Logger log = LoggerFactory.getLogger(Buckets.class);
 	private final Map<Long, Bucket> buckets = new HashMap<Long, Bucket>();
-	private final Factory<Bucket> bucketsFactory = new Factory<Bucket>(
-			Bucket.class);
 
 	// Buffer factories
 	@SuppressWarnings("unchecked")
@@ -52,7 +50,7 @@ public class Buckets {
 	 * Custom constructor.
 	 * 
 	 * @param stats
-	 * 			  Collection in which we add/aggregate counters (statistics)
+	 *            Collection in which we add/aggregate counters (statistics)
 	 * @param merger
 	 *            Merger that is being used for merging the cached files created
 	 *            by the buckets of this node
@@ -75,8 +73,8 @@ public class Buckets {
 	/**
 	 * Method that generates a key for uniquely identifying a buffer -- is
 	 * generated using the bucket's submission identifier and also its own
-	 * identifier. Ensures that high-order int contains submissionId, even 
-	 * if bucketID < 0.
+	 * identifier. Ensures that high-order int contains submissionId, even if
+	 * bucketID < 0.
 	 * 
 	 * @param submissionId
 	 *            Submission id
@@ -135,12 +133,12 @@ public class Buckets {
 	 * @param idBucket
 	 *            Bucket id
 	 * @param sort
-	 * 			  Activate sort or not on the bucket
+	 *            Activate sort or not on the bucket
 	 * @param sortingFields
 	 *            What fields to sort on
 	 * @param signature
-	 * 			  The signature used for defining the sort order
-	 * 			  between the fields 
+	 *            The signature used for defining the sort order between the
+	 *            fields
 	 * @return
 	 */
 	public synchronized Bucket getOrCreateBucket(int submissionNode,
@@ -150,7 +148,7 @@ public class Buckets {
 		Bucket bucket = buckets.get(key);
 
 		if (bucket == null) {
-			bucket = bucketsFactory.get();
+			bucket = new Bucket();
 			if (sort) {
 				bucket.init(key, stats, submissionNode, idSubmission, sort,
 						sortingFields, fb_sorted, merger, signature);
@@ -301,12 +299,12 @@ public class Buckets {
 	 * @param bucketID
 	 *            Bucket id
 	 * @param sort
-	 * 			  Activate sort or not on the bucket
+	 *            Activate sort or not on the bucket
 	 * @param sortingFields
 	 *            What fields to sort on
 	 * @param signature
-	 * 			  The signature used for defining the sort order
-	 * 			  between the fields 
+	 *            The signature used for defining the sort order between the
+	 *            fields
 	 * @param context
 	 *            Context of the action
 	 * @return The bucket prepared for the transfer
@@ -366,12 +364,12 @@ public class Buckets {
 	 * @param responsible
 	 *            True/false if the current chain is a root-chain or not
 	 * @param sort
-	 * 			  Activate sort or not on the bucket
+	 *            Activate sort or not on the bucket
 	 * @param sortingFields
 	 *            What fields to sort on
 	 * @param signature
-	 * 			  The signature used for defining the sort order
-	 * 			  between the fields 
+	 *            The signature used for defining the sort order between the
+	 *            fields
 	 * @param decreaseCounter
 	 *            True/false if we need to decrease the transfer info counter or
 	 *            not

@@ -13,13 +13,16 @@ public final class TString extends SimpleData {
 
 	/**
 	 * It creates a new TString.
-	 * @param value is the new value of the field value
+	 * 
+	 * @param value
+	 *            is the new value of the field value
 	 */
 	public TString(String value) {
 		this.value = value;
 	}
+
 	/**
-	 * It creates an empty TString. 
+	 * It creates an empty TString.
 	 */
 	public TString() {
 	}
@@ -31,9 +34,12 @@ public final class TString extends SimpleData {
 	public String getValue() {
 		return value;
 	}
+
 	/**
 	 * Sets the field value.
-	 * @param value is the new value of the field value
+	 * 
+	 * @param value
+	 *            is the new value of the field value
 	 */
 	public void setValue(String value) {
 		this.value = value;
@@ -77,13 +83,17 @@ public final class TString extends SimpleData {
 		}
 	}
 
-	
-
 	/**
 	 * Converts the object to its string representation.
 	 */
+	@Override
 	public String toString() {
 		return value;
+	}
+
+	@Override
+	public int hashCode() {
+		return value.hashCode();
 	}
 
 	@Override
