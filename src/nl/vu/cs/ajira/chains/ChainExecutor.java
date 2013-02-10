@@ -62,7 +62,8 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	public ChainExecutor(Context context, boolean localMode) {
 		this.context = context;
 		this.localMode = localMode;
-		this.chainsBuffer = context.getChainsToProcess();
+		this.chainsBuffer = context.getChainHandlerManager()
+				.getChainsToProcess();
 		this.net = context.getNetworkLayer();
 		this.stats = context.getStatisticsCollector();
 	}
@@ -392,7 +393,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 	@Override
 	public void waitFor(int token) {
-		// Check whether the token is in the object cache. If not, we wait...
+
 		context.getSubmissionCache().getObjectFromCache(submissionId,
 				TOKENPREFIX + "_" + token, true);
 	}

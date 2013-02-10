@@ -25,6 +25,7 @@ public class ChainHandler implements Runnable {
 	private boolean localMode;
 	public boolean active;
 	public boolean singleChain = false;
+	public boolean shouldStop = false;
 
 	private Chain chain = new Chain();
 	private Tuple tuple = TupleFactory.newTuple();
@@ -33,7 +34,8 @@ public class ChainHandler implements Runnable {
 	public ChainHandler(Context context) {
 		this.context = context;
 		this.net = context.getNetworkLayer();
-		this.chainsToProcess = context.getChainsToProcess();
+		this.chainsToProcess = context.getChainHandlerManager()
+				.getChainsToProcess();
 		this.stats = context.getStatisticsCollector();
 		this.ap = context.getActionsProvider();
 		localMode = context.isLocalMode();
@@ -125,7 +127,7 @@ public class ChainHandler implements Runnable {
 			return;
 		}
 
-		while (true) {
+		while (shouldStop) {
 			active = false;
 			// Get a new chain to process
 			try {

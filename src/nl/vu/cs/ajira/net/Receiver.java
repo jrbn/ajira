@@ -22,10 +22,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This class is used to implement the receive side protocol 
- * of a participant node.  
- * The main role is to make sure that the send-receive protocol 
- * is maintained correctly while the tuples are being transfered. 
+ * This class is used to implement the receive side protocol of a participant
+ * node. The main role is to make sure that the send-receive protocol is
+ * maintained correctly while the tuples are being transfered.
  */
 class Receiver implements MessageUpcall {
 	static final Logger log = LoggerFactory.getLogger(Receiver.class);
@@ -45,15 +44,16 @@ class Receiver implements MessageUpcall {
 	 * Receiver's custom constructor.
 	 * 
 	 * @param context
-	 * 			  Current context
+	 *            Current context
 	 * @param bufferFactory
-	 * 			  The factory used for generating buffers
-	 * 			  (buffer allocation and memory management) 
+	 *            The factory used for generating buffers (buffer allocation and
+	 *            memory management)
 	 */
 	public Receiver(Context context,
 			Factory<WritableContainer<TupleSerializer>> bufferFactory) {
 		this.context = context;
-		this.chainsToProcess = context.getChainsToProcess();
+		this.chainsToProcess = context.getChainHandlerManager()
+				.getChainsToProcess();
 		this.buckets = context.getBuckets();
 		this.net = context.getNetworkLayer();
 		this.stats = context.getStatisticsCollector();
@@ -63,16 +63,14 @@ class Receiver implements MessageUpcall {
 	}
 
 	/**
-	 * This method is used for decoding the message and
-	 * performing the actions prescribed by the id field. 
-	 * When a message arrives, it gets disassembled and, based
-	 * on its specified id (command id) and the rest of the
-	 * fields, we continue or stop the protocol (acts like a
-	 * finite state machine).
+	 * This method is used for decoding the message and performing the actions
+	 * prescribed by the id field. When a message arrives, it gets disassembled
+	 * and, based on its specified id (command id) and the rest of the fields,
+	 * we continue or stop the protocol (acts like a finite state machine).
 	 */
 	@Override
-	public void upcall(ReadMessage message) 
-			throws IOException, ClassNotFoundException {
+	public void upcall(ReadMessage message) throws IOException,
+			ClassNotFoundException {
 		long time = System.currentTimeMillis();
 		byte messageId = message.readByte();
 
@@ -477,18 +475,16 @@ class Receiver implements MessageUpcall {
 	}
 
 	/**
-	 * Updates the counters when an "ongoing" send-receive 
-	 * transmission has finished. What it comes next is to
-	 * send another request to fetch the remaining tuples
-	 * from the remote-bucket :).
+	 * Updates the counters when an "ongoing" send-receive transmission has
+	 * finished. What it comes next is to send another request to fetch the
+	 * remaining tuples from the remote-bucket :).
 	 * 
 	 * @param msg
-	 * 			  Message being received
+	 *            Message being received
 	 * @param startTime
-	 * 			  The send-receive start time for 
-	 * 			  this message
+	 *            The send-receive start time for this message
 	 * @param submissionId
-	 * 			  The submission id
+	 *            The submission id
 	 * @throws IOException
 	 */
 	public void finishMessage(ReadMessage msg, long startTime, int submissionId)
@@ -501,18 +497,16 @@ class Receiver implements MessageUpcall {
 	}
 
 	/**
-	 * Updates the counters when a remote-bucket fetch has
-	 * finished (basically, when the signal alert arrives).
-	 * After that, the local-bucket will be flagged as being
-	 * finished. 
+	 * Updates the counters when a remote-bucket fetch has finished (basically,
+	 * when the signal alert arrives). After that, the local-bucket will be
+	 * flagged as being finished.
 	 * 
 	 * @param msg
-	 * 			  Last message being received
+	 *            Last message being received
 	 * @param startTime
-	 * 			  The last message's send-receive 
-	 * 			  start time
+	 *            The last message's send-receive start time
 	 * @param submissionId
-	 * 			  The submission id
+	 *            The submission id
 	 * @throws IOException
 	 */
 	public void endMessage(ReadMessage msg, long startTime, int submissionId)

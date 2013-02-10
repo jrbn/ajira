@@ -1,12 +1,9 @@
 package nl.vu.cs.ajira;
 
-import java.util.List;
-
 import nl.vu.cs.ajira.actions.ActionFactory;
 import nl.vu.cs.ajira.buckets.Buckets;
 import nl.vu.cs.ajira.buckets.CachedFilesMerger;
-import nl.vu.cs.ajira.chains.Chain;
-import nl.vu.cs.ajira.chains.ChainHandler;
+import nl.vu.cs.ajira.chains.ChainHandlerManager;
 import nl.vu.cs.ajira.chains.ChainNotifier;
 import nl.vu.cs.ajira.data.types.DataProvider;
 import nl.vu.cs.ajira.datalayer.InputLayer;
@@ -14,7 +11,6 @@ import nl.vu.cs.ajira.datalayer.InputLayerRegistry;
 import nl.vu.cs.ajira.net.NetworkLayer;
 import nl.vu.cs.ajira.statistics.StatisticsCollector;
 import nl.vu.cs.ajira.storage.SubmissionCache;
-import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.submissions.Submission;
 import nl.vu.cs.ajira.submissions.SubmissionRegistry;
 import nl.vu.cs.ajira.utils.Configuration;
@@ -39,15 +35,14 @@ public class Context {
 	private Configuration conf;
 	private Buckets container;
 	private SubmissionRegistry registry;
-	private WritableContainer<Chain> chainsToProcess;
 	private NetworkLayer net;
 	private StatisticsCollector stats;
 	private ActionFactory actionProvider;
 	private DataProvider dataProvider;
 	private SubmissionCache cache;
 	private ChainNotifier chainNotifier;
-	private List<ChainHandler> handlers;
 	private CachedFilesMerger merger;
+	private ChainHandlerManager manager;
 
 	private UniqueCounter counter;
 
@@ -74,8 +69,7 @@ public class Context {
 	 */
 	public void init(boolean localMode, InputLayerRegistry input,
 			Buckets container, SubmissionRegistry registry,
-			WritableContainer<Chain> chainsToProcess,
-			List<ChainHandler> listHandlers, ChainNotifier notifier,
+			ChainHandlerManager manager, ChainNotifier notifier,
 			CachedFilesMerger merger, NetworkLayer net,
 			StatisticsCollector stats, ActionFactory actionProvider,
 			DataProvider dataProvider, SubmissionCache cache, Configuration conf) {
@@ -87,7 +81,7 @@ public class Context {
 		this.conf = conf;
 		this.container = container;
 		this.registry = registry;
-		this.chainsToProcess = chainsToProcess;
+		this.manager = manager;
 		this.chainNotifier = notifier;
 		this.net = net;
 		this.stats = stats;
@@ -95,7 +89,6 @@ public class Context {
 		this.dataProvider = dataProvider;
 		this.cache = cache;
 		this.merger = merger;
-		this.handlers = listHandlers;
 
 		initializeCounter(Consts.BUCKETCOUNTER_NAME, BUCKET_INIT);
 		initializeCounter(Consts.CHAINCOUNTER_NAME, CHAIN_INIT);
@@ -105,8 +98,8 @@ public class Context {
 		return merger;
 	}
 
-	public List<ChainHandler> getListChainHandlers() {
-		return handlers;
+	public ChainHandlerManager getChainHandlerManager() {
+		return manager;
 	}
 
 	public SubmissionCache getSubmissionCache() {
@@ -139,10 +132,6 @@ public class Context {
 
 	public Submission getSubmission(int submissionId) {
 		return registry.getSubmission(submissionId);
-	}
-
-	public WritableContainer<Chain> getChainsToProcess() {
-		return chainsToProcess;
 	}
 
 	public ChainNotifier getChainNotifier() {

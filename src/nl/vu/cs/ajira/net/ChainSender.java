@@ -27,7 +27,8 @@ class ChainSender implements Runnable {
 	public ChainSender(Context context, Container<Chain> chainsToSend) {
 		this.chainsToSend = chainsToSend;
 		this.context = context;
-		this.chainsToProcess = context.getChainsToProcess();
+		this.chainsToProcess = context.getChainHandlerManager()
+				.getChainsToProcess();
 		this.stats = context.getStatisticsCollector();
 	}
 

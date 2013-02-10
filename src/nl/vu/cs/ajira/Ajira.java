@@ -7,14 +7,12 @@ import ibis.util.TypedProperties;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 
 import nl.vu.cs.ajira.actions.ActionFactory;
 import nl.vu.cs.ajira.buckets.Buckets;
 import nl.vu.cs.ajira.buckets.CachedFilesMerger;
 import nl.vu.cs.ajira.buckets.TupleSerializer;
-import nl.vu.cs.ajira.chains.Chain;
-import nl.vu.cs.ajira.chains.ChainHandler;
+import nl.vu.cs.ajira.chains.ChainHandlerManager;
 import nl.vu.cs.ajira.chains.ChainNotifier;
 import nl.vu.cs.ajira.data.types.DataProvider;
 import nl.vu.cs.ajira.datalayer.InputLayer;
@@ -26,7 +24,6 @@ import nl.vu.cs.ajira.net.NetworkLayer;
 import nl.vu.cs.ajira.statistics.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Factory;
 import nl.vu.cs.ajira.storage.SubmissionCache;
-import nl.vu.cs.ajira.storage.containers.CheckedConcurrentWritableContainer;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.submissions.Job;
 import nl.vu.cs.ajira.submissions.Submission;
@@ -176,17 +173,16 @@ public class Ajira {
 			}
 
 			/**** OTHER SHARED DATA STRUCTURES ****/
-			WritableContainer<Chain> chainsToProcess = new CheckedConcurrentWritableContainer<Chain>(
-					Consts.SIZE_BUFFERS_CHAINS_PROCESS);
-			List<ChainHandler> listHandlers = new ArrayList<ChainHandler>();
 			CachedFilesMerger merger = new CachedFilesMerger();
 			Buckets tuplesContainer = new Buckets(stats, merger, net);
 			ActionFactory ap = new ActionFactory();
 			DataProvider dp = new DataProvider();
 			SubmissionCache cache = new SubmissionCache(net);
+			ChainHandlerManager manager = ChainHandlerManager.getInstance();
 
 			SubmissionRegistry registry = new SubmissionRegistry(net, stats,
-					chainsToProcess, tuplesContainer, ap, dp, cache, conf);
+					manager.getChainsToProcess(), tuplesContainer, ap, dp,
+					cache, conf);
 
 			/**** INIT INPUT LAYERS ****/
 			InputLayer input = InputLayer.getImplementation(conf);
@@ -201,19 +197,13 @@ public class Ajira {
 			globalContext = new Context();
 			ChainNotifier notifier = new ChainNotifier(globalContext);
 			globalContext.init(localMode, inputRegistry, tuplesContainer,
-					registry, chainsToProcess, listHandlers, notifier, merger,
-					net, stats, ap, dp, cache, conf);
+					registry, manager, notifier, merger, net, stats, ap, dp,
+					cache, conf);
 
 			/**** START PROCESSING THREADS ****/
+			manager.setContext(globalContext);
 			int i = conf.getInt(Consts.N_PROC_THREADS, 1);
-			for (int j = 0; j < i; ++j) {
-				log.debug("Starting Chain Handler " + j + " ...");
-				ChainHandler handler = new ChainHandler(globalContext);
-				Thread thread = new Thread(handler);
-				thread.setName("Chain Handler " + j);
-				thread.start();
-				listHandlers.add(handler);
-			}
+			manager.startChainHandlers(i);
 
 			/**** START SORTING MERGE THREADS ****/
 			i = conf.getInt(Consts.N_MERGE_THREADS, 1);
