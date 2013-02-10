@@ -8,8 +8,8 @@ import java.util.Map;
 
 import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
+import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.net.NetworkLayer;
-import nl.vu.cs.ajira.statistics.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Factory;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.utils.Consts;

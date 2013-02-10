@@ -57,15 +57,12 @@ public class Consts {
 	public static final int MAX_N_PARAMS = 1024;
 	public static final int MAX_CONCURRENT_TRANSFERS = 128;
 
-	public static final int DEFAULT_STATISTICAL_INTERVAL = 1000;
-
 	/********** DEFAULT CONFIGURATION OPTIONS **********/
 	public static final String STORAGE_IMPL = "storage.impl";
 	public static final String N_RES_THREADS = "threads.resolution";
 	public static final String N_PROC_THREADS = "threads.processing";
 	public static final String N_MERGE_THREADS = "threads.merge";
 	public static final String START_IBIS = "ibis.startserver";
-	public static final String STATISTICAL_INTERVAL = "arch.stats";
 	public static final String STATS_ENABLED = "arch.stats.enabled";
 	public static final String DICT_DIR = "dictionary.dir";
 	public static final String BUCKETCOUNTER_NAME = "BucketCounter";

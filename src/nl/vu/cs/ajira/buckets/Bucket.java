@@ -21,7 +21,7 @@ import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.data.types.bytearray.FDataInput;
 import nl.vu.cs.ajira.data.types.bytearray.FDataOutput;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
-import nl.vu.cs.ajira.statistics.StatisticsCollector;
+import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Factory;
 import nl.vu.cs.ajira.storage.RawComparator;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;

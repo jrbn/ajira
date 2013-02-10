@@ -12,8 +12,8 @@ import nl.vu.cs.ajira.buckets.Buckets;
 import nl.vu.cs.ajira.chains.Chain;
 import nl.vu.cs.ajira.chains.ChainExecutor;
 import nl.vu.cs.ajira.data.types.DataProvider;
+import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.net.NetworkLayer;
-import nl.vu.cs.ajira.statistics.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Container;
 import nl.vu.cs.ajira.storage.Factory;
 import nl.vu.cs.ajira.storage.SubmissionCache;
@@ -136,8 +136,8 @@ public class SubmissionRegistry {
 			Chain chain = new Chain();
 			chain.setParentChainId(-1);
 			chain.setInputLayer(Consts.DEFAULT_INPUT_LAYER_ID);
-			chain.setActions(job.getActions(), new ChainExecutor(context,
-					context.isLocalMode(), chain));
+			chain.setActions(job.getActions(), new ChainExecutor(null, context,
+					chain));
 
 			chain.setSubmissionNode(context.getNetworkLayer().getMyPartition());
 			chain.setSubmissionId(submissionId);
@@ -188,8 +188,6 @@ public class SubmissionRegistry {
 	public Submission waitForCompletion(Context context, Job job) {
 
 		Submission submission = submitNewJob(context, job);
-		int waitInterval = conf.getInt(Consts.STATISTICAL_INTERVAL,
-				Consts.DEFAULT_STATISTICAL_INTERVAL);
 		// Pool the submission registry to know when it is present and return it
 		synchronized (submission) {
 			while (!submission.getState().equalsIgnoreCase(
@@ -197,7 +195,7 @@ public class SubmissionRegistry {
 					&& !submission.getState().equalsIgnoreCase(
 							Consts.STATE_INIT_FAILED)) {
 				try {
-					submission.wait(waitInterval);
+					submission.wait(1000);
 				} catch (InterruptedException e) {
 					log.warn("The thread was awaken by something strange...", e);
 				}

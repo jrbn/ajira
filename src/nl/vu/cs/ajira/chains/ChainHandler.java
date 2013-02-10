@@ -6,8 +6,8 @@ import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.datalayer.InputLayer;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
+import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.net.NetworkLayer;
-import nl.vu.cs.ajira.statistics.StatisticsCollector;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
 
 import org.slf4j.Logger;
@@ -17,32 +17,33 @@ public class ChainHandler implements Runnable {
 
 	static final Logger log = LoggerFactory.getLogger(ChainHandler.class);
 
+	public static final int STATUS_INACTIVE = 0;
+	public static final int STATUS_ACTIVE = 1;
+	public static final int STATUS_WAIT = 2;
+	public static final int STATUS_FINISHED = 3;
+
 	private Context context = null;
 	private NetworkLayer net = null;
 	private WritableContainer<Chain> chainsToProcess = null;
 	private ActionFactory ap = null;
 	private StatisticsCollector stats = null;
-	private boolean localMode;
-	public boolean active;
+	private int status = STATUS_INACTIVE;
 	public boolean singleChain = false;
-	public boolean shouldStop = false;
-
 	private Chain chain = new Chain();
 	private Tuple tuple = TupleFactory.newTuple();
 	private ChainExecutor actions;
 
-	public ChainHandler(Context context) {
+	ChainHandler(Context context) {
 		this.context = context;
 		this.net = context.getNetworkLayer();
 		this.chainsToProcess = context.getChainHandlerManager()
 				.getChainsToProcess();
 		this.stats = context.getStatisticsCollector();
 		this.ap = context.getActionsProvider();
-		localMode = context.isLocalMode();
-		actions = new ChainExecutor(context, localMode);
+		actions = new ChainExecutor(this, context);
 	}
 
-	public ChainHandler(Context context, Chain chain) {
+	ChainHandler(Context context, Chain chain) {
 		this(context);
 		singleChain = true;
 		chain.copyTo(this.chain);
@@ -50,6 +51,7 @@ public class ChainHandler implements Runnable {
 
 	private void processChain() {
 		try {
+			status = STATUS_ACTIVE;
 			// Init the environment
 			actions.init(chain);
 			chain.getActions(actions, ap);
@@ -117,6 +119,7 @@ public class ChainHandler implements Runnable {
 				System.exit(1);
 			}
 		}
+		status = STATUS_INACTIVE;
 	}
 
 	@Override
@@ -124,22 +127,29 @@ public class ChainHandler implements Runnable {
 
 		if (singleChain) {
 			processChain();
+			status = STATUS_FINISHED;
 			return;
 		}
 
-		while (shouldStop) {
-			active = false;
+		while (true) {
 			// Get a new chain to process
 			try {
 				chainsToProcess.remove(chain);
 			} catch (Exception e) {
 				log.error("Failed in retrieving a new chain."
 						+ "This handler will be terminated", e);
+				status = STATUS_FINISHED;
 				return;
 			}
-			active = true;
 			processChain();
-
 		}
+	}
+
+	void setStatus(int status) {
+		this.status = status;
+	}
+
+	public int getStatus() {
+		return status;
 	}
 }

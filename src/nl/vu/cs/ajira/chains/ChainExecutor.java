@@ -1,7 +1,5 @@
 package nl.vu.cs.ajira.chains;
 
-import ibis.util.ThreadPool;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,8 +17,8 @@ import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
 import nl.vu.cs.ajira.datalayer.chainsplits.ChainSplitLayer;
 import nl.vu.cs.ajira.datalayer.chainsplits.ChainSplitLayer.SplitIterator;
+import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.net.NetworkLayer;
-import nl.vu.cs.ajira.statistics.StatisticsCollector;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.utils.Consts;
 
@@ -48,7 +46,9 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	private int submissionId;
 	private Chain chain;
 	private WritableContainer<Chain> chainsBuffer;
+	private ChainHandlerManager manager;
 	private NetworkLayer net;
+	private ChainHandler handler;
 
 	private final Chain supportChain = new Chain();
 	private final Tuple supportTuple = TupleFactory.newTuple();
@@ -59,17 +59,18 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	private boolean localMode;
 	private int childrenToTransfer;
 
-	public ChainExecutor(Context context, boolean localMode) {
+	public ChainExecutor(ChainHandler handler, Context context) {
 		this.context = context;
-		this.localMode = localMode;
-		this.chainsBuffer = context.getChainHandlerManager()
-				.getChainsToProcess();
+		this.localMode = context.isLocalMode();
+		this.manager = context.getChainHandlerManager();
+		this.chainsBuffer = manager.getChainsToProcess();
 		this.net = context.getNetworkLayer();
 		this.stats = context.getStatisticsCollector();
+		this.handler = handler;
 	}
 
-	public ChainExecutor(Context context, boolean localMode, Chain chain) {
-		this(context, localMode);
+	public ChainExecutor(ChainHandler handler, Context context, Chain chain) {
+		this(handler, context);
 		init(chain);
 	}
 
@@ -299,7 +300,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		supportChain
 				.setInputTuple(TupleFactory.newTuple(new TInt(itr.getId())));
 
-		startNewChainHandler(context, supportChain);
+		manager.startSeparateChainHandler(supportChain);
 
 		stats.addCounter(chain.getSubmissionNode(), chain.getSubmissionId(),
 				"Chains Dynamically Generated", 1);
@@ -307,11 +308,6 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		openedStreams.add(itr);
 
 		return itr;
-	}
-
-	private void startNewChainHandler(Context context, Chain chain) {
-		ChainHandler handler = new ChainHandler(context, chain);
-		ThreadPool.createNew(handler, "split-ChainHandler");
 	}
 
 	@Override
@@ -323,7 +319,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		supportChain
 				.setInputTuple(TupleFactory.newTuple(new TInt(itr.getId())));
 
-		startNewChainHandler(context, supportChain);
+		manager.startSeparateChainHandler(supportChain);
 
 		stats.addCounter(chain.getSubmissionNode(), chain.getSubmissionId(),
 				"Chains Dynamically Generated", 1);
@@ -393,9 +389,10 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 	@Override
 	public void waitFor(int token) {
-
+		handler.setStatus(ChainHandler.STATUS_WAIT);
 		context.getSubmissionCache().getObjectFromCache(submissionId,
 				TOKENPREFIX + "_" + token, true);
+		handler.setStatus(ChainHandler.STATUS_ACTIVE);
 	}
 
 	@Override

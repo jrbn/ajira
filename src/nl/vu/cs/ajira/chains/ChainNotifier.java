@@ -15,13 +15,16 @@ public class ChainNotifier {
 
 	static final Logger log = LoggerFactory.getLogger(ChainNotifier.class);
 
-	private final Context context;
+	private Context context;
 	private final Map<TupleIterator, Chain> waiters = new HashMap<TupleIterator, Chain>();
-	private final ActionContext ac;
+	private ActionContext ac;
 
-	public ChainNotifier(Context context) {
+	public ChainNotifier() {
+	}
+
+	public void init(Context context) {
 		this.context = context;
-		ac = new ChainExecutor(context, context.isLocalMode());
+		ac = new ChainExecutor(null, context);
 	}
 
 	public synchronized void addWaiter(TupleIterator iter, Chain chain) {

@@ -20,8 +20,10 @@ import nl.vu.cs.ajira.datalayer.InputLayerRegistry;
 import nl.vu.cs.ajira.datalayer.buckets.BucketsLayer;
 import nl.vu.cs.ajira.datalayer.chainsplits.ChainSplitLayer;
 import nl.vu.cs.ajira.datalayer.dummy.DummyLayer;
+import nl.vu.cs.ajira.mgmt.NodeHouseKeeper;
+import nl.vu.cs.ajira.mgmt.StatisticsCollector;
+import nl.vu.cs.ajira.mgmt.WebServer;
 import nl.vu.cs.ajira.net.NetworkLayer;
-import nl.vu.cs.ajira.statistics.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Factory;
 import nl.vu.cs.ajira.storage.SubmissionCache;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
@@ -31,7 +33,6 @@ import nl.vu.cs.ajira.submissions.SubmissionRegistry;
 import nl.vu.cs.ajira.utils.Configuration;
 import nl.vu.cs.ajira.utils.Consts;
 import nl.vu.cs.ajira.utils.Utils;
-import nl.vu.cs.ajira.webinterface.WebServer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -160,12 +161,6 @@ public class Ajira {
 
 				serverMode = net.isServer();
 				log.debug("...done");
-
-				/**** START STATISTICS THREAD ****/
-				log.debug("Starting statistics thread ...");
-				Thread thread = new Thread(stats);
-				thread.setName("Statistics Printer");
-				thread.start();
 			}
 
 			if (serverMode) {
@@ -195,10 +190,11 @@ public class Ajira {
 
 			/**** INIT CONTEXT ****/
 			globalContext = new Context();
-			ChainNotifier notifier = new ChainNotifier(globalContext);
+			ChainNotifier notifier = new ChainNotifier();
 			globalContext.init(localMode, inputRegistry, tuplesContainer,
 					registry, manager, notifier, merger, net, stats, ap, dp,
 					cache, conf);
+			notifier.init(globalContext);
 
 			/**** START PROCESSING THREADS ****/
 			manager.setContext(globalContext);
@@ -229,6 +225,14 @@ public class Ajira {
 				www.startWebServer(globalContext);
 				log.info("Ajira WebInterface available at: " + www.getAddress());
 			}
+
+			/***** HOUSE KEEPING *****/
+			log.debug("Start housekeeping thread ...");
+			NodeHouseKeeper hk = new NodeHouseKeeper(globalContext);
+			Thread thread = new Thread(hk);
+			thread.setName("Housekeeping");
+			thread.setDaemon(true);
+			thread.start();
 
 			if (serverMode) {
 				net.waitUntilAllReady();

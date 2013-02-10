@@ -23,7 +23,7 @@ import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.buckets.TupleSerializer;
 import nl.vu.cs.ajira.chains.Chain;
 import nl.vu.cs.ajira.chains.ChainLocation;
-import nl.vu.cs.ajira.statistics.StatisticsCollector;
+import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Container;
 import nl.vu.cs.ajira.storage.Factory;
 import nl.vu.cs.ajira.storage.containers.CheckedConcurrentWritableContainer;

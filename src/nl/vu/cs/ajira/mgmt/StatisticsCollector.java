@@ -1,4 +1,4 @@
-package nl.vu.cs.ajira.statistics;
+package nl.vu.cs.ajira.mgmt;
 
 import ibis.ipl.IbisIdentifier;
 import ibis.ipl.WriteMessage;
@@ -14,37 +14,20 @@ import nl.vu.cs.ajira.utils.Consts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class StatisticsCollector implements Runnable {
+public class StatisticsCollector {
 
-	private static final Logger log = LoggerFactory
+	protected static final Logger log = LoggerFactory
 			.getLogger(StatisticsCollector.class);
 	private final Map<Integer, Map<Integer, Map<String, Long>>> counters = new HashMap<Integer, Map<Integer, Map<String, Long>>>();
 
-	private Configuration conf;
 	private boolean statsEnabled;
 	private NetworkLayer net;
 	private int myId;
 
 	public StatisticsCollector(Configuration conf, NetworkLayer net) {
-		this.conf = conf;
 		this.net = net;
 		statsEnabled = conf.getBoolean(Consts.STATS_ENABLED, true);
 		myId = net.getMyPartition();
-	}
-
-	@Override
-	public void run() {
-		int statisticsInterval = conf.getInt(Consts.STATISTICAL_INTERVAL,
-				Consts.DEFAULT_STATISTICAL_INTERVAL);
-
-		while (true) {
-			try {
-				sendStatisticsAway();
-				Thread.sleep(statisticsInterval);
-			} catch (Exception e) {
-				log.error("Exception", e);
-			}
-		}
 	}
 
 	public synchronized Map<String, Long> removeCountersSubmission(

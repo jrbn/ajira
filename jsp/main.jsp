@@ -1,3 +1,4 @@
+<%@page import="nl.vu.cs.ajira.chains.ChainHandlerManager"%>
 <%@page import="nl.vu.cs.ajira.Context"%>
 <%@page import="nl.vu.cs.ajira.chains.ChainHandler"%>
 <%@page import="java.util.List"%>
@@ -13,12 +14,10 @@
 			"message");
 
 	//Get active chain handlers
-	int activeChainHandlers = 0;
-	for (ChainHandler handler : context.getListChainHandlers()) {
-		if (handler.active) {
-			activeChainHandlers++;
-		}
-	}
+	ChainHandlerManager manager = context.getChainHandlerManager(); 
+	int activeChainHandlers = manager.getActiveChainHandlers();
+	int inactiveChainHandlers = manager.getInactiveChainHandlers();
+	int waitChainHandlers = manager.getWaitChainHandlers();
 %>
 
 <head>
@@ -59,8 +58,15 @@ div {
 		<table border="1">			
 			<tr>
 				<td><b># Active Chain Handlers</b></td>
-				<td class="values"><%=activeChainHandlers%> / <%=context.getConfiguration().getInt(Consts.N_PROC_THREADS,
-					1)%></td>
+				<td class="values"><%=activeChainHandlers%></td>
+			</tr>
+			<tr>
+				<td><b># Inactive Chain Handlers</b></td>
+				<td class="values"><%=inactiveChainHandlers%></td>
+			</tr>
+			<tr>
+				<td><b># Waiting Chain Handlers</b></td>
+				<td class="values"><%=waitChainHandlers%></td>
 			</tr>
 			<tr>
 				<td><b># Active File Mergers</b></td>
@@ -92,13 +98,13 @@ div {
 					href="/gc">Launch GC</a>)</td>
 			</tr>			
 			<tr>
-				<td><b># Elements in ChainHandl. Buffer</b></td>
-				<td class="values"><%=context.getChainsToProcess().getNElements()%></td>
+				<td><b># Chains still to process</b></td>
+				<td class="values"><%=manager.getChainsToProcess().getNElements()%></td>
 			</tr>
 			<tr>
-				<td><b>Size of ChainHandl. Buffer</b></td>
-				<td class="values"><%=context.getChainsToProcess().getRawSize() / 1024 / 1024%>
-					/ <%=context.getChainsToProcess().getTotalCapacity() / 1024%> KB</td>
+				<td><b>Size of Chains Buffer</b></td>
+				<td class="values"><%=manager.getChainsToProcess().getRawSize() / 1024 / 1024%>
+					/ <%=manager.getChainsToProcess().getTotalCapacity() / 1024%> KB</td>
 			</tr>
 		</table>
 	</div>

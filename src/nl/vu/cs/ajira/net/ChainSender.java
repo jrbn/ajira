@@ -8,7 +8,7 @@ import nl.vu.cs.ajira.chains.ChainExecutor;
 import nl.vu.cs.ajira.chains.ChainLocation;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.data.types.TupleFactory;
-import nl.vu.cs.ajira.statistics.StatisticsCollector;
+import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Container;
 
 import org.slf4j.Logger;
@@ -41,8 +41,7 @@ class ChainSender implements Runnable {
 
 			while (true) {
 				chainsToSend.remove(chain);
-				ChainExecutor ac = new ChainExecutor(context,
-						context.isLocalMode(), chain);
+				ChainExecutor ac = new ChainExecutor(null, context, chain);
 
 				chain.getInputTuple(tuple);
 				ChainLocation loc = context

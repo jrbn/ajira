@@ -1,4 +1,4 @@
-package nl.vu.cs.ajira.webinterface;
+package nl.vu.cs.ajira.mgmt;
 
 import java.net.BindException;
 import java.net.InetAddress;
