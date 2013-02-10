@@ -65,6 +65,7 @@ public class ChainHandler implements Runnable {
 				if (!itr.isReady()) {
 					context.getChainNotifier().addWaiter(itr, chain);
 					chain = new Chain();
+					status = STATUS_INACTIVE;
 					return;
 				}
 
