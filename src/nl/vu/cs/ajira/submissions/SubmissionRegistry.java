@@ -2,8 +2,9 @@ package nl.vu.cs.ajira.submissions;
 
 import ibis.ipl.WriteMessage;
 
-import java.util.HashMap;
+import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.actions.ActionFactory;
@@ -36,7 +37,7 @@ public class SubmissionRegistry {
 	NetworkLayer net;
 	Configuration conf;
 
-	Map<Integer, Submission> submissions = new HashMap<Integer, Submission>();
+	Map<Integer, Submission> submissions = new ConcurrentHashMap<Integer, Submission>();
 	Container<Chain> chainsToProcess;
 	SubmissionCache cache;
 	int submissionCounter = 0;
@@ -215,5 +216,9 @@ public class SubmissionRegistry {
 		}
 		submission.counters = stats.removeCountersSubmission(submission
 				.getSubmissionId());
+	}
+
+	public Collection<Submission> getAllSubmissions() {
+		return submissions.values();
 	}
 }

@@ -26,7 +26,7 @@ public class Submission {
 	Map<Long, Integer> monitors = new HashMap<Long, Integer>();
 
 	public Submission(int submissionId, int assignedOutputBucket) {
-		startupTime = System.nanoTime();
+		startupTime = System.currentTimeMillis();
 		state = Consts.STATE_OPEN;
 		finalStatsReceived = 0;
 		rootChainsReceived = -1;
@@ -35,8 +35,12 @@ public class Submission {
 		mainRootReceived = false;
 	}
 
+	public int getId() {
+		return submissionId;
+	}
+
 	public double getExecutionTimeInMs() {
-		return (double) (endTime - startupTime) / 1000 / 1000;
+		return endTime - startupTime;
 	}
 
 	public int getAssignedBucket() {
@@ -55,6 +59,10 @@ public class Submission {
 		return endTime;
 	}
 
+	public long getStartTime() {
+		return startupTime;
+	}
+
 	public int getSubmissionId() {
 		return submissionId;
 	}
@@ -69,12 +77,16 @@ public class Submission {
 
 	public void setFinished(String state) {
 		setState(state);
-		endTime = System.nanoTime();
+		endTime = System.currentTimeMillis();
 	}
 
 	@Override
 	public String toString() {
 		return "Submission-" + submissionId;
+	}
+
+	public Map<String, Long> getCounters() {
+		return counters;
 	}
 
 	public void printStatistics() {

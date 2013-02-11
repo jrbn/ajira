@@ -6,6 +6,7 @@ import ibis.ipl.WriteMessage;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 import nl.vu.cs.ajira.net.NetworkLayer;
 import nl.vu.cs.ajira.utils.Configuration;
@@ -30,6 +31,14 @@ public class StatisticsCollector {
 		myId = net.getMyPartition();
 	}
 
+	public synchronized Map<String, Long> getCounters(int submission) {
+		Map<Integer, Map<String, Long>> mines = counters.get(myId);
+		if (mines != null) {
+			return mines.get(submission);
+		}
+		return null;
+	}
+
 	public synchronized Map<String, Long> removeCountersSubmission(
 			int idSubmission) {
 		Map<Integer, Map<String, Long>> mines = counters.get(myId);
@@ -52,7 +61,7 @@ public class StatisticsCollector {
 
 			Map<String, Long> c = submissionsCounters.get(submissionId);
 			if (c == null) {
-				c = new HashMap<String, Long>();
+				c = new TreeMap<String, Long>();
 				submissionsCounters.put(submissionId, c);
 			}
 

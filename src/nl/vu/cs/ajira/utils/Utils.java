@@ -6,6 +6,7 @@ import ibis.ipl.WriteMessage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.text.NumberFormat;
 import java.util.Comparator;
 
 import nl.vu.cs.ajira.data.types.DataProvider;
@@ -273,5 +274,22 @@ public class Utils {
 
 		position[1] = start;
 		return output;
+	}
+
+	public static String getDuration(long time) {
+		NumberFormat f = NumberFormat.getInstance();
+		f.setMinimumIntegerDigits(2);
+		int milliseconds = (int) (time % 1000);
+		time /= 1000;
+		int seconds = (int) time % 60;
+		time /= 60;
+		int minutes = (int) time % 60;
+		time /= 60;
+		int hours = (int) time;
+		String result = f.format(hours) + ":" + f.format(minutes) + ":"
+				+ f.format(seconds);
+		f.setMinimumIntegerDigits(3);
+		result += ":" + f.format(milliseconds);
+		return result;
 	}
 }
