@@ -14,8 +14,7 @@ public final class TString extends SimpleData {
 	/**
 	 * It creates a new TString.
 	 * 
-	 * @param value
-	 *            is the new value of the field value
+	 * @param value is the new value of the field value
 	 */
 	public TString(String value) {
 		this.value = value;
@@ -38,8 +37,7 @@ public final class TString extends SimpleData {
 	/**
 	 * Sets the field value.
 	 * 
-	 * @param value
-	 *            is the new value of the field value
+	 * @param value is the new value of the field value
 	 */
 	public void setValue(String value) {
 		this.value = value;
@@ -92,25 +90,47 @@ public final class TString extends SimpleData {
 	}
 
 	@Override
+	/**
+	 * Returns the hash value of the object.
+	 */
 	public int hashCode() {
 		return value.hashCode();
 	}
 
 	@Override
+	/**
+	 * Copies the value of the current object in the parameters'value.
+	 */
 	public void copyTo(SimpleData el) {
 		((TString) el).value = value;
 	}
 
 	@Override
+	/**
+	 * Compares lexicographically the value of two TString objects.
+	 * It returns 0 if the values of the objects are equal
+	 * It returns a number greater than 0 if the value of the 
+	 * current object is greater than the value of the parameter.
+	 * It returns a number smaller than 0 if the value of the 
+	 * current object is smaller than the value of the parameter.
+	 */
 	public int compareTo(SimpleData el) {
 		return value.compareTo(((TString) el).value);
 	}
 
 	@Override
+	/**
+	 * Compares the value of two TString objects.
+	 * It returns true if the value of the objects are equal
+	 * It returns false if the value of the objects are different 
+	 */
 	public boolean equals(SimpleData el) {
 		return ((TString) el).value.equals(value);
 	}
 
+	/**
+	 * Initialize the static members of the class.
+	 */
 	static {
 		RawComparator.registerComparator(Consts.DATATYPE_TSTRING,
 				new RawComparator<SimpleData>() {

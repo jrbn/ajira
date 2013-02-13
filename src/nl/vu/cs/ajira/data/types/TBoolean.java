@@ -13,8 +13,7 @@ public final class TBoolean extends SimpleData {
 	/**
 	 * Creates a new TBoolean and sets the filed value.
 	 * 
-	 * @param b
-	 *            is the new value of the filed value
+	 * @param b is the new value of the filed value
 	 */
 	public TBoolean(boolean b) {
 		value = b;
@@ -37,8 +36,7 @@ public final class TBoolean extends SimpleData {
 	/**
 	 * Sets the field value.
 	 * 
-	 * @param value
-	 *            is the new value of the field value
+	 * @param value is the new value of the field value
 	 */
 	public void setValue(boolean value) {
 		this.value = value;
@@ -69,6 +67,10 @@ public final class TBoolean extends SimpleData {
 	}
 
 	@Override
+	/**
+	 * Returns the hash value of the object. If the value 
+	 * is true than it returns 1, else it return 0.
+	 */
 	public int hashCode() {
 		return value ? 1 : 0;
 	}
@@ -82,11 +84,20 @@ public final class TBoolean extends SimpleData {
 	}
 
 	@Override
+	/**
+	 * Copies the value of the current object in the parameters'value.
+	 */
 	public void copyTo(SimpleData el) {
 		((TBoolean) el).value = value;
 	}
 
 	@Override
+	/**
+	 * Compares the value of two TBoolean objects.
+	 * It returns 0 if the values of the objects are equal
+	 * It returns 1 if the value of the current object is true
+	 * It returns -1 if the value of the current object is false 
+	 */
 	public int compareTo(SimpleData el) {
 		if ((value && ((TBoolean) el).value)
 				|| (!value && !((TBoolean) el).value)) {
@@ -99,6 +110,11 @@ public final class TBoolean extends SimpleData {
 	}
 
 	@Override
+	/**
+	 * Compares the value of two TBoolean objects.
+	 * It returns true if the value of the objects are equal
+	 * It returns false if the value of the objects are different 
+	 */
 	public boolean equals(SimpleData el) {
 		return ((TBoolean) el).value == value;
 	}

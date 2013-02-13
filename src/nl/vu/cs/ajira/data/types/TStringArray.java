@@ -10,28 +10,52 @@ import nl.vu.cs.ajira.utils.Consts;
 public class TStringArray extends SimpleData {
 
 	String[] array;
-
+	
+	/**
+	 * Creates a new StringArray and sets its field.
+	 * @param array is the new array of the object
+	 */
 	public TStringArray(String[] array) {
 		this.array = array;
 	}
-
+	
+	/**
+	 * Creates an empty TStringArray object. 
+	 */
 	public TStringArray() {
 	}
 
+	/**
+	 * 
+	 * @return the field of the class
+	 */
 	public String[] getArray() {
 		return array;
 	}
 
+
+	/**
+	 * Sets the field of the class.
+	 * 
+	 * @param array is the new array of the object
+	 */
 	public void setArray(String[] array) {
 		this.array = array;
 	}
 
 	@Override
+	/**
+	 * Returns the id of the class.
+	 */
 	public int getIdDatatype() {
 		return Consts.DATATYPE_TSTRINGARRAY;
 	}
 
 	@Override
+	/**
+	 * Reads from a DataInput the size of the array and then 
+	 * the corresponding number of boolean values.  
+	 */
 	public void readFrom(DataInput input) throws IOException {
 		int s = input.readInt();
 		if (s != -1) {
@@ -46,6 +70,11 @@ public class TStringArray extends SimpleData {
 	}
 
 	@Override
+	/**
+	 * If the array is not null it writes in a DataOutput the size 
+	 * of the array and then its values. If the array is null then 
+	 * it writes -1. 
+	 */
 	public void writeTo(DataOutput output) throws IOException {
 		if (array == null) {
 			output.writeInt(-1);
@@ -62,6 +91,9 @@ public class TStringArray extends SimpleData {
 	// }
 
 	@Override
+	/**
+	 * Copies the array of the current object in the parameters'array.
+	 */
 	public void copyTo(SimpleData el) {
 		if (array != null) {
 			((TStringArray) el).array = Arrays.copyOf(array, array.length);
@@ -71,6 +103,13 @@ public class TStringArray extends SimpleData {
 	}
 
 	@Override
+	/**
+	 * Compares two TStringArray objects.
+	 * 
+	 * Returns 0 in case of equality, 
+	 * Returns a number lower than 0 in case the current array is lower than the parameter's array, 
+	 * Returns a number greater than 0 in case the current array is greater than the parameter's array
+	 */
 	public int compareTo(SimpleData el) {
 		String[] array2 = ((TStringArray) el).array;
 		if (array == null) {
@@ -97,6 +136,11 @@ public class TStringArray extends SimpleData {
 	}
 
 	@Override
+	/**
+	 * Compares two TStringArray objects.
+	 * It returns true if they are equal
+	 * It returns false if they are not equal 
+	 */
 	public boolean equals(SimpleData el) {
 		return compareTo(el) == 0;
 	}

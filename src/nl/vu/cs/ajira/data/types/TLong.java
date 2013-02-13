@@ -23,8 +23,7 @@ public final class TLong extends SimpleData {
 	/**
 	 * Creates a new TLong and sets the filed value.
 	 * 
-	 * @param value
-	 *            is the new value of the filed value
+	 * @param value is the new value of the filed value
 	 */
 	public TLong(long value) {
 		this.value = value;
@@ -47,8 +46,7 @@ public final class TLong extends SimpleData {
 	/**
 	 * Sets the field value.
 	 * 
-	 * @param value
-	 *            is the new value of the field value
+	 * @param value is the new value of the field value
 	 */
 	public void setValue(long value) {
 		this.value = value;
@@ -85,16 +83,32 @@ public final class TLong extends SimpleData {
 	}
 
 	@Override
+	/**
+	 * Copies the value of the current object in the parameters'value.
+	 */
 	public void copyTo(SimpleData el) {
 		((TLong) el).value = value;
 	}
 
 	@Override
+	/**
+	 * Compares the value of two TLong objects.
+	 * It returns 0 if the values of the objects are equal
+	 * It returns a number greater than 0 if the value of the 
+	 * current object is greater than the value of the parameter.
+	 * It returns a number smaller than 0 if the value of the 
+	 * current object is smaller than the value of the parameter.
+	 */
 	public int compareTo(SimpleData el) {
 		return (int) (value - ((TLong) el).value);
 	}
 
 	@Override
+	/**
+	 * Compares the value of two TLong objects.
+	 * It returns true if the value of the objects are equal
+	 * It returns false if the value of the objects are different 
+	 */
 	public boolean equals(SimpleData el) {
 		return ((TLong) el).value == value;
 	}

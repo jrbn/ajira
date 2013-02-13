@@ -4,11 +4,21 @@ import java.io.IOException;
 
 public class CBDataOutput extends BDataOutput {
 
+	/**
+	 * Creates a new CBDataOutput an sets the fields of the extended class.
+	 * @param cb is the ByteArray of the extended class
+	 * @param grow is the boolean value of the extended class
+	 */
 	public CBDataOutput(ByteArray cb, boolean grow) {
 		super(cb, grow);
 	}
 
 	@Override
+	/**
+	 * If it is possible to add elements to the buffer then:
+	 * 		If the end exceeds the length of the buffer then the end is reset.
+	 * 		The method adds b at the end of the buffer.
+	 */
 	public void write(int b) throws IOException {
 		if (grow && !cb.grow(1)) {
 			throw new IOException("Not enough space");
@@ -21,6 +31,15 @@ public class CBDataOutput extends BDataOutput {
 	}
 
 	@Override
+	/**
+	 * If it is possible to add elements to the buffer then:
+	 * 		If the length is greater than the remaining bytes from the end
+	 * 		of the buffer then are copied cb.buffer.length - cb.end bytes from 
+	 * 		buffer2 at the end of the buffer and the remaining bytes from buffer2
+	 * 		at the beginning of the buffer.
+	 * 		If there are length bytes left in the buffer then length bytes are
+	 * 		copied from buffer2 at the end of the buffer.
+	 */
 	public void write(byte[] buffer2, int offset, int length)
 			throws IOException {
 		if (grow && !cb.grow(length)) {
@@ -40,6 +59,13 @@ public class CBDataOutput extends BDataOutput {
 	}
 
 	@Override
+	/**
+	 * If it is possible to add elements to the buffer then:
+	 * 		If there are 4 bytes at the end of the buffer then it writes 
+	 * 		the int value. 
+	 * 		If there are not 4 bytes at the end of the buffer then the 
+	 * 		ending position of the buffer is reset.
+	 */
 	public void writeInt(int value) throws IOException {
 		if (grow && !cb.grow(4)) {
 			throw new IOException("Not enough space");
@@ -63,6 +89,13 @@ public class CBDataOutput extends BDataOutput {
 	}
 
 	@Override
+	/**
+	 * If it is possible to add elements to the buffer then:
+	 * 		If there are 2 bytes at the end of the buffer then it writes 
+	 * 		the short value. 
+	 * 		If there are not 2 bytes at the end of the buffer then the 
+	 * 		ending position of the buffer is reset.
+	 */
 	public void writeShort(int value) throws IOException {
 		if (grow && !cb.grow(2)) {
 			throw new IOException("Not enough space");
@@ -86,6 +119,13 @@ public class CBDataOutput extends BDataOutput {
 	}
 
 	@Override
+	/**
+	 * If it is possible to add elements to the buffer then:
+	 * 		If there are 8 bytes at the end of the buffer then it writes 
+	 * 		the long value. 
+	 * 		If there are not 8 bytes at the end of the buffer then the 
+	 * 		ending position of the buffer is reset.
+	 */
 	public void writeLong(long value) throws IOException {
 		if (grow && !cb.grow(8)) {
 			throw new IOException("Not enough space");
@@ -113,6 +153,11 @@ public class CBDataOutput extends BDataOutput {
 	}
 
 	@Override
+	/**
+	 * If it is possible to add elements to the buffer then:
+	 * 		Skips bytes from the end of the buffer if this is possible or
+	 * 		it skips bytes from the end and from the beginning of the buffer. 
+	 */
 	public void skipBytes(int bytes) throws IOException {
 		if (grow && !cb.grow(bytes)) {
 			throw new IOException("Not enough space");

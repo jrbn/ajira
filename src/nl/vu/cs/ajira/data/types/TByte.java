@@ -13,8 +13,7 @@ public class TByte extends SimpleData {
 	/**
 	 * Creates a new TByte and sets the filed value.
 	 * 
-	 * @param b
-	 *            is the new value of the filed value
+	 * @param b is the new value of the filed value
 	 */
 	public TByte(int b) {
 		value = b;
@@ -51,6 +50,9 @@ public class TByte extends SimpleData {
 	}
 
 	@Override
+	/**
+	 * Returns the hash value of the object
+	 */
 	public int hashCode() {
 		return value;
 	}
@@ -66,8 +68,7 @@ public class TByte extends SimpleData {
 	/**
 	 * Sets the field value.
 	 * 
-	 * @param value
-	 *            is the new value of the field value
+	 * @param value is the new value of the field value
 	 */
 	public void setValue(int value) {
 		this.value = value;
@@ -82,16 +83,32 @@ public class TByte extends SimpleData {
 	}
 
 	@Override
+	/**
+	 * Copies the value of the current object in the parameters'value.
+	 */
 	public void copyTo(SimpleData el) {
 		((TByte) el).value = value;
 	}
 
 	@Override
+	/**
+	 * Compares the value of two TByte objects.
+	 * It returns 0 if the values of the objects are equal
+	 * It returns a number greater than 0 if the value of the 
+	 * current object is greater than the value of the parameter.
+	 * It returns a number smaller than 0 if the value of the 
+	 * current object is smaller than the value of the parameter.
+	 */
 	public int compareTo(SimpleData el) {
 		return value - ((TByte) el).value;
 	}
 
 	@Override
+	/**
+	 * Compares the value of two TByte objects.
+	 * It returns true if the value of the objects are equal
+	 * It returns false if the value of the objects are different 
+	 */
 	public boolean equals(SimpleData el) {
 		return ((TByte) el).value == value;
 	}

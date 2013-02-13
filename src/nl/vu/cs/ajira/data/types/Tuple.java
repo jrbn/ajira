@@ -7,21 +7,42 @@ public class Tuple {
 	protected SimpleData[] signature;
 	protected int nElements = 0;
 
+	/**
+	 * Constructs a empty Tuple.
+	 */
 	protected Tuple() {
 	}
 
+	/**
+	 * Constructs a new Tuple and adds the elements from the parameter to the Tuple
+	 *
+	 * @param data is a array of SimpleData objects
+	 */
 	protected Tuple(SimpleData[] data) {
 		set(data);
 	}
 
+	/**
+	 * 
+	 * @return the number of elements that are in the signature
+	 */
 	public int getNElements() {
 		return nElements;
 	}
 
+	/**
+	 * 
+	 * @param pos is the position of the element that is wanted
+	 * @return the element that is at the position pos in the signature array
+	 */
 	public SimpleData get(int pos) {
 		return signature[pos];
 	}
 
+	/**
+	 * Sets the fields of the class.
+	 * @param elements is a array or a sequence of SimpleData objects
+	 */
 	public void set(SimpleData... elements) {
 		if (elements != null) {
 			signature = elements;
@@ -31,6 +52,11 @@ public class Tuple {
 		}
 	}
 
+	/**
+	 * Sets the element found at the position pos with the parameter el. 
+	 * @param el is the element that is set at the position pos
+	 * @param pos is the position of the signature array that will be changed
+	 */
 	public void set(SimpleData el, int pos) {
 		if (el == null) {
 			return;
@@ -46,6 +72,10 @@ public class Tuple {
 		el.copyTo(signature[pos]);
 	}
 
+	/**
+	 * Copies the fields of the current Tuple in the parameter.
+	 * @param tuple will have the same informations as the current Tuple
+	 */
 	public void copyTo(Tuple tuple) {
 		Tuple t = tuple;
 		t.nElements = nElements;
@@ -57,6 +87,13 @@ public class Tuple {
 		}
 	}
 
+	/**
+	 * Compares two Tuples.
+	 * @param tuple is the Tuple to whom the current Tuple is compared
+	 * @return  0 in case of equality 
+	 * 			a number lower than if the current object is lower than tuple
+	 * 			a number greater than 0 if the current object is greater than tuple
+	 */
 	public boolean equals(Tuple tuple) {
 		if (nElements == tuple.nElements) {
 			for (int i = 0; i < nElements; ++i) {
@@ -77,12 +114,18 @@ public class Tuple {
 		return false;
 	}
 
+	/**
+	 * Resets the fields of the class. 
+	 */
 	public void clear() {
 		nElements = 0;
 		signature = null;
 	}
 
 	@Override
+	/**
+	 * Returns the hash code of the array signature.
+	 */
 	public int hashCode() {
 		return Arrays.hashCode((Object[]) signature);
 	}

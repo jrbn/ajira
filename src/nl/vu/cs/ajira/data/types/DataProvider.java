@@ -15,12 +15,23 @@ public class DataProvider {
 	private static Map<Integer, Class<? extends SimpleData>> registeredTypes = new HashMap<Integer, Class<? extends SimpleData>>();
 	private static Map<String, Integer> retrieveIds = new HashMap<String, Integer>();
 
+	/**
+	 *  
+	 * @param type is the id of the clazz
+	 * @param clazz is the class whose informations are added at the fields of the DataProvider 
+	 */
 	static synchronized public void addType(int type,
 			Class<? extends SimpleData> clazz) {
 		registeredTypes.put(type, clazz);
 		retrieveIds.put(clazz.getName(), type);
 	}
 
+	/**
+	 * Constructs a new DataProvider and adds in the list the classes 
+	 * that extend SimpleData and the elements from the map registeredTypes. 
+	 * It also sets the informations from the retriveIds. It adds the name 
+	 * and the id of the class.
+	 */
 	public DataProvider() {
 		list[Consts.DATATYPE_TLONG] = new Factory<SimpleData>(TLong.class);
 		list[Consts.DATATYPE_TSTRING] = new Factory<SimpleData>(TString.class);
@@ -59,6 +70,11 @@ public class DataProvider {
 		}
 	}
 
+	/**
+	 * 
+	 * @return the defaultInstance. If the defaultInstance is null 
+	 * it creates a new DataProvider.
+	 */
 	public static DataProvider getInstance() {
 		if (defaultInstance == null) {
 			defaultInstance = new DataProvider();
@@ -66,14 +82,29 @@ public class DataProvider {
 		return defaultInstance;
 	}
 
+	/**
+	 * 
+	 * @param className is the name of the class
+	 * @return the id of the class with the name className
+	 */
 	public static int getId(String className) {
 		return retrieveIds.get(className);
 	}
 
+	/**
+	 * 
+	 * @param type is the id of the object's class that is looked
+	 * @return the object that is found at the index type in the list
+	 */
 	public SimpleData get(int type) {
 		return list[type].get();
 	}
 
+	/**
+	 * Releases in the Factory's buffer the object which is found in the list 
+	 * at the data's id position.
+	 * @param data is the object that will be released in the Factory's buffer
+	 */
 	public void release(SimpleData data) {
 		list[data.getIdDatatype()].release(data);
 	}

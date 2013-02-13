@@ -11,21 +11,43 @@ import nl.vu.cs.ajira.utils.Consts;
 public class TByteArray extends SimpleData {
 
 	byte[] array;
+	
+	/**
+	 * Creates an empty TLongArray object. 
+	 */
+	public TByteArray() {
+	}
 
+	/**
+	 * 
+	 * @return the field of the class
+	 */
 	public byte[] getArray() {
 		return array;
 	}
 
+	/**
+	 * Sets the field of the class.
+	 * 
+	 * @param array is the new array of the object
+	 */
 	public void setArray(byte[] array) {
 		this.array = array;
 	}
 
 	@Override
+	/**
+	 * Returns the id of the class.
+	 */
 	public int getIdDatatype() {
 		return Consts.DATATYPE_TBYTEARRAY;
 	}
 
 	@Override
+	/**
+	 * Reads from a DataInput the size of the array and then 
+	 * the corresponding number of boolean values.  
+	 */
 	public void readFrom(DataInput input) throws IOException {
 		int s = input.readInt();
 		if (s != -1) {
@@ -39,6 +61,11 @@ public class TByteArray extends SimpleData {
 	}
 
 	@Override
+	/**
+	 * If the array is not null it writes in a DataOutput the size 
+	 * of the array and then its values. If the array is null then 
+	 * it writes -1. 
+	 */
 	public void writeTo(DataOutput output) throws IOException {
 		if (array == null) {
 			output.writeInt(-1);
@@ -54,6 +81,9 @@ public class TByteArray extends SimpleData {
 	// }
 
 	@Override
+	/**
+	 * Copies the array of the current object in the parameters'array.
+	 */
 	public void copyTo(SimpleData el) {
 		if (array != null) {
 			((TByteArray) el).array = Arrays.copyOf(array, array.length);
@@ -63,6 +93,12 @@ public class TByteArray extends SimpleData {
 	}
 
 	@Override
+	/**
+	 * Compares the fields of two TByteArray objects.
+	 * Returns 0 in case of equality, 
+	 * Returns a number lower than 0 in case the current array is lower than the parameter's array, 
+	 * Returns a number greater than 0 in case the current array is greater than the parameter's array
+	 */
 	public int compareTo(SimpleData el) {
 		byte[] array2 = ((TByteArray) el).array;
 		if (array == null) {
@@ -82,6 +118,11 @@ public class TByteArray extends SimpleData {
 	}
 
 	@Override
+	/**
+	 * Compares two TByteArray objects.
+	 * It returns true if they are equal
+	 * It returns false if they are not equal 
+	 */
 	public boolean equals(SimpleData el) {
 		return compareTo(el) == 0;
 	}

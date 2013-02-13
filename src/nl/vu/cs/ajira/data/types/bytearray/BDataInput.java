@@ -31,11 +31,19 @@ public class BDataInput implements DataInput {
 		this.cb.buffer = buffer;
 	}
 
+	/**
+	 * Sets the buffer of cb.
+	 * @param b1 is the new buffer of cb
+	 */
 	public void setBuffer(byte[] b1) {
 		cb.buffer = b1;
 	}
 
-	
+	/**
+	 * Sets the buffer and the starting position of cb.
+	 * @param b1 is the new buffer of cb
+	 * @param s1 is the new start position of cb
+	 */
 	public void setCurrentPosition(byte[] b1, int s1) {
 		cb.buffer = b1;
 		cb.start = s1;
@@ -168,20 +176,23 @@ public class BDataInput implements DataInput {
 	}
 
 	@Override
+	/**
+	 * Returns the first unsigned byte from the
+	 * beginning of the ByteArray's buffer. 
+	 */
 	public int readUnsignedByte() throws IOException {
 		return readByte() & 0xFF;
 	}
 
 	@Override
-	/**
-	 * Returns the first unsigned byte from the
-	 * beginning of the ByteArray's buffer. 
-	 */
 	public int readUnsignedShort() throws IOException {
 		throw new IOException("Not supported");
 	}
 
 	@Override
+	/**
+	 * Skips the number of bytes passed through the parameter.
+	 */
 	public int skipBytes(int n) throws IOException {
 		if (cb.start + n < cb.buffer.length) {
 			cb.start += n;

@@ -10,14 +10,15 @@ public class RawComparator<T> {
 
 	/**
 	 * Compares the bytes from b1 and b2.
+	 * 
 	 * @param b1 is the first array that has to be compared
 	 * @param s1 is the position from where the comparison of b1 starts
 	 * @param l1 is the number of bytes from b1 that have to be compared
 	 * @param b2 is the second array that has to be compared
-	 * @param s2is the position from where the comparison of b2 starts
+	 * @param s2 is the position from where the comparison of b2 starts
 	 * @param l2 is the number of bytes from b2 that have to be compared
-	 * @return 0 in case of equality 
-	 * 		   a number lower than 0 in case b1 is lower than b2 
+	 * @return 0 in case of equality, 
+	 * 		   a number lower than 0 in case b1 is lower than b2, 
 	 * 		   a number greater than 0 in case b1 is greater than b2
 	 */
 	public static int compareBytes(byte[] b1, int s1, int l1, byte[] b2,
@@ -66,15 +67,16 @@ public class RawComparator<T> {
 	}
 
 	/**
-	 * Compares the bytes from b1 and b2. The computations are done in the previous method. 
+	 * Compares the bytes from b1 and b2. The computations are done in the method compareBytes.
+	 *  
 	 * @param b1 is the first array that has to be compared
 	 * @param s1 is the position from where the comparison of b1 starts
 	 * @param l1 is the number of bytes from b1 that have to be compared
 	 * @param b2 is the second array that has to be compared
-	 * @param s2is the position from where the comparison of b2 starts
+	 * @param s2 is the position from where the comparison of b2 starts
 	 * @param l2 is the number of bytes from b2 that have to be compared
-	 * @return 0 in case of equality 
-	 * 		   a number lower than 0 in case b1 is lower than b2 
+	 * @return 0 in case of equality, 
+	 * 		   a number lower than 0 in case b1 is lower than b2, 
 	 * 		   a number greater than 0 in case b1 is greater than b2
 	 */
 	public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
