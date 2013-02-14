@@ -8,30 +8,51 @@ public class FDataOutput implements DataOutput {
 
 	OutputStream os;
 
+	/**
+	 * Creates a new FDataOutput and sets the field of the class.
+	 * @param os is the new OutputStream of the class
+	 */
 	public FDataOutput(OutputStream os) {
 		this.os = os;
 	}
 
+	/**
+	 * Closes the OutStream of the class.
+	 * @throws IOException
+	 */
 	public void close() throws IOException {
 		os.close();
 	}
 
 	@Override
+	/**
+	 * Writes b to the OutputStream.
+	 */
 	public void write(int b) throws IOException {
 		os.write(b);
 	}
 
 	@Override
+	/**
+	 * Writes the array b to the OutputStream.
+	 */
 	public void write(byte[] b) throws IOException {
 		os.write(b);
 	}
 
 	@Override
+	/**
+	 * Writes len bytes starting with the position off from
+	 * the array b to the OutputStream.
+	 */
 	public void write(byte[] b, int off, int len) throws IOException {
 		os.write(b, off, len);
 	}
 
 	@Override
+	/**
+	 * Writes the boolean value b to the OutputStream.
+	 */
 	public void writeBoolean(boolean v) throws IOException {
 		if (v) {
 			os.write(1);
@@ -41,6 +62,9 @@ public class FDataOutput implements DataOutput {
 	}
 
 	@Override
+	/**
+	 * Writes one byte from the int value v to the OutputStream.
+	 */
 	public void writeByte(int v) throws IOException {
 		os.write(v);
 	}
@@ -71,6 +95,9 @@ public class FDataOutput implements DataOutput {
 	}
 
 	@Override
+	/**
+	 * Writes the int value, value, to the OutputStream.
+	 */
 	public void writeInt(int value) throws IOException {
 		os.write(value >> 24);
 		os.write(value >> 16);
@@ -79,6 +106,9 @@ public class FDataOutput implements DataOutput {
 	}
 
 	@Override
+	/**
+	 * Writes the long value, value, to the OutputStream.
+	 */
 	public void writeLong(long value) throws IOException {
 		os.write((int) (value >> 56));
 		os.write((int) (value >> 48));
@@ -91,6 +121,9 @@ public class FDataOutput implements DataOutput {
 	}
 
 	@Override
+	/**
+	 * Writes the short value, value, to the OutputStream.
+	 */
 	public void writeShort(int value) throws IOException {
 		os.write(value >> 8);
 		os.write(value);

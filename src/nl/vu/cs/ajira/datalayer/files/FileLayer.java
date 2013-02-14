@@ -11,11 +11,9 @@ import nl.vu.cs.ajira.data.types.TString;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.datalayer.InputLayer;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
-import nl.vu.cs.ajira.storage.Factory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public class FileLayer extends InputLayer {
 
@@ -25,8 +23,6 @@ public class FileLayer extends InputLayer {
 
 	static final Logger log = LoggerFactory.getLogger(FileLayer.class);
 
-	Factory<TString> factory = new Factory<TString>(TString.class);
-	Factory<TInt> factoryInt = new Factory<TInt>(TInt.class);
 	int numberNodes;
 
 	@Override
@@ -37,32 +33,26 @@ public class FileLayer extends InputLayer {
 	@Override
 	public TupleIterator getIterator(Tuple tuple, ActionContext context) {
 		try {
-			TInt operation = factoryInt.get();
-			TString value = factory.get();
-			tuple.get(operation, value);
-
-			// Read if there is also a filter
-			String sFilter = null;
-			if (tuple.getNElements() == 3) {
-				TString filter = factory.get();
-				tuple.get(filter, 2);
-				sFilter = filter.getValue();
-				factory.release(filter);
-			}
+			int operation = ((TInt) tuple.get(0)).getValue();
+			String value = ((TString) tuple.get(1)).getValue();
 
 			TupleIterator itr = null;
-			if (operation.getValue() == OP_LS) {
-				itr = new ListFilesIterator(value.getValue(), sFilter);
+			if (operation == OP_LS) {
+				// Read if there is also a filter
+				String sFilter = null;
+				if (tuple.getNElements() == 3) {
+					sFilter = ((TString) tuple.get(2)).getValue();
+				}
+				itr = new ListFilesIterator(value, sFilter);
 			} else { // OP_READ
 
 				// In this case value is the key to a file collection
 				FileCollection col = (FileCollection) context
-						.getObjectFromCache(value.getValue());
+						.getObjectFromCache(value);
 				if (col == null) {
 					// Get it remotely. Operation will contain the node id.
-					tuple.get(operation, 2);
-					List<Object[]> files = context.retrieveCacheObjects(value
-							.getValue());
+					operation = ((TInt) tuple.get(2)).getValue();
+					List<Object[]> files = context.retrieveCacheObjects(value);
 					if (files == null || files.size() == 0) {
 						throw new Exception("Failed retrieving the iterator");
 					}
@@ -73,23 +63,21 @@ public class FileLayer extends InputLayer {
 
 				if (tuple.getNElements() == 4) {
 					// There is a customized file reader
-					TString clazz = factory.get();
-					tuple.get(clazz, 3);
+					String clazz = ((TString) tuple.get(3)).getValue();
 
 					// Test whether it is a good class
 					Class<? extends DefaultFileParser> c = null;
 					try {
-						c = Class.forName(clazz.getValue()).asSubclass(
+						c = Class.forName(clazz).asSubclass(
 								DefaultFileParser.class);
 					} catch (Exception e) {
-						log.warn("Customized file parser " + clazz.getValue()
+						log.warn("Customized file parser " + clazz
 								+ " is not valid.");
 					}
 					if (c != null)
 						itr = new FilesIterator(col, c);
 					else
 						itr = new FilesIterator(col, DEFAULT_FILE_PARSER);
-					factory.release(clazz);
 
 				} else {
 					itr = new FilesIterator(col, DEFAULT_FILE_PARSER);
@@ -97,8 +85,7 @@ public class FileLayer extends InputLayer {
 
 			}
 
-			factoryInt.release(operation);
-			factory.release(value);
+			itr.init(context, "Files");
 			return itr;
 		} catch (Exception e) {
 			log.error("Unable getting tuple iterator", e);
@@ -109,23 +96,17 @@ public class FileLayer extends InputLayer {
 
 	@Override
 	public ChainLocation getLocations(Tuple tuple, ActionContext context) {
-		TInt operation = factoryInt.get();
-		TString value = factory.get();
 		try {
-			tuple.get(operation, value);
-			if (operation.getValue() == OP_LS) {
+			if (((TInt) tuple.get(0)).getValue() == OP_LS) {
 				return ChainLocation.THIS_NODE;
 			} else {
-				String s = value.toString();
+				String s = ((TString) tuple.get(1)).getValue();
 				int index = Integer.valueOf(s.substring(s.indexOf('-') + 1));
 				return new ChainLocation(index % numberNodes);
 			}
 
 		} catch (Exception e) {
 			log.error("Error", e);
-		} finally {
-			factoryInt.release(operation);
-			factory.release(value);
 		}
 		return null;
 	}
@@ -133,10 +114,4 @@ public class FileLayer extends InputLayer {
 	@Override
 	public void releaseIterator(TupleIterator itr, ActionContext context) {
 	}
-
-	@Override
-	public String getName() {
-		return "FilesLayer";
-	}
-
 }

@@ -6,21 +6,22 @@ import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.chains.ChainLocation;
 import nl.vu.cs.ajira.data.types.Tuple;
+import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.datalayer.InputLayer;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class DummyLayer extends InputLayer {
 
 	public class DummyIterator extends TupleIterator {
 
-		Tuple tuple = new Tuple();
+		Tuple tuple = TupleFactory.newTuple();
 		boolean first = true;
 
-		public DummyIterator(Tuple tuple) {
+		public DummyIterator(ActionContext c, Tuple tuple) {
+			super.init(c, "DummyInput");
 			tuple.copyTo(this.tuple);
 		}
 
@@ -55,7 +56,7 @@ public class DummyLayer extends InputLayer {
 
 	@Override
 	public TupleIterator getIterator(Tuple tuple, ActionContext context) {
-		return new DummyIterator(tuple);
+		return new DummyIterator(context, tuple);
 	}
 
 	@Override
@@ -65,10 +66,5 @@ public class DummyLayer extends InputLayer {
 
 	@Override
 	public void releaseIterator(TupleIterator itr, ActionContext context) {
-	}
-
-	@Override
-	public String getName() {
-		return "DummyLayer";
 	}
 }

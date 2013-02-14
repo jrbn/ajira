@@ -7,26 +7,26 @@ import ibis.util.TypedProperties;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 
 import nl.vu.cs.ajira.actions.ActionFactory;
 import nl.vu.cs.ajira.buckets.Buckets;
 import nl.vu.cs.ajira.buckets.CachedFilesMerger;
-import nl.vu.cs.ajira.chains.Chain;
-import nl.vu.cs.ajira.chains.ChainHandler;
+import nl.vu.cs.ajira.buckets.TupleSerializer;
+import nl.vu.cs.ajira.chains.ChainHandlerManager;
 import nl.vu.cs.ajira.chains.ChainNotifier;
 import nl.vu.cs.ajira.data.types.DataProvider;
-import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.datalayer.InputLayer;
 import nl.vu.cs.ajira.datalayer.InputLayerRegistry;
 import nl.vu.cs.ajira.datalayer.buckets.BucketsLayer;
+import nl.vu.cs.ajira.datalayer.chainsplits.ChainSplitLayer;
 import nl.vu.cs.ajira.datalayer.dummy.DummyLayer;
+import nl.vu.cs.ajira.mgmt.NodeHouseKeeper;
+import nl.vu.cs.ajira.mgmt.StatisticsCollector;
+import nl.vu.cs.ajira.mgmt.WebServer;
 import nl.vu.cs.ajira.net.NetworkLayer;
-import nl.vu.cs.ajira.statistics.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Factory;
 import nl.vu.cs.ajira.storage.SubmissionCache;
-import nl.vu.cs.ajira.storage.container.CheckedConcurrentWritableContainer;
-import nl.vu.cs.ajira.storage.container.WritableContainer;
+import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.submissions.Job;
 import nl.vu.cs.ajira.submissions.JobFailedException;
 import nl.vu.cs.ajira.submissions.Submission;
@@ -34,7 +34,6 @@ import nl.vu.cs.ajira.submissions.SubmissionRegistry;
 import nl.vu.cs.ajira.utils.Configuration;
 import nl.vu.cs.ajira.utils.Consts;
 import nl.vu.cs.ajira.utils.Utils;
-import nl.vu.cs.ajira.webinterface.WebServer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,8 +90,11 @@ public class Ajira {
 				log.error("Error in shutting down", e);
 				System.exit(1);
 			}
+			log.info("...done");
+		} else {
+			log.info("...done");
+			System.exit(0);
 		}
-		log.info("...done");
 	}
 
 	/**
@@ -114,14 +116,9 @@ public class Ajira {
 				}
 			}
 
-			/***** BUFFER FACTORY *****/
-			@SuppressWarnings("unchecked")
-			Class<WritableContainer<Tuple>> clazz = (Class<WritableContainer<Tuple>>) (Class<?>) WritableContainer.class;
-			Factory<WritableContainer<Tuple>> bufferFactory = new Factory<WritableContainer<Tuple>>(
-					clazz, true, false, Consts.TUPLES_CONTAINER_BUFFER_SIZE);
-
 			/***** NET *******/
 			NetworkLayer net = NetworkLayer.getInstance();
+			StatisticsCollector stats = new StatisticsCollector(conf, net);
 			boolean serverMode = true;
 
 			String ibisPoolSize = System.getProperty("ibis.pool.size");
@@ -142,9 +139,13 @@ public class Ajira {
 					}
 				}
 
+				@SuppressWarnings("unchecked")
+				Class<WritableContainer<TupleSerializer>> clazz = (Class<WritableContainer<TupleSerializer>>) (Class<?>) WritableContainer.class;
+				Factory<WritableContainer<TupleSerializer>> bufferFactory = new Factory<WritableContainer<TupleSerializer>>(
+						clazz, Consts.TUPLES_CONTAINER_BUFFER_SIZE);
 				net.setBufferFactory(bufferFactory);
 				net.startIbis();
-				ArrayList<WritableContainer<Tuple>> l = new ArrayList<WritableContainer<Tuple>>(
+				ArrayList<WritableContainer<TupleSerializer>> l = new ArrayList<WritableContainer<TupleSerializer>>(
 						Consts.STARTING_SIZE_FACTORY);
 				for (int i = 0; i < Consts.STARTING_SIZE_FACTORY; i++) {
 					l.add(bufferFactory.get());
@@ -162,21 +163,16 @@ public class Ajira {
 			}
 
 			/**** OTHER SHARED DATA STRUCTURES ****/
-			WritableContainer<Chain> chainsToProcess = new CheckedConcurrentWritableContainer<Chain>(
-					Consts.SIZE_BUFFERS_CHAINS_PROCESS);
-			List<ChainHandler> listHandlers = new ArrayList<ChainHandler>();
-			StatisticsCollector stats = new StatisticsCollector(conf, net);
 			CachedFilesMerger merger = new CachedFilesMerger();
-			Buckets tuplesContainer = new Buckets(stats, bufferFactory, merger,
-					net);
+			Buckets tuplesContainer = new Buckets(stats, merger, net);
 			ActionFactory ap = new ActionFactory();
 			DataProvider dp = new DataProvider();
-			Factory<Tuple> defaultTupleFactory = new Factory<Tuple>(
-					Tuple.class, (Object[]) null);
 			SubmissionCache cache = new SubmissionCache(net);
+			ChainHandlerManager manager = ChainHandlerManager.getInstance();
 
 			SubmissionRegistry registry = new SubmissionRegistry(net, stats,
-					chainsToProcess, tuplesContainer, ap, dp, cache, conf);
+					manager.getChainsToProcess(), tuplesContainer, ap, dp,
+					cache, conf);
 
 			/**** INIT INPUT LAYERS ****/
 			InputLayer input = InputLayer.getImplementation(conf);
@@ -184,24 +180,21 @@ public class Ajira {
 			inputRegistry.add(Consts.DEFAULT_INPUT_LAYER_ID, input);
 			inputRegistry.add(Consts.BUCKET_INPUT_LAYER_ID, new BucketsLayer());
 			inputRegistry.add(Consts.DUMMY_INPUT_LAYER_ID, new DummyLayer());
+			inputRegistry.add(Consts.SPLITS_INPUT_LAYER,
+					ChainSplitLayer.getInstance());
 
 			/**** INIT CONTEXT ****/
 			globalContext = new Context();
-			ChainNotifier notifier = new ChainNotifier(globalContext);
+			ChainNotifier notifier = new ChainNotifier();
 			globalContext.init(localMode, inputRegistry, tuplesContainer,
-					registry, chainsToProcess, listHandlers, notifier, merger,
-					net, stats, ap, dp, defaultTupleFactory, cache, conf);
+					registry, manager, notifier, merger, net, stats, ap, dp,
+					cache, conf);
+			notifier.init(globalContext);
 
 			/**** START PROCESSING THREADS ****/
+			manager.setContext(globalContext);
 			int i = conf.getInt(Consts.N_PROC_THREADS, 1);
-			for (int j = 0; j < i; ++j) {
-				log.debug("Starting Chain Handler " + j + " ...");
-				ChainHandler handler = new ChainHandler(globalContext);
-				Thread thread = new Thread(handler);
-				thread.setName("Chain Handler " + j);
-				thread.start();
-				listHandlers.add(handler);
-			}
+			manager.startChainHandlers(i);
 
 			/**** START SORTING MERGE THREADS ****/
 			i = conf.getInt(Consts.N_MERGE_THREADS, 1);
@@ -217,22 +210,24 @@ public class Ajira {
 			log.debug("Starting Sending/receiving threads ...");
 			net.startupConnections(globalContext);
 
-			/**** START STATISTICS THREAD ****/
-			log.debug("Starting statistics thread ...");
-			Thread thread = new Thread(stats);
-			thread.setName("Statistics Printer");
-			thread.start();
-
 			/***** LOAD STORAGE *****/
 			log.debug("Starting registered input layers ...");
 			inputRegistry.startup(globalContext);
 
 			/***** LOAD WEB INTERFACE *****/
-			if (conf.getBoolean(WebServer.WEBSERVER_START, false)) {
-				log.debug("Starting Web Server on port " + 8080 + "...");
+			if (conf.getBoolean(WebServer.WEBSERVER_START, true)) {
 				WebServer www = new WebServer();
 				www.startWebServer(globalContext);
+				log.info("Ajira WebInterface available at: " + www.getAddress());
 			}
+
+			/***** HOUSE KEEPING *****/
+			log.debug("Start housekeeping thread ...");
+			NodeHouseKeeper hk = new NodeHouseKeeper(globalContext);
+			Thread thread = new Thread(hk);
+			thread.setName("Housekeeping");
+			thread.setDaemon(true);
+			thread.start();
 
 			if (serverMode) {
 				net.waitUntilAllReady();
@@ -275,7 +270,7 @@ public class Ajira {
 	public Submission waitForCompletion(Job job) throws JobFailedException {
 		Submission sub = globalContext.getSubmissionsRegistry()
 				.waitForCompletion(globalContext, job);
-		globalContext.getSubmissionsRegistry().getStatistics(job, sub);
+		globalContext.getSubmissionsRegistry().getStatistics(sub);
 		return sub;
 	}
 }

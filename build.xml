@@ -2,10 +2,12 @@
 
 <project name="querypie" default="jar" basedir=".">
 
+	<property name="VERSION" value="0.1" />
 	<property name="BUILD_PATH" value="bin" />
 	<property name="SRC_PATH" value="src" />
 	<property name="LIB_PATH" value="lib" />
-	<property name="JAR_LOCATION" value="arch.jar" />
+	<property name="JAR_LOCATION" value="ajira-${VERSION}.jar" />
+	<property name="JAR_WEBAPPS_LOCATION" value="ajira-webapps-${VERSION}.jar" />
 	<property name="IPL_PATH" value="${LIB_PATH}/ipl/" />
 	<property name="LOG_PATH" value="${LIB_PATH}/logging/" />
 
@@ -46,8 +48,15 @@
 	</target>
 
 	<target name="jar" depends="compile">
-		<jar destfile="${JAR_LOCATION}" basedir="${BUILD_PATH}">
+		<!--Complete JAR -->
+		<jar destfile="${JAR_LOCATION}">
+			<fileset dir="${BUILD_PATH}"/>
+			<fileset dir="." includes ="jsp/**/*.jsp"/>
 		</jar>
+		<!--Only webapps JAR -->
+		<jar destfile="${JAR_WEBAPPS_LOCATION}">
+	<fileset dir="." includes ="jsp/**/*.jsp"/>
+	</jar>
 	</target>
 
 	<target name="deploy" depends="jar" description="Copy the jar in a specific location">

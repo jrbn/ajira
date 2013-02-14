@@ -4,7 +4,6 @@ import ibis.smartsockets.util.ThreadPool;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -12,18 +11,14 @@ import java.util.Set;
 import nl.vu.cs.ajira.actions.ActionFactory;
 import nl.vu.cs.ajira.buckets.Buckets;
 import nl.vu.cs.ajira.buckets.CachedFilesMerger;
-import nl.vu.cs.ajira.chains.Chain;
-import nl.vu.cs.ajira.chains.ChainHandler;
+import nl.vu.cs.ajira.chains.ChainHandlerManager;
 import nl.vu.cs.ajira.chains.ChainNotifier;
 import nl.vu.cs.ajira.data.types.DataProvider;
-import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.datalayer.InputLayer;
 import nl.vu.cs.ajira.datalayer.InputLayerRegistry;
+import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.net.NetworkLayer;
-import nl.vu.cs.ajira.statistics.StatisticsCollector;
-import nl.vu.cs.ajira.storage.Factory;
 import nl.vu.cs.ajira.storage.SubmissionCache;
-import nl.vu.cs.ajira.storage.container.WritableContainer;
 import nl.vu.cs.ajira.submissions.Submission;
 import nl.vu.cs.ajira.submissions.SubmissionRegistry;
 import nl.vu.cs.ajira.utils.Configuration;
@@ -107,17 +102,15 @@ public class Context {
 	private Configuration conf;
 	private Buckets container;
 	private SubmissionRegistry registry;
-	private WritableContainer<Chain> chainsToProcess;
 	private NetworkLayer net;
 	private StatisticsCollector stats;
 	private ActionFactory actionProvider;
 	private DataProvider dataProvider;
-	private Factory<Tuple> defaultTupleFactory;
 	private SubmissionCache cache;
 	private ChainNotifier chainNotifier;
-	private List<ChainHandler> handlers;
 	private CachedFilesMerger merger;
 	private CrashedSubmissions crashedSubmissions;
+	private ChainHandlerManager manager;
 
 	private UniqueCounter counter;
 
@@ -130,26 +123,22 @@ public class Context {
 	 * @param input
 	 * @param container
 	 * @param registry
-	 * @param chainsToProcess
-	 * @param listHandlers
+	 * @param manager
 	 * @param notifier
 	 * @param merger
 	 * @param net
 	 * @param stats
 	 * @param actionProvider
 	 * @param dataProvider
-	 * @param defaultTupleFactory
 	 * @param cache
 	 * @param conf
 	 */
 	public void init(boolean localMode, InputLayerRegistry input,
 			Buckets container, SubmissionRegistry registry,
-			WritableContainer<Chain> chainsToProcess,
-			List<ChainHandler> listHandlers, ChainNotifier notifier,
+			ChainHandlerManager manager, ChainNotifier notifier,
 			CachedFilesMerger merger, NetworkLayer net,
 			StatisticsCollector stats, ActionFactory actionProvider,
-			DataProvider dataProvider, Factory<Tuple> defaultTupleFactory,
-			SubmissionCache cache, Configuration conf) {
+			DataProvider dataProvider, SubmissionCache cache, Configuration conf) {
 		counter = localMode ? new UniqueCounter() : new UniqueCounter(
 				net.getNumberNodes(), net.getMyPartition());
 
@@ -158,16 +147,14 @@ public class Context {
 		this.conf = conf;
 		this.container = container;
 		this.registry = registry;
-		this.chainsToProcess = chainsToProcess;
+		this.manager = manager;
 		this.chainNotifier = notifier;
 		this.net = net;
 		this.stats = stats;
 		this.actionProvider = actionProvider;
 		this.dataProvider = dataProvider;
-		this.defaultTupleFactory = defaultTupleFactory;
 		this.cache = cache;
 		this.merger = merger;
-		this.handlers = listHandlers;
 
 		initializeCounter(Consts.BUCKETCOUNTER_NAME, BUCKET_INIT);
 		initializeCounter(Consts.CHAINCOUNTER_NAME, CHAIN_INIT);
@@ -196,24 +183,8 @@ public class Context {
 	    if (! crashedSubmissions.addCrashedSubmission(submissionId)) {
 	    	return;
 	    }
-
-	    // Grab a lock on chainsToProcess, so that chain handlers can no longer
-	    // obtain chains.
-	    synchronized(chainsToProcess) {
-	    	// Kill all chains that are waiting for a tuple iterator to become ready.
-	    	chainNotifier.removeWaiters(submissionId);
-
-	    	// TODO: kill all chains that came from this job, including the ones that are
-	    	// currently being processed.
-	    	int nChains = chainsToProcess.getNElements();
-	    	for (int i = 0; i < nChains; i++) {
-	    		Chain ch = new Chain();
-	    		chainsToProcess.remove(ch);
-	    		if (ch.getSubmissionId() != submissionId) {
-	    			chainsToProcess.add(ch);
-	    		}
-	    	}
-	    }
+	    	
+	    manager.submissionFailed(submissionId);
 
 	    cache.clearAll(submissionId);
 
@@ -226,16 +197,12 @@ public class Context {
 		return merger;
 	}
 
-	public List<ChainHandler> getListChainHandlers() {
-		return handlers;
+	public ChainHandlerManager getChainHandlerManager() {
+		return manager;
 	}
 
 	public SubmissionCache getSubmissionCache() {
 		return cache;
-	}
-
-	public Factory<Tuple> getDeFaultTupleFactory() {
-		return defaultTupleFactory;
 	}
 
 	public StatisticsCollector getStatisticsCollector() {
@@ -264,10 +231,6 @@ public class Context {
 
 	public Submission getSubmission(int submissionId) {
 		return registry.getSubmission(submissionId);
-	}
-
-	public WritableContainer<Chain> getChainsToProcess() {
-		return chainsToProcess;
 	}
 
 	public ChainNotifier getChainNotifier() {

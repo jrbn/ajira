@@ -1,4 +1,4 @@
-package nl.vu.cs.examples;
+package nl.vu.cs.ajira.examples;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,10 +9,12 @@ import nl.vu.cs.ajira.actions.ActionConf;
 import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.actions.ActionFactory;
 import nl.vu.cs.ajira.actions.ActionOutput;
-import nl.vu.cs.ajira.actions.PartitionToNodes;
+import nl.vu.cs.ajira.actions.GroupBy;
 import nl.vu.cs.ajira.actions.ReadFromFiles;
 import nl.vu.cs.ajira.actions.WriteToFiles;
+import nl.vu.cs.ajira.data.types.TBag;
 import nl.vu.cs.ajira.data.types.TInt;
+import nl.vu.cs.ajira.data.types.TLong;
 import nl.vu.cs.ajira.data.types.TString;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.submissions.Job;
@@ -29,46 +31,42 @@ public class WordCount {
 	 * 
 	 */
 	public static class CountWords extends Action {
-
-		private final TString iText = new TString();
-		private final TString oWord = new TString();
-		private static final TInt oCount = new TInt(1);
-
 		@Override
 		public void process(Tuple tuple, ActionContext context,
 				ActionOutput actionOutput) throws Exception {
-			tuple.get(iText);
+			TString iText = (TString) tuple.get(0);
 			String sText = iText.getValue();
 			if (sText != null && sText.length() > 0) {
 				String[] words = sText.split(" ");
 				for (String word : words) {
-					oWord.setValue(word);
-					actionOutput.output(oWord, oCount);
+					TString oWord = new TString(word);
+					actionOutput.output(oWord, new TInt(1));
 				}
 			}
 		}
 	}
 
+	/**
+	 * 
+	 * This action simply sums up the counts for each word. The result is a pair
+	 * of the form <word, count>
+	 * 
+	 * @author Jacopo Urbani
+	 * 
+	 */
 	public static class SumCounts extends Action {
-
-		private long sum;
-		private String currentWord;
-		private final TInt count = new TInt();
-		private final TString word = new TString();
-
-		@Override
-		public void startProcess(ActionContext context) throws Exception {
-			sum = 0;
-			currentWord = null;
-		}
-
 		@Override
 		public void process(Tuple tuple, ActionContext context,
 				ActionOutput actionOutput) throws Exception {
-			// TODO Auto-generated method stub
+			TString word = (TString) tuple.get(0);
+			TBag values = (TBag) tuple.get(1);
 
+			long sum = 0;
+			for (Tuple t : values) {
+				sum += ((TInt) t.get(0)).getValue();
+			}
+			actionOutput.output(word, new TLong(sum));
 		}
-
 	}
 
 	/**
@@ -77,6 +75,13 @@ public class WordCount {
 	 * @param args
 	 */
 	public static void main(String[] args) {
+
+		if (args.length < 2) {
+			System.out.println("Usage: " + WordCount.class.getSimpleName()
+					+ " <input directory> <output directory>");
+			System.exit(1);
+		}
+
 		// Start up the cluster
 		Ajira ajira = new Ajira();
 		ajira.startup();
@@ -91,29 +96,34 @@ public class WordCount {
 			// Read the input files
 			ActionConf action = ActionFactory
 					.getActionConf(ReadFromFiles.class);
-			action.setParam(ReadFromFiles.PATH, args[0]);
+			action.setParamString(ReadFromFiles.PATH, args[0]);
 			actions.add(action);
 
 			// Count the words
 			actions.add(ActionFactory.getActionConf(CountWords.class));
 
-			// Partitions them across the cluster
-			actions.add(ActionFactory.getActionConf(PartitionToNodes.class));
+			// Groups the pairs
+			action = ActionFactory.getActionConf(GroupBy.class);
+			action.setParamStringArray(GroupBy.TUPLE_FIELDS,
+					TString.class.getName(), TInt.class.getName());
+			action.setParamByteArray(GroupBy.FIELDS_TO_GROUP, (byte) 0);
+			actions.add(action);
 
 			// Sum the counts
 			actions.add(ActionFactory.getActionConf(SumCounts.class));
 
 			// Write the results on files
 			action = ActionFactory.getActionConf(WriteToFiles.class);
-			action.setParam(WriteToFiles.OUTPUT_DIR, args[1]);
+			action.setParamString(WriteToFiles.OUTPUT_DIR, args[1]);
+			actions.add(action);
 
 			// Launch it!
+			job.addActions(actions);
 			Submission sub;
 			try {
 				sub = ajira.waitForCompletion(job);
-				// Print some statistics
-				System.out.println("Execution time: " + sub.getExecutionTimeInMs()
-						+ " ms.");
+				// Print output
+				sub.printStatistics();
 			} catch (JobFailedException e) {
 				System.err.println("Job failed: " + e);
 				e.printStackTrace(System.err);

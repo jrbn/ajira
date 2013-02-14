@@ -1,56 +1,54 @@
 package nl.vu.cs.ajira.actions;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.text.NumberFormat;
+import java.util.zip.GZIPOutputStream;
 
-import nl.vu.cs.ajira.data.types.DataProvider;
-import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.Tuple;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public class WriteToFiles extends Action {
 
 	final static Logger log = LoggerFactory.getLogger(WriteToFiles.class);
 
 	public static final int CUSTOM_WRITER = 0;
-	public static final String S_CUSTOM_WRITER = "custom_writer";
+	private static final String S_CUSTOM_WRITER = "custom_writer";
 	public static final int OUTPUT_DIR = 1;
-	public static final String S_OUTPUT_DIR = "output_dir";
+	private static final String S_OUTPUT_DIR = "output_dir";
 
 	static public class StandardFileWriter {
 
-		FileWriter writer = null;
-		SimpleData[] array = null;
+		BufferedOutputStream writer = null;
 
-		public StandardFileWriter(ActionContext context, File file)
-				throws IOException {
-			writer = new FileWriter(file);
+		public StandardFileWriter(ActionContext context, File file,
+				boolean compressGZip) throws IOException {
+			if (compressGZip) {
+				writer = new BufferedOutputStream(new GZIPOutputStream(
+						new FileOutputStream(file)));
+			} else {
+				writer = new BufferedOutputStream(new FileOutputStream(file));
+			}
 		}
 
 		public StandardFileWriter() {
 		}
 
 		public void write(Tuple tuple) throws Exception {
-			if (array == null) {
-				array = new SimpleData[tuple.getNElements()];
-				for (int i = 0; i < tuple.getNElements(); ++i) {
-					array[i] = DataProvider.getInstance().get(tuple.getType(i));
+			if (tuple.getNElements() > 0) {
+				String value = tuple.get(0).toString();
+				for (int i = 1; i < tuple.getNElements(); ++i) {
+					value += " " + tuple.get(i).toString();
 				}
+				value += "\n";
+				writer.write(value.getBytes());
 			}
-
-			tuple.get(array);
-			String value = array[0].toString();
-			for (int i = 1; i < array.length; ++i) {
-				value += " " + array[i].toString();
-			}
-			writer.write(value + "\n");
 		}
 
 		public void close() throws IOException {
@@ -82,6 +80,11 @@ public class WriteToFiles extends Action {
 		nf.setMinimumIntegerDigits(5);
 		nf.setGroupingUsed(false);
 
+		boolean compressGZip = false;
+		if (outputDirectory.endsWith(".gz")) {
+			compressGZip = true;
+		}
+
 		// Calculate the filename
 		File f = new File(outputDirectory);
 
@@ -89,8 +92,12 @@ public class WriteToFiles extends Action {
 			f.mkdir();
 		}
 
-		f = new File(f, "part-" + nf.format(context.getCounter("OutputFile"))
-				+ "_" + nf.format(0));
+		String filename = "part-" + nf.format(context.getCounter("OutputFile"))
+				+ "_" + nf.format(0);
+		if (compressGZip) {
+			filename += ".gz";
+		}
+		f = new File(f, filename);
 
 		if (customWriter != null) {
 			Constructor<? extends StandardFileWriter> constr;
@@ -119,7 +126,10 @@ public class WriteToFiles extends Action {
 			}
 		} else {
 			log.debug("No custom writer is specified. Using standard one");
-			file = new StandardFileWriter(context, f);
+			if (compressGZip)
+				file = new StandardFileWriter(context, f, true);
+			else
+				file = new StandardFileWriter(context, f, false);
 		}
 	}
 

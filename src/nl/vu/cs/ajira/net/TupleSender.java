@@ -10,18 +10,20 @@ import java.util.List;
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.buckets.Bucket;
 import nl.vu.cs.ajira.buckets.Buckets;
-import nl.vu.cs.ajira.data.types.Tuple;
+import nl.vu.cs.ajira.buckets.TupleSerializer;
 import nl.vu.cs.ajira.storage.Factory;
-import nl.vu.cs.ajira.storage.RawComparator;
-import nl.vu.cs.ajira.storage.container.WritableContainer;
+import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.utils.Consts;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+/**
+ * This class is used to process the incoming requests for 
+ * a tuple transfer and to answer them by sending in 
+ * turn chunks from the assigned/specified remote-bucket.
+ */
 class TupleSender {
-
 	static final Logger log = LoggerFactory.getLogger(TupleSender.class);
 
 	final Context context;
@@ -32,10 +34,19 @@ class TupleSender {
 	private final List<TupleInfo> sendList = new LinkedList<TupleInfo>();
 	private int checkerTime = 1;
 
-	Factory<WritableContainer<Tuple>> bufferFactory;
+	Factory<WritableContainer<TupleSerializer>> bufferFactory;
 
+	/**
+	 * Custom constructor.
+	 * 
+	 * @param context
+	 * 			  Current context
+	 * @param bufferFactory
+	 * 			  Factory for generating/allocating buffers
+	 * 			  (buffers' memory allocation management)
+	 */
 	public TupleSender(Context context,
-			Factory<WritableContainer<Tuple>> bufferFactory) {
+			Factory<WritableContainer<TupleSerializer>> bufferFactory) {
 		this.context = context;
 		this.buckets = context.getBuckets();
 		this.bufferFactory = bufferFactory;
@@ -55,7 +66,31 @@ class TupleSender {
 		}
 	}
 
-	// This method should be called from a thread that may block.
+	/**
+	 * Handles new incoming request for data fetch (tuples
+	 * transfer from the specified remote-bucket)
+	 * 
+	 * INFO: This method should be called from a thread 
+	 * that may block.
+	 * 
+	 * @param localBufferKey
+	 * 			  Local buffer's key (the responsible
+	 * 			  remote bucket's id)
+	 * @param remoteNodeId
+	 * 			  Remote node's id -- the one that 
+	 * 			  requested the transfer
+	 * @param idSubmission
+	 * 			  Submission id
+	 * @param idBucket
+	 * 			  Bucket id (remote-bucket's id)
+	 * @param ticket
+	 * 			  The request's ticket number / id
+	 * @param sequence
+	 * 			  Sequence number (~ chunk number)
+	 * @param nrequest
+	 * 			  Requests number (how many requests
+	 * 			  were sent inside this message)
+	 */
 	public void handleNewRequest(long localBufferKey, int remoteNodeId,
 			int idSubmission, int idBucket, long ticket, int sequence,
 			int nrequest) {
@@ -69,7 +104,9 @@ class TupleSender {
 		tu.sequence = sequence;
 		tu.nrequests = nrequest;
 		tu.expected = -1;
+
 		Bucket bucket = buckets.getExistingBucket(tu.bucketKey, false);
+
 		if (bucket != null) {
 			boolean enoughData = bucket.availableToTransmit()
 					|| !buckets.isActiveTransfer(tu.submissionId,
@@ -79,9 +116,11 @@ class TupleSender {
 					sendList.add(tu);
 					sendList.notify();
 				}
+
 				return;
 			}
 		}
+
 		synchronized (checkList) {
 			checkList.add(tu);
 			checkerTime = 1;
@@ -89,6 +128,11 @@ class TupleSender {
 		}
 	}
 
+	/**
+	 * Checks each request to see if it can be answered to.
+	 * The condition is that the bucket should have available
+	 * data for transfer. 
+	 */
 	private void checkTuples() {
 		for (;;) {
 			synchronized (checkList) {
@@ -99,10 +143,13 @@ class TupleSender {
 						// nothing
 					}
 				}
+
 				int sz = checkList.size();
+
 				if (log.isDebugEnabled()) {
 					log.debug("checkTuples: size = " + sz);
 				}
+
 				for (int i = 0; i < sz; i++) {
 					TupleInfo info = checkList.remove(0);
 					if (context.hasCrashed(info.submissionId)) {
@@ -114,26 +161,34 @@ class TupleSender {
 						boolean enoughData = bucket.availableToTransmit()
 								|| !buckets.isActiveTransfer(info.submissionId,
 										info.remoteNodeId, info.bucketId);
+
 						if (enoughData) {
 							synchronized (sendList) {
 								sendList.add(info);
 								sendList.notify();
 							}
+
 							continue;
 						}
 					}
+
 					checkList.add(info);
 				}
+
 				try {
 					checkList.wait(checkerTime);
 				} catch (InterruptedException e) {
 					// ignore
 				}
+
 				checkerTime = Math.min(10, 2 * checkerTime);
 			}
 		}
 	}
 
+	/**
+	 * Removes a request from the queue and answers to it.
+	 */
 	private void sendTuples() {
 		for (;;) {
 			TupleInfo info;
@@ -145,6 +200,7 @@ class TupleSender {
 						// nothing
 					}
 				}
+
 				info = sendList.remove(0);
 			}
 			try {
@@ -155,6 +211,16 @@ class TupleSender {
 		}
 	}
 
+	/**
+	 * Sends a chunk of tuples as a response to the 
+	 * request for data fetch. 
+	 * We consider the provided information attached to 
+	 * the request for filling up the response's message.
+	 *  
+	 * @param info
+	 * 			  Information about the request
+	 * @throws IOException
+	 */
 	private void sendTuple(TupleInfo info) throws IOException {
 		
 		if (context.hasCrashed(info.submissionId)) {
@@ -162,12 +228,10 @@ class TupleSender {
 		}
 		NetworkLayer net = context.getNetworkLayer();
 		// long time = System.currentTimeMillis();
-		WritableContainer<Tuple> tmpBuffer = bufferFactory.get();
+		WritableContainer<TupleSerializer> tmpBuffer = bufferFactory.get();
 		tmpBuffer.clear();
 		Bucket bucket = buckets.getExistingBucket(info.bucketKey, false);
-		// long timeMsg = System.currentTimeMillis();
 		bucket.removeChunk(tmpBuffer);
-		// long timeRetrieve = System.currentTimeMillis() - timeMsg;
 		WriteMessage msg = net.getMessageToSend(net
 				.getPeerLocation(info.remoteNodeId));
 		msg.writeByte((byte) 5);
@@ -177,18 +241,8 @@ class TupleSender {
 		msg.writeInt(info.sequence);
 		msg.writeLong(info.bucketKey);
 		msg.writeInt(info.nrequests);
-		RawComparator<Tuple> c = bucket.getSortingFunction();
-		if (c != null) {
+		if (bucket.shouldSort()) {
 			msg.writeBoolean(true);
-			msg.writeString(c.getClass().getName());
-			byte[] params = c.getSortingParams();
-			if (params != null) {
-				msg.writeInt(params.length);
-				if (params.length > 0)
-					msg.writeArray(params);
-			} else {
-				msg.writeInt(0);
-			}
 		} else {
 			msg.writeBoolean(false);
 		}
@@ -203,19 +257,12 @@ class TupleSender {
 
 		if (log.isDebugEnabled()) {
 			log.debug("Sent chunk to " + net.getPeerLocation(info.remoteNodeId)
-					+ " of size " + tmpBuffer.getNElements() + " ("
-					+ tmpBuffer.bytesToStore() + ") " + " be copied at "
+					+ " of size " + tmpBuffer.getNElements() + " be copied at "
 					+ info.bucketKey + " req.=" + info.nrequests
-					+ " isTransfered=" + isTransfered
-			// + " Total t.: "
-			// + (System.currentTimeMillis() - time)
-			// + " time w. msg: "
-			// + (System.currentTimeMillis() - timeMsg)
-			// + " time r. buffer: " + timeRetrieve
-			);
+					+ " isTransfered=" + isTransfered);
 		}
 
-		// bufferFactory.release(tmpBuffer);
+		bufferFactory.release(tmpBuffer);
 		tuFactory.release(info);
 	}
 }

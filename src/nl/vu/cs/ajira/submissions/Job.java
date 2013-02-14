@@ -10,8 +10,7 @@ import nl.vu.cs.ajira.actions.ActionConf;
 import nl.vu.cs.ajira.actions.ActionFactory;
 import nl.vu.cs.ajira.storage.Writable;
 
-
-public class Job extends Writable {
+public class Job implements Writable {
 
 	private boolean waitForStatistics = true;
 	private boolean printIntermediateStats = false;
@@ -52,10 +51,10 @@ public class Job extends Writable {
 		}
 	}
 
-	@Override
-	public int bytesToStore() {
-		return 0;
-	}
+	// @Override
+	// public int bytesToStore() {
+	// return 0;
+	// }
 
 	public void setAssignedOutputBucket(int bucket) {
 		assignedBucket = bucket;

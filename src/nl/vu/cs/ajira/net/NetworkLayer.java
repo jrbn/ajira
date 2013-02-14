@@ -20,14 +20,14 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import nl.vu.cs.ajira.Context;
+import nl.vu.cs.ajira.buckets.TupleSerializer;
 import nl.vu.cs.ajira.chains.Chain;
 import nl.vu.cs.ajira.chains.ChainLocation;
-import nl.vu.cs.ajira.data.types.Tuple;
-import nl.vu.cs.ajira.statistics.StatisticsCollector;
+import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Container;
 import nl.vu.cs.ajira.storage.Factory;
-import nl.vu.cs.ajira.storage.container.CheckedConcurrentWritableContainer;
-import nl.vu.cs.ajira.storage.container.WritableContainer;
+import nl.vu.cs.ajira.storage.containers.CheckedConcurrentWritableContainer;
+import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.utils.Consts;
 
 import org.slf4j.Logger;
@@ -82,7 +82,7 @@ public class NetworkLayer {
 	Container<Chain> chainsToSend = new CheckedConcurrentWritableContainer<Chain>(
 			Consts.SIZE_BUFFERS_CHAIN_SEND);
 
-	Factory<WritableContainer<Tuple>> bufferFactory = null;
+	Factory<WritableContainer<TupleSerializer>> bufferFactory = null;
 
 	protected boolean monitorCounters = false;
 
@@ -98,7 +98,8 @@ public class NetworkLayer {
 	private NetworkLayer() {
 	}
 
-	public void setBufferFactory(Factory<WritableContainer<Tuple>> bufferFactory) {
+	public void setBufferFactory(
+			Factory<WritableContainer<TupleSerializer>> bufferFactory) {
 		this.bufferFactory = bufferFactory;
 	}
 
@@ -616,6 +617,37 @@ public class NetworkLayer {
 		}
 	}
 
+	public void broadcastObject(int submissionId, Object key, Object value) {
+		try {
+			int c;
+			CountInfo remaining = new CountInfo();
+			remaining.count = assignedPartitions.length - 1;
+			synchronized (activeBroadcasts) {
+				c = activeBroadcastCount++;
+				activeBroadcasts.put(c, remaining);
+			}
+
+			WriteMessage msg = broadcastPort.newMessage();
+			msg.writeByte((byte) 10);
+			msg.writeInt(c);
+			msg.writeInt(submissionId);
+			msg.writeObject(key);
+			msg.writeObject(value);
+			msg.finish();
+
+			synchronized (remaining) {
+				while (remaining.count > 0) {
+					remaining.wait();
+				}
+			}
+			synchronized (activeBroadcasts) {
+				activeBroadcasts.remove(c);
+			}
+		} catch (Exception e) {
+			log.error("Failed broadcasting object", e);
+		}
+	}
+
 	public void broadcastStartMonitoring() throws IOException {
 		if (ibisMonitor != null) {
 			WriteMessage msg = broadcastPort.newMessage();
@@ -668,5 +700,9 @@ public class NetworkLayer {
 
 	public void signalChainFailed(Chain chain, Throwable exception) {
 		terminator.addFailedChain(chain, exception);
+	}
+
+	public void signalChainHasRootChains(Chain chain, int generatedChains) {
+		terminator.addChainGeneratedRoots(chain, generatedChains);
 	}
 }

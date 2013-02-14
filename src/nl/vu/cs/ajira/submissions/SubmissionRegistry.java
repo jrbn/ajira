@@ -2,8 +2,9 @@ package nl.vu.cs.ajira.submissions;
 
 import ibis.ipl.WriteMessage;
 
-import java.util.HashMap;
+import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.actions.ActionFactory;
@@ -12,8 +13,8 @@ import nl.vu.cs.ajira.buckets.Buckets;
 import nl.vu.cs.ajira.chains.Chain;
 import nl.vu.cs.ajira.chains.ChainExecutor;
 import nl.vu.cs.ajira.data.types.DataProvider;
+import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.net.NetworkLayer;
-import nl.vu.cs.ajira.statistics.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Container;
 import nl.vu.cs.ajira.storage.Factory;
 import nl.vu.cs.ajira.storage.SubmissionCache;
@@ -36,7 +37,7 @@ public class SubmissionRegistry {
 	NetworkLayer net;
 	Configuration conf;
 
-	Map<Integer, Submission> submissions = new HashMap<Integer, Submission>();
+	Map<Integer, Submission> submissions = new ConcurrentHashMap<Integer, Submission>();
 	Container<Chain> chainsToProcess;
 	SubmissionCache cache;
 	int submissionCounter = 0;
@@ -81,7 +82,10 @@ public class SubmissionRegistry {
 
 			if (parentChainId == -1) { // It is one of the root chains
 				sub.rootChainsReceived++;
-			} else {
+				if (chainId == 0) {
+					sub.mainRootReceived = true;
+				}
+			} else if (parentChainId >= 0) {
 				// Change the children field of the parent chain
 				Integer c = sub.monitors.get(parentChainId);
 				if (c == null) {
@@ -96,32 +100,33 @@ public class SubmissionRegistry {
 				}
 			}
 
-			if (sub.rootChainsReceived == 0 && sub.monitors.size() == 0) {
+			if (sub.rootChainsReceived == 0 && sub.mainRootReceived
+					&& sub.monitors.size() == 0) {
 				if (sub.assignedBucket != -1) {
 					Bucket bucket = buckets.getExistingBucket(submissionId,
 							sub.assignedBucket);
 					bucket.waitUntilFinished();
 				}
 
-				sub.setFinished();
+				sub.setFinished(Consts.STATE_FINISHED);
 				sub.notifyAll();
 			}
 		}
 	}
 	
 	public void killSubmission(int submissionId, Throwable e) {
-	    Submission sub = submissions.get(submissionId);
-	    if (sub == null) {
-		return;
-	    }
-	    synchronized(sub) {
-		if (sub.getState() == Consts.STATE_FINISHED) {
-		    return;
+		Submission sub = submissions.get(submissionId);
+		if (sub == null) {
+			return;
 		}
-		sub.setFinished();
-		sub.setException(e);
-		sub.notifyAll();
-	    }
+		synchronized(sub) {
+			if (sub.getState() == Consts.STATE_FINISHED) {
+				return;
+			}
+			sub.setFinished(Consts.STATE_FINISHED);
+			sub.setException(e);
+			sub.notifyAll();
+		}
 	}
 
 	public Submission getSubmission(int submissionId) {
@@ -138,13 +143,16 @@ public class SubmissionRegistry {
 				job.getAssignedOutputBucket());
 
 		try {
-
 			submissions.put(submissionId, sub);
+
+			if (job.getActions() == null) {
+				throw new Exception("No action is defined!");
+			}
 
 			Chain chain = new Chain();
 			chain.setParentChainId(-1);
 			chain.setInputLayer(Consts.DEFAULT_INPUT_LAYER_ID);
-			chain.addActions(job.getActions(), new ChainExecutor(context, null,
+			chain.setActions(job.getActions(), new ChainExecutor(null, context,
 					chain));
 
 			chain.setSubmissionNode(context.getNetworkLayer().getMyPartition());
@@ -158,9 +166,9 @@ public class SubmissionRegistry {
 			}
 
 		} catch (Exception e) {
-			log.error("Init of the job " + job + " has failed");
+			log.error("Init of the submission " + sub + " has failed", e);
 			submissions.remove(submissionId);
-			sub.setState(Consts.STATE_INIT_FAILED);
+			sub.setFinished(Consts.STATE_INIT_FAILED);
 		}
 
 		return sub;
@@ -201,17 +209,18 @@ public class SubmissionRegistry {
 		} catch (Throwable e1) {
 		    throw new JobFailedException("Job submission failed", e1);
 		}
-		int waitInterval = conf.getInt(Consts.STATISTICAL_INTERVAL,
-				Consts.DEFAULT_STATISTICAL_INTERVAL);
+
 		// Pool the submission registry to know when it is present and return it
 		synchronized (submission) {
 			while (!submission.getState().equalsIgnoreCase(
-					Consts.STATE_FINISHED)) {
-			    try {
-				submission.wait(waitInterval);
-			    } catch(Throwable e) {
-				// ignore
-			    }
+					Consts.STATE_FINISHED)
+					&& !submission.getState().equalsIgnoreCase(
+							Consts.STATE_INIT_FAILED)) {
+				try {
+					submission.wait(1000);
+				} catch (InterruptedException e) {
+					// ignore
+				}
 			}
 		}
 
@@ -229,24 +238,17 @@ public class SubmissionRegistry {
 		return submission;
 	}
 
-	public void getStatistics(Job job, Submission submission) {
+	public void getStatistics(Submission submission) {
 		try {
 		    Thread.sleep(500);
 		} catch (InterruptedException e) {
 		    // ignore
 		}
-
 		submission.counters = stats.removeCountersSubmission(submission
 				.getSubmissionId());
+	}
 
-		// Print the counters
-		String stats = "Final statistics for job "
-				+ submission.getSubmissionId() + ":\n";
-		if (submission.counters != null) {
-			for (Map.Entry<String, Long> entry : submission.counters.entrySet()) {
-				stats += " " + entry.getKey() + " = " + entry.getValue() + "\n";
-			}
-		}
-		log.info(stats);
+	public Collection<Submission> getAllSubmissions() {
+		return submissions.values();
 	}
 }

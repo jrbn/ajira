@@ -1,4 +1,4 @@
-package nl.vu.cs.ajira.storage.container;
+package nl.vu.cs.ajira.storage.containers;
 
 import nl.vu.cs.ajira.storage.Writable;
 
@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 
 // A ConcurrentWritableContainer that throws an error when an addition does not fit.
 public class CheckedConcurrentWritableContainer<K extends Writable> extends
-	ConcurrentWritableContainer<K> {
+ConcurrentWritableContainer<K> {
 
 	static final Logger log = LoggerFactory
 			.getLogger(ConcurrentWritableContainer.class);

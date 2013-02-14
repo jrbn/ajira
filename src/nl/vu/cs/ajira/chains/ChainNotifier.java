@@ -11,18 +11,20 @@ import nl.vu.cs.ajira.datalayer.TupleIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class ChainNotifier {
 
 	static final Logger log = LoggerFactory.getLogger(ChainNotifier.class);
 
-	private final Context context;
+	private Context context;
 	private final Map<TupleIterator, Chain> waiters = new HashMap<TupleIterator, Chain>();
-	private final ActionContext ac;
+	private ActionContext ac;
 
-	public ChainNotifier(Context context) {
+	public ChainNotifier() {
+	}
+
+	public void init(Context context) {
 		this.context = context;
-		ac = new ChainExecutor(context, null);
+		ac = new ChainExecutor(null, context);
 	}
 	
 	/**
@@ -68,7 +70,7 @@ public class ChainNotifier {
 		InputLayer input = context.getInputLayer(chain.getInputLayer());
 		input.releaseIterator(iter, ac);
 		try {
-			context.getChainsToProcess().add(chain);
+			context.getChainHandlerManager().getChainsToProcess().add(chain);
 		} catch (Exception e) {
 			log.error("Error in adding the chain", e);
 		}
