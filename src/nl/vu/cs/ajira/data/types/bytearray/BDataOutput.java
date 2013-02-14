@@ -196,3 +196,4 @@ public class BDataOutput implements DataOutput {
 		cb.end += bytes;
 	}
 }
+

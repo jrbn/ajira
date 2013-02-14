@@ -137,6 +137,7 @@ public class WordCount {
 				// Shutdown the cluster
 				ajira.shutdown();
 			}
+
 		}
 	}
 }

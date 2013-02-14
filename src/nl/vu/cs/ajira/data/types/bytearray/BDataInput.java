@@ -201,3 +201,4 @@ public class BDataInput implements DataInput {
 		return n;
 	}
 }
+
