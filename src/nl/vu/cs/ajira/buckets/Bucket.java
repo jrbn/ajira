@@ -630,9 +630,19 @@ public class Bucket {
 	/**
 	 * Release the buffer -- GC. 
 	 */
-	void releaseTuples() {
+	synchronized void releaseTuples() {
 		if (tuples != null) {
 			tuples = null;
+		}
+		waitForCachers();
+		// Also remove files.
+		for (FileMetaData f : sortedCacheFiles.values()) {
+			try {
+				f.stream.close();
+			} catch (IOException e) {
+				// O well, we tried.
+			}
+			new File(f.filename).delete();
 		}
 	}
 

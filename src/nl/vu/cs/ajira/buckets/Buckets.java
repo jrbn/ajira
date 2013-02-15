@@ -114,11 +114,11 @@ public class Buckets {
 				if ((int) (b.getKey() >> 32) == submissionId) {
 					// Sometimes happens with HashJoin which never gets
 					// executed.
-					if (b.isFinished()) {
+					// if (b.isFinished()) {
 						releaseBucket(b);
 						count++;
 						size += b.inmemory_size();
-					}
+					// }
 				}
 			}
 			if (count > 0) {

@@ -4,7 +4,9 @@ import ibis.ipl.MessageUpcall;
 import ibis.ipl.ReadMessage;
 import ibis.ipl.WriteMessage;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.buckets.Bucket;
@@ -16,6 +18,7 @@ import nl.vu.cs.ajira.storage.Container;
 import nl.vu.cs.ajira.storage.Factory;
 import nl.vu.cs.ajira.storage.container.WritableContainer;
 import nl.vu.cs.ajira.submissions.Job;
+import nl.vu.cs.ajira.submissions.JobFailedException;
 import nl.vu.cs.ajira.submissions.Submission;
 
 import org.slf4j.Logger;
@@ -119,15 +122,16 @@ class Receiver implements MessageUpcall {
 				idChain = message.readLong();
 				idParentChain = message.readLong();
 				children = message.readInt();
-				int generatedRootChanis = message.readInt();
+				int generatedRootChains = message.readInt();
 				finishMessage(message, time, idSubmission);
 				context.getSubmissionsRegistry().updateCounters(idSubmission,
-						idChain, idParentChain, children, generatedRootChanis);
+						idChain, idParentChain, children, generatedRootChains);
 			} else {
 				// Cleanup submission
 				submissionNode = message.readInt();
 				Throwable e = (Throwable) message.readObject();
 				context.cleanupSubmission(submissionNode, idSubmission, e);
+				buckets.removeBucketsOfSubmission(idSubmission);
 			}
 			break;
 		case 3: // Termination
@@ -248,6 +252,7 @@ class Receiver implements MessageUpcall {
 				// submission
 				WriteMessage reply = net.getMessageToSend(message.origin()
 						.ibisIdentifier(), NetworkLayer.queryReceiverPort);
+				reply.writeBoolean(true);			// Success
 				reply.writeDouble(submission.getExecutionTimeInMs());
 
 				tmpBuffer.writeTo(new WriteMessageWrapper(reply));
@@ -270,6 +275,25 @@ class Receiver implements MessageUpcall {
 					Runtime.getRuntime().gc();
 				}
 				context.getSubmissionsRegistry().releaseSubmission(submission);
+			} catch(JobFailedException e) {
+				net.stopMonitorCounters();
+				net.broadcastStopMonitoring();
+				WriteMessage reply = net.getMessageToSend(message.origin()
+						.ibisIdentifier(), NetworkLayer.queryReceiverPort);
+				reply.writeBoolean(false);			// Failure
+				// Marshal the exception.
+				ByteArrayOutputStream bo = new ByteArrayOutputStream();
+				ObjectOutputStream o = new ObjectOutputStream(bo);
+				o.writeObject(e);
+				o.flush();
+				o.close();
+				byte[] buf = bo.toByteArray();
+				reply.writeInt(buf.length);
+				reply.writeArray(buf);
+				reply.finish();
+				if (log.isDebugEnabled()) {
+					log.debug("Sent failure reply");
+				}
 			} catch (Exception e) {
 				log.error("Error", e);
 			}
