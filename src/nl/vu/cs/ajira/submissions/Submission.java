@@ -68,11 +68,11 @@ public class Submission {
 		return submissionId;
 	}
 
-	public String getState() {
+	public synchronized String getState() {
 		return state;
 	}
 
-	public void setState(String state) {
+	public synchronized void setState(String state) {
 		this.state = state;
 	}
 

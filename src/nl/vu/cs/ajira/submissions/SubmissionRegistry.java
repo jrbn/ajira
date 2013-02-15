@@ -60,6 +60,11 @@ public class SubmissionRegistry {
 			long parentChainId, int nchildren, int generatedRootChains) {
 		Submission sub = getSubmission(submissionId);
 
+		if (log.isDebugEnabled()) {
+			log.debug("updateCounters: submissionId = " + submissionId + ", chainId = " + chainId
+					+ ", parentChainId = " + parentChainId + ", nchildren = " + nchildren
+					+ ", generatedRootChains = " + generatedRootChains);
+		}
 		synchronized (sub) {
 			if (nchildren > 0) { // Set the expected children in the
 				// map
@@ -100,6 +105,11 @@ public class SubmissionRegistry {
 				}
 			}
 
+			if (log.isDebugEnabled()) {
+				log.debug("rootChainsReceived = " + sub.rootChainsReceived
+						+ ", mainRootReceived = " + sub.mainRootReceived
+						+ ", monitors.size() = " + sub.monitors.size());
+			}
 			if (sub.rootChainsReceived == 0 && sub.mainRootReceived
 					&& sub.monitors.size() == 0) {
 				if (sub.assignedBucket != -1) {

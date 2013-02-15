@@ -218,7 +218,10 @@ public class Ajira {
 			if (conf.getBoolean(WebServer.WEBSERVER_START, true)) {
 				WebServer www = new WebServer();
 				www.startWebServer(globalContext);
-				log.info("Ajira WebInterface available at: " + www.getAddress());
+				String addr = www.getAddress();
+				if (addr != null) {
+					log.info("Ajira WebInterface available at: " + addr);
+				}
 			}
 
 			/***** HOUSE KEEPING *****/
