@@ -41,6 +41,11 @@ class ChainTerminator implements Runnable {
 			this.parentChainId = parentChainId;
 			this.nchildren = nchildren;
 			this.generatedRootChains = generatedRootChains;
+			if (log.isDebugEnabled()) {
+				if (generatedRootChains != 0) {
+					log.debug("GeneratedRootChains = " + generatedRootChains, new Throwable());
+				}
+			}
 			if (exception != null) {
 				failed = true;
 				this.exception = exception;
@@ -55,6 +60,11 @@ class ChainTerminator implements Runnable {
 			this.submissionId = submissionId;
 			this.chainId = -1;
 			this.generatedRootChains = generatedRootChains;
+			if (log.isDebugEnabled()) {
+				if (generatedRootChains != 0) {
+					log.debug("GeneratedRootChains = " + generatedRootChains, new Throwable());
+				}
+			}
 			this.parentChainId = -2;
 			this.failed = false;
 			this.exception = null;
@@ -133,7 +143,6 @@ class ChainTerminator implements Runnable {
 						msg.writeInt(header.submissionId);
 						msg.writeLong(header.chainId);
 						msg.writeLong(header.parentChainId);
-						msg.writeInt(header.nchildren);
 						msg.writeInt(header.nchildren);
 						msg.writeInt(header.generatedRootChains);
 						ibis.finishMessage(msg, header.submissionId);

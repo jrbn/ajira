@@ -77,7 +77,7 @@ public class Chain implements Writable, Query {
 
 		if (log.isDebugEnabled()) {
 			if (getGeneratedRootChains() != 0) {
-				log.debug("WriteTo: generatedRootChains = " + getGeneratedRootChains(), new Throwable());
+				log.debug("ReadFrom: generatedRootChains = " + getGeneratedRootChains(), new Throwable());
 			}
 		}
 		
