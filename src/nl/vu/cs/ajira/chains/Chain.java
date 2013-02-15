@@ -75,6 +75,12 @@ public class Chain implements Writable, Query {
 		bufferSize = input.readInt();
 		input.readFully(buffer, 0, bufferSize);
 
+		if (log.isDebugEnabled()) {
+			if (getGeneratedRootChains() != 0) {
+				log.debug("WriteTo: generatedRootChains = " + getGeneratedRootChains(), new Throwable());
+			}
+		}
+		
 		if (input.readBoolean()) {
 			// Read the number of elements and their types
 			int n = input.readByte();
@@ -91,6 +97,11 @@ public class Chain implements Writable, Query {
 
 	@Override
 	public void writeTo(DataOutput output) throws IOException {
+		if (log.isDebugEnabled()) {
+			if (getGeneratedRootChains() != 0) {
+				log.debug("WriteTo: generatedRootChains = " + getGeneratedRootChains(), new Throwable());
+			}
+		}
 		output.writeInt(bufferSize);
 		output.write(buffer, 0, bufferSize);
 
