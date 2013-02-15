@@ -9,7 +9,6 @@ import nl.vu.cs.ajira.net.NetworkLayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class SubmissionCache {
 
 	static final Logger log = LoggerFactory.getLogger(SubmissionCache.class);
@@ -28,6 +27,7 @@ public class SubmissionCache {
 			if (sc == null) {
 				sc = new HashMap<Object, Object>();
 				submissionsCache.put(submissionId, sc);
+				submissionsCache.notifyAll();
 			}
 		}
 
@@ -45,22 +45,49 @@ public class SubmissionCache {
 				}
 				sc.put(key, value);
 			}
+			sc.notifyAll();
 		}
 	}
 
 	public Object getObjectFromCache(int submissionId, Object key) {
-		Map<Object, Object> sc = null;
-		synchronized (submissionsCache) {
-			sc = submissionsCache.get(submissionId);
-		}
+		return getObjectFromCache(submissionId, key, false);
+	}
 
-		if (sc != null) {
-			synchronized (sc) {
-				return sc.get(key);
+	public Object getObjectFromCache(int submissionId, Object key, boolean wait) {
+		if (wait) {
+			try {
+				Map<Object, Object> sc = null;
+				synchronized (submissionsCache) {
+					while ((sc = submissionsCache.get(submissionId)) == null)
+						submissionsCache.wait();
+				}
+
+				Object value = null;
+				synchronized (sc) {
+					while ((value = sc.get(key)) == null) {
+						sc.wait();
+					}
+				}
+				return value;
+			} catch (Exception e) {
+				log.error("Strange exception", e);
 			}
-		}
 
-		return null;
+			return null;
+		} else {
+			Map<Object, Object> sc = null;
+			synchronized (submissionsCache) {
+				sc = submissionsCache.get(submissionId);
+			}
+
+			if (sc != null) {
+				synchronized (sc) {
+					return sc.get(key);
+				}
+			}
+
+			return null;
+		}
 	}
 
 	public void clearAll(int submissionId) {
@@ -80,6 +107,11 @@ public class SubmissionCache {
 			values[i] = getObjectFromCache(submissionId, keys[i]);
 		}
 		net.broadcastObjects(submissionId, keys, values);
+	}
+
+	public void broadcastCacheObject(int submissionId, Object key) {
+		Object value = getObjectFromCache(submissionId, key);
+		net.broadcastObject(submissionId, key, value);
 	}
 
 	public List<Object[]> retrieveCacheObjects(int submissionId, Object... keys) {

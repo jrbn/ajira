@@ -1,4 +1,4 @@
-package nl.vu.cs.ajira.storage.container;
+package nl.vu.cs.ajira.storage.containers;
 
 import java.io.IOException;
 
@@ -56,7 +56,7 @@ public class ConcurrentWritableContainer<K extends Writable> extends
 		while (super.getNElements() == 0) {
 			waiters++;
 			try {
-				this.wait();
+				wait();
 			} catch (InterruptedException e) {
 				// ignore
 			}

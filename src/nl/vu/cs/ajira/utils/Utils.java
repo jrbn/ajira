@@ -6,17 +6,16 @@ import ibis.ipl.WriteMessage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.text.NumberFormat;
 import java.util.Comparator;
 
 import nl.vu.cs.ajira.data.types.DataProvider;
 import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.TInt;
 import nl.vu.cs.ajira.data.types.TLong;
-import nl.vu.cs.ajira.data.types.Tuple;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public class Utils {
 
@@ -69,27 +68,6 @@ public class Utils {
 		}
 	}
 
-	public static void readObjectsFromTuple(Tuple tuple, int startingOffset,
-			DataProvider dp, Object[] params, int offset, int length)
-			throws Exception {
-		for (int i = offset; i < length; ++i) {
-			SimpleData data = dp.get(tuple.getType(startingOffset + i));
-			tuple.get(data, startingOffset + i);
-			if (data.getIdDatatype() == Consts.DATATYPE_TLONG) {
-				params[i] = ((TLong) data).getValue();
-			} else if (data.getIdDatatype() == Consts.DATATYPE_TINT) {
-				params[i] = ((TInt) data).getValue();
-			}
-			dp.release(data);
-		}
-	}
-
-	public static void readObjectsFromTuple(Tuple tuple, int startingOffset,
-			DataProvider dp, Object[] params) throws Exception {
-		readObjectsFromTuple(tuple, startingOffset, dp, params, 0,
-				params.length);
-	}
-
 	public static boolean createRecursevily(File dir) {
 		if (!dir.getParentFile().exists()
 				&& !createRecursevily(dir.getParentFile())) {
@@ -118,13 +96,11 @@ public class Utils {
 
 	public static long decodeLong(byte[] value, int start) {
 		int highword = ((value[start] & 0xFF) << 24)
-				+ ((value[start+1] & 0xFF) << 16)
-				+ ((value[start+2] & 0xFF) << 8)
-				+ (value[start+3] & 0xFF);
-		int lowword = ((value[start+4] & 0xFF) << 24)
-				+ ((value[start+5] & 0xFF) << 16)
-				+ ((value[start+6] & 0xFF) << 8)
-				+ (value[start+7] & 0xFF);
+				+ ((value[start + 1] & 0xFF) << 16)
+				+ ((value[start + 2] & 0xFF) << 8) + (value[start + 3] & 0xFF);
+		int lowword = ((value[start + 4] & 0xFF) << 24)
+				+ ((value[start + 5] & 0xFF) << 16)
+				+ ((value[start + 6] & 0xFF) << 8) + (value[start + 7] & 0xFF);
 		return ((long) highword << 32) + (lowword & 0xFFFFFFFFL);
 	}
 
@@ -140,10 +116,9 @@ public class Utils {
 	}
 
 	public static int decodeInt(byte[] value, int start) {
-		return    ((value[start  ] & 0xFF) << 24)
-			+ ((value[start+1] & 0xFF) << 16)
-			+ ((value[start+2] & 0xFF) << 8)
-			+  (value[start+3] & 0xFF);
+		return ((value[start] & 0xFF) << 24)
+				+ ((value[start + 1] & 0xFF) << 16)
+				+ ((value[start + 2] & 0xFF) << 8) + (value[start + 3] & 0xFF);
 	}
 
 	public static void encodeInt(byte[] value, int start, int number) {
@@ -228,7 +203,7 @@ public class Utils {
 		int start = position[0];
 		int output = value[start] & 0x3F;
 		int additionalBytes = (value[start++] & 0xFF) >> 6;
-		switch(additionalBytes) {
+		switch (additionalBytes) {
 		case 1:
 			output = (output << 8) + (value[start++] & 0xFF);
 			break;
@@ -252,7 +227,7 @@ public class Utils {
 		int start = position[0];
 		int firstPart = value[start] & 0x3F;
 		int additionalBytes = (value[start++] & 0xFF) >> 6;
-		switch(additionalBytes) {
+		switch (additionalBytes) {
 		case 1:
 			firstPart = (firstPart << 8) + (value[start++] & 0xFF);
 			break;
@@ -262,7 +237,7 @@ public class Utils {
 			break;
 		case 3:
 			firstPart = (firstPart << 8) + (value[start++] & 0xFF);
-			firstPart= (firstPart << 8) + (value[start++] & 0xFF);
+			firstPart = (firstPart << 8) + (value[start++] & 0xFF);
 			firstPart = (firstPart << 8) + (value[start++] & 0xFF);
 			break;
 		}
@@ -270,7 +245,7 @@ public class Utils {
 		long output = (long) firstPart << 40;
 		additionalBytes = (value[start] & 0xFF) >> 5;
 		int b1 = value[start++] & 0x1F;
-		switch(additionalBytes) {
+		switch (additionalBytes) {
 		case 0:
 			output += b1;
 			break;
@@ -283,7 +258,7 @@ public class Utils {
 			b1 = (b1 << 8) + (value[start++] & 0xFF);
 			output += b1;
 			break;
-		case 3:	
+		case 3:
 			b1 = (b1 << 8) + (value[start++] & 0xFF);
 			b1 = (b1 << 8) + (value[start++] & 0xFF);
 			b1 = (b1 << 8) + (value[start++] & 0xFF);
@@ -296,8 +271,25 @@ public class Utils {
 			output += ((long) b1 << 8) + (value[start++] & 0xFF);
 			break;
 		}
-		
+
 		position[1] = start;
 		return output;
+	}
+
+	public static String getDuration(long time) {
+		NumberFormat f = NumberFormat.getInstance();
+		f.setMinimumIntegerDigits(2);
+		int milliseconds = (int) (time % 1000);
+		time /= 1000;
+		int seconds = (int) time % 60;
+		time /= 60;
+		int minutes = (int) time % 60;
+		time /= 60;
+		int hours = (int) time;
+		String result = f.format(hours) + ":" + f.format(minutes) + ":"
+				+ f.format(seconds);
+		f.setMinimumIntegerDigits(3);
+		result += ":" + f.format(milliseconds);
+		return result;
 	}
 }

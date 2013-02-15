@@ -2,18 +2,17 @@ package nl.vu.cs.ajira.net;
 
 import ibis.ipl.IbisIdentifier;
 import ibis.ipl.WriteMessage;
-
 import nl.vu.cs.ajira.Context;
-import nl.vu.cs.ajira.chains.ChainExecutor;
 import nl.vu.cs.ajira.chains.Chain;
+import nl.vu.cs.ajira.chains.ChainExecutor;
 import nl.vu.cs.ajira.chains.ChainLocation;
 import nl.vu.cs.ajira.data.types.Tuple;
-import nl.vu.cs.ajira.statistics.StatisticsCollector;
+import nl.vu.cs.ajira.data.types.TupleFactory;
+import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Container;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 class ChainSender implements Runnable {
 
@@ -28,20 +27,21 @@ class ChainSender implements Runnable {
 	public ChainSender(Context context, Container<Chain> chainsToSend) {
 		this.chainsToSend = chainsToSend;
 		this.context = context;
-		this.chainsToProcess = context.getChainsToProcess();
+		this.chainsToProcess = context.getChainHandlerManager()
+				.getChainsToProcess();
 		this.stats = context.getStatisticsCollector();
 	}
 
 	@Override
 	public void run() {
 		try {
-			Tuple tuple = new Tuple();
+			Tuple tuple = TupleFactory.newTuple();
 			Chain chain = new Chain();
 			Chain supportChain = new Chain();
 
 			while (true) {
 				chainsToSend.remove(chain);
-				ChainExecutor ac = new ChainExecutor(context, null, chain);
+				ChainExecutor ac = new ChainExecutor(null, context, chain);
 
 				chain.getInputTuple(tuple);
 				ChainLocation loc = context

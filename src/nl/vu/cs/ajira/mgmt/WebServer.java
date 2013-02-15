@@ -1,6 +1,7 @@
-package nl.vu.cs.ajira.webinterface;
+package nl.vu.cs.ajira.mgmt;
 
 import java.net.BindException;
+import java.net.InetAddress;
 
 import nl.vu.cs.ajira.Context;
 
@@ -9,7 +10,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 public class WebServer implements Runnable {
 
@@ -43,9 +43,12 @@ public class WebServer implements Runnable {
 				handler.setContextPath("/");
 				handler.setClassLoader(Thread.currentThread()
 						.getContextClassLoader());
-				handler.setResourceBase(System.getProperty("user.dir"));
-				handler.setAttribute("context", context);
 
+				String mainDir = this.getClass().getClassLoader()
+						.getResource("jsp/").toExternalForm();
+				handler.setResourceBase(mainDir);
+
+				handler.setAttribute("context", context);
 				handler.addServlet(MainServlet.class, "/");
 				handler.addServlet(JspServlet.class, "*.jsp");
 				Server server = new Server(serverPort);
@@ -66,5 +69,14 @@ public class WebServer implements Runnable {
 			}
 		}
 
+	}
+
+	public String getAddress() {
+		try {
+			return "http://" + InetAddress.getLocalHost().getHostAddress()
+					+ ":" + serverPort;
+		} catch (Exception e) {
+			return "<null>:" + serverPort;
+		}
 	}
 }
