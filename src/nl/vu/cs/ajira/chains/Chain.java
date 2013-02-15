@@ -149,6 +149,11 @@ public class Chain implements Writable, Query {
 	}
 
 	void setGeneratedRootChains(int rootChains) {
+		if (log.isDebugEnabled()) {
+			if (rootChains != 0) {
+				log.debug("Chain " + getChainId() + ": rootChains = " + rootChains, new Throwable());
+			}
+		}
 		Utils.encodeInt(buffer, 28, rootChains);
 	}
 
