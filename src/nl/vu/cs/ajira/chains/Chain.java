@@ -320,6 +320,9 @@ public class Chain implements Writable, Query {
 	}
 
 	void branchFromRoot(Chain newChain, long newChainId) {
+		if (log.isDebugEnabled()) {
+			log.debug("branchFromRoot: newChainId = " + newChainId + ", chainId = " + getChainId(), new Throwable());
+		}
 		newChain.bufferSize = Consts.CHAIN_RESERVED_SPACE;
 		System.arraycopy(buffer, 0, newChain.buffer, 0, bufferSize);
 
