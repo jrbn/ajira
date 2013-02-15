@@ -89,11 +89,10 @@ class Receiver implements MessageUpcall {
 			Chain chain = chainFactory.get();
 			chain.readFrom(new ReadMessageWrapper(message));
 			endMessage(message, time, chain.getSubmissionId());
-			try {
-				chainsToProcess.add(chain);
-			} catch (Exception e) {
-				// Ignore
+			if (log.isDebugEnabled()) {
+				log.debug("Received chain " + chain.getChainId());
 			}
+			chainsToProcess.add(chain);
 			chainFactory.release(chain);
 			break;
 		case 1: // Receive signal that remote node has some tuples to send to

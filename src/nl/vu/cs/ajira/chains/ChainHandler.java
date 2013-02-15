@@ -86,6 +86,10 @@ public class ChainHandler implements Runnable {
 				return;
 			}
 			
+			if (log.isDebugEnabled()) {
+				log.debug("Starting chain " + currentChain.getChainId());
+			}
+			
 			submissionFailed = false;
 
 			/***** START CHAIN *****/
@@ -155,7 +159,13 @@ public class ChainHandler implements Runnable {
 	public void run() {
 
 		if (singleChain) {
+			if (log.isDebugEnabled()) {
+				log.debug("Single chain handler");
+			}
 			processChain();
+			if (log.isDebugEnabled()) {
+				log.debug("Single chain handler done");
+			}
 			status = STATUS_FINISHED;
 			return;
 		}
