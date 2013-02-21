@@ -24,7 +24,7 @@ public class SetQueryInputLayer extends Action {
 	}
 
 	@Override
-	public void registerActionParameters(ActionConf conf) throws Exception {
+	public void registerActionParameters(ActionConf conf) {
 		conf.registerParameter(TUPLE, S_TUPLE, null, true);
 		conf.registerParameter(INPUT_LAYER, S_INPUT_LAYER,
 				Consts.DEFAULT_INPUT_LAYER_ID, false);

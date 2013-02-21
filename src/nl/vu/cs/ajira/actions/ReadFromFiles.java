@@ -36,8 +36,7 @@ public class ReadFromFiles extends Action {
 	static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
 		void setupAction(Query query, Object[] params,
-				ActionController controller, ActionContext context)
-				throws Exception {
+				ActionController controller, ActionContext context) {
 			if (params[PATH] != null) {
 				query.setInputLayer(Consts.DEFAULT_INPUT_LAYER_ID);
 				query.setInputTuple(TupleFactory.newTuple(new TInt(
@@ -69,7 +68,7 @@ public class ReadFromFiles extends Action {
 	}
 
 	@Override
-	public void registerActionParameters(ActionConf conf) throws Exception {
+	public void registerActionParameters(ActionConf conf) {
 		conf.registerParameter(PATH, S_PATH, null, true);
 		conf.registerParameter(CUSTOM_READER, S_CUSTOM_READER, null, false);
 		conf.registerCustomConfigurator(ParametersProcessor.class);

@@ -18,7 +18,7 @@ public class Sample extends Action {
 	Random rand = new Random();
 
 	@Override
-	public void registerActionParameters(ActionConf conf) throws Exception {
+	public void registerActionParameters(ActionConf conf) {
 		conf.registerParameter(SAMPLE_RATE, S_SAMPLE_RATE, null, true);
 	}
 

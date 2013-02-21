@@ -40,7 +40,7 @@ public class WriteToFiles extends Action {
 		public StandardFileWriter() {
 		}
 
-		public void write(Tuple tuple) throws Exception {
+		public void write(Tuple tuple) throws IOException {
 			if (tuple.getNElements() > 0) {
 				String value = tuple.get(0).toString();
 				for (int i = 1; i < tuple.getNElements(); ++i) {
@@ -62,7 +62,7 @@ public class WriteToFiles extends Action {
 	long count;
 
 	@Override
-	public void registerActionParameters(ActionConf conf) throws Exception {
+	public void registerActionParameters(ActionConf conf) {
 		conf.registerParameter(CUSTOM_WRITER, S_CUSTOM_WRITER, null, false);
 		conf.registerParameter(OUTPUT_DIR, S_OUTPUT_DIR, null, true);
 	}

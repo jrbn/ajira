@@ -113,16 +113,15 @@ public class NetworkLayer {
 		return server;
 	}
 
-	public void sendChain(Chain chain) throws Exception {
+	public void sendChain(Chain chain) {
 		chainsToSend.add(chain);
 	}
 
-	public void sendChains(WritableContainer<Chain> chainsToProcess)
-			throws Exception {
+	public void sendChains(WritableContainer<Chain> chainsToProcess) {
 		chainsToSend.addAll(chainsToProcess);
 	}
 
-	public void signalChainTerminated(Chain chain) throws Exception {
+	public void signalChainTerminated(Chain chain) {
 		terminator.addChain(chain);
 	}
 

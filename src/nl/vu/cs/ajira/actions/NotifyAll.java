@@ -8,7 +8,7 @@ public class NotifyAll extends Action {
 	int token;
 
 	@Override
-	public void registerActionParameters(ActionConf conf) throws Exception {
+	public void registerActionParameters(ActionConf conf) {
 		conf.registerParameter(TOKEN, "token", null, true);
 	}
 

@@ -35,7 +35,7 @@ public class ReadFromBucket extends Action {
 	}
 
 	@Override
-	public void registerActionParameters(ActionConf conf) throws Exception {
+	public void registerActionParameters(ActionConf conf) {
 		conf.registerParameter(BUCKET_ID, S_BUCKET_ID, null, true);
 		conf.registerParameter(NODE_ID, S_NODE_ID, -1, false);
 		conf.registerCustomConfigurator(ParametersProcessor.class);

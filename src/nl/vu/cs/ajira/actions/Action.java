@@ -1,5 +1,10 @@
 package nl.vu.cs.ajira.actions;
 
+import java.io.IOException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import nl.vu.cs.ajira.data.types.TIntArray;
 import nl.vu.cs.ajira.data.types.TStringArray;
 import nl.vu.cs.ajira.data.types.Tuple;
@@ -9,10 +14,11 @@ import nl.vu.cs.ajira.storage.Writable;
 public abstract class Action {
 
 	private Object[] valuesParameters = null;
+	private Logger log = LoggerFactory.getLogger(Action.class);
 
 	/***** ACTION PROCESSING ******/
 
-	public void registerActionParameters(ActionConf conf) throws Exception {
+	public void registerActionParameters(ActionConf conf) {
 	}
 
 	public void startProcess(ActionContext context) throws Exception {
@@ -31,61 +37,66 @@ public abstract class Action {
 		this.valuesParameters = params;
 	}
 
-	protected final int getParamInt(int pos) throws Exception {
+	protected final int getParamInt(int pos) {
 		Object obj = getParam(pos);
 		if (obj == null) {
-			throw new Exception("The value is null");
+			throw new IllegalArgumentException("The value is null");
 		}
 		return (Integer) getParam(pos);
 	}
 
-	protected final long getParamLong(int pos) throws Exception {
+	protected final long getParamLong(int pos) {
 		Object obj = getParam(pos);
 		if (obj == null) {
-			throw new Exception("The value is null");
+			throw new IllegalArgumentException("The value is null");
 		}
 		return (Long) getParam(pos);
 	}
 
-	protected final boolean getParamBoolean(int pos) throws Exception {
+	protected final boolean getParamBoolean(int pos) {
 		Object obj = getParam(pos);
 		if (obj == null) {
-			throw new Exception("The value is null");
+			throw new IllegalArgumentException("The value is null");
 		}
 		return (Boolean) obj;
 	}
 
-	protected final String getParamString(int pos) throws Exception {
+	protected final String getParamString(int pos) {
 		return (String) getParam(pos);
 	}
 
-	protected final Object getParam(int pos) throws Exception {
+	protected final Object getParam(int pos) {
 		if (valuesParameters == null) {
-			throw new Exception(
+			throw new IllegalArgumentException(
 					"The parameters are not specified. Was this action created incorrectly?");
 		}
 
 		if (pos < 0 || pos >= valuesParameters.length) {
-			throw new Exception("Position not valid (" + pos + ")");
+			throw new IllegalArgumentException("Position not valid (" + pos + ")");
 		}
 
 		return valuesParameters[pos];
 	}
 
-	protected final void getParamWritable(Writable b, int pos) throws Exception {
+	protected final void getParamWritable(Writable b, int pos) {
 		if (valuesParameters == null) {
-			throw new Exception(
+			throw new IllegalArgumentException(
 					"The parameters are not specified. Was this action created incorrectly?");
 		}
 
 		if (pos < 0 || pos >= valuesParameters.length) {
-			throw new Exception("Position not valid (" + pos + ")");
+			throw new IllegalArgumentException("Position not valid (" + pos + ")");
 		}
 
-		b.readFrom(new BDataInput((byte[]) valuesParameters[pos]));
+		try {
+			b.readFrom(new BDataInput((byte[]) valuesParameters[pos]));
+		} catch (IOException e) {
+			// Should not happen.
+			log.error("Got unexpected IOException", e);
+		}
 	}
 
-	protected final byte[] getParamByteArray(int pos) throws Exception {
+	protected final byte[] getParamByteArray(int pos) {
 		Object o = getParam(pos);
 		if (o != null) {
 			return (byte[]) o;
@@ -93,7 +104,7 @@ public abstract class Action {
 		return null;
 	}
 
-	protected final int[] getParamIntArray(int pos) throws Exception {
+	protected final int[] getParamIntArray(int pos) {
 		Object o = getParam(pos);
 		if (o != null) {
 			return ((TIntArray) o).getArray();
@@ -101,7 +112,7 @@ public abstract class Action {
 		return null;
 	}
 
-	protected final String[] getParamStringArray(int pos) throws Exception {
+	protected final String[] getParamStringArray(int pos) {
 		Object o = getParam(pos);
 		if (o != null) {
 			return ((TStringArray) o).getArray();

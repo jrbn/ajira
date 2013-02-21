@@ -117,8 +117,7 @@ public class GroupBy extends Action {
 
 		@Override
 		void setupAction(Query query, Object[] params,
-				ActionController controller, ActionContext context)
-				throws Exception {
+				ActionController controller, ActionContext context) {
 
 			// Which fields should be used for the grouping? Get them from the
 			// parameter
@@ -140,7 +139,7 @@ public class GroupBy extends Action {
 	}
 
 	@Override
-	public void registerActionParameters(ActionConf conf) throws Exception {
+	public void registerActionParameters(ActionConf conf) {
 		conf.registerParameter(FIELDS_TO_GROUP, "fieldsToGroup", null, true);
 		conf.registerParameter(TUPLE_FIELDS, "fields", null, true);
 		conf.registerParameter(NPARTITIONS_PER_NODE, "partitionsPerNode", null,

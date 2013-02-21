@@ -9,7 +9,7 @@ public class RemoveDuplicates extends Action {
 	boolean first = true;
 
 	@Override
-	public void startProcess(ActionContext context) throws Exception {
+	public void startProcess(ActionContext context) {
 		first = true;
 	}
 

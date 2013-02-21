@@ -56,7 +56,7 @@ public class CollectToNode extends Action {
 	}
 
 	@Override
-	public void registerActionParameters(ActionConf conf) throws Exception {
+	public void registerActionParameters(ActionConf conf) {
 		conf.registerParameter(NODE_ID, S_NODE_ID, null, false);
 		conf.registerParameter(BUCKET_ID, S_BUCKET_ID, null, false);
 		conf.registerParameter(SORT, S_SORT, false, false);

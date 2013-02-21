@@ -80,7 +80,7 @@ public class PartitionToNodes extends Action {
 	}
 
 	@Override
-	public void registerActionParameters(ActionConf conf) throws Exception {
+	public void registerActionParameters(ActionConf conf) {
 		conf.registerParameter(SORT, S_SORT, false, false);
 		conf.registerParameter(PARTITIONER, S_PARTITIONER,
 				HashPartitioner.class.getName(), false);
