@@ -46,7 +46,7 @@ public class NetworkLayer {
 			PortType.COMMUNICATION_RELIABLE, PortType.SERIALIZATION_DATA,
 			PortType.CONNECTION_MANY_TO_ONE, PortType.RECEIVE_AUTO_UPCALLS);
 
-	static final PortType mgmtRequestPortType = new PortType(
+	public static final PortType mgmtRequestPortType = new PortType(
 			PortType.COMMUNICATION_RELIABLE, PortType.SERIALIZATION_OBJECT,
 			PortType.CONNECTION_MANY_TO_ONE, PortType.RECEIVE_AUTO_UPCALLS);
 
@@ -54,11 +54,11 @@ public class NetworkLayer {
 			PortType.COMMUNICATION_RELIABLE, PortType.SERIALIZATION_OBJECT_SUN,
 			PortType.CONNECTION_MANY_TO_MANY, PortType.RECEIVE_AUTO_UPCALLS);
 
-	static final PortType queryPortType = new PortType(
+	public static final PortType queryPortType = new PortType(
 			PortType.COMMUNICATION_RELIABLE, PortType.SERIALIZATION_DATA,
 			PortType.CONNECTION_MANY_TO_ONE, PortType.RECEIVE_EXPLICIT);
 
-	static final IbisCapabilities ibisCapabilities = new IbisCapabilities(
+	public static final IbisCapabilities ibisCapabilities = new IbisCapabilities(
 			IbisCapabilities.ELECTIONS_STRICT,
 			IbisCapabilities.MEMBERSHIP_TOTALLY_ORDERED,
 			IbisCapabilities.SIGNALS, IbisCapabilities.MALLEABLE);

@@ -5,7 +5,7 @@ import ibis.ipl.WriteMessage;
 import java.io.DataOutput;
 import java.io.IOException;
 
-class WriteMessageWrapper implements DataOutput {
+public class WriteMessageWrapper implements DataOutput {
 
 	WriteMessage message;
 
