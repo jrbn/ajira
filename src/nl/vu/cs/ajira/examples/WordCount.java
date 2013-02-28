@@ -1,9 +1,11 @@
 package nl.vu.cs.ajira.examples;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import nl.vu.cs.ajira.Ajira;
+import nl.vu.cs.ajira.AjiraClient;
 import nl.vu.cs.ajira.actions.Action;
 import nl.vu.cs.ajira.actions.ActionConf;
 import nl.vu.cs.ajira.actions.ActionContext;
@@ -37,7 +39,7 @@ public class WordCount {
 			TString iText = (TString) tuple.get(0);
 			String sText = iText.getValue();
 			if (sText != null && sText.length() > 0) {
-				String[] words = sText.split(" ");
+				String[] words = sText.split("\\s+");
 				for (String word : words) {
 					TString oWord = new TString(word);
 					actionOutput.output(oWord, new TInt(1));
@@ -68,6 +70,39 @@ public class WordCount {
 			actionOutput.output(word, new TLong(sum));
 		}
 	}
+	
+	public static Job createJob(String inDir, String outDir) {
+		Job job = new Job();
+		List<ActionConf> actions = new ArrayList<ActionConf>();
+
+		// Read the input files
+		ActionConf action = ActionFactory
+				.getActionConf(ReadFromFiles.class);
+		action.setParamString(ReadFromFiles.PATH, inDir);
+		actions.add(action);
+
+		// Count the words
+		actions.add(ActionFactory.getActionConf(CountWords.class));
+
+		// Groups the pairs
+		action = ActionFactory.getActionConf(GroupBy.class);
+		action.setParamStringArray(GroupBy.TUPLE_FIELDS,
+				TString.class.getName(), TInt.class.getName());
+		action.setParamByteArray(GroupBy.FIELDS_TO_GROUP, (byte) 0);
+		actions.add(action);
+
+		// Sum the counts
+		actions.add(ActionFactory.getActionConf(SumCounts.class));
+
+		// Write the results on files
+		action = ActionFactory.getActionConf(WriteToFiles.class);
+		action.setParamString(WriteToFiles.OUTPUT_DIR, outDir);
+		actions.add(action);
+
+		job.addActions(actions);
+		return job;
+	}
+	
 
 	/**
 	 * Example program: The superfamous WordCount!
@@ -81,6 +116,28 @@ public class WordCount {
 					+ " <input directory> <output directory>");
 			System.exit(1);
 		}
+		
+		if (args.length > 2) {
+			// Third argument is cluster file.
+			Job job = createJob(args[0], args[1]);
+			AjiraClient client = null;
+			try {
+				client = new AjiraClient(args[2], job);
+			} catch (IOException e) {
+				System.err.println("Could not create Ajira client");
+				e.printStackTrace(System.err);
+				System.exit(1);
+			}
+			List<Tuple> result = new ArrayList<Tuple>();
+			try {
+				client.getResult(result);
+			} catch (JobFailedException e) {
+				System.err.println("Job failed");
+				e.printStackTrace(System.err);
+				System.exit(1);
+			}
+			return;
+		}
 
 		// Start up the cluster
 		Ajira ajira = new Ajira();
@@ -90,35 +147,9 @@ public class WordCount {
 		if (ajira.amItheServer()) {
 
 			// Configure the job
-			Job job = new Job();
-			List<ActionConf> actions = new ArrayList<ActionConf>();
-
-			// Read the input files
-			ActionConf action = ActionFactory
-					.getActionConf(ReadFromFiles.class);
-			action.setParamString(ReadFromFiles.PATH, args[0]);
-			actions.add(action);
-
-			// Count the words
-			actions.add(ActionFactory.getActionConf(CountWords.class));
-
-			// Groups the pairs
-			action = ActionFactory.getActionConf(GroupBy.class);
-			action.setParamStringArray(GroupBy.TUPLE_FIELDS,
-					TString.class.getName(), TInt.class.getName());
-			action.setParamByteArray(GroupBy.FIELDS_TO_GROUP, (byte) 0);
-			actions.add(action);
-
-			// Sum the counts
-			actions.add(ActionFactory.getActionConf(SumCounts.class));
-
-			// Write the results on files
-			action = ActionFactory.getActionConf(WriteToFiles.class);
-			action.setParamString(WriteToFiles.OUTPUT_DIR, args[1]);
-			actions.add(action);
-
+			Job job = createJob(args[0], args[1]);
+			
 			// Launch it!
-			job.addActions(actions);
 			Submission sub;
 			try {
 				sub = ajira.waitForCompletion(job);

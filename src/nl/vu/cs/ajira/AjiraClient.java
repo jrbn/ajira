@@ -186,6 +186,7 @@ public class AjiraClient {
 	protected void finalize() {
 		close();
 	}
+	
 	private void close() {
 		if (sp != null) {
 			try {

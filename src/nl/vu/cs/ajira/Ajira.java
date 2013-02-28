@@ -48,6 +48,13 @@ import org.slf4j.LoggerFactory;
  *         program. It allows the user to start the cluster, submit the jobs,
  *         wait to their completion and so on. Starting the cluster using this
  *         object should be the first thing to do.
+ *         <p>
+ *         Note: for now, there are some serious limitations when using Ajira
+ *         as a cluster: all classes used must be on Ajira's classpath, jobs can
+ *         interfere with other jobs (by crashing, for instance).
+ *         TODO: spawn JVMs for each job, allow for jobs to send jars as well,
+ *         make Ajira load classes through a special classloader that considers
+ *         user-supplied jars as well. 
  */
 public class Ajira {
 

@@ -30,8 +30,8 @@ public class Job implements Writable {
 			String className = input.readUTF();
 			ActionConf a = ActionFactory.getActionConf(className);
 			a.readFrom(input);
+			actions.add(a);
 		}
-
 	}
 
 	@Override

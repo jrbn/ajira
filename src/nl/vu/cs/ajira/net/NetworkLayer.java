@@ -65,6 +65,7 @@ public class NetworkLayer {
 
 	Ibis ibis = null;
 	private int partitionId = 0;
+	private int poolSize;
 	private IbisIdentifier[] assignedPartitions = null;
 	private final Map<String, Integer> assignedIds = new HashMap<String, Integer>();
 	private final Set<ReceivePort> receivePorts = new HashSet<ReceivePort>();
@@ -184,7 +185,7 @@ public class NetworkLayer {
 					requestPortType, queryPortType, mgmtRequestPortType,
 					broadcastPortType);
 
-			int poolSize = Integer.valueOf(System.getProperty("ibis.pool.size",
+			poolSize = Integer.valueOf(System.getProperty("ibis.pool.size",
 					"1"));
 
 			assignedPartitions = new IbisIdentifier[poolSize];
