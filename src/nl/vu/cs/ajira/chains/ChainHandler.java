@@ -27,7 +27,6 @@ public class ChainHandler implements Runnable {
 	private WritableContainer<Chain> chainsToProcess = null;
 	private ActionFactory ap = null;
 	private StatisticsCollector stats = null;
-	private boolean localMode;
 	private Chain currentChain = new Chain();
 
 	private boolean submissionFailed;
@@ -53,14 +52,14 @@ public class ChainHandler implements Runnable {
 	}
 
 	private void processChain() {
-		
+
 		status = STATUS_ACTIVE;
 		// Init the environment
 		actions.init(currentChain);
 
 		try {
 			currentChain.getActions(actions, ap);
-		} catch(Throwable e) {
+		} catch (Throwable e) {
 			// Broadcast all the nodes that a chain part of a job has
 			// failed.
 			log.error("getActions() on chain failed, cancelling the job ...", e);
@@ -77,7 +76,8 @@ public class ChainHandler implements Runnable {
 
 			// Read the input tuple from the knowledge base
 			currentChain.getInputTuple(tuple);
-			InputLayer input = context.getInputLayer(currentChain.getInputLayer());
+			InputLayer input = context.getInputLayer(currentChain
+					.getInputLayer());
 			TupleIterator itr = input.getIterator(tuple, actions);
 			if (!itr.isReady()) {
 				context.getChainNotifier().addWaiter(itr, currentChain);
@@ -85,11 +85,11 @@ public class ChainHandler implements Runnable {
 				status = STATUS_INACTIVE;
 				return;
 			}
-			
+
 			if (log.isDebugEnabled()) {
 				log.debug("Starting chain " + currentChain.getChainId());
 			}
-			
+
 			submissionFailed = false;
 
 			/***** START CHAIN *****/
@@ -108,12 +108,12 @@ public class ChainHandler implements Runnable {
 					} else { // EOF Case
 						actions.stopProcess();
 					}
-				} while (!eof && ! getSubmissionFailed());
+				} while (!eof && !getSubmissionFailed());
 
 				if (log.isDebugEnabled()) {
 					timeCycle = System.currentTimeMillis() - timeCycle;
-					log.debug("Chain " + currentChain.getChainId() + "runtime cycle: "
-							+ timeCycle);
+					log.debug("Chain " + currentChain.getChainId()
+							+ "runtime cycle: " + timeCycle);
 				}
 
 				// Send the termination signal to the node responsible of
@@ -123,7 +123,8 @@ public class ChainHandler implements Runnable {
 				} else if (!actions.wasPrincipalBranch()) {
 					int generatedChains = currentChain.getGeneratedRootChains();
 					if (generatedChains > 0) {
-						net.signalChainHasRootChains(currentChain, generatedChains);
+						net.signalChainHasRootChains(currentChain,
+								generatedChains);
 					}
 				}
 				stats.addCounter(currentChain.getSubmissionNode(),
@@ -144,13 +145,14 @@ public class ChainHandler implements Runnable {
 			}
 		}
 	}
-	
+
 	private synchronized boolean getSubmissionFailed() {
 		return submissionFailed;
 	}
-	
+
 	public synchronized void submissionFailed(int submissionId) {
-		if (currentChain != null && currentChain.getSubmissionId() == submissionId) {
+		if (currentChain != null
+				&& currentChain.getSubmissionId() == submissionId) {
 			submissionFailed = true;
 		}
 	}

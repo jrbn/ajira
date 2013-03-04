@@ -44,17 +44,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *         This is the main class that allows the user to interface with the
- *         program. It allows the user to start the cluster, submit the jobs,
- *         wait to their completion and so on. Starting the cluster using this
- *         object should be the first thing to do.
- *         <p>
- *         Note: for now, there are some serious limitations when using Ajira
- *         as a cluster: all classes used must be on Ajira's classpath, jobs can
- *         interfere with other jobs (by crashing, for instance).
- *         TODO: spawn JVMs for each job, allow for jobs to send jars as well,
- *         make Ajira load classes through a special classloader that considers
- *         user-supplied jars as well. 
+ * This is the main class that allows the user to interface with the program. It
+ * allows the user to start the cluster, submit the jobs, wait to their
+ * completion and so on. Starting the cluster using this object should be the
+ * first thing to do.
+ * <p>
+ * Note: for now, there are some serious limitations when using Ajira as a
+ * cluster: all classes used must be on Ajira's classpath, jobs can interfere
+ * with other jobs (by crashing, for instance). TODO: spawn JVMs for each job,
+ * allow for jobs to send jars as well, make Ajira load classes through a
+ * special classloader that considers user-supplied jars as well.
  */
 public class Ajira {
 
@@ -63,28 +62,30 @@ public class Ajira {
 	private Configuration conf = new Configuration();
 	private Context globalContext = null;
 	private boolean localMode;
-	
+
 	/**
-	 * In cluster mode, the cluster is started separately, and jobs can be submitted
-	 * by communicating with the server node of the cluster.
+	 * In cluster mode, the cluster is started separately, and jobs can be
+	 * submitted by communicating with the server node of the cluster.
 	 */
 	private final boolean clusterMode;
-	
+
 	/**
 	 * Constructor for use in the non-cluster-mode case.
 	 */
 	public Ajira() {
 		this(false);
 	}
-	
+
 	/**
 	 * Constructor.
-	 * @param clusterMode whether to start in cluster mode or not.
+	 * 
+	 * @param clusterMode
+	 *            whether to start in cluster mode or not.
 	 */
 	private Ajira(boolean clusterMode) {
 		this.clusterMode = clusterMode;
 	}
-	
+
 	/**
 	 * Returns whether the current instance was the elected server of the
 	 * cluster and therefore can accept submissions. Only one node of the
@@ -155,7 +156,8 @@ public class Ajira {
 			boolean serverMode = true;
 
 			String ibisPoolSize = System.getProperty("ibis.pool.size");
-			localMode = ! clusterMode && (ibisPoolSize == null || ibisPoolSize.equals("1"));
+			localMode = !clusterMode
+					&& (ibisPoolSize == null || ibisPoolSize.equals("1"));
 			if (!localMode) {
 				log.debug("Starting the network layer ...");
 
@@ -294,6 +296,13 @@ public class Ajira {
 	}
 
 	/**
+	 * @return The global context used by the framework.
+	 */
+	public Context getContext() {
+		return globalContext;
+	}
+
+	/**
 	 * This method is used to launch a job in the cluster. It waits until the
 	 * job is terminated (or has failed).
 	 * 
@@ -301,7 +310,8 @@ public class Ajira {
 	 *            The specification of the job to launch
 	 * @return The corresponding submission object that contains informations
 	 *         and statistics about the processed job.
-	 * @throws JobFailedException in case the job fails for some reason.
+	 * @throws JobFailedException
+	 *             in case the job fails for some reason.
 	 */
 	public Submission waitForCompletion(Job job) throws JobFailedException {
 		Submission sub = globalContext.getSubmissionsRegistry()
@@ -309,20 +319,20 @@ public class Ajira {
 		globalContext.getSubmissionsRegistry().getStatistics(sub);
 		return sub;
 	}
-	
+
 	/**
 	 * Starts Ajira in cluster mode.
-	 * @param args cluster arguments.
+	 * 
+	 * @param args
+	 *            cluster arguments.
 	 */
 	public static void main(String[] args) {
 		// Use the cluster-mode Ajira constructor.
 		Ajira ajira = new Ajira(true);
-		
-		// Set some configuration (?)
-		Configuration conf = ajira.getConfiguration();
 
 		// First argument is a filename to store some cluster information in.
-		// Intention is that a client only needs access to this file to be able to
+		// Intention is that a client only needs access to this file to be able
+		// to
 		// submit a job.
 		if (args.length == 0) {
 			log.error("A cluster info file name must be specified");
@@ -339,10 +349,10 @@ public class Ajira {
 				System.exit(1);
 			}
 		}
-		
+
 		String poolName = System.getProperty("ibis.pool.name");
 		String serverAddress = System.getProperty("ibis.server.address");
-		
+
 		if (poolName == null) {
 			System.setProperty("ibis.pool.name", args[0]);
 			poolName = args[0];
@@ -351,14 +361,15 @@ public class Ajira {
 			log.error("an ibis server address must be specified");
 			System.exit(1);
 		}
-		
+
 		ajira.startup();
 		if (ajira.amItheServer()) {
 			// Write the contact info for the cluster to the specified file.
 			// Terminate cluster if this does not work for some reason.
 			OutputStream out = null;
 			try {
-				out = new BufferedOutputStream(new FileOutputStream(clusterInfoFile));
+				out = new BufferedOutputStream(new FileOutputStream(
+						clusterInfoFile));
 			} catch (FileNotFoundException e) {
 				log.error("Could not create cluster info file", e);
 				ajira.shutdown();
@@ -370,7 +381,7 @@ public class Ajira {
 			try {
 				p.store(out, "Ajira Cluster properties file");
 				out.close();
-			} catch(Throwable e) {
+			} catch (Throwable e) {
 				log.error("Could not write properties file", e);
 				ajira.shutdown();
 				System.exit(1);
