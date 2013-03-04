@@ -249,23 +249,34 @@ class Receiver implements MessageUpcall {
 				submission = context.getSubmissionsRegistry()
 						.waitForCompletion(context, job);
 
-				// Read the bucket
-				bucket = buckets.getExistingBucket(
-						submission.getSubmissionId(),
-						submission.getAssignedBucket());
-
 				net.stopMonitorCounters();
 				net.broadcastStopMonitoring();
+				
+				int bid = submission.getAssignedBucket();
+				
 				WritableContainer<TupleSerializer> tmpBuffer = bufferFactory
 						.get();
 				tmpBuffer.clear();
-				boolean isFinished = bucket.removeChunk(tmpBuffer);
-				// Write a reply to the origin containing the results of this
-				// submission
+				
 				WriteMessage reply = net.getMessageToSend(message.origin()
 						.ibisIdentifier(), NetworkLayer.queryReceiverPort);
 				reply.writeBoolean(true);			// Success
+
 				reply.writeDouble(submission.getExecutionTimeInMs());
+				
+				boolean isFinished = true;
+				bucket = null;
+				
+				if (bid >= 0) {
+					// Read the bucket
+					bucket = buckets.getExistingBucket(
+							submission.getSubmissionId(),
+							submission.getAssignedBucket());
+
+					isFinished = bucket.removeChunk(tmpBuffer);
+				}
+				// Write a reply to the origin containing the results of this
+				// submission
 
 				tmpBuffer.writeTo(new WriteMessageWrapper(reply));
 				reply.writeBoolean(isFinished);
