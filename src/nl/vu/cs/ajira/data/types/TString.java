@@ -58,7 +58,7 @@ public final class TString extends SimpleData {
 	 */
 	public void readFrom(DataInput input) throws IOException {
 		int size = input.readInt();
-		if (size > 0) {
+		if (size >= 0) {
 			byte[] nvalues = new byte[size];
 			input.readFully(nvalues, 0, size);
 			value = new String(nvalues);
@@ -73,7 +73,7 @@ public final class TString extends SimpleData {
 	 */
 	public void writeTo(DataOutput output) throws IOException {
 		if (value == null) {
-			output.writeInt(0);
+			output.writeInt(-1);
 		} else {
 			byte[] b = value.getBytes();
 			output.writeInt(b.length);
