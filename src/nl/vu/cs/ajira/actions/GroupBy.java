@@ -15,10 +15,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class GroupBy extends Action {
+	
+	static final Logger log = LoggerFactory.getLogger(GroupIterator.class);
 
 	private static class GroupIterator implements Iterator<Tuple> {
-
-		static final Logger log = LoggerFactory.getLogger(GroupIterator.class);
 
 		private TupleIterator itr;
 		private SimpleData[] key;
@@ -32,7 +32,7 @@ public class GroupBy extends Action {
 		private Tuple outputTuple;
 
 		public GroupIterator(TupleIterator itr, Tuple inputTuple,
-				SimpleData[] key, int sizeKey) {
+				SimpleData[] key, int sizeKey) throws Exception {
 			this.itr = itr;
 			this.key = key;
 			this.sizeKey = sizeKey;
@@ -47,7 +47,7 @@ public class GroupBy extends Action {
 			this.outputTuple = TupleFactory.newTuple(sValues);
 
 			this.elementAvailable = true;
-			this.hasMore = true;
+			this.hasMore = itr.nextTuple();
 
 			// Copy the key elements in the internal key data structure
 			for (int i = 0; i < sizeKey; ++i) {
@@ -71,8 +71,7 @@ public class GroupBy extends Action {
 
 			// Move to the next element
 			try {
-				if (itr.nextTuple()) {
-
+				if (hasMore) {
 					itr.getTuple(inputTuple);
 					for (int i = 0; i < sizeKey && elementAvailable; ++i) {
 						elementAvailable = inputTuple.get(i).equals(key[i]);
@@ -83,14 +82,14 @@ public class GroupBy extends Action {
 						inputTuple.get(i).copyTo(key[i]);
 					}
 
-					hasMore = true;
+					hasMore = itr.nextTuple();
 				} else {
 					elementAvailable = false;
-					hasMore = false;
 				}
 			} catch (Exception e) {
 				log.error("Error with the iterator", e);
 				elementAvailable = false;
+				hasMore = false;
 			}
 
 			return outputTuple;
