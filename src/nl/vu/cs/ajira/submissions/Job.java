@@ -64,7 +64,7 @@ public class Job implements Writable {
 		return assignedBucket;
 	}
 
-	public void addActions(List<ActionConf> actions) {
+	public void setActions(List<ActionConf> actions) {
 		this.actions = actions;
 	}
 
