@@ -72,7 +72,7 @@ public class WebServer implements Runnable {
 				currentAttempt++;
 			} catch (Exception e) {
 				log.error("The web server instance has terminated", e);
-				return;
+				break;
 			}
 		}
 		synchronized(this) {

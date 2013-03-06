@@ -38,11 +38,12 @@ public class DefaultFileParser {
 
 	public boolean next() {
 		try {
-			currentLine.setValue(reader.readLine());
-			if (currentLine.getValue() == null) {
+			String s = reader.readLine();
+			if (s == null) {
 				reader.close();
 				return false;
 			}
+			currentLine.setValue(s);
 			return true;
 		} catch (Exception e) {
 			log.error("Error reading record", e);

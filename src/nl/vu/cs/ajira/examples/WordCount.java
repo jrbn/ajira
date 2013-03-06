@@ -41,8 +41,10 @@ public class WordCount {
 			if (sText != null && sText.length() > 0) {
 				String[] words = sText.split("\\s+");
 				for (String word : words) {
-					TString oWord = new TString(word);
-					actionOutput.output(oWord, new TInt(1));
+					if (word.length() > 0) {
+						TString oWord = new TString(word);
+						actionOutput.output(oWord, new TInt(1));
+					}
 				}
 			}
 		}

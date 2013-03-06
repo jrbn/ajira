@@ -113,6 +113,22 @@ public class Tuple {
 		}
 		return false;
 	}
+	
+	public String toString() {
+		StringBuffer b = new StringBuffer();
+		b.append('<');
+		for (int i = 0; i < nElements; i++) {
+			if (i != 0) {
+				b.append(", ");
+			}
+			b.append(signature[i].toString());
+			b.append('(');
+			b.append("" + signature[i].getIdDatatype());
+			b.append(')');
+		}
+		b.append('>');
+		return b.toString();
+	}
 
 	/**
 	 * Resets the fields of the class. 
