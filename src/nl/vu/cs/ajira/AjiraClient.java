@@ -162,7 +162,7 @@ public class AjiraClient {
 		}
 	}
 
-	private boolean getMoreResults(List<Tuple> v) throws JobFailedException {
+	boolean getMoreResults(List<Tuple> v) throws JobFailedException {
 		if (closed || !getResultCalled) {
 			log.error("getMoreResults called incorrectly");
 			throw new JobFailedException("getMoreResults called incorrectly",
