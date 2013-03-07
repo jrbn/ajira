@@ -125,7 +125,7 @@ public class Bucket {
 	private TupleIterator iter;
 	private long key;
 	private CachedFilesMerger merger;
-
+	
 	SortedList<byte[]> minimumSortedList = new SortedList<byte[]>(100,
 			new Comparator<byte[]>() {
 				@Override
@@ -213,16 +213,29 @@ public class Bucket {
 			boolean isSorted,
 			Factory<WritableContainer<TupleSerializer>> factory)
 			throws Exception {
-
+		
+		long time = System.currentTimeMillis();
+		
 		if (tuples == null) {
 			tuples = fb.get();
 			tuples.clear();
 		}
 
+		// If factory is not null, we get control over the newTuplesContainer,
+		// which means that we have to remove it
+		//
 		if (sort && !isSorted) {
 			throw new Exception("This buffer accepts only presorted sets");
 		}
 
+		// LOG-DEBUG
+		if (log.isDebugEnabled()) {
+			log.debug("addAll: adding a sorted = " + isSorted + " buffer with " +
+					newTuplesContainer.getNElements() + " elements " +
+					"TO exBuffer, sorted = " + isBufferSorted + " with " +
+					tuples.getNElements() + " elements");
+		}
+		
 		boolean isBufferEmpty = tuples.getNElements() == 0;
 
 		boolean response = tuples.addAll(newTuplesContainer);
@@ -254,6 +267,10 @@ public class Bucket {
 				}
 			}
 		}
+		
+		stats.addCounter(submissionNode, submissionId,
+				"Bucket:addAll: overall time (ms)",
+				System.currentTimeMillis() - time);
 	}
 
 	/**
@@ -672,8 +689,14 @@ public class Bucket {
 	 */
 	public synchronized boolean removeChunk(
 			WritableContainer<TupleSerializer> tmpBuffer) {
+		if (log.isDebugEnabled()) {
+			log.debug("removeChunk: fill tmpBuffer with triples from bucket " + this.getKey());
+		}
+		
 		gettingData = true;
 
+		long totTime = System.currentTimeMillis();
+		
 		// If some threads still have to finish writing
 		waitForCachers();
 
@@ -689,22 +712,36 @@ public class Bucket {
 					FDataInput di = cacheFiles.remove(0);
 					tmpBuffer.readFrom(di); // Read the oldest file
 					stats.addCounter(submissionNode, submissionId,
-							"Time spent reading from cache (ms)",
+							"Bucket:removeChunk: time reading from cache (ms)",
 							System.currentTimeMillis() - time);
 					stats.addCounter(submissionNode, submissionId,
-							"Bytes read from cache", tmpBuffer.getRawSize());
+							"Bucket:removeChunk: Bytes read from cache", tmpBuffer.getRawSize());
 					elementsInCache -= tmpBuffer.getNElements();
 					di.close();
 				} else { // Need to sort
 
 					tmpBuffer.setFieldsDelimiter();
 
-					// Add the first triple from the in-memory ds to the pool
+					if (log.isDebugEnabled()) {
+						log.debug("Try add the first triple from the in-memory ds to the pool => " +
+								"tuples.getNElements() = " + tuples.getNElements() + ", " + 
+								"minmumSortedlist.size() = " + minimumSortedList.size());
+					}
+					
+					// Add the first triple from the in-memory ds to the pool					
 					if (tuples.getNElements() > 0
-							&& minimumSortedList.size() == sortedCacheFiles
-									.size()) {
+							&& minimumSortedList.size() == sortedCacheFiles.size()) {
 						byte[] key = tuples.removeRaw(null);
 						minimumSortedList.add(key);
+						
+						if (log.isDebugEnabled()) {
+							log.debug("First triple from the in-memory ds was added to the pool.");
+						}
+					}
+					else {
+						if (log.isDebugEnabled()) {
+							log.debug("First triple from the in-memory ds was NOT added to the pool.");
+						}
 					}
 
 					if (log.isDebugEnabled()) {
@@ -722,7 +759,7 @@ public class Bucket {
 						byte[] minimum = minimumSortedList.removeLastElement();
 
 						insertResponse = tmpBuffer.addRaw(minimum);
-
+						
 						if (insertResponse) {
 							if (sortedCacheFiles.containsKey(minimum)) {
 								tuplesFromStream++;
@@ -731,10 +768,12 @@ public class Bucket {
 								// file can be copied completely.
 								FileMetaData meta = sortedCacheFiles
 										.get(minimum);
+								
 								if (copyFullFile(meta, tmpBuffer, minimum)) {
 									tuplesFromStream += meta.nElements;
 									continue;
 								}
+
 								// No, it could not. Now try to stay with this
 								// file as long as we can.
 								try {
@@ -816,6 +855,10 @@ public class Bucket {
 		} catch (Exception e) {
 			log.error("Error in retrieving the results", e);
 		}
+		
+		stats.addCounter(submissionNode, submissionId,
+				"Bucket:removeChunk: overall time (ms)",
+				System.currentTimeMillis() - totTime);
 
 		return isFinished && elementsInCache == 0
 				&& (tuples == null || tuples.getNElements() == 0)
