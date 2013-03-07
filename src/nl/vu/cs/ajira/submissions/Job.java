@@ -49,7 +49,7 @@ public class Job implements Writable {
 	}
 
 
-	public void addActions(List<ActionConf> actions) {
+	public void setActions(List<ActionConf> actions) {
 		this.actions = actions;
 	}
 

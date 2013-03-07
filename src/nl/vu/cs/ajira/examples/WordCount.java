@@ -101,7 +101,7 @@ public class WordCount {
 		action.setParamString(WriteToFiles.OUTPUT_DIR, outDir);
 		actions.add(action);
 
-		job.addActions(actions);
+		job.setActions(actions);
 		return job;
 	}
 	

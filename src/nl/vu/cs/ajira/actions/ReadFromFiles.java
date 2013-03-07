@@ -60,8 +60,8 @@ public class ReadFromFiles extends Action {
 					context.getMyNodeId()), new TString(customReader));
 		}
 
-		ActionConf c = ActionFactory.getActionConf(SetQueryInputLayer.class);
-		c.setParamWritable(SetQueryInputLayer.TUPLE, new TupleSerializer(tuple));
+		ActionConf c = ActionFactory.getActionConf(QueryInputLayer.class);
+		c.setParamWritable(QueryInputLayer.TUPLE, new TupleSerializer(tuple));
 		output.branch(c);
 
 		currentFileSplit = new FileCollection();

@@ -5,7 +5,7 @@ import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.datalayer.Query;
 import nl.vu.cs.ajira.utils.Consts;
 
-public class SetQueryInputLayer extends Action {
+public class QueryInputLayer extends Action {
 
 	public static final int TUPLE = 0;
 	public static final String S_TUPLE = "tuple";
