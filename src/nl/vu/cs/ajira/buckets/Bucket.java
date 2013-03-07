@@ -125,7 +125,7 @@ public class Bucket {
 	private TupleIterator iter;
 	private long key;
 	private CachedFilesMerger merger;
-	
+
 	SortedList<byte[]> minimumSortedList = new SortedList<byte[]>(100,
 			new Comparator<byte[]>() {
 				@Override
@@ -213,9 +213,9 @@ public class Bucket {
 			boolean isSorted,
 			Factory<WritableContainer<TupleSerializer>> factory)
 			throws Exception {
-		
+
 		long time = System.currentTimeMillis();
-		
+
 		if (tuples == null) {
 			tuples = fb.get();
 			tuples.clear();
@@ -235,7 +235,7 @@ public class Bucket {
 					"TO exBuffer, sorted = " + isBufferSorted + " with " +
 					tuples.getNElements() + " elements");
 		}
-		
+
 		boolean isBufferEmpty = tuples.getNElements() == 0;
 
 		boolean response = tuples.addAll(newTuplesContainer);
@@ -692,11 +692,11 @@ public class Bucket {
 		if (log.isDebugEnabled()) {
 			log.debug("removeChunk: fill tmpBuffer with triples from bucket " + this.getKey());
 		}
-		
+
 		gettingData = true;
 
 		long totTime = System.currentTimeMillis();
-		
+
 		// If some threads still have to finish writing
 		waitForCachers();
 
@@ -727,13 +727,13 @@ public class Bucket {
 								"tuples.getNElements() = " + tuples.getNElements() + ", " + 
 								"minmumSortedlist.size() = " + minimumSortedList.size());
 					}
-					
+
 					// Add the first triple from the in-memory ds to the pool					
 					if (tuples.getNElements() > 0
 							&& minimumSortedList.size() == sortedCacheFiles.size()) {
 						byte[] key = tuples.removeRaw(null);
 						minimumSortedList.add(key);
-						
+
 						if (log.isDebugEnabled()) {
 							log.debug("First triple from the in-memory ds was added to the pool.");
 						}
@@ -759,7 +759,7 @@ public class Bucket {
 						byte[] minimum = minimumSortedList.removeLastElement();
 
 						insertResponse = tmpBuffer.addRaw(minimum);
-						
+
 						if (insertResponse) {
 							if (sortedCacheFiles.containsKey(minimum)) {
 								tuplesFromStream++;
@@ -768,7 +768,7 @@ public class Bucket {
 								// file can be copied completely.
 								FileMetaData meta = sortedCacheFiles
 										.get(minimum);
-								
+
 								if (copyFullFile(meta, tmpBuffer, minimum)) {
 									tuplesFromStream += meta.nElements;
 									continue;
@@ -855,7 +855,7 @@ public class Bucket {
 		} catch (Exception e) {
 			log.error("Error in retrieving the results", e);
 		}
-		
+
 		stats.addCounter(submissionNode, submissionId,
 				"Bucket:removeChunk: overall time (ms)",
 				System.currentTimeMillis() - totTime);
