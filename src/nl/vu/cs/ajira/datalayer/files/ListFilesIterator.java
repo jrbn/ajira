@@ -10,7 +10,12 @@ import nl.vu.cs.ajira.datalayer.TupleIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+/**
+ * 
+ * This class provides an iterator for a 
+ * list on files.
+ *
+ */
 public class ListFilesIterator extends TupleIterator {
 
 	static final Logger log = LoggerFactory.getLogger(ListFilesIterator.class);
@@ -19,6 +24,15 @@ public class ListFilesIterator extends TupleIterator {
 	List<File> listFiles = null;
 	TString file = new TString();
 
+	/**
+	 * Custom constructor.
+	 * 
+	 * @param path
+	 * 		The pathname of the file/directory.
+	 * @param filter
+	 * 		The name of the filterClass that provides 
+	 * 		the rules that the files have to satisfy.
+	 */
 	public ListFilesIterator(String path, String filter) {
 		try {
 			listFiles = FileUtils.listAllFiles(path, filter);
@@ -27,12 +41,20 @@ public class ListFilesIterator extends TupleIterator {
 		}
 	}
 
+	/**
+	 * It increases the currentIndex and returns true
+	 * if exists a next file and false otherwise.
+	 */
 	@Override
 	public boolean next() throws Exception {
 		currentIndex++;
 		return listFiles != null && currentIndex < listFiles.size();
 	}
 
+	/**
+	 * Sets the value of the tuple to be the 
+	 * absolute path of the current file.
+	 */
 	@Override
 	public void getTuple(Tuple tuple) throws Exception {
 		file.setValue(listFiles.get(currentIndex).getAbsolutePath());

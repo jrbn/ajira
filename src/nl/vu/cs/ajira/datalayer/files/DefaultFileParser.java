@@ -13,7 +13,11 @@ import nl.vu.cs.ajira.data.types.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+/**
+ * 
+ * This class it is used to parse the content of a file.
+ *
+ */
 public class DefaultFileParser {
 
 	static final Logger log = LoggerFactory
@@ -21,6 +25,12 @@ public class DefaultFileParser {
 	protected BufferedReader reader = null;
 	TString currentLine = new TString();
 
+	/**
+	 * Custom constructor.
+	 * 
+	 * @param file
+	 * 		The file that will be used for reading.
+	 */
 	public DefaultFileParser(File file) {
 		try {
 			if (log.isDebugEnabled()) {
@@ -36,6 +46,12 @@ public class DefaultFileParser {
 		}
 	}
 
+	/**
+	 * Reads one line from the input file.
+	 * 
+	 * @return
+	 * 		True if it was possible to read a line, false otherwise.
+	 */
 	public boolean next() {
 		try {
 			String s = reader.readLine();
@@ -51,6 +67,15 @@ public class DefaultFileParser {
 		return false;
 	}
 
+	/**
+	 * Updates the field of the tuple with last line read.
+	 * 
+	 * @param tuple
+	 * 		The tuple that will be updated with the 
+	 * 		current line read.
+	 * 		
+	 * @throws Exception
+	 */
 	public void getTuple(Tuple tuple) throws Exception {
 		tuple.set(currentLine);
 	}
