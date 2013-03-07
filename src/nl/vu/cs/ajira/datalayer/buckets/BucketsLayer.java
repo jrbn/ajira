@@ -21,11 +21,17 @@ public class BucketsLayer extends InputLayer {
 
 	Buckets buckets;
 
+	/**
+	 * It initialize the buckets for the current context.
+	 */
 	@Override
 	protected void load(Context context) throws IOException {
 		buckets = context.getBuckets();
 	}
 
+	/**
+	 * Returns the iterator for the buckets.
+	 */
 	@Override
 	public TupleIterator getIterator(Tuple tuple, ActionContext context) {
 		TupleIterator itr = null;
@@ -39,6 +45,11 @@ public class BucketsLayer extends InputLayer {
 		return itr;
 	}
 
+	/**
+	 * Returns the ChainLocation for the location with the value 
+	 * of the last element of the tuple. If it does not exists
+	 * it constructs a new ChainLocation.
+	 */
 	@Override
 	public ChainLocation getLocations(Tuple tuple, ActionContext context) {
 		try {
@@ -56,6 +67,9 @@ public class BucketsLayer extends InputLayer {
 		return null;
 	}
 
+	/**
+	 * Releases the the iterator passed through the parameter. 
+	 */
 	@Override
 	public void releaseIterator(TupleIterator itr, ActionContext context) {
 		buckets.releaseIterator((BucketIterator) itr);

@@ -35,6 +35,16 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 
 	protected boolean enableFieldDelimitors = false;
 
+	/**
+	 * Creates a new object.
+	 * 
+	 * @param circular 
+	 * 		Influences the class used for the input and output fields.
+	 * @param enableFieldMarks
+	 * 		Is the new value of enableFieldDelimitors.
+	 * @param maxSize
+	 * 		The maximum size of the ByteArray's buffer. 
+	 */
 	public WritableContainer(Boolean circular, Boolean enableFieldMarks,
 			int maxSize) {
 		super(256 * 1024, maxSize);
@@ -51,14 +61,36 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 		pointerLastElement = -1;
 	}
 
+	/**
+	 * Constructs a new object and uses CBDataInput 
+	 * class for the input and output fields.
+	 * 
+	 * @param enableFieldMarks
+	 * 		Is the new value of enableFieldDelimitors.
+	 * @param size
+	 * 		The maximum size of the ByteArray's buffer.
+	 */
 	public WritableContainer(Boolean enableFieldMarks, Integer size) {
 		this(new Boolean(true), enableFieldMarks, size);
 	}
 
+	/**
+	 * Constructs a new object. Uses CBDataInput 
+	 * class for the input and output fields and
+	 * set the enableFieldDelimitors to false.
+	 * 
+	 * @param size
+	 * 		The maximum size of the ByteArray's buffer.
+	 */
 	public WritableContainer(Integer size) {
 		this(true, false, size);
 	}
 
+	/**
+	 * Reads from the input the number of elements,
+	 * if it should enable delimiters and the elements
+	 * of the buffer.
+	 */
 	@Override
 	public void readFrom(DataInput input) throws IOException {
 		nElements = (int) input.readLong();
@@ -74,6 +106,11 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 		pointerLastElement = -1;
 	}
 
+	/**
+	 * Writes in the output the number of elements,
+	 * if the delimiters are enabled and the elments
+	 * of the buffer.
+	 */
 	@Override
 	public void writeTo(DataOutput output) throws IOException {
 		output.writeLong(nElements);
