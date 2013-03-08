@@ -30,6 +30,15 @@ public class IbisMonitor implements Runnable {
 	public long time;
     }
     
+    /**
+     * Creates a new IbisMonitor.
+     * 
+     * @param ibis
+     * 		Is a Ibis instance. 
+     * @return
+     * 		A newly created IbisMonitor.
+     * @throws Exception
+     */
     public static IbisMonitor createMonitor(Ibis ibis) throws Exception {
 	if (! log.isDebugEnabled()) {
 	    return null;
@@ -37,6 +46,14 @@ public class IbisMonitor implements Runnable {
 	return new IbisMonitor(ibis);
     }
     
+    /**
+     * Custom constructor. Sets the ibis field
+     * of the class and starts a daemon thread.
+     * 
+     * @param ibis
+     * 		The new instance of Ibis.
+     * @throws Exception
+     */
     private IbisMonitor(Ibis ibis) throws Exception {
 	this.ibis = ibis;
 	
@@ -57,6 +74,14 @@ public class IbisMonitor implements Runnable {
         return beanServer.getAttribute(operatingSystemBean, "ProcessCpuTime");
     }
     
+    /**
+     * It updates the properties and puts the 
+     * informations into log.
+     * @param num
+     * 		It reflect how many times the INTERVAL
+     * 		was added at the waiting time.
+     * @throws Exception
+     */
     private void logData(int num) throws Exception {
 	Map<String, String> properties = ibis.managementProperties();
 	long sent = Long.parseLong(properties.get("bytesWritten"));
@@ -75,6 +100,13 @@ public class IbisMonitor implements Runnable {
 	oldData.time = time;
     }
     
+    /**
+     * Sets if the ibis is monitored.
+     * If it is true it wakes up the thread. 
+     * 
+     * @param value
+     * 		The new value of monitoring.
+     */
     public synchronized void setMonitoring(boolean value) {
 	if (monitoring != value) {
 	    monitoring = value;
@@ -83,7 +115,12 @@ public class IbisMonitor implements Runnable {
 	    }
 	}
     }
-    
+
+    /**
+     * If the monitoring variable is true it logs 
+     * the attributes of the Ibis instance from 
+     * time to time.
+     */
     public synchronized void run() {
 	for (;;) {
 	    while (! monitoring) {

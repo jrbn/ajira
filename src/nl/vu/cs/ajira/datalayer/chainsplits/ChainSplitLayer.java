@@ -30,10 +30,21 @@ public class ChainSplitLayer extends InputLayer {
 		private boolean isOpen = true;
 		private Tuple tuple = null;
 
+		/**
+		 * Custom constructor.
+		 * 
+		 * @param id
+		 * 		The id of the SplitIterator.
+		 */
 		SplitIterator(int id) {
 			this.id = id;
 		}
 
+		/**
+		 * 
+		 * @return
+		 * 		The id of the SplitIterator
+		 */
 		public int getId() {
 			return id;
 		}

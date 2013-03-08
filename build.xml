@@ -35,8 +35,8 @@
 
 	<target name="ibis-server" description="launch the Ibis server">
 		<java classname="ibis.ipl.server.Server" fork="true">
-			<arg value="--events" />
-			<jvmarg value="-Dlogback.configurationFile=conf/logback.xml" />
+			<arg line="--events --port 31245" />
+			<jvmarg value="-Dlogback.configurationFile=${CONF_PATH}/logback.xml" />
 			<classpath>
 				<fileset dir="${LIB_PATH}">
 					<include name="logging/*.jar" />

@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 public class ReadFromFiles extends Action {
 
 	public static final String MINIMUM_SPLIT_SIZE = "splitinput.minimumsize";
-	public static final int MINIMUM_FILE_SPLIT = 4 * 1024 * 1024; // 1 MB
+	public static final int MINIMUM_FILE_SPLIT = (4 * 1024 * 1024); // 4 MB
 
 	public static final int PATH = 0;
 	public static final String S_PATH = "path";
@@ -91,7 +91,7 @@ public class ReadFromFiles extends Action {
 		File file = new File(((TString) inputTuple.get(0)).getValue());
 
 		long sizeFile = file.length();
-		if (currentFileSplit.getSize() + sizeFile >= minimumFileSplitSize) {
+		if ((currentFileSplit.getSize() + sizeFile) >= minimumFileSplitSize) {
 			processSplit(context, output);
 		}
 		currentFileSplit.addFile(file);

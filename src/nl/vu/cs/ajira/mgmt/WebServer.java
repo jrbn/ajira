@@ -29,7 +29,7 @@ public class WebServer implements Runnable {
 
 	public void startWebServer(Context context) {
 		this.context = context;
-		serverPort = context.getConfiguration().getInt(WEBSERVER_PORT, 8080);
+		serverPort = context.getConfiguration().getInt(WEBSERVER_PORT, serverPort);
 		Thread thread = new Thread(this, "WebServer");
 		thread.start();
 	}

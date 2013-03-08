@@ -15,6 +15,12 @@ import nl.vu.cs.ajira.datalayer.TupleIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 
+ * This class provides an iterator for different
+ * types of files, it a layer over the files.
+ *
+ */
 public class FileLayer extends InputLayer {
 
 	public final static int OP_LS = 0;
@@ -25,11 +31,20 @@ public class FileLayer extends InputLayer {
 
 	int numberNodes;
 
+	/**
+	 * Sets the number of nodes that are used 
+	 * by the current context.
+	 */
 	@Override
 	protected void load(Context context) throws IOException {
 		numberNodes = context.getNetworkLayer().getNumberNodes();
 	}
 
+	/**
+	 * Returns a Iterator. Depending on the operation given 
+	 * through the tuple parameter it can be a ListFilesIterator
+	 * or a FilesIterator.
+	 */
 	@Override
 	public TupleIterator getIterator(Tuple tuple, ActionContext context) {
 		try {
@@ -94,6 +109,12 @@ public class FileLayer extends InputLayer {
 		return null;
 	}
 
+	/**
+	 * Depending on the first value of the tuple it returns
+	 * the ChainLocation of this node or a new ChainLocation
+	 * whose id is formed from a substring of the second value
+	 * of the tuple. 
+	 */
 	@Override
 	public ChainLocation getLocations(Tuple tuple, ActionContext context) {
 		try {

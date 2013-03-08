@@ -204,8 +204,11 @@ public class Chain implements Writable, Query {
 		this.tuple.copyTo(tuple);
 	}
 
-	public void setActions(List<ActionConf> actions, ActionContext context)
+	public int setActions(List<ActionConf> actions, ActionContext context)
 			throws Exception {
+		
+		int retval = -1;
+		
 		if (actions != null) {
 
 			for (int i = 0; i < actions.size(); ++i) {
@@ -223,7 +226,10 @@ public class Chain implements Writable, Query {
 			for (int i = actions.size() - 1; i >= 0; i--) {
 				ActionConf c = actions.get(i);
 				try {
-					addAction(c, context);
+					int v = addAction(c, context);
+					if (i == actions.size() - 1) {
+						retval = v;
+					}
 				} catch (Exception e) {
 					log.error("Error in adding action " + c, e);
 					throw new Exception("The setup of the action " + c);
@@ -232,6 +238,7 @@ public class Chain implements Writable, Query {
 		} else {
 			throw new Exception("No action is defined");
 		}
+		return retval;
 	}
 
 	public void setAction(ActionConf action, ActionContext context)
@@ -246,9 +253,11 @@ public class Chain implements Writable, Query {
 		addAction(action, context);
 	}
 
-	private void addAction(ActionConf action, ActionContext context)
+	private int addAction(ActionConf action, ActionContext context)
 			throws Exception {
 
+		int retval = -1;
+		
 		// Process the parameters and possibly insert instructions to control
 		// the flow.
 		if (action.getConfigurator() != null) {
@@ -264,7 +273,7 @@ public class Chain implements Writable, Query {
 						setAction(list.get(i), context);
 					}
 				}
-				return;
+				return retval;
 			}
 
 			if (controller.stopProcessing) {
@@ -273,6 +282,7 @@ public class Chain implements Writable, Query {
 				cos.writeInt(controller.destination);
 				cos.writeBoolean(true);
 				bufferSize += 9;
+				retval = controller.bucketId;
 			} else {
 				cos.writeBoolean(false);
 				bufferSize++;
@@ -311,6 +321,7 @@ public class Chain implements Writable, Query {
 				setAction(list.get(i), context);
 			}
 		}
+		return retval;
 	}
 
 	void setRawSize(int size) {
