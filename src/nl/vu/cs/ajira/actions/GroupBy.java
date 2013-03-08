@@ -15,7 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class GroupBy extends Action {
-	
+
 	static final Logger log = LoggerFactory.getLogger(GroupIterator.class);
 
 	private static class GroupIterator implements Iterator<Tuple> {
@@ -115,7 +115,7 @@ public class GroupBy extends Action {
 	public static class Configurator extends ActionConf.Configurator {
 
 		@Override
-		void setupAction(Query query, Object[] params,
+		public void setupAction(Query query, Object[] params,
 				ActionController controller, ActionContext context) {
 
 			// Which fields should be used for the grouping? Get them from the

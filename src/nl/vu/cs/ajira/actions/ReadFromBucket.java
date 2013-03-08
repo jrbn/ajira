@@ -19,7 +19,7 @@ public class ReadFromBucket extends Action {
 
 	static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
-		void setupAction(Query query, Object[] params,
+		public void setupAction(Query query, Object[] params,
 				ActionController controller, ActionContext context) {
 			if (params[NODE_ID] == null) {
 				params[NODE_ID] = -1;

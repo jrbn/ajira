@@ -28,7 +28,7 @@ public class ActionConf implements Writable {
 			setupAction(query, conf.valuesParameters, controller, context);
 		}
 
-		abstract void setupAction(Query query, Object[] params,
+		public abstract void setupAction(Query query, Object[] params,
 				ActionController controller, ActionContext context);
 	}
 
@@ -110,7 +110,8 @@ public class ActionConf implements Writable {
 	public void registerParameter(int id, String nameParam,
 			Object defaultValue, boolean isRequired) {
 		if (nameParam == null) {
-			throw new IllegalArgumentException("registerParameter: parameter should have a name");
+			throw new IllegalArgumentException(
+					"registerParameter: parameter should have a name");
 		}
 		if (!checkAllowedTypes(defaultValue)) {
 			throw new IllegalArgumentException("invalid default value type");
@@ -121,8 +122,9 @@ public class ActionConf implements Writable {
 		}
 
 		if (allowedParameters.size() >= MAX_PARAM_SIZE) {
-			throw new IllegalArgumentException("Reached maximum number of parameters ("
-					+ MAX_PARAM_SIZE + ")");
+			throw new IllegalArgumentException(
+					"Reached maximum number of parameters (" + MAX_PARAM_SIZE
+							+ ")");
 		}
 
 		ParamItem item = new ParamItem();
