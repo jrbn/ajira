@@ -14,7 +14,7 @@ public class QueryInputLayer extends Action {
 
 	static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
-		void setupAction(Query query, Object[] params,
+		public void setupAction(Query query, Object[] params,
 				ActionController controller, ActionContext context) {
 			query.setInputLayer(((Integer) params[INPUT_LAYER]).intValue());
 			TupleSerializer t = (TupleSerializer) params[TUPLE];

@@ -35,7 +35,7 @@ public class ReadFromFiles extends Action {
 
 	static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
-		void setupAction(Query query, Object[] params,
+		public void setupAction(Query query, Object[] params,
 				ActionController controller, ActionContext context) {
 			if (params[PATH] != null) {
 				query.setInputLayer(Consts.DEFAULT_INPUT_LAYER_ID);
