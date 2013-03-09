@@ -166,6 +166,7 @@ public class Bucket {
 			.newInstance(WritableContainer.class, N_WBUFFS);
 	private int currWBuffIndex = 0;
 	private boolean removeWChunkDone[] = new boolean[N_WBUFFS];
+
 	private final Object removeWChunk = new Object(),
 			lockWriteBuffer[] = new Object[N_WBUFFS];
 
