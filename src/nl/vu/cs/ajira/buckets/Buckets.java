@@ -175,7 +175,7 @@ public class Buckets {
 			log.debug("releaseBucket: " + bucket.getKey());
 		}
 
-		bucket.releaseTuples();
+		bucket.releaseBuffers();
 		buckets.remove(bucket.getKey());
 	}
 

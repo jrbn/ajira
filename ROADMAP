@@ -1,0 +1,49 @@
+#Cristian Barca [cbarca]
+#cristi.barca@gmail.com
+
+Research-Project
+[Arch:research_master - improving Arch:master execution speed, manually-merge with research@79cde6dabd]
+
+[Legend]
+local-data = data with hash(tuple) = _node_id
+remote-data = data with hash(tuple) != _node_id
+local-bucket = bucket that keeps local-data sorted
+remote-bucket = bucket that keeps remote-data (for other nodes to pull chunks with tuples from it) unsorted
+
+Roadmap:
+
+1) Measuring performances for Arch:benchm_master, merged from master@HEAD <TODO>
+- data-set sizes used for measurements [in GB]: 1.1, 1.5, 2.1, 3.5, 4.2, 11, 21, 38
+
+2) Shuffling
+- remove the sort property for the remote-buckets <TODO>
+- have two buffers instead of one (inBuffer and exBuffer) <TODO>
+    - from the point of view of a local-bucket:
+        - inBuffer keeps local-data sorted --> local-data from disk 
+        - exBuffer gathers and sorts its assigned data from other nodes --> local-data from network
+    - from the point of view of a remote-bucket:
+        - inBuffer keeps remote-data unsorted
+        - exBuffer is not very relevant
+            - though, exBuffer may be used for a 'double-buffering' mechanism when sending tuples, if we do not want
+            to pull data directly from inBuffer [perhaps it may slow the local reading?!]
+- interleave send-receive 
+    - use the remote-bucket:inBuffer to _send_ and the local-bucket:exBuffer to _receive_ tuples <TODO>
+    - when we call startTransfer we should alert the other nodes to send a request for bucket_fetch <TODO>
+    - change the synchrionization granularity between inBuffer and ExBuffer <TODO>:
+        - for a local-bucket:
+            - inBuffer should independent from exBuffer: local-read indep. from receive/addAll --> sync only when caching <TODO>
+        - for a remote-bucket:
+            - exBuffer may be used for a 'double-buffering' mechanism [food_for_thought_] -- removeChunk then should be changed
+    - 2 threads per remote-bucket? --> one for local file read / one for packing messages whenever is a request for pull  <TODO>
+        - this means to allow concurrent operations on a single WritableContainer<T>
+
+3) InMemory-merging 
+- merge data from both local buffers (inBuffer and exBuffer) <TODO>
+- change the sorting mechanism such as remove-chunk will perform only on the memory and that fetch-from-file will happen
+in the background ('hide' the disk fetching mechansim --> when we create a sorted-list with all the minimums from files) <TODO>
+
+4*) Data-sampling
+- trie sampling
+
+5) Measuring changes in performances [future branch: benchm_research_master]
+

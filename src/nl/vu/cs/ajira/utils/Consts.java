@@ -23,7 +23,7 @@ public class Consts {
 	public static final int STARTING_SIZE_FACTORY = 0;
 	public static final int INIT_ACTION_CACHE = 3;
 
-	public static final int MIN_SIZE_TO_SEND = 4 * 1024 * 1024;
+	public static final int MIN_SIZE_TO_SEND = 128 * 1024 * 1024;
 	public static final int N_ELEMENTS_FACTORY = 100000;
 
 	public static final int MAN_N_DATA_IN_TUPLE = 20;
