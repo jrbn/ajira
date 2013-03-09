@@ -46,14 +46,19 @@ public class GroupBy extends Action {
 			}
 			this.outputTuple = TupleFactory.newTuple(sValues);
 
-			this.elementAvailable = true;
 			this.hasMore = itr.nextTuple();
 
-			// Copy the key elements in the internal key data structure
 			for (int i = 0; i < sizeKey; ++i) {
 				key[i] = DataProvider.getInstance().get(
 						inputTuple.get(i).getIdDatatype());
-				inputTuple.get(i).copyTo(key[i]);
+			}
+		}
+
+		public void initKey() {
+			this.elementAvailable = true;
+			// Copy the key elements in the internal key data structure
+			for (int i = 0; i < sizeKey; ++i) {
+				this.inputTuple.get(i).copyTo(key[i]);
 			}
 		}
 
@@ -65,31 +70,27 @@ public class GroupBy extends Action {
 		@Override
 		public Tuple next() {
 			// Copy the value elements to return
-			for (int i = 0; i < sValues.length; ++i) {
-				inputTuple.get(sizeKey + i).copyTo(sValues[i]);
-			}
-
-			// Move to the next element
-			try {
-				if (hasMore) {
-					itr.getTuple(inputTuple);
-					for (int i = 0; i < sizeKey && elementAvailable; ++i) {
-						elementAvailable = inputTuple.get(i).equals(key[i]);
-					}
-
-					// Copy key
-					for (int i = 0; i < sizeKey; ++i) {
-						inputTuple.get(i).copyTo(key[i]);
-					}
-
-					hasMore = itr.nextTuple();
-				} else {
-					elementAvailable = false;
+			if (elementAvailable) {
+				for (int i = 0; i < sValues.length; ++i) {
+					inputTuple.get(sizeKey + i).copyTo(sValues[i]);
 				}
-			} catch (Exception e) {
-				log.error("Error with the iterator", e);
-				elementAvailable = false;
-				hasMore = false;
+
+				// Move to the next element
+				try {
+					if (hasMore) {
+						itr.getTuple(inputTuple);
+						for (int i = 0; i < sizeKey && elementAvailable; ++i) {
+							elementAvailable = inputTuple.get(i).equals(key[i]);
+						}
+						hasMore = itr.nextTuple();
+					} else {
+						elementAvailable = false;
+					}
+				} catch (Exception e) {
+					log.error("Error with the iterator", e);
+					elementAvailable = false;
+					hasMore = false;
+				}
 			}
 
 			return outputTuple;
@@ -161,6 +162,7 @@ public class GroupBy extends Action {
 		outputTuple[posFieldsToGroup.length] = new TBag(itr);
 
 		do {
+			itr.initKey();
 			actionOutput.output(outputTuple);
 			itr.resetIterator();
 		} while (itr.hasMore);
