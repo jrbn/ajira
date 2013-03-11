@@ -134,7 +134,6 @@ class ChainTerminator implements Runnable {
 						msg.writeLong(header.chainId);
 						msg.writeLong(header.parentChainId);
 						msg.writeInt(header.nchildren);
-						msg.writeInt(header.nchildren);
 						msg.writeInt(header.generatedRootChains);
 						ibis.finishMessage(msg, header.submissionId);
 						if (log.isDebugEnabled()) {
