@@ -328,8 +328,9 @@ public class Buckets {
 			if (info == null) {
 				// There is no transfer active. Create one.
 				info = new TransferInfo();
+				// Remote buckets are not sorted (sorting is disabled)
 				info.bucket = getOrCreateBucket(submissionNode, submission,
-						context.getNewBucketID(), sort, sortingFields,
+						context.getNewBucketID(), false, null,
 						signature);
 				map.put(key, info);
 			} else {
@@ -338,6 +339,66 @@ public class Buckets {
 		}
 
 		return info.bucket;
+	}
+
+	public void alertTransfer(int submissionNode, int submission, int node,
+			int bucketID, long chainId, long parentChainId, int nchildren,
+			boolean responsible, boolean sort, byte[] sortingParams) 
+					throws IOException {
+
+		if (node == myPartition || net.getNumberNodes() == 1) {
+			return;
+		}
+
+		Map<Long, TransferInfo> map = activeTransfers[node];
+		long key = getKey(submission, bucketID);
+		TransferInfo info = null;
+		
+		// Alert the node that there is an active transfer
+		WriteMessage message = net.getMessageToSend(net.getPeerLocation(node),
+				NetworkLayer.nameMgmtReceiverPort);
+		message.writeByte((byte) 1); // Mark to indicate there are tuples
+		message.writeInt(submissionNode);
+		message.writeInt(submission);
+		message.writeInt(bucketID); // Remote bucket ID
+		message.writeLong(chainId);
+		message.writeLong(parentChainId);
+		message.writeInt(nchildren);
+		message.writeBoolean(responsible);
+	
+		// Though the remote bucket is not sorted we do send the sortingFunction
+		// along with its params because the recipient might not have created
+		// its local bucket in time, so, instead, this message creates the local 
+		// bucket for it -- if necessary
+		if (! sort) {
+			message.writeBoolean(false);
+		} else {
+			message.writeBoolean(true);
+
+			if (sortingParams != null && sortingParams.length > 0) {
+				message.writeInt(sortingParams.length);
+				message.writeArray(sortingParams);
+			} else {
+				message.writeInt(0);
+			}
+		}
+
+		synchronized (map) {
+			info = map.get(key);
+
+			if (info == null || info.alerted) {
+				// There was no triple in the bucket OR
+				// the remote node has already been alerted
+				message.writeLong(-1); // Flag
+			} else {
+				// There will be something in the bucket, alert
+				// the node responsible with this remote-data.
+				info.alerted = true;
+				message.writeLong(info.bucket.getKey()); // Local bucket key
+			}
+		}
+
+		net.finishMessage(message, submission);
 	}
 
 	/**
@@ -394,52 +455,20 @@ public class Buckets {
 
 		long key = getKey(submission, bucketID);
 		TransferInfo info = null;
-
-		// Alert the node that there is an active transfer
-		WriteMessage message = net.getMessageToSend(net.getPeerLocation(node),
-				NetworkLayer.nameMgmtReceiverPort);
-		message.writeByte((byte) 1); // Mark to indicate there are tuples
-		message.writeInt(submissionNode);
-		message.writeInt(submission);
-		message.writeInt(bucketID); // Remote bucket
-		message.writeLong(chainId);
-		message.writeLong(parentChainId);
-		message.writeInt(nchildren);
-		message.writeBoolean(responsible);
-		if (!sort) {
-			message.writeBoolean(false);
-		} else {
-			message.writeBoolean(true);
-			if (sortingFields != null && sortingFields.length > 0) {
-				message.writeInt(sortingFields.length);
-				message.writeArray(sortingFields);
-			} else {
-				message.writeInt(0);
-			}
-		}
-
-		synchronized (map) {
+		
+		synchronized(map) {
 			info = map.get(key);
-
-			if (info == null || info.alerted) {
-				// There was no triple in the bucket
-				message.writeLong(-1); // Local buffer ID
-			} else {
-				// There was something in the bucket. The remote node has
-				// already been alerted
-				info.alerted = true;
-				message.writeLong(info.bucket.getKey()); // Local buffer ID
+			if (info == null || !info.alerted) {
+                alertTransfer(submissionNode, submission, node, bucketID,
+                        chainId, parentChainId, nchildren, responsible,
+                        sort, sortingFields);
 			}
+
 
 			if (info != null && decreaseCounter) {
 				info.count--;
 			}
 		}
-
-		message.writeByte((byte) signature.length);
-		message.writeArray(signature);
-
-		net.finishMessage(message, submission);
 	}
 
 	/**

@@ -165,7 +165,7 @@ public class ActionConf implements Writable {
 					output.writeUTF((String) value);
 				} else if (value instanceof Long) {
 					output.writeByte(2);
-					output.writeLong((Long) value);
+					output.writeLong(((Long) value).longValue());
 				} else if (value instanceof Boolean) {
 					output.writeByte(3);
 					output.writeBoolean(((Boolean) value).booleanValue());

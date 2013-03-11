@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.actions.Action;
 import nl.vu.cs.ajira.actions.ActionConf;
@@ -58,6 +61,8 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	private int transferBucketId;
 	private boolean localMode;
 	private int childrenToTransfer;
+	
+	private static final Logger log = LoggerFactory.getLogger(ChainExecutor.class);
 
 	public ChainExecutor(ChainHandler handler, Context context) {
 		this.context = context;
@@ -337,9 +342,32 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 	@Override
 	public Bucket startTransfer(int nodeId, int bucketId, boolean sort,
-			byte[] sortingFields, byte[] signature) {
-		return context.getBuckets().startTransfer(submissionNode, submissionId,
+			byte[] sortingFields, byte[] signature) throws IOException {
+		Bucket temp = context.getBuckets().startTransfer(submissionNode, submissionId,
 				nodeId, bucketId, sort, sortingFields, signature, this);
+
+		try {
+			int children = chain.getTotalChainChildren();
+
+			if (children != 0 && currentAction < smallestRuntimeAction) {
+				// Check whether some intermediate nodes after have derived some
+				// info. If they do, we need to decrease the counter.
+				for (int i = smallestRuntimeAction; i < nActions; ++i) {
+					if (currentAction > cRuntimeBranching[i]) {
+						children -= cRuntimeBranching[i];
+					}
+				}
+			}
+
+			context.getBuckets().alertTransfer(submissionNode, submissionId, 
+					nodeId, bucketId, chain.getChainId(), chain.getParentChainId(), 
+					children, roots[currentAction], sort, null);
+		} catch (IOException e) {
+			log.error(e.getMessage(), e);
+			throw e;
+		}
+	
+		return temp;
 	}
 
 	@Override
