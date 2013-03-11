@@ -370,11 +370,8 @@ public class Buckets {
 		// along with its params because the recipient might not have created
 		// its local bucket in time, so, instead, this message creates the local 
 		// bucket for it -- if necessary
-		if (! sort) {
-			message.writeBoolean(false);
-		} else {
-			message.writeBoolean(true);
-
+                message.writeBoolean(sort);
+		if (sort) {
 			if (sortingParams != null && sortingParams.length > 0) {
 				message.writeInt(sortingParams.length);
 				message.writeArray(sortingParams);
