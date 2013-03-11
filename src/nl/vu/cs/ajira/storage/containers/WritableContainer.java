@@ -30,11 +30,21 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 	private int pointerLastElement; // <- not necessary in the new version.
 									// Should be removed
 	private int lengthLastElement;
-	protected DataOutput output;
-	protected DataInput input;
+	protected BDataOutput output;
+	protected BDataInput input;
 
 	protected boolean enableFieldDelimitors = false;
 
+	/**
+	 * Creates a new object.
+	 * 
+	 * @param circular 
+	 * 		Influences the class used for the input and output fields.
+	 * @param enableFieldMarks
+	 * 		Is the new value of enableFieldDelimitors.
+	 * @param maxSize
+	 * 		The maximum size of the ByteArray's buffer. 
+	 */
 	public WritableContainer(Boolean circular, Boolean enableFieldMarks,
 			int maxSize) {
 		super(256 * 1024, maxSize);
@@ -51,14 +61,36 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 		pointerLastElement = -1;
 	}
 
+	/**
+	 * Constructs a new object and uses CBDataInput 
+	 * class for the input and output fields.
+	 * 
+	 * @param enableFieldMarks
+	 * 		Is the new value of enableFieldDelimitors.
+	 * @param size
+	 * 		The maximum size of the ByteArray's buffer.
+	 */
 	public WritableContainer(Boolean enableFieldMarks, Integer size) {
 		this(new Boolean(true), enableFieldMarks, size);
 	}
 
+	/**
+	 * Constructs a new object. Uses CBDataInput 
+	 * class for the input and output fields and
+	 * set the enableFieldDelimitors to false.
+	 * 
+	 * @param size
+	 * 		The maximum size of the ByteArray's buffer.
+	 */
 	public WritableContainer(Integer size) {
 		this(true, false, size);
 	}
 
+	/**
+	 * Reads from the input the number of elements,
+	 * if it should enable delimiters and the elements
+	 * of the buffer.
+	 */
 	@Override
 	public void readFrom(DataInput input) throws IOException {
 		nElements = (int) input.readLong();
@@ -74,6 +106,11 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 		pointerLastElement = -1;
 	}
 
+	/**
+	 * Writes in the output the number of elements,
+	 * if the delimiters are enabled and the elments
+	 * of the buffer.
+	 */
 	@Override
 	public void writeTo(DataOutput output) throws IOException {
 		output.writeLong(nElements);
@@ -103,7 +140,7 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 	}
 
 	@Override
-	public boolean add(K element) throws Exception {
+	public boolean add(K element) {
 		int lastPos = end;
 		try {
 			// Write the length of the element in the buffer
@@ -145,13 +182,13 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 	}
 
 	@Override
-	public boolean addAll(WritableContainer<K> buffer) throws Exception {
+	public boolean addAll(WritableContainer<K> buffer) {
 
 		try {
 
 			if (enableFieldDelimitors != buffer.enableFieldDelimitors
 					&& nElements > 0) {
-				throw new Exception(
+				throw new UnsupportedOperationException(
 						"addAll works only if the two buffers share the parameter FieldDelimiters");
 			}
 
@@ -188,7 +225,7 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 	}
 
 	@Override
-	public boolean remove(K element) throws Exception {
+	public boolean remove(K element) {
 		try {
 			if (start == end)
 				return false;
@@ -206,9 +243,9 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 		}
 	}
 
-	public byte[] removeRaw(byte[] value) throws Exception {
+	public byte[] removeRaw(byte[] value) {
 		if (!enableFieldDelimitors)
-			throw new Exception("Method not supported");
+			throw new UnsupportedOperationException("Method not supported");
 
 		if (start == end)
 			return null;
@@ -226,7 +263,7 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 		return v;
 	}
 
-	public byte[] removeLastElement() throws IOException {
+	public byte[] removeLastElement() {
 		if (pointerLastElement < 0) {
 			// Not available.
 			return null;
@@ -294,11 +331,10 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 		}
 	}
 
-	public void sort(final RawComparator<K> c, Factory<WritableContainer<K>> fb)
-			throws IOException {
+	public void sort(final RawComparator<K> c, Factory<WritableContainer<K>> fb) {
 
 		if (!enableFieldDelimitors) {
-			throw new Error(
+			throw new UnsupportedOperationException(
 					"Sorting doesn't work if the flag enableFieldDelimiters is set to false");
 		}
 
@@ -347,7 +383,11 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 		time = System.currentTimeMillis();
 		if (size < buffer.length / 2) {
 			for (int index : indexes) {
-				output.writeInt(coordinates[index + 1]);
+				try {
+					output.writeInt(coordinates[index + 1]);
+				} catch (IOException e) {
+					log.error("Internal error, should not happen", e);
+				}
 				copyRegion(coordinates[index], coordinates[index + 1]);
 				nElements++;
 			}
@@ -356,7 +396,11 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 			newArray.clear();
 			newArray.grow((int) size);
 			for (int index : indexes) {
-				newArray.output.writeInt(coordinates[index + 1]);
+				try {
+					newArray.output.writeInt(coordinates[index + 1]);
+				} catch (IOException e) {
+					log.error("Internal error, should not happen", e);
+				}
 				if (coordinates[index] + coordinates[index + 1] > buffer.length) {
 					// Note, newArray cannot wrap, since it is new ...
 					int len1 = buffer.length - coordinates[index];
@@ -401,19 +445,23 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 		}
 	}
 
-	public boolean addRaw(byte[] key) throws IOException {
+	public boolean addRaw(byte[] key) {
 
 		if (!grow(key.length + 4)) {
 			return false;
 		}
 
-		if (enableFieldDelimitors) {
-			output.writeInt(key.length);
-			pointerLastElement = end;
-			output.write(key);
-			lengthLastElement = key.length;
-		} else {
-			output.write(key);
+		try {
+			if (enableFieldDelimitors) {
+				output.writeInt(key.length);
+				pointerLastElement = end;
+				output.write(key);
+				lengthLastElement = key.length;
+			} else {
+				output.write(key);
+			}
+		} catch(IOException e) {
+			log.error("Internal error, should not happen", e);
 		}
 
 		nElements++;

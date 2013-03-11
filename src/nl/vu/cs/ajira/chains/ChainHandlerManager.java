@@ -100,4 +100,25 @@ public class ChainHandlerManager {
 		}
 
 	}
+
+	public void submissionFailed(int submissionId) {
+	    // Grab a lock on chainsToProcess, so that chain handlers can no longer
+	    // obtain chains.
+	    synchronized(chainsToProcess) {
+	    	// Kill all chains that are waiting for a tuple iterator to become ready.
+	    	context.getChainNotifier().removeWaiters(submissionId);
+
+	    	int nChains = chainsToProcess.getNElements();
+	    	for (int i = 0; i < nChains; i++) {
+	    		Chain ch = new Chain();
+	    		chainsToProcess.remove(ch);
+	    		if (ch.getSubmissionId() != submissionId) {
+	    			chainsToProcess.add(ch);
+	    		}
+	    	}
+	    	for (ChainHandler ch : chainHandlers) {
+	    		ch.submissionFailed(submissionId);
+	    	}
+	    }
+	}
 }

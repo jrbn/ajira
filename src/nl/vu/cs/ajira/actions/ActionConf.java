@@ -24,14 +24,12 @@ public class ActionConf implements Writable {
 	public static abstract class Configurator {
 
 		public void process(Query query, ActionConf conf,
-				ActionController controller, ActionContext context)
-				throws Exception {
+				ActionController controller, ActionContext context) {
 			setupAction(query, conf.valuesParameters, controller, context);
 		}
 
-		abstract void setupAction(Query query, Object[] params,
-				ActionController controller, ActionContext context)
-				throws Exception;
+		public abstract void setupAction(Query query, Object[] params,
+				ActionController controller, ActionContext context);
 	}
 
 	static class ParamItem {
@@ -110,9 +108,13 @@ public class ActionConf implements Writable {
 	}
 
 	public void registerParameter(int id, String nameParam,
-			Object defaultValue, boolean isRequired) throws Exception {
-		if (nameParam == null || !checkAllowedTypes(defaultValue)) {
-			throw new Exception("Not valid parameter");
+			Object defaultValue, boolean isRequired) {
+		if (nameParam == null) {
+			throw new IllegalArgumentException(
+					"registerParameter: parameter should have a name");
+		}
+		if (!checkAllowedTypes(defaultValue)) {
+			throw new IllegalArgumentException("invalid default value type");
 		}
 
 		if (allowedParameters == null) {
@@ -120,8 +122,9 @@ public class ActionConf implements Writable {
 		}
 
 		if (allowedParameters.size() >= MAX_PARAM_SIZE) {
-			throw new Exception("Reached maximum number of parameters ("
-					+ MAX_PARAM_SIZE + ")");
+			throw new IllegalArgumentException(
+					"Reached maximum number of parameters (" + MAX_PARAM_SIZE
+							+ ")");
 		}
 
 		ParamItem item = new ParamItem();

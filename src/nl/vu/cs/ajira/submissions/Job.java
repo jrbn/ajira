@@ -15,7 +15,6 @@ public class Job implements Writable {
 	private boolean waitForStatistics = true;
 	private boolean printIntermediateStats = false;
 	private boolean printStatistics = true;
-	private int assignedBucket = -1;
 	private List<ActionConf> actions;
 
 	@Override
@@ -23,15 +22,14 @@ public class Job implements Writable {
 		waitForStatistics = input.readBoolean();
 		printIntermediateStats = input.readBoolean();
 		printStatistics = input.readBoolean();
-		assignedBucket = input.readInt();
 		actions = new ArrayList<ActionConf>();
 		int n = input.readInt();
 		for (int i = 0; i < n; ++i) {
 			String className = input.readUTF();
 			ActionConf a = ActionFactory.getActionConf(className);
 			a.readFrom(input);
+			actions.add(a);
 		}
-
 	}
 
 	@Override
@@ -39,7 +37,6 @@ public class Job implements Writable {
 		output.writeBoolean(waitForStatistics);
 		output.writeBoolean(printIntermediateStats);
 		output.writeBoolean(printStatistics);
-		output.writeInt(assignedBucket);
 		if (actions != null) {
 			output.writeInt(actions.size());
 			for (ActionConf a : actions) {
@@ -51,20 +48,8 @@ public class Job implements Writable {
 		}
 	}
 
-	// @Override
-	// public int bytesToStore() {
-	// return 0;
-	// }
 
-	public void setAssignedOutputBucket(int bucket) {
-		assignedBucket = bucket;
-	}
-
-	public int getAssignedOutputBucket() {
-		return assignedBucket;
-	}
-
-	public void addActions(List<ActionConf> actions) {
+	public void setActions(List<ActionConf> actions) {
 		this.actions = actions;
 	}
 

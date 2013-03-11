@@ -10,3 +10,4 @@ tmp-eclipse
 .*~
 .DS_Store
 /TODO
+/build.xml

@@ -26,6 +26,23 @@ public class ChainNotifier {
 		this.context = context;
 		ac = new ChainExecutor(null, context);
 	}
+	
+	/**
+	 * Removes all waiters from a specific submission id. To be used when a submission
+	 * fails for some reason.
+	 * @param submissionId the submission that failed.
+	 */
+	public synchronized void removeWaiters(int submissionId) {
+		TupleIterator[] w = waiters.keySet().toArray(new TupleIterator[0]);
+		for (TupleIterator i : w) {
+			Chain ch = waiters.get(i);
+			if (ch != null && ch.getSubmissionId() == submissionId) {
+				waiters.remove(i);
+				InputLayer input = context.getInputLayer(ch.getInputLayer());
+				input.releaseIterator(i, ac);
+			}
+		}
+	}
 
 	public synchronized void addWaiter(TupleIterator iter, Chain chain) {
 		waiters.put(iter, chain);

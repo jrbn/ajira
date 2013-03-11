@@ -39,6 +39,14 @@ public abstract class InputLayer {
 		return storage;
 	}
 
+	/**
+	 * Loads the InputLayer for the current context
+	 * and logs the time.
+	 * 
+	 * @param context
+	 * 		Current context
+	 * @throws Exception
+	 */
 	public void startup(Context context) throws Exception {
 		long time = System.currentTimeMillis();
 		load(context);
@@ -46,6 +54,13 @@ public abstract class InputLayer {
 				+ " (ms): " + (System.currentTimeMillis() - time));
 	}
 
+	/**
+	 * Loads the InputLayer for the current context.
+	 * 
+	 * @param context
+	 * 		Current context
+	 * @throws Exception
+	 */
 	protected abstract void load(Context context) throws Exception;
 
 	public abstract TupleIterator getIterator(Tuple tuple, ActionContext context);

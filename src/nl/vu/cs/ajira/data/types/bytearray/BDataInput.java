@@ -1,7 +1,6 @@
 package nl.vu.cs.ajira.data.types.bytearray;
 
 import java.io.DataInput;
-import java.io.IOException;
 
 public class BDataInput implements DataInput {
 
@@ -62,7 +61,7 @@ public class BDataInput implements DataInput {
 	 * Returns the first byte from the beginning of 
 	 * the ByteArray's buffer. 
 	 */
-	public boolean readBoolean() throws IOException {
+	public boolean readBoolean() {
 		return readByte() == 1;
 	}
 
@@ -71,30 +70,30 @@ public class BDataInput implements DataInput {
 	 * Returns the first byte from the beginning of 
 	 * the ByteArray's buffer. 
 	 */
-	public byte readByte() throws IOException {
+	public byte readByte() {
 		return cb.buffer[cb.start++];
 	}
 
 	@Override
-	public char readChar() throws IOException {
-		throw new IOException("Not supported");
+	public char readChar() {
+		throw new UnsupportedOperationException("Not supported");
 	}
 
 	@Override
-	public double readDouble() throws IOException {
-		throw new IOException("Not supported");
+	public double readDouble() {
+		throw new UnsupportedOperationException("Not supported");
 	}
 
 	@Override
-	public float readFloat() throws IOException {
-		throw new IOException("Not supported");
+	public float readFloat() {
+		throw new UnsupportedOperationException("Not supported");
 	}
 
 	@Override
 	/**
 	 *  Copies b in cb's buffer.
 	 */
-	public void readFully(byte[] b) throws IOException {
+	public void readFully(byte[] b) {
 		readFully(b, 0, b.length);
 	}
 
@@ -102,7 +101,7 @@ public class BDataInput implements DataInput {
 	/**
 	 * Copies len bytes from b's off position in cb's buffer.
 	 */
-	public void readFully(byte[] b, int off, int len) throws IOException {
+	public void readFully(byte[] b, int off, int len) {
 		System.arraycopy(cb.buffer, cb.start, b, off, len);
 		cb.start += len;
 	}
@@ -112,7 +111,7 @@ public class BDataInput implements DataInput {
 	 * Returns the first int value from the beginning of 
 	 * the ByteArray's buffer
 	 */
-	public int readInt() throws IOException {
+	public int readInt() {
 		int value = 0;
 		int start = cb.start;
 		value += cb.buffer[start] << 24;
@@ -124,8 +123,8 @@ public class BDataInput implements DataInput {
 	}
 
 	@Override
-	public String readLine() throws IOException {
-		throw new IOException("Not supported");
+	public String readLine() {
+		throw new UnsupportedOperationException("Not supported");
 	}
 
 	@Override
@@ -133,7 +132,7 @@ public class BDataInput implements DataInput {
 	 * Returns the first long value from the beginning of 
 	 * the ByteArray's buffer
 	 */
-	public long readLong() throws IOException {
+	public long readLong() {
 		long value = 0;
 		int start = cb.start;
 		value = (long) cb.buffer[start] << 56;
@@ -153,7 +152,7 @@ public class BDataInput implements DataInput {
 	 * Returns the first short value from the beginning of 
 	 * the ByteArray's buffer
 	 */
-	public short readShort() throws IOException {
+	public short readShort() {
 		short value = 0;
 		int start = cb.start;
 		value += cb.buffer[start] << 8;
@@ -168,7 +167,7 @@ public class BDataInput implements DataInput {
 	 * the ByteArray and then creates a new String 
 	 * of the size just read. 
 	 */
-	public String readUTF() throws IOException {
+	public String readUTF() {
 		int size = readInt();
 		String v = new String(cb.buffer, cb.start, size);
 		cb.start += size;
@@ -180,20 +179,20 @@ public class BDataInput implements DataInput {
 	 * Returns the first unsigned byte from the
 	 * beginning of the ByteArray's buffer. 
 	 */
-	public int readUnsignedByte() throws IOException {
+	public int readUnsignedByte() {
 		return readByte() & 0xFF;
 	}
 
 	@Override
-	public int readUnsignedShort() throws IOException {
-		throw new IOException("Not supported");
+	public int readUnsignedShort()  {
+		throw new UnsupportedOperationException("Not supported");
 	}
 
 	@Override
 	/**
 	 * Skips the number of bytes passed through the parameter.
 	 */
-	public int skipBytes(int n) throws IOException {
+	public int skipBytes(int n) {
 		if (cb.start + n < cb.buffer.length) {
 			cb.start += n;
 		} else {
@@ -202,3 +201,4 @@ public class BDataInput implements DataInput {
 		return n;
 	}
 }
+

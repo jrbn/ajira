@@ -7,7 +7,7 @@ public class WaitFor extends Action {
 	public static final int TOKEN = 0;
 
 	@Override
-	public void registerActionParameters(ActionConf conf) throws Exception {
+	public void registerActionParameters(ActionConf conf) {
 		conf.registerParameter(TOKEN, "token", null, true);
 	}
 

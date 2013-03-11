@@ -4,11 +4,11 @@ import nl.vu.cs.ajira.storage.containers.WritableContainer;
 
 public interface Container<K extends Writable> {
 
-	public boolean add(K element) throws Exception;
+	public boolean add(K element);
+	
+	public boolean addAll(WritableContainer<K> elements);
 
-	public boolean addAll(WritableContainer<K> elements) throws Exception;
-
-	public boolean remove(K element) throws Exception;
+	public boolean remove(K element);
 
 	public int getNElements();
 }

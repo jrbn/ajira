@@ -10,12 +10,31 @@ public abstract class TupleIterator {
 	ActionContext c;
 	String textCounter;
 
+	/**
+	 * It initialize the number of Tuples read,
+	 * the ActionContext and the name of the counter
+	 * that is used to keep track of the number of
+	 * Tuples read. 
+	 * 
+	 * @param c
+	 * 		The current ActionContext.
+	 * @param inputLayer
+	 * 		The name of the InputLayer.
+	 */
 	public void init(ActionContext c, String inputLayer) {
 		counter = 0;
 		this.c = c;
 		textCounter = "Records Read From Input: " + inputLayer;
 	}
 
+	/**
+	 * 
+	 * 
+	 * @return
+	 * 		True if there is a next Tuple 
+	 * 		and false otherwise.
+	 * @throws Exception
+	 */
 	public boolean nextTuple() throws Exception {
 		if (next()) {
 			counter++;

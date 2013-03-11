@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.text.NumberFormat;
 import java.util.zip.GZIPOutputStream;
 
@@ -39,7 +40,7 @@ public class WriteToFiles extends Action {
 		public StandardFileWriter() {
 		}
 
-		public void write(Tuple tuple) throws Exception {
+		public void write(Tuple tuple) throws IOException {
 			if (tuple.getNElements() > 0) {
 				String value = tuple.get(0).toString();
 				for (int i = 1; i < tuple.getNElements(); ++i) {
@@ -61,7 +62,7 @@ public class WriteToFiles extends Action {
 	long count;
 
 	@Override
-	public void registerActionParameters(ActionConf conf) throws Exception {
+	public void registerActionParameters(ActionConf conf) {
 		conf.registerParameter(CUSTOM_WRITER, S_CUSTOM_WRITER, null, false);
 		conf.registerParameter(OUTPUT_DIR, S_OUTPUT_DIR, null, true);
 	}
@@ -98,24 +99,37 @@ public class WriteToFiles extends Action {
 		}
 		f = new File(f, filename);
 
-		try {
-			if (customWriter != null) {
-				Constructor<? extends StandardFileWriter> constr = Class
+		if (customWriter != null) {
+			Constructor<? extends StandardFileWriter> constr;
+			try {
+				constr = Class
 						.forName(customWriter)
 						.asSubclass(StandardFileWriter.class)
 						.getConstructor(ActionContext.class, File.class);
-				file = constr.newInstance(context, f);
-			} else {
-				log.debug("No custom writer is specified. Using standard one");
-				if (compressGZip)
-					file = new StandardFileWriter(context, f, true);
-				else
-					file = new StandardFileWriter(context, f, false);
+			} catch (Throwable e) {
+				log.error("Could not load class " + customWriter, e);
+				throw new IOException("Could not load class " + customWriter, e);
 			}
-		} catch (Exception e) {
-			log.error("Error instantiating writer for file " + file + "("
-					+ customWriter + ")", e);
-			file = null;
+			try {
+				file = constr.newInstance(context, f);
+			} catch (InvocationTargetException e) {
+				Throwable ex = e.getCause();
+				if (ex instanceof IOException) {
+					log.error("got IOException", e);
+					throw (IOException) ex;
+				}
+				log.error("Could not instantiate class " + customWriter, e);
+				throw new IOException("Could not instantiate", e);
+			} catch (Throwable e) {
+				log.error("Could not instantiate class " + customWriter, e);
+				throw new IOException("Could not instantiate", e);
+			}
+		} else {
+			log.debug("No custom writer is specified. Using standard one");
+			if (compressGZip)
+				file = new StandardFileWriter(context, f, true);
+			else
+				file = new StandardFileWriter(context, f, false);
 		}
 	}
 

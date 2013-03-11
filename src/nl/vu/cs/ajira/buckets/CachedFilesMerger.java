@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -155,9 +156,9 @@ public class CachedFilesMerger implements Runnable {
 					cacheFile = File.createTempFile("merged_files", "tmp");
 					cacheFile.deleteOnExit();
 
-					BufferedOutputStream fout = new BufferedOutputStream(
-							new SnappyOutputStream(new FileOutputStream(
-									cacheFile)));
+					OutputStream fout =
+							new SnappyOutputStream(new BufferedOutputStream(new FileOutputStream(
+									cacheFile), 65536));
 					// Open an output stream to write into the temporary file
 					cacheOutputStream = new FDataOutput(fout);
 
@@ -204,9 +205,6 @@ public class CachedFilesMerger implements Runnable {
 								int length = stream1.stream.readInt();
 
 								if (length != min1.length) {
-									if (log.isDebugEnabled()) {
-										log.debug("Reallocated min1");
-									}
 									min1 = new byte[length];
 								}
 
@@ -228,9 +226,6 @@ public class CachedFilesMerger implements Runnable {
 								int length = stream2.stream.readInt();
 
 								if (length != min2.length) {
-									if (log.isDebugEnabled()) {
-										log.debug("Reallocated min2");
-									}
 									min2 = new byte[length];
 								}
 
@@ -267,9 +262,8 @@ public class CachedFilesMerger implements Runnable {
 					// Open an input stream for the merged cached file.
 					// This new stream (file descriptor) will replace the
 					// older ones that were merged.
-					FDataInput is = new FDataInput(new BufferedInputStream(
-							new SnappyInputStream(
-									new FileInputStream(cacheFile)), 65536));
+					FDataInput is = new FDataInput(new SnappyInputStream(new BufferedInputStream(
+									new FileInputStream(cacheFile), 65536)));
 					int length = is.readInt();
 					byte[] rawValue = new byte[length];
 					is.readFully(rawValue);

@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 public class ReadFromFiles extends Action {
 
 	public static final String MINIMUM_SPLIT_SIZE = "splitinput.minimumsize";
-	public static final int MINIMUM_FILE_SPLIT = 4 * 1024 * 1024; // 1 MB
+	public static final int MINIMUM_FILE_SPLIT = (4 * 1024 * 1024); // 4 MB
 
 	public static final int PATH = 0;
 	public static final String S_PATH = "path";
@@ -35,9 +35,8 @@ public class ReadFromFiles extends Action {
 
 	static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
-		void setupAction(Query query, Object[] params,
-				ActionController controller, ActionContext context)
-				throws Exception {
+		public void setupAction(Query query, Object[] params,
+				ActionController controller, ActionContext context) {
 			if (params[PATH] != null) {
 				query.setInputLayer(Consts.DEFAULT_INPUT_LAYER_ID);
 				query.setInputTuple(TupleFactory.newTuple(new TInt(
@@ -61,15 +60,15 @@ public class ReadFromFiles extends Action {
 					context.getMyNodeId()), new TString(customReader));
 		}
 
-		ActionConf c = ActionFactory.getActionConf(SetQueryInputLayer.class);
-		c.setParamWritable(SetQueryInputLayer.TUPLE, new TupleSerializer(tuple));
+		ActionConf c = ActionFactory.getActionConf(QueryInputLayer.class);
+		c.setParamWritable(QueryInputLayer.TUPLE, new TupleSerializer(tuple));
 		output.branch(c);
 
 		currentFileSplit = new FileCollection();
 	}
 
 	@Override
-	public void registerActionParameters(ActionConf conf) throws Exception {
+	public void registerActionParameters(ActionConf conf) {
 		conf.registerParameter(PATH, S_PATH, null, true);
 		conf.registerParameter(CUSTOM_READER, S_CUSTOM_READER, null, false);
 		conf.registerCustomConfigurator(ParametersProcessor.class);
@@ -92,7 +91,7 @@ public class ReadFromFiles extends Action {
 		File file = new File(((TString) inputTuple.get(0)).getValue());
 
 		long sizeFile = file.length();
-		if (currentFileSplit.getSize() + sizeFile >= minimumFileSplitSize) {
+		if ((currentFileSplit.getSize() + sizeFile) >= minimumFileSplitSize) {
 			processSplit(context, output);
 		}
 		currentFileSplit.addFile(file);

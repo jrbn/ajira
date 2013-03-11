@@ -13,9 +13,12 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// This class can be used as Ibis registry if monitoring is required.
-// In the ibis instances, the managementclient should be enabled, so set the
-// ibis.managementclient property.
+/**
+ * This class can be used as Ibis registry if monitoring is required.
+ * In the ibis instances, the managementclient should be enabled, so set the
+ * ibis.managementclient property.
+ */
+
 public class IbisServer {
 
     static final Logger log = LoggerFactory.getLogger(IbisServer.class);
@@ -43,6 +46,14 @@ public class IbisServer {
     
     private static HashMap<IbisIdentifier, Data> map = new HashMap<IbisIdentifier, Data>();
 
+    /**
+     * Creates a new Server with the properties passed
+     * through the arguments. For each ibis instance 
+     * from every pool it sets its arguments.
+     * 
+     * @param args
+     * 		The properties of the server.
+     */
     public static void main(String[] args) {
 	TypedProperties properties = new TypedProperties();
 	properties.putAll(System.getProperties());

@@ -25,7 +25,7 @@ public class WritableListActions implements Writable {
 		this.actions = actions;
 	}
 
-	public List<ActionConf> getActions() throws IOException {
+	public List<ActionConf> getActions() {
 		return actions;
 	}
 

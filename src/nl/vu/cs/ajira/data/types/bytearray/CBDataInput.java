@@ -1,7 +1,5 @@
 package nl.vu.cs.ajira.data.types.bytearray;
 
-import java.io.IOException;
-
 public class CBDataInput extends BDataInput {
 
 	@Override
@@ -10,7 +8,7 @@ public class CBDataInput extends BDataInput {
 	 * length then the staring position is reset to 0. The method 
 	 * returns the first byte from the beginning of the buffer. 
 	 */
-	public byte readByte() throws IOException {
+	public byte readByte() {
 		if (cb.start >= cb.buffer.length)
 			cb.start = 0;
 		return super.readByte();
@@ -25,7 +23,7 @@ public class CBDataInput extends BDataInput {
 	 * are len elements at the end of the buffer then it calls the 
 	 * readFully method from the extended class. 
 	 */
-	public void readFully(byte[] b, int off, int len) throws IOException {
+	public void readFully(byte[] b, int off, int len) {
 		if (len > cb.buffer.length - cb.start) {
 			System.arraycopy(cb.buffer, cb.start, b, off, cb.buffer.length
 					- cb.start);
@@ -44,7 +42,7 @@ public class CBDataInput extends BDataInput {
 	 * the int value. If there are not 4 bytes at the end of the 
 	 * buffer then the starting position of the buffer is reset. 
 	 */
-	public int readInt() throws IOException {
+	public int readInt() {
 		if (cb.start + 4 <= cb.buffer.length)
 			return super.readInt();
 		else {
@@ -69,7 +67,7 @@ public class CBDataInput extends BDataInput {
 	 * the short value. If there are not 2 bytes at the end of the 
 	 * buffer then the starting position of the buffer is reset.
 	 */
-	public short readShort() throws IOException {
+	public short readShort() {
 		if (cb.start + 2 <= cb.buffer.length)
 			return super.readShort();
 		else {
@@ -91,8 +89,7 @@ public class CBDataInput extends BDataInput {
 	 * the long value. If there are not 8 bytes at the end of the 
 	 * buffer then the starting position of the buffer is reset.
 	 */
-	public long readLong() throws IOException {
-
+	public long readLong() {
 		if (cb.start + 8 <= cb.buffer.length) {
 			return super.readLong();
 

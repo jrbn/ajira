@@ -1,18 +1,27 @@
+<!--
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
-<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-    <pattern>%t %d{HH:mm:ss.SSS} %p %logger{15}: %m%n</pattern>
-  </encoder>
-</appender>
+    <appender name="FILE" class="ch.qos.logback.core.FileAppender">
+	<File>log/${HOSTNAME}/output.log</File>
+	<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+	    <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{15} - %msg%n</pattern>
+	</encoder>
+    </appender>
 
-<root level="warn">
-<appender-ref ref="STDOUT" />
-</root>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+	<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+	    <pattern>%t %d{HH:mm:ss.SSS} %p %logger{15}: %m%n</pattern>
+	</encoder>
+    </appender>
 
-<logger name="nl.vu.cs.ajira">
-<level value="info" />
-</logger>
+    <root level="warn">
+	<appender-ref ref="STDOUT" />
+    </root>
+
+    <logger name="nl.vu.cs.ajira">
+	<level value="info" />
+    </logger>
 
 </configuration>
+-->

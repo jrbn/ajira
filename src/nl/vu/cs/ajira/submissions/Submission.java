@@ -17,6 +17,7 @@ public class Submission {
 	private final int submissionId;
 	private int finalStatsReceived;
 	private String state;
+	private Throwable exception;
 
 	Map<String, Long> counters = null;
 	int assignedBucket = -1;
@@ -67,11 +68,11 @@ public class Submission {
 		return submissionId;
 	}
 
-	public String getState() {
+	public synchronized String getState() {
 		return state;
 	}
 
-	public void setState(String state) {
+	public synchronized void setState(String state) {
 		this.state = state;
 	}
 
@@ -109,5 +110,13 @@ public class Submission {
 				+ " ms.\n**************************************************\n";
 
 		System.out.println(stats);
+	}
+	
+	public Throwable getException() {
+	    return exception;
+	}
+
+	public void setException(Throwable exception) {
+	    this.exception = exception;
 	}
 }

@@ -10,7 +10,7 @@ public class Split extends Action {
 	private ActionOutput alternativePath = null;
 
 	@Override
-	public void registerActionParameters(ActionConf conf) throws Exception {
+	public void registerActionParameters(ActionConf conf) {
 		conf.registerParameter(SPLIT, "split", null, true);
 	}
 

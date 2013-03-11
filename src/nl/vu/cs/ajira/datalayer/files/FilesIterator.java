@@ -10,7 +10,13 @@ import nl.vu.cs.ajira.datalayer.TupleIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+/**
+ * 
+ * This class provides an iterator over a collection of 
+ * files. It reads one line from the current file at each
+ * call of the method next(); 
+ *
+ */
 public class FilesIterator extends TupleIterator {
 
 	static final Logger log = LoggerFactory.getLogger(FilesIterator.class);
@@ -20,6 +26,19 @@ public class FilesIterator extends TupleIterator {
 	Constructor<? extends DefaultFileParser> cfileReader;
 	DefaultFileParser currentItr = null;
 
+	/**
+	 * Custom constructor.
+	 * 
+	 * @param files
+	 * 		The new FileCollection. 
+	 * @param cfileReader
+	 * 		The class that will provide the constructor 
+	 * 		for the files in the collection.
+	 * 
+	 * @throws SecurityException
+	 * @throws NoSuchMethodException
+	 * @throws IOException
+	 */
 	public FilesIterator(FileCollection files,
 			Class<? extends DefaultFileParser> cfileReader)
 			throws SecurityException, NoSuchMethodException, IOException {
@@ -28,6 +47,12 @@ public class FilesIterator extends TupleIterator {
 		this.files = files;
 	}
 
+	/**
+	 * Returns true if exists a new line in the current file 
+	 * or it exists a next file. It returns false otherwise.
+	 * In case it is updated the current file with the next
+	 * file for the collection the method it is called again.
+	 */
 	@Override
 	public boolean next() throws Exception {
 		if (currentItr == null || !currentItr.next()) {
@@ -46,6 +71,10 @@ public class FilesIterator extends TupleIterator {
 		return true;
 	}
 
+	/**
+	 * Updates the filed of the tuple with the last line 
+	 * read form the current file.
+	 */
 	@Override
 	public void getTuple(Tuple tuple) throws Exception {
 		currentItr.getTuple(tuple);

@@ -16,9 +16,9 @@ import org.slf4j.LoggerFactory;
 
 public class GroupBy extends Action {
 
-	private static class GroupIterator implements Iterator<Tuple> {
+	static final Logger log = LoggerFactory.getLogger(GroupIterator.class);
 
-		static final Logger log = LoggerFactory.getLogger(GroupIterator.class);
+	private static class GroupIterator implements Iterator<Tuple> {
 
 		private TupleIterator itr;
 		private SimpleData[] key;
@@ -32,7 +32,7 @@ public class GroupBy extends Action {
 		private Tuple outputTuple;
 
 		public GroupIterator(TupleIterator itr, Tuple inputTuple,
-				SimpleData[] key, int sizeKey) {
+				SimpleData[] key, int sizeKey) throws Exception {
 			this.itr = itr;
 			this.key = key;
 			this.sizeKey = sizeKey;
@@ -46,14 +46,19 @@ public class GroupBy extends Action {
 			}
 			this.outputTuple = TupleFactory.newTuple(sValues);
 
-			this.elementAvailable = true;
-			this.hasMore = true;
+			this.hasMore = itr.nextTuple();
 
-			// Copy the key elements in the internal key data structure
 			for (int i = 0; i < sizeKey; ++i) {
 				key[i] = DataProvider.getInstance().get(
 						inputTuple.get(i).getIdDatatype());
-				inputTuple.get(i).copyTo(key[i]);
+			}
+		}
+
+		public void initKey() {
+			this.elementAvailable = true;
+			// Copy the key elements in the internal key data structure
+			for (int i = 0; i < sizeKey; ++i) {
+				this.inputTuple.get(i).copyTo(key[i]);
 			}
 		}
 
@@ -65,32 +70,27 @@ public class GroupBy extends Action {
 		@Override
 		public Tuple next() {
 			// Copy the value elements to return
-			for (int i = 0; i < sValues.length; ++i) {
-				inputTuple.get(sizeKey + i).copyTo(sValues[i]);
-			}
+			if (elementAvailable) {
+				for (int i = 0; i < sValues.length; ++i) {
+					inputTuple.get(sizeKey + i).copyTo(sValues[i]);
+				}
 
-			// Move to the next element
-			try {
-				if (itr.nextTuple()) {
-
-					itr.getTuple(inputTuple);
-					for (int i = 0; i < sizeKey && elementAvailable; ++i) {
-						elementAvailable = inputTuple.get(i).equals(key[i]);
+				// Move to the next element
+				try {
+					if (hasMore) {
+						itr.getTuple(inputTuple);
+						for (int i = 0; i < sizeKey && elementAvailable; ++i) {
+							elementAvailable = inputTuple.get(i).equals(key[i]);
+						}
+						hasMore = itr.nextTuple();
+					} else {
+						elementAvailable = false;
 					}
-
-					// Copy key
-					for (int i = 0; i < sizeKey; ++i) {
-						inputTuple.get(i).copyTo(key[i]);
-					}
-
-					hasMore = true;
-				} else {
+				} catch (Exception e) {
+					log.error("Error with the iterator", e);
 					elementAvailable = false;
 					hasMore = false;
 				}
-			} catch (Exception e) {
-				log.error("Error with the iterator", e);
-				elementAvailable = false;
 			}
 
 			return outputTuple;
@@ -116,9 +116,8 @@ public class GroupBy extends Action {
 	public static class Configurator extends ActionConf.Configurator {
 
 		@Override
-		void setupAction(Query query, Object[] params,
-				ActionController controller, ActionContext context)
-				throws Exception {
+		public void setupAction(Query query, Object[] params,
+				ActionController controller, ActionContext context) {
 
 			// Which fields should be used for the grouping? Get them from the
 			// parameter
@@ -140,7 +139,7 @@ public class GroupBy extends Action {
 	}
 
 	@Override
-	public void registerActionParameters(ActionConf conf) throws Exception {
+	public void registerActionParameters(ActionConf conf) {
 		conf.registerParameter(FIELDS_TO_GROUP, "fieldsToGroup", null, true);
 		conf.registerParameter(TUPLE_FIELDS, "fields", null, true);
 		conf.registerParameter(NPARTITIONS_PER_NODE, "partitionsPerNode", null,
@@ -163,6 +162,7 @@ public class GroupBy extends Action {
 		outputTuple[posFieldsToGroup.length] = new TBag(itr);
 
 		do {
+			itr.initKey();
 			actionOutput.output(outputTuple);
 			itr.resetIterator();
 		} while (itr.hasMore);

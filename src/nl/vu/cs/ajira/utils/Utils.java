@@ -78,7 +78,6 @@ public class Utils {
 	}
 
 	public static class BytesComparator implements Comparator<byte[]> {
-
 		@Override
 		public int compare(byte[] o1, byte[] o2) {
 			for (int i = 0, j = 0; i < o1.length && j < o2.length; i++, j++) {
@@ -89,6 +88,17 @@ public class Utils {
 				}
 			}
 			return o1.length - o2.length;
+		}
+
+		public int compare(byte[] o1, byte[] o2, int maxBytes) {
+			for (int i = 0, j = 0; i < maxBytes; i++, j++) {
+				int a = (o1[i] & 0xff);
+				int b = (o2[j] & 0xff);
+				if (a != b) {
+					return a - b;
+				}
+			}
+			return 0;
 		}
 	}
 

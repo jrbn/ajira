@@ -36,7 +36,7 @@ public class BDataOutput implements DataOutput {
 	public void setCurrentPosition(int bufferSize) {
 		cb.end = bufferSize;
 	}
-
+	
 	@Override
 	/**
 	 * Adds b at the end of the ByteArray's buffer if there is enough space.
@@ -96,28 +96,28 @@ public class BDataOutput implements DataOutput {
 	}
 
 	@Override
-	public void writeBytes(String s) throws IOException {
-		throw new IOException("Not supported");
+	public void writeBytes(String s) {
+		throw new UnsupportedOperationException("Not supported");
 	}
 
 	@Override
-	public void writeChar(int v) throws IOException {
-		throw new IOException("Not supported");
+	public void writeChar(int v) {
+		throw new UnsupportedOperationException("Not supported");
 	}
 
 	@Override
-	public void writeChars(String s) throws IOException {
-		throw new IOException("Not supported");
+	public void writeChars(String s) {
+		throw new UnsupportedOperationException("Not supported");
 	}
 
 	@Override
-	public void writeDouble(double v) throws IOException {
-		throw new IOException("Not supported");
+	public void writeDouble(double v) {
+		throw new UnsupportedOperationException("Not supported");
 	}
 
 	@Override
-	public void writeFloat(float v) throws IOException {
-		throw new IOException("Not supported");
+	public void writeFloat(float v) {
+		throw new UnsupportedOperationException("Not supported");
 	}
 
 	@Override
@@ -196,3 +196,4 @@ public class BDataOutput implements DataOutput {
 		cb.end += bytes;
 	}
 }
+

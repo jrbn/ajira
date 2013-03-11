@@ -1,6 +1,7 @@
 package nl.vu.cs.ajira.data.types.bytearray;
 
 import java.io.DataInput;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -37,7 +38,19 @@ public class FDataInput implements DataInput {
 	 * Reads one byte value from the InputStream.
 	 */
 	public byte readByte() throws IOException {
-		return (byte) is.read();
+		int b = is.read();
+		if (b == -1) {
+			throw new EOFException();
+		}
+		return (byte) b;
+	}
+	
+	private int readb() throws IOException {
+		int b = is.read();
+		if (b == -1) {
+			throw new EOFException();
+		}
+		return b;
 	}
 
 	@Override
@@ -85,10 +98,10 @@ public class FDataInput implements DataInput {
 	 */
 	public int readInt() throws IOException {
 		int value = 0;
-		value += (byte) is.read() << 24;
-		value += is.read() << 16;
-		value += is.read() << 8;
-		value += is.read();
+		value += readb() << 24;
+		value += readb() << 16;
+		value += readb() << 8;
+		value += readb();
 		return value;
 	}
 
@@ -103,14 +116,14 @@ public class FDataInput implements DataInput {
 	 */
 	public long readLong() throws IOException {
 		long value = 0;
-		value = (long) is.read() << 56;
-		value += (long) is.read() << 48;
-		value += (long) is.read() << 40;
-		value += (long) is.read() << 32;
-		value += (long) is.read() << 24;
-		value += is.read() << 16;
-		value += is.read() << 8;
-		value += is.read();
+		value = (long) readb() << 56;
+		value += (long) readb() << 48;
+		value += (long) readb() << 40;
+		value += (long) readb() << 32;
+		value += (long) readb() << 24;
+		value += readb() << 16;
+		value += readb() << 8;
+		value += readb();
 		return value;
 	}
 
@@ -120,8 +133,8 @@ public class FDataInput implements DataInput {
 	 */
 	public short readShort() throws IOException {
 		short value = 0;
-		value += (byte) is.read() << 8;
-		value += is.read();
+		value += readByte() << 8;
+		value += readb();
 		return value;
 	}
 
@@ -135,17 +148,18 @@ public class FDataInput implements DataInput {
 	 * Reads one unsigned byte value from the InputStream and returns this value.
 	 */
 	public int readUnsignedByte() throws IOException {
-		return is.read();
+		return readb();
 	}
 
 	@Override
 	public int readUnsignedShort() throws IOException {
-		throw new IOException("Not supported");
+		int value = readb() << 8;
+		value += readb();
+		return value;
 	}
 
 	@Override
 	public int skipBytes(int n) throws IOException {
-		throw new IOException("Not supported");
+		return (int) is.skip(n);
 	}
-
 }

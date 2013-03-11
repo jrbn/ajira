@@ -24,6 +24,14 @@ class ChainSender implements Runnable {
 	Chain chain;
 	StatisticsCollector stats;
 
+	/**
+	 * Custom constructor.
+	 * 
+	 * @param context
+	 * 		Current context.
+	 * @param chainsToSend
+	 * 		The chains that have to be send.
+	 */
 	public ChainSender(Context context, Container<Chain> chainsToSend) {
 		this.chainsToSend = chainsToSend;
 		this.context = context;

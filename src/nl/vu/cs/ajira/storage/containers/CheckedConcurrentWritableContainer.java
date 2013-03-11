@@ -14,26 +14,26 @@ public class CheckedConcurrentWritableContainer<K extends Writable> extends
 	    .getLogger(ConcurrentWritableContainer.class);
 
     public CheckedConcurrentWritableContainer(int size) {
-	super(size);
+    	super(size);
     }
 
     @Override
-    public boolean add(K element) throws Exception {
-	boolean response = super.add(element);
-	if (!response) {
-	    log.error("The container is too small for this addition!", new Throwable());
-	    log.error("nElements = " + nElements);
-	}
-	return response;
+    public boolean add(K element) {
+    	boolean response = super.add(element);
+    	if (!response) {
+    		log.error("The container is too small for this addition!", new Throwable());
+    		log.error("nElements = " + nElements);
+    	}
+    	return response;
     }
 
     @Override
-    public boolean addAll(WritableContainer<K> buffer) throws Exception {
-	boolean response = super.addAll(buffer);
-	if (!response) {
-	    log.error("The container is too small for this addition!", new Throwable());
-	    log.error("nElements = " + nElements + ", adding " + buffer.nElements);
-	}
-	return response;
+    public boolean addAll(WritableContainer<K> buffer) {
+    	boolean response = super.addAll(buffer);
+    	if (!response) {
+    		log.error("The container is too small for this addition!", new Throwable());
+    		log.error("nElements = " + nElements + ", adding " + buffer.nElements);
+    	}
+    	return response;
     }
 }

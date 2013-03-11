@@ -9,5 +9,5 @@ public interface Writable {
 	public void readFrom(DataInput input) throws IOException;
 
 	public void writeTo(DataOutput output) throws IOException;
-
 }
+

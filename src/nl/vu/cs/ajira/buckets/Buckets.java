@@ -105,11 +105,11 @@ public class Buckets {
 				if ((int) (b.getKey() >> 32) == submissionId) {
 					// Sometimes happens with HashJoin which never gets
 					// executed.
-					if (b.isFinished()) {
+					// if (b.isFinished()) {
 						releaseBucket(b);
 						count++;
 						size += b.inmemory_size();
-					}
+					// }
 				}
 			}
 			if (count > 0) {
@@ -139,7 +139,7 @@ public class Buckets {
 	 * @param signature
 	 *            The signature used for defining the sort order between the
 	 *            fields
-	 * @return
+	 * @return the bucket
 	 */
 	public synchronized Bucket getOrCreateBucket(int submissionNode,
 			int idSubmission, int idBucket, boolean sort, byte[] sortingFields,
@@ -175,7 +175,7 @@ public class Buckets {
 			log.debug("releaseBucket: " + bucket.getKey());
 		}
 
-		bucket.releaseTuples();
+		bucket.releaseBuffers();
 		buckets.remove(bucket.getKey());
 	}
 

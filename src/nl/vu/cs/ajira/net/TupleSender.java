@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 class TupleSender {
 	static final Logger log = LoggerFactory.getLogger(TupleSender.class);
 
-	final NetworkLayer net;
+	final Context context;
 	final Buckets buckets;
 	final Factory<TupleInfo> tuFactory = new Factory<TupleInfo>(TupleInfo.class);
 
@@ -47,7 +47,7 @@ class TupleSender {
 	 */
 	public TupleSender(Context context,
 			Factory<WritableContainer<TupleSerializer>> bufferFactory) {
-		this.net = context.getNetworkLayer();
+		this.context = context;
 		this.buckets = context.getBuckets();
 		this.bufferFactory = bufferFactory;
 		ThreadPool.createNew(new Runnable() {
@@ -152,9 +152,11 @@ class TupleSender {
 
 				for (int i = 0; i < sz; i++) {
 					TupleInfo info = checkList.remove(0);
-					Bucket bucket = buckets.getExistingBucket(
-							info.bucketKey, false);
-
+					if (context.hasCrashed(info.submissionId)) {
+						continue;
+					}
+					Bucket bucket = buckets.getExistingBucket(info.bucketKey,
+							false);
 					if (bucket != null) {
 						boolean enoughData = bucket.availableToTransmit()
 								|| !buckets.isActiveTransfer(info.submissionId,
@@ -220,6 +222,12 @@ class TupleSender {
 	 * @throws IOException
 	 */
 	private void sendTuple(TupleInfo info) throws IOException {
+		
+		if (context.hasCrashed(info.submissionId)) {
+			return;
+		}
+		NetworkLayer net = context.getNetworkLayer();
+		// long time = System.currentTimeMillis();
 		WritableContainer<TupleSerializer> tmpBuffer = bufferFactory.get();
 		tmpBuffer.clear();
 		Bucket bucket = buckets.getExistingBucket(info.bucketKey, false);

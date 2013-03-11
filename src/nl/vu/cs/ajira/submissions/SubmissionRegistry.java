@@ -60,6 +60,11 @@ public class SubmissionRegistry {
 			long parentChainId, int nchildren, int generatedRootChains) {
 		Submission sub = getSubmission(submissionId);
 
+		if (log.isDebugEnabled()) {
+			log.debug("updateCounters: submissionId = " + submissionId + ", chainId = " + chainId
+					+ ", parentChainId = " + parentChainId + ", nchildren = " + nchildren
+					+ ", generatedRootChains = " + generatedRootChains);
+		}
 		synchronized (sub) {
 			if (nchildren > 0) { // Set the expected children in the
 				// map
@@ -100,6 +105,11 @@ public class SubmissionRegistry {
 				}
 			}
 
+			if (log.isDebugEnabled()) {
+				log.debug("rootChainsReceived = " + sub.rootChainsReceived
+						+ ", mainRootReceived = " + sub.mainRootReceived
+						+ ", monitors.size() = " + sub.monitors.size());
+			}
 			if (sub.rootChainsReceived == 0 && sub.mainRootReceived
 					&& sub.monitors.size() == 0) {
 				if (sub.assignedBucket != -1) {
@@ -113,6 +123,21 @@ public class SubmissionRegistry {
 			}
 		}
 	}
+	
+	public void killSubmission(int submissionId, Throwable e) {
+		Submission sub = submissions.get(submissionId);
+		if (sub == null) {
+			return;
+		}
+		synchronized(sub) {
+			if (sub.getState() == Consts.STATE_FINISHED) {
+				return;
+			}
+			sub.setFinished(Consts.STATE_FINISHED);
+			sub.setException(e);
+			sub.notifyAll();
+		}
+	}
 
 	public Submission getSubmission(int submissionId) {
 		return submissions.get(submissionId);
@@ -124,8 +149,7 @@ public class SubmissionRegistry {
 		synchronized (this) {
 			submissionId = submissionCounter++;
 		}
-		Submission sub = new Submission(submissionId,
-				job.getAssignedOutputBucket());
+		Submission sub = new Submission(submissionId, -1);
 
 		try {
 			submissions.put(submissionId, sub);
@@ -137,9 +161,12 @@ public class SubmissionRegistry {
 			Chain chain = new Chain();
 			chain.setParentChainId(-1);
 			chain.setInputLayer(Consts.DEFAULT_INPUT_LAYER_ID);
-			chain.setActions(job.getActions(), new ChainExecutor(null, context,
+			int resultBucket = chain.setActions(job.getActions(), new ChainExecutor(null, context,
 					chain));
 
+			if (resultBucket != -1) {
+				sub.assignedBucket = resultBucket;
+			}
 			chain.setSubmissionNode(context.getNetworkLayer().getMyPartition());
 			chain.setSubmissionId(submissionId);
 
@@ -186,9 +213,15 @@ public class SubmissionRegistry {
 		}
 	}
 
-	public Submission waitForCompletion(Context context, Job job) {
+	public Submission waitForCompletion(Context context, Job job) throws JobFailedException {
 
-		Submission submission = submitNewJob(context, job);
+		Submission submission;
+		try {
+		    submission = submitNewJob(context, job);
+		} catch (Throwable e1) {
+		    throw new JobFailedException("Job submission failed", e1);
+		}
+
 		// Pool the submission registry to know when it is present and return it
 		synchronized (submission) {
 			while (!submission.getState().equalsIgnoreCase(
@@ -198,21 +231,30 @@ public class SubmissionRegistry {
 				try {
 					submission.wait(1000);
 				} catch (InterruptedException e) {
-					log.warn("The thread was awaken by something strange...", e);
+					// ignore
 				}
 			}
 		}
 
 		// Clean up the eventual things going on in the nodes
-		cleanupSubmission(submission);
+		try {
+		    cleanupSubmission(submission);
+		} catch(Throwable e) {
+		    // TODO: what to do here?
+		    // Should probably not affect the job.
+		}
+		Throwable e = submission.getException();
+		if (e != null) {
+		    throw new JobFailedException(e);
+		}
 		return submission;
 	}
 
 	public void getStatistics(Submission submission) {
 		try {
-			Thread.sleep(500);
-		} catch (Exception e) {
-			log.error("Thread failed in sleeping", e);
+		    Thread.sleep(500);
+		} catch (InterruptedException e) {
+		    // ignore
 		}
 		submission.counters = stats.removeCountersSubmission(submission
 				.getSubmissionId());

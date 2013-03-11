@@ -31,12 +31,12 @@ public class BucketIterator extends TupleIterator {
 	 * Initialization function.
 	 * 
 	 * @param c
-	 * 			  Current action context
+	 *            Current action context
 	 * @param bucket
 	 *            Bucket to iterate on.
 	 * @param signature
-	 * 			  The signature used for defining the sort order
-	 * 			  between the fields           
+	 *            The signature used for defining the sort order between the
+	 *            fields
 	 * @param buckets
 	 *            (not used) Bucket's wrapper class
 	 * @see Buckets
@@ -69,7 +69,7 @@ public class BucketIterator extends TupleIterator {
 		if (tuples.getNElements() == 0) {
 			long time = System.currentTimeMillis();
 
-			bucket.removeChunk(tuples);
+			bucket.removeWChunk(tuples);
 
 			if (log.isDebugEnabled()) {
 				log.debug("Bucket  " + bucket.getKey() + " delivering "

@@ -23,10 +23,13 @@ public class WebServer implements Runnable {
 	private int serverPort = 8080; // Standard port
 
 	private Context context;
+	
+	private boolean done = false;
+	private boolean failed = false;
 
 	public void startWebServer(Context context) {
 		this.context = context;
-		serverPort = context.getConfiguration().getInt(WEBSERVER_PORT, 8080);
+		serverPort = context.getConfiguration().getInt(WEBSERVER_PORT, serverPort);
 		Thread thread = new Thread(this, "WebServer");
 		thread.start();
 	}
@@ -54,8 +57,12 @@ public class WebServer implements Runnable {
 				Server server = new Server(serverPort);
 				server.setHandler(handler);
 				server.start();
+				synchronized(this) {
+					done = true;
+					notifyAll();
+				}
 				server.join();
-				break;
+				return;
 			} catch (BindException e) {
 				try {
 					handler.stop();
@@ -65,13 +72,29 @@ public class WebServer implements Runnable {
 				currentAttempt++;
 			} catch (Exception e) {
 				log.error("The web server instance has terminated", e);
-				return;
+				break;
 			}
+		}
+		synchronized(this) {
+			failed = true;
+			notifyAll();
 		}
 
 	}
 
 	public String getAddress() {
+		synchronized(this) {
+			while (! done && ! failed) {
+				try {
+					wait();
+				} catch(InterruptedException e) {
+					// ignore
+				}
+			}
+		}
+		if (failed) {
+			return null;
+		}
 		try {
 			return "http://" + InetAddress.getLocalHost().getHostAddress()
 					+ ":" + serverPort;

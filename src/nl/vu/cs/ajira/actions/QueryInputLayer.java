@@ -5,7 +5,7 @@ import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.datalayer.Query;
 import nl.vu.cs.ajira.utils.Consts;
 
-public class SetQueryInputLayer extends Action {
+public class QueryInputLayer extends Action {
 
 	public static final int TUPLE = 0;
 	public static final String S_TUPLE = "tuple";
@@ -14,7 +14,7 @@ public class SetQueryInputLayer extends Action {
 
 	static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
-		void setupAction(Query query, Object[] params,
+		public void setupAction(Query query, Object[] params,
 				ActionController controller, ActionContext context) {
 			query.setInputLayer(((Integer) params[INPUT_LAYER]).intValue());
 			TupleSerializer t = (TupleSerializer) params[TUPLE];
@@ -24,7 +24,7 @@ public class SetQueryInputLayer extends Action {
 	}
 
 	@Override
-	public void registerActionParameters(ActionConf conf) throws Exception {
+	public void registerActionParameters(ActionConf conf) {
 		conf.registerParameter(TUPLE, S_TUPLE, null, true);
 		conf.registerParameter(INPUT_LAYER, S_INPUT_LAYER,
 				Consts.DEFAULT_INPUT_LAYER_ID, false);

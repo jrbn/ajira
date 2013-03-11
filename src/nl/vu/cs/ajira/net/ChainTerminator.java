@@ -41,6 +41,11 @@ class ChainTerminator implements Runnable {
 			this.parentChainId = parentChainId;
 			this.nchildren = nchildren;
 			this.generatedRootChains = generatedRootChains;
+			if (log.isDebugEnabled()) {
+				if (generatedRootChains != 0) {
+					log.debug("GeneratedRootChains = " + generatedRootChains, new Throwable());
+				}
+			}
 			if (exception != null) {
 				failed = true;
 				this.exception = exception;
@@ -55,6 +60,11 @@ class ChainTerminator implements Runnable {
 			this.submissionId = submissionId;
 			this.chainId = -1;
 			this.generatedRootChains = generatedRootChains;
+			if (log.isDebugEnabled()) {
+				if (generatedRootChains != 0) {
+					log.debug("GeneratedRootChains = " + generatedRootChains, new Throwable());
+				}
+			}
 			this.parentChainId = -2;
 			this.failed = false;
 			this.exception = null;
@@ -144,9 +154,7 @@ class ChainTerminator implements Runnable {
 					// Broadcast to all the nodes that the submission ID
 					// should be removed.
 					if (localMode) {
-						// FIXME:
-						// context.cleanupSubmission(header.nodeId,
-						// header.submissionId);
+						context.cleanupSubmission(header.nodeId, header.submissionId, header.exception);
 					} else {
 						WriteMessage msg = ibis.getMessageToBroadcast();
 						msg.writeByte((byte) 2);

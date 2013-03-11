@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 class TupleRequester {
 	static final Logger log = LoggerFactory.getLogger(TupleRequester.class);
 
-	private NetworkLayer net;
+	private final Context context;
 	private long ticket = 0;
 	private Set<Long> activeRequests = new HashSet<Long>();
 	private Factory<TupleInfo> tuFactory = new Factory<TupleInfo>(
@@ -32,7 +32,7 @@ class TupleRequester {
 	 * 			  The current context
 	 */
 	public TupleRequester(Context context) {
-		this.net = context.getNetworkLayer();
+	    	this.context = context;
 	}
 
 	/**
@@ -92,6 +92,9 @@ class TupleRequester {
 	 * 			  request for transfer
 	 */
 	private void handleInfo(TupleInfo info) {
+		
+	    NetworkLayer net = context.getNetworkLayer();
+	    
 		while (true) {
 			long currentTime = System.currentTimeMillis();
 			
@@ -99,6 +102,11 @@ class TupleRequester {
 				log.debug("currentTime = " + currentTime + ", expected = "
 						+ info.expected);
 			}
+
+			if (context.hasCrashed(info.submissionId)) {
+				return;
+			}
+			
 			if (currentTime >= info.expected) {
 				synchronized (activeRequests) {
 					/*

@@ -27,9 +27,11 @@ public class ChainHandler implements Runnable {
 	private WritableContainer<Chain> chainsToProcess = null;
 	private ActionFactory ap = null;
 	private StatisticsCollector stats = null;
+	private Chain currentChain = new Chain();
+
+	private boolean submissionFailed;
 	private int status = STATUS_INACTIVE;
 	public boolean singleChain = false;
-	private Chain chain = new Chain();
 	private Tuple tuple = TupleFactory.newTuple();
 	private ChainExecutor actions;
 
@@ -46,32 +48,54 @@ public class ChainHandler implements Runnable {
 	ChainHandler(Context context, Chain chain) {
 		this(context);
 		singleChain = true;
-		chain.copyTo(this.chain);
+		chain.copyTo(this.currentChain);
 	}
 
 	private void processChain() {
+
+		status = STATUS_ACTIVE;
+		// Init the environment
+		actions.init(currentChain);
+
 		try {
-			status = STATUS_ACTIVE;
-			// Init the environment
-			actions.init(chain);
-			chain.getActions(actions, ap);
+			currentChain.getActions(actions, ap);
+		} catch (Throwable e) {
+			// Broadcast all the nodes that a chain part of a job has
+			// failed.
+			log.error("getActions() on chain failed, cancelling the job ...", e);
+			try {
+				net.signalChainFailed(currentChain, e);
+			} catch (Throwable e1) {
+				log.error("Failed in managing to cancel the job", e);
+			}
+			status = STATUS_INACTIVE;
+			return;
+		}
 
-			if (actions.getNActions() > 0) {
+		if (actions.getNActions() > 0) {
 
-				// Read the input tuple from the knowledge base
-				chain.getInputTuple(tuple);
-				InputLayer input = context.getInputLayer(chain.getInputLayer());
-				TupleIterator itr = input.getIterator(tuple, actions);
-				if (!itr.isReady()) {
-					context.getChainNotifier().addWaiter(itr, chain);
-					chain = new Chain();
-					status = STATUS_INACTIVE;
-					return;
-				}
+			// Read the input tuple from the knowledge base
+			currentChain.getInputTuple(tuple);
+			InputLayer input = context.getInputLayer(currentChain
+					.getInputLayer());
+			TupleIterator itr = input.getIterator(tuple, actions);
+			if (!itr.isReady()) {
+				context.getChainNotifier().addWaiter(itr, currentChain);
+				currentChain = new Chain();
+				status = STATUS_INACTIVE;
+				return;
+			}
 
-				/***** START CHAIN *****/
-				long timeCycle = System.currentTimeMillis();
-				actions.setInputIterator(itr);
+			if (log.isDebugEnabled()) {
+				log.debug("Starting chain " + currentChain.getChainId());
+			}
+
+			submissionFailed = false;
+
+			/***** START CHAIN *****/
+			long timeCycle = System.currentTimeMillis();
+			actions.setInputIterator(itr);
+			try {
 				actions.startProcess();
 
 				// Process the data on the chain
@@ -84,64 +108,73 @@ public class ChainHandler implements Runnable {
 					} else { // EOF Case
 						actions.stopProcess();
 					}
-				} while (!eof);
+				} while (!eof && !getSubmissionFailed());
 
 				if (log.isDebugEnabled()) {
 					timeCycle = System.currentTimeMillis() - timeCycle;
-					log.debug("Chain " + chain.getChainId() + "runtime cycle: "
-							+ timeCycle);
+					log.debug("Chain " + currentChain.getChainId()
+							+ "runtime cycle: " + timeCycle);
 				}
 
+				// Send the termination signal to the node responsible of
+				// the submission
+				if (actions.isChainFullyExecuted()) {
+					net.signalChainTerminated(currentChain);
+				} else if (!actions.wasPrincipalBranch()) {
+					int generatedChains = currentChain.getGeneratedRootChains();
+					if (generatedChains > 0) {
+						net.signalChainHasRootChains(currentChain,
+								generatedChains);
+					}
+				}
+				stats.addCounter(currentChain.getSubmissionNode(),
+						currentChain.getSubmissionId(), "Chains Processed", 1);
+
+			} catch (Throwable e) {
+				// Broadcast all the nodes that a chain part of a job has
+				// failed.
+				log.error("Chain failed. Cancelling the job ...", e);
+				try {
+					net.signalChainFailed(currentChain, e);
+				} catch (Exception e1) {
+					log.error("Failed in managing to cancel the job.", e);
+				}
+			} finally {
 				input.releaseIterator(itr, actions);
-			}
-
-			// Send the termination signal to the node responsible of
-			// the submission
-			if (actions.isChainFullyExecuted()) {
-				net.signalChainTerminated(chain);
-			} else if (!actions.wasPrincipalBranch()) {
-				int generatedChains = chain.getGeneratedRootChains();
-				if (generatedChains > 0) {
-					net.signalChainHasRootChains(chain, generatedChains);
-				}
-			}
-			stats.addCounter(chain.getSubmissionNode(),
-					chain.getSubmissionId(), "Chains Processed", 1);
-
-		} catch (Throwable e) {
-			// Broadcast all the nodes that a chain part of a job has
-			// failed.
-			log.error("Chain failed. Cancelling the job ...", e);
-			try {
-				net.signalChainFailed(chain, e);
-			} catch (Exception e1) {
-				log.error("Failed in managing to cancel the job."
-						+ "This instance will be terminated.", e);
-				System.exit(1);
+				status = STATUS_INACTIVE;
 			}
 		}
-		status = STATUS_INACTIVE;
+	}
+
+	private synchronized boolean getSubmissionFailed() {
+		return submissionFailed;
+	}
+
+	public synchronized void submissionFailed(int submissionId) {
+		if (currentChain != null
+				&& currentChain.getSubmissionId() == submissionId) {
+			submissionFailed = true;
+		}
 	}
 
 	@Override
 	public void run() {
 
 		if (singleChain) {
+			if (log.isDebugEnabled()) {
+				log.debug("Single chain handler");
+			}
 			processChain();
+			if (log.isDebugEnabled()) {
+				log.debug("Single chain handler done");
+			}
 			status = STATUS_FINISHED;
 			return;
 		}
 
 		while (true) {
 			// Get a new chain to process
-			try {
-				chainsToProcess.remove(chain);
-			} catch (Exception e) {
-				log.error("Failed in retrieving a new chain."
-						+ "This handler will be terminated", e);
-				status = STATUS_FINISHED;
-				return;
-			}
+			chainsToProcess.remove(currentChain);
 			processChain();
 		}
 	}
