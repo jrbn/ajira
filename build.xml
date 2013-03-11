@@ -6,7 +6,7 @@
 	<property name="BUILD_PATH" value="bin" />
 	<property name="SRC_PATH" value="src" />
 	<property name="LIB_PATH" value="lib" />
-	<property name="JAR_LOCATION" value="ajira-${VERSION}.jar" />
+	<property name="AJIRA_JAR_LOCATION" value="ajira-${VERSION}.jar" />
 	<property name="JAR_WEBAPPS_LOCATION" value="ajira-webapps-${VERSION}.jar" />
 	<property name="IPL_PATH" value="${LIB_PATH}/ipl/" />
 	<property name="LOG_PATH" value="${LIB_PATH}/logging/" />
@@ -19,7 +19,7 @@
 		<delete dir="${BUILD_PATH}" />
 	</target>
 
-	<target name="init" depends="clean">
+	<target name="init">
 		<mkdir dir="${BUILD_PATH}" />
 	</target>
 
@@ -49,7 +49,7 @@
 
 	<target name="jar" depends="compile">
 		<!--Complete JAR -->
-		<jar destfile="${JAR_LOCATION}">
+		<jar destfile="${AJIRA_JAR_LOCATION}">
 			<fileset dir="${BUILD_PATH}"/>
 			<fileset dir="." includes ="jsp/**/*.jsp"/>
 		</jar>
