@@ -343,7 +343,7 @@ public class Buckets {
 
 	public void alertTransfer(int submissionNode, int submission, int node,
 			int bucketID, long chainId, long parentChainId, int nchildren,
-			boolean responsible, boolean sort, byte[] sortingParams) 
+			boolean responsible, boolean sort, byte[] sortingParams, byte[] signature) 
 					throws IOException {
 
 		if (node == myPartition || net.getNumberNodes() == 1) {
@@ -397,6 +397,9 @@ public class Buckets {
 				message.writeLong(info.bucket.getKey()); // Local bucket key
 			}
 		}
+		
+		message.writeByte((byte) signature.length);
+        message.writeArray(signature);
 
 		net.finishMessage(message, submission);
 	}
@@ -461,7 +464,7 @@ public class Buckets {
 			if (info == null || !info.alerted) {
                 alertTransfer(submissionNode, submission, node, bucketID,
                         chainId, parentChainId, nchildren, responsible,
-                        sort, sortingFields);
+                        sort, sortingFields, signature);
 			}
 
 
