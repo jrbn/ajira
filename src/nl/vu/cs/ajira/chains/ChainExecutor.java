@@ -389,7 +389,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 		context.getBuckets().finishTransfer(this.submissionNode, submissionId,
 				nodeId, bucketId, chain.getChainId(), chain.getParentChainId(),
-				children, roots[currentAction], sort, null, signature,
+				children, roots[currentAction], sort, sortingFields, signature,
 				decreaseCounter);
 	}
 

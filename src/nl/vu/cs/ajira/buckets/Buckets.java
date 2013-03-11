@@ -33,10 +33,11 @@ public class Buckets {
 	// Buffer factories
 	@SuppressWarnings("unchecked")
 	Class<WritableContainer<TupleSerializer>> clazz = (Class<WritableContainer<TupleSerializer>>) (Class<?>) WritableContainer.class;
-	Factory<WritableContainer<TupleSerializer>> fb_not_sorted = new Factory<WritableContainer<TupleSerializer>>(
-			clazz, Consts.TUPLES_CONTAINER_BUFFER_SIZE);;
+	// Cannot use the not_sorted factory with Cristi's code.
+	// Factory<WritableContainer<TupleSerializer>> fb_not_sorted = new Factory<WritableContainer<TupleSerializer>>(
+	// 		clazz, Consts.TUPLES_CONTAINER_BUFFER_SIZE);
 	Factory<WritableContainer<TupleSerializer>> fb_sorted = new Factory<WritableContainer<TupleSerializer>>(
-			clazz, true, Consts.TUPLES_CONTAINER_BUFFER_SIZE);;
+			clazz, true, Consts.TUPLES_CONTAINER_BUFFER_SIZE);
 
 	CachedFilesMerger merger = null;
 	NetworkLayer net = null;
@@ -149,13 +150,13 @@ public class Buckets {
 
 		if (bucket == null) {
 			bucket = new Bucket();
-			if (sort) {
+			// if (sort) {
 				bucket.init(key, stats, submissionNode, idSubmission, sort,
 						sortingFields, fb_sorted, merger, signature);
-			} else {
-				bucket.init(key, stats, submissionNode, idSubmission, sort,
-						sortingFields, fb_not_sorted, merger, signature);
-			}
+			// } else {
+			// 	bucket.init(key, stats, submissionNode, idSubmission, sort,
+			// 			sortingFields, fb_not_sorted, merger, signature);
+			// }
 			buckets.put(key, bucket);
 			this.notifyAll();
 		}
