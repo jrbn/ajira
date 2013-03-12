@@ -21,31 +21,22 @@ class ChainTerminator implements Runnable {
 		public final int submissionId;
 		public final long chainId;
 		public final long parentChainId;
-		public final int generatedRootChains;
 		public final int nchildren;
 		public final boolean failed;
 		public final Throwable exception;
 
 		public ChainInfo(int nodeId, int submissionId, long chainId,
-				long parentChainId, int nchildren, int generatedRootChains) {
-			this(nodeId, submissionId, chainId, parentChainId, nchildren,
-					generatedRootChains, null);
+				long parentChainId, int nchildren) {
+			this(nodeId, submissionId, chainId, parentChainId, nchildren, null);
 		}
 
 		public ChainInfo(int nodeId, int submissionId, long chainId,
-				long parentChainId, int nchildren, int generatedRootChains,
-				Throwable exception) {
+				long parentChainId, int nchildren, Throwable exception) {
 			this.nodeId = nodeId;
 			this.submissionId = submissionId;
 			this.chainId = chainId;
 			this.parentChainId = parentChainId;
 			this.nchildren = nchildren;
-			this.generatedRootChains = generatedRootChains;
-			if (log.isDebugEnabled()) {
-				if (generatedRootChains != 0) {
-					log.debug("GeneratedRootChains = " + generatedRootChains, new Throwable());
-				}
-			}
 			if (exception != null) {
 				failed = true;
 				this.exception = exception;
@@ -55,16 +46,10 @@ class ChainTerminator implements Runnable {
 			}
 		}
 
-		public ChainInfo(int nodeId, int submissionId, int generatedRootChains) {
+		public ChainInfo(int nodeId, int submissionId) {
 			this.nodeId = nodeId;
 			this.submissionId = submissionId;
 			this.chainId = -1;
-			this.generatedRootChains = generatedRootChains;
-			if (log.isDebugEnabled()) {
-				if (generatedRootChains != 0) {
-					log.debug("GeneratedRootChains = " + generatedRootChains, new Throwable());
-				}
-			}
 			this.parentChainId = -2;
 			this.failed = false;
 			this.exception = null;
@@ -92,24 +77,23 @@ class ChainTerminator implements Runnable {
 	public void addFailedChain(Chain chain, Throwable e) {
 		ChainInfo ch = new ChainInfo(chain.getSubmissionNode(),
 				chain.getSubmissionId(), chain.getChainId(),
-				chain.getParentChainId(), chain.getTotalChainChildren(),
-				chain.getGeneratedRootChains(), e);
+				chain.getParentChainId(), chain.getTotalChainChildren(), e);
 		addInfo(ch);
 	}
 
 	public void addChain(Chain chain) {
 		ChainInfo ch = new ChainInfo(chain.getSubmissionNode(),
 				chain.getSubmissionId(), chain.getChainId(),
-				chain.getParentChainId(), chain.getTotalChainChildren(),
-				chain.getGeneratedRootChains());
+				chain.getParentChainId(), chain.getTotalChainChildren());
 		addInfo(ch);
 	}
 
-	public void addChainGeneratedRoots(Chain chain, int generatedChains) {
-		ChainInfo ch = new ChainInfo(chain.getSubmissionNode(),
-				chain.getSubmissionId(), chain.getGeneratedRootChains());
-		addInfo(ch);
-	}
+	//
+	// public void addChainGeneratedRoots(Chain chain, int generatedChains) {
+	// ChainInfo ch = new ChainInfo(chain.getSubmissionNode(),
+	// chain.getSubmissionId(), chain.getGeneratedRootChains());
+	// addInfo(ch);
+	// }
 
 	@Override
 	public void run() {
@@ -131,8 +115,7 @@ class ChainTerminator implements Runnable {
 					if (localMode) {
 						context.getSubmissionsRegistry().updateCounters(
 								header.submissionId, header.chainId,
-								header.parentChainId, header.nchildren,
-								header.generatedRootChains);
+								header.parentChainId, header.nchildren);
 					} else {
 						IbisIdentifier identifier = ibis
 								.getPeerLocation(header.nodeId);
@@ -144,7 +127,6 @@ class ChainTerminator implements Runnable {
 						msg.writeLong(header.chainId);
 						msg.writeLong(header.parentChainId);
 						msg.writeInt(header.nchildren);
-						msg.writeInt(header.generatedRootChains);
 						ibis.finishMessage(msg, header.submissionId);
 						if (log.isDebugEnabled()) {
 							log.debug("Sent message with id 2 to " + identifier);
@@ -154,7 +136,8 @@ class ChainTerminator implements Runnable {
 					// Broadcast to all the nodes that the submission ID
 					// should be removed.
 					if (localMode) {
-						context.cleanupSubmission(header.nodeId, header.submissionId, header.exception);
+						context.cleanupSubmission(header.nodeId,
+								header.submissionId, header.exception);
 					} else {
 						WriteMessage msg = ibis.getMessageToBroadcast();
 						msg.writeByte((byte) 2);

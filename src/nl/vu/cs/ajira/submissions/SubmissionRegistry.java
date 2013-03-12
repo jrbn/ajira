@@ -57,13 +57,13 @@ public class SubmissionRegistry {
 	}
 
 	public void updateCounters(int submissionId, long chainId,
-			long parentChainId, int nchildren, int generatedRootChains) {
+			long parentChainId, int nchildren) {
 		Submission sub = getSubmission(submissionId);
 
 		if (log.isDebugEnabled()) {
-			log.debug("updateCounters: submissionId = " + submissionId + ", chainId = " + chainId
-					+ ", parentChainId = " + parentChainId + ", nchildren = " + nchildren
-					+ ", generatedRootChains = " + generatedRootChains);
+			log.debug("updateCounters: submissionId = " + submissionId
+					+ ", chainId = " + chainId + ", parentChainId = "
+					+ parentChainId + ", nchildren = " + nchildren);
 		}
 		synchronized (sub) {
 			if (nchildren > 0) { // Set the expected children in the
@@ -81,9 +81,9 @@ public class SubmissionRegistry {
 				}
 			}
 
-			if (generatedRootChains > 0) {
-				sub.rootChainsReceived -= generatedRootChains;
-			}
+			// if (generatedRootChains > 0) {
+			// sub.rootChainsReceived -= generatedRootChains;
+			// }
 
 			if (parentChainId == -1) { // It is one of the root chains
 				sub.rootChainsReceived++;
@@ -123,13 +123,13 @@ public class SubmissionRegistry {
 			}
 		}
 	}
-	
+
 	public void killSubmission(int submissionId, Throwable e) {
 		Submission sub = submissions.get(submissionId);
 		if (sub == null) {
 			return;
 		}
-		synchronized(sub) {
+		synchronized (sub) {
 			if (sub.getState() == Consts.STATE_FINISHED) {
 				return;
 			}
@@ -161,8 +161,8 @@ public class SubmissionRegistry {
 			Chain chain = new Chain();
 			chain.setParentChainId(-1);
 			chain.setInputLayer(Consts.DEFAULT_INPUT_LAYER_ID);
-			int resultBucket = chain.setActions(job.getActions(), new ChainExecutor(null, context,
-					chain));
+			int resultBucket = chain.setActions(job.getActions(),
+					new ChainExecutor(null, context, chain));
 
 			if (resultBucket != -1) {
 				sub.assignedBucket = resultBucket;
@@ -213,13 +213,14 @@ public class SubmissionRegistry {
 		}
 	}
 
-	public Submission waitForCompletion(Context context, Job job) throws JobFailedException {
+	public Submission waitForCompletion(Context context, Job job)
+			throws JobFailedException {
 
 		Submission submission;
 		try {
-		    submission = submitNewJob(context, job);
+			submission = submitNewJob(context, job);
 		} catch (Throwable e1) {
-		    throw new JobFailedException("Job submission failed", e1);
+			throw new JobFailedException("Job submission failed", e1);
 		}
 
 		// Pool the submission registry to know when it is present and return it
@@ -238,23 +239,23 @@ public class SubmissionRegistry {
 
 		// Clean up the eventual things going on in the nodes
 		try {
-		    cleanupSubmission(submission);
-		} catch(Throwable e) {
-		    // TODO: what to do here?
-		    // Should probably not affect the job.
+			cleanupSubmission(submission);
+		} catch (Throwable e) {
+			// TODO: what to do here?
+			// Should probably not affect the job.
 		}
 		Throwable e = submission.getException();
 		if (e != null) {
-		    throw new JobFailedException(e);
+			throw new JobFailedException(e);
 		}
 		return submission;
 	}
 
 	public void getStatistics(Submission submission) {
 		try {
-		    Thread.sleep(500);
+			Thread.sleep(500);
 		} catch (InterruptedException e) {
-		    // ignore
+			// ignore
 		}
 		submission.counters = stats.removeCountersSubmission(submission
 				.getSubmissionId());

@@ -143,10 +143,10 @@ class Receiver implements MessageUpcall {
 				idChain = message.readLong();
 				idParentChain = message.readLong();
 				children = message.readInt();
-				int generatedRootChains = message.readInt();
+				// int generatedRootChains = message.readInt();
 				finishMessage(message, time, idSubmission);
 				context.getSubmissionsRegistry().updateCounters(idSubmission,
-						idChain, idParentChain, children, generatedRootChains);
+						idChain, idParentChain, children);
 			} else {
 				// Cleanup submission
 				submissionNode = message.readInt();
@@ -251,22 +251,22 @@ class Receiver implements MessageUpcall {
 
 				net.stopMonitorCounters();
 				net.broadcastStopMonitoring();
-				
+
 				int bid = submission.getAssignedBucket();
-				
+
 				WritableContainer<TupleSerializer> tmpBuffer = bufferFactory
 						.get();
 				tmpBuffer.clear();
-				
+
 				WriteMessage reply = net.getMessageToSend(message.origin()
 						.ibisIdentifier(), NetworkLayer.queryReceiverPort);
-				reply.writeBoolean(true);			// Success
+				reply.writeBoolean(true); // Success
 
 				reply.writeDouble(submission.getExecutionTimeInMs());
-				
+
 				boolean isFinished = true;
 				bucket = null;
-				
+
 				if (bid >= 0) {
 					// Read the bucket
 					bucket = buckets.getExistingBucket(
@@ -293,12 +293,12 @@ class Receiver implements MessageUpcall {
 					Runtime.getRuntime().gc();
 				}
 				context.getSubmissionsRegistry().releaseSubmission(submission);
-			} catch(JobFailedException e) {
+			} catch (JobFailedException e) {
 				net.stopMonitorCounters();
 				net.broadcastStopMonitoring();
 				WriteMessage reply = net.getMessageToSend(message.origin()
 						.ibisIdentifier(), NetworkLayer.queryReceiverPort);
-				reply.writeBoolean(false);			// Failure
+				reply.writeBoolean(false); // Failure
 				// Marshal the exception.
 				ByteArrayOutputStream bo = new ByteArrayOutputStream();
 				ObjectOutputStream o = new ObjectOutputStream(bo);
@@ -524,8 +524,10 @@ class Receiver implements MessageUpcall {
 			throws IOException {
 		long bytes = msg.finish();
 		long time = System.currentTimeMillis() - startTime;
-		stats.addCounter(0, submissionId, "Receiver:upcall: time receiving msgs (ms)", time);
-		stats.addCounter(0, submissionId, "Receiver:upcall: bytes received", bytes);
+		stats.addCounter(0, submissionId,
+				"Receiver:upcall: time receiving msgs (ms)", time);
+		stats.addCounter(0, submissionId, "Receiver:upcall: bytes received",
+				bytes);
 		// stats.addCounter(0, submissionId, "Messages read", 1);
 	}
 
@@ -546,8 +548,10 @@ class Receiver implements MessageUpcall {
 			throws IOException {
 		long bytes = msg.bytesRead();
 		long time = System.currentTimeMillis() - startTime;
-		stats.addCounter(0, submissionId, "Receiver:upcall: time receiving msgs (ms)", time);
-		stats.addCounter(0, submissionId, "Receiver:upcall: bytes received", bytes);
+		stats.addCounter(0, submissionId,
+				"Receiver:upcall: time receiving msgs (ms)", time);
+		stats.addCounter(0, submissionId, "Receiver:upcall: bytes received",
+				bytes);
 		// stats.addCounter(0, submissionId, "Messages read", 1);
 	}
 }

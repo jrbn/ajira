@@ -75,12 +75,6 @@ public class Chain implements Writable, Query {
 		bufferSize = input.readInt();
 		input.readFully(buffer, 0, bufferSize);
 
-		if (log.isDebugEnabled()) {
-			if (getGeneratedRootChains() != 0) {
-				log.debug("ReadFrom: generatedRootChains = " + getGeneratedRootChains(), new Throwable());
-			}
-		}
-		
 		if (input.readBoolean()) {
 			// Read the number of elements and their types
 			int n = input.readByte();
@@ -97,11 +91,6 @@ public class Chain implements Writable, Query {
 
 	@Override
 	public void writeTo(DataOutput output) throws IOException {
-		if (log.isDebugEnabled()) {
-			if (getGeneratedRootChains() != 0) {
-				log.debug("WriteTo: generatedRootChains = " + getGeneratedRootChains(), new Throwable());
-			}
-		}
 		output.writeInt(bufferSize);
 		output.write(buffer, 0, bufferSize);
 
@@ -159,22 +148,23 @@ public class Chain implements Writable, Query {
 		Utils.encodeInt(buffer, 24, chainChildren);
 	}
 
-	void setGeneratedRootChains(int rootChains) {
-		if (log.isDebugEnabled()) {
-			if (rootChains != 0) {
-				log.debug("Chain " + getChainId() + ": rootChains = " + rootChains, new Throwable());
-			}
-		}
-		Utils.encodeInt(buffer, 28, rootChains);
-	}
+	// void setGeneratedRootChains(int rootChains) {
+	// if (log.isDebugEnabled()) {
+	// if (rootChains != 0) {
+	// log.debug("Chain " + getChainId() + ": rootChains = "
+	// + rootChains, new Throwable());
+	// }
+	// }
+	// Utils.encodeInt(buffer, 28, rootChains);
+	// }
 
 	public int getTotalChainChildren() {
 		return Utils.decodeInt(buffer, 24);
 	}
 
-	public int getGeneratedRootChains() {
-		return Utils.decodeInt(buffer, 28);
-	}
+	// public int getGeneratedRootChains() {
+	// return Utils.decodeInt(buffer, 28);
+	// }
 
 	@Override
 	public void setInputLayer(int id) {
@@ -206,9 +196,9 @@ public class Chain implements Writable, Query {
 
 	public int setActions(List<ActionConf> actions, ActionContext context)
 			throws Exception {
-		
+
 		int retval = -1;
-		
+
 		if (actions != null) {
 
 			for (int i = 0; i < actions.size(); ++i) {
@@ -257,7 +247,7 @@ public class Chain implements Writable, Query {
 			throws Exception {
 
 		int retval = -1;
-		
+
 		// Process the parameters and possibly insert instructions to control
 		// the flow.
 		if (action.getConfigurator() != null) {
@@ -340,28 +330,29 @@ public class Chain implements Writable, Query {
 		newChain.setParentChainId(this.getChainId());
 		newChain.setChainId(newChainId);
 		newChain.setTotalChainChildren(0);
-		newChain.setGeneratedRootChains(0);
+		// newChain.setGeneratedRootChains(0);
 
 		// Update counters of the new chain.
 		setTotalChainChildren(getTotalChainChildren() + 1);
 	}
 
-	void branchFromRoot(Chain newChain, long newChainId) {
-		if (log.isDebugEnabled()) {
-			log.debug("branchFromRoot: newChainId = " + newChainId + ", chainId = " + getChainId(), new Throwable());
-		}
-		newChain.bufferSize = Consts.CHAIN_RESERVED_SPACE;
-		System.arraycopy(buffer, 0, newChain.buffer, 0, bufferSize);
-
-		// Set up the new chain
-		newChain.setParentChainId(-1);
-		newChain.setChainId(newChainId);
-		newChain.setTotalChainChildren(0);
-		newChain.setGeneratedRootChains(0);
-
-		// Update this counter
-		setGeneratedRootChains(getGeneratedRootChains() + 1);
-	}
+	// void branchFromRoot(Chain newChain, long newChainId) {
+	// if (log.isDebugEnabled()) {
+	// log.debug("branchFromRoot: newChainId = " + newChainId + ", chainId = " +
+	// getChainId(), new Throwable());
+	// }
+	// newChain.bufferSize = Consts.CHAIN_RESERVED_SPACE;
+	// System.arraycopy(buffer, 0, newChain.buffer, 0, bufferSize);
+	//
+	// // Set up the new chain
+	// newChain.setParentChainId(-1);
+	// newChain.setChainId(newChainId);
+	// newChain.setTotalChainChildren(0);
+	// newChain.setGeneratedRootChains(0);
+	//
+	// // Update this counter
+	// setGeneratedRootChains(getGeneratedRootChains() + 1);
+	// }
 
 	void getActions(ChainExecutor actions, ActionFactory ap) throws IOException {
 
