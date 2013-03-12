@@ -73,7 +73,11 @@ public class PartitionToNodes extends Action {
 				f[i++] = (byte) DataProvider.getId(v);
 			}
 			params[TUPLE_FIELDS] = f;
-
+			
+			if (params[SORT] == null) {
+				params[SORT] = new Boolean(false);
+			}
+			
 			controller.continueComputationOn(-1,
 					((TIntArray) params[BUCKET_IDS]).getArray()[0]);
 		}
