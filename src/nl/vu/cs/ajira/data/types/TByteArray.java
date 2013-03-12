@@ -8,6 +8,13 @@ import java.util.Arrays;
 import nl.vu.cs.ajira.storage.RawComparator;
 import nl.vu.cs.ajira.utils.Consts;
 
+
+/**
+ * 
+ * This class provides the methods that are needed in 
+ * order to manipulate an array of byte values. 
+ *
+ */
 public class TByteArray extends SimpleData {
 
 	byte[] array;

@@ -6,6 +6,12 @@ import java.io.IOException;
 
 import nl.vu.cs.ajira.utils.Consts;
 
+/**
+ * 
+ * This class provides the methods that are needed in 
+ * order to manipulate a Boolean value. 
+ *
+ */
 public final class TBoolean extends SimpleData {
 
 	boolean value;
