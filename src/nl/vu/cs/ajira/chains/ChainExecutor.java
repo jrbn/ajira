@@ -3,6 +3,7 @@ package nl.vu.cs.ajira.chains;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -462,7 +463,25 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			}
 		}
 
-		// TODO: add the counters to the current chain
-
+		long chainId = chain.getChainId();
+		List<Integer> values = newChildren.get(chainId);
+		if (values != null) {
+			Iterator<Integer> itr = values.iterator();
+			int old_children = chain.getTotalChainChildren();
+			int n_children = old_children;
+			while (itr.hasNext()) {
+				int v = itr.next();
+				if (v < nActions) {
+					itr.remove();
+					n_children++;
+				}
+			}
+			if (values.size() == 0) {
+				newChildren.remove(chainId);
+			}
+			if (n_children != old_children) {
+				chain.setTotalChainChildren(n_children);
+			}
+		}
 	}
 }
