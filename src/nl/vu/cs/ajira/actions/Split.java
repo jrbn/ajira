@@ -13,7 +13,7 @@ public class Split extends Action {
 
 	@Override
 	public void registerActionParameters(ActionConf conf) {
-		conf.registerParameter(SPLIT, "split", null, true);
+		conf.registerParameter(SPLIT, "split", null, false);
 		conf.registerParameter(RECONNECT_AFTER_ACTIONS, "reconnect at", -1,
 				false);
 	}

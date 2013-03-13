@@ -330,7 +330,8 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			throws Exception {
 		chain.customBranch(supportChain, 0,
 				getCounter(Consts.CHAINCOUNTER_NAME), reconnectAt);
-		supportChain.setActions(actions, this);
+		if (actions != null)
+			supportChain.setActions(actions, this);
 		SplitIterator itr = ChainSplitLayer.getInstance().registerNewSplit();
 		supportChain.setInputLayer(Consts.SPLITS_INPUT_LAYER);
 		supportChain
@@ -352,7 +353,8 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			throws Exception {
 		chain.customBranch(supportChain, 0,
 				getCounter(Consts.CHAINCOUNTER_NAME), reconnectAt);
-		supportChain.setAction(action, this);
+		if (action != null)
+			supportChain.setAction(action, this);
 		SplitIterator itr = ChainSplitLayer.getInstance().registerNewSplit();
 		supportChain.setInputLayer(Consts.SPLITS_INPUT_LAYER);
 		supportChain
