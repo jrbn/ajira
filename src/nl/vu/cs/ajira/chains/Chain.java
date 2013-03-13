@@ -330,29 +330,20 @@ public class Chain implements Writable, Query {
 		newChain.setParentChainId(this.getChainId());
 		newChain.setChainId(newChainId);
 		newChain.setTotalChainChildren(0);
-		// newChain.setGeneratedRootChains(0);
 
-		// Update counters of the new chain.
+		// Update counters of the new chain
 		setTotalChainChildren(getTotalChainChildren() + 1);
 	}
 
-	// void branchFromRoot(Chain newChain, long newChainId) {
-	// if (log.isDebugEnabled()) {
-	// log.debug("branchFromRoot: newChainId = " + newChainId + ", chainId = " +
-	// getChainId(), new Throwable());
-	// }
-	// newChain.bufferSize = Consts.CHAIN_RESERVED_SPACE;
-	// System.arraycopy(buffer, 0, newChain.buffer, 0, bufferSize);
-	//
-	// // Set up the new chain
-	// newChain.setParentChainId(-1);
-	// newChain.setChainId(newChainId);
-	// newChain.setTotalChainChildren(0);
-	// newChain.setGeneratedRootChains(0);
-	//
-	// // Update this counter
-	// setGeneratedRootChains(getGeneratedRootChains() + 1);
-	// }
+	void customBranch(Chain newChain, long parentChainId, long newChainId) {
+		newChain.bufferSize = Consts.CHAIN_RESERVED_SPACE;
+		System.arraycopy(buffer, 0, newChain.buffer, 0, bufferSize);
+
+		// Set up the new chain
+		newChain.setParentChainId(parentChainId);
+		newChain.setChainId(newChainId);
+		newChain.setTotalChainChildren(0);
+	}
 
 	void getActions(ChainExecutor actions, ActionFactory ap) throws IOException {
 

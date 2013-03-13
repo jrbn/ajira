@@ -123,6 +123,21 @@ class Receiver implements MessageUpcall {
 			bucket.updateCounters(idChain, idParentChain, children,
 					isResponsible);
 
+			int additionalCounters = message.readByte();
+			if (additionalCounters > 0) {
+				long[] chains = new long[additionalCounters];
+				int[][] values = new int[additionalCounters][];
+				for (int i = 0; i < additionalCounters; ++i) {
+					chains[i] = message.readLong();
+					int[] v = new int[message.readInt()];
+					for (int j = 0; j < v.length; ++j) {
+						v[j] = message.readByte();
+					}
+					values[i] = v;
+				}
+				bucket.setAdditionalCounters(chains, values);
+			}
+
 			if (bufferKey != -1) {
 				finishMessage(message, time, idSubmission);
 				int idRemoteNode = net.getPeerId(message.origin()

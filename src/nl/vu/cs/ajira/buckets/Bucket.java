@@ -125,6 +125,8 @@ public class Bucket {
 	private long key;
 	private CachedFilesMerger merger;
 
+	private Map<Long, List<Integer>> additionalChildrenCounts = null;
+
 	SortedList<byte[]> minimumSortedList = new SortedList<byte[]>(100,
 			new Comparator<byte[]>() {
 				@Override
@@ -602,6 +604,8 @@ public class Bucket {
 		minimumSortedList.clear();
 		cacheFiles.clear();
 		children.clear();
+
+		additionalChildrenCounts = null;
 
 		this.stats = stats;
 		this.submissionNode = submissionNode;
@@ -1373,5 +1377,48 @@ public class Bucket {
 
 	public TupleComparator getComparator() {
 		return comparator;
+	}
+
+	public synchronized void setAdditionalCounters(long[] additionalChains,
+			int[][] additionalValues) {
+		if (additionalChildrenCounts == null) {
+			additionalChildrenCounts = new HashMap<Long, List<Integer>>();
+		}
+
+		for (int i = 0; i < additionalChains.length; ++i) {
+			List<Integer> values = additionalChildrenCounts
+					.get(additionalChains[i]);
+			if (values == null) {
+				values = new ArrayList<Integer>();
+				additionalChildrenCounts.put(additionalChains[i], values);
+			}
+
+			for (int j : additionalValues[i]) {
+				values.add(j);
+			}
+		}
+	}
+
+	public synchronized void setAdditionalCounters(
+			Map<Long, List<Integer>> additionalCounters) {
+		if (additionalChildrenCounts == null) {
+			additionalChildrenCounts = new HashMap<Long, List<Integer>>();
+		}
+
+		for (Map.Entry<Long, List<Integer>> value : additionalCounters
+				.entrySet()) {
+			List<Integer> existingValue = additionalChildrenCounts.get(value
+					.getKey().longValue());
+			if (existingValue == null) {
+				additionalChildrenCounts.put(value.getKey().longValue(),
+						value.getValue());
+			}
+
+			existingValue.addAll(value.getValue());
+		}
+	}
+
+	public Map<Long, List<Integer>> getAdditionalChildrenCounts() {
+		return additionalChildrenCounts;
 	}
 }

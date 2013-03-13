@@ -117,6 +117,15 @@ public class BucketIterator extends TupleIterator {
 		return bucket.isFinished();
 	}
 
+	/**
+	 * Returns the associated bucket.
+	 * 
+	 * @return The bucket
+	 */
+	public Bucket getBucket() {
+		return bucket;
+	}
+
 	@Override
 	public String toString() {
 		return "Iterator for bucket "

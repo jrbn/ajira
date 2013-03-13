@@ -1,7 +1,12 @@
 package nl.vu.cs.ajira.chains;
 
+import java.util.List;
+import java.util.Map;
+
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.actions.ActionFactory;
+import nl.vu.cs.ajira.buckets.Bucket;
+import nl.vu.cs.ajira.buckets.BucketIterator;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.datalayer.InputLayer;
@@ -9,6 +14,7 @@ import nl.vu.cs.ajira.datalayer.TupleIterator;
 import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.net.NetworkLayer;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
+import nl.vu.cs.ajira.utils.Consts;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,14 +82,27 @@ public class ChainHandler implements Runnable {
 
 			// Read the input tuple from the knowledge base
 			currentChain.getInputTuple(tuple);
-			InputLayer input = context.getInputLayer(currentChain
-					.getInputLayer());
+			int il = currentChain.getInputLayer();
+			InputLayer input = context.getInputLayer(il);
 			TupleIterator itr = input.getIterator(tuple, actions);
 			if (!itr.isReady()) {
 				context.getChainNotifier().addWaiter(itr, currentChain);
 				currentChain = new Chain();
 				status = STATUS_INACTIVE;
 				return;
+			}
+
+			if (il == Consts.BUCKET_INPUT_LAYER_ID) {
+				// Check whether there are some counters that should be added to
+				// the ChainExecutor
+				BucketIterator bi = (BucketIterator) itr;
+				Bucket b = bi.getBucket();
+				Map<Long, List<Integer>> counters = b
+						.getAdditionalChildrenCounts();
+				if (counters != null) {
+					// Add them to the ChainExecutor
+					actions.addAndUpdateCounters(counters);
+				}
 			}
 
 			if (log.isDebugEnabled()) {

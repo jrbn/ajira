@@ -2,10 +2,9 @@ package nl.vu.cs.ajira.chains;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.Map;
 
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.actions.Action;
@@ -24,6 +23,9 @@ import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.net.NetworkLayer;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.utils.Consts;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ChainExecutor implements ActionContext, ActionOutput {
 
@@ -44,6 +46,9 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	private boolean stopProcess;
 	private TupleIterator itr;
 
+	// Used to create forwards to following actions
+	private Map<Long, List<Integer>> newChildren = new HashMap<Long, List<Integer>>();
+
 	private int currentAction;
 	private int submissionNode;
 	private int submissionId;
@@ -61,8 +66,9 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	private int transferBucketId;
 	private boolean localMode;
 	private int childrenToTransfer;
-	
-	private static final Logger log = LoggerFactory.getLogger(ChainExecutor.class);
+
+	private static final Logger log = LoggerFactory
+			.getLogger(ChainExecutor.class);
 
 	public ChainExecutor(ChainHandler handler, Context context) {
 		this.context = context;
@@ -168,6 +174,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		this.smallestRuntimeAction = -1;
 		this.stopProcess = false;
 		this.transferComputation = false;
+		this.newChildren.clear();
 		openedStreams.clear();
 	}
 
@@ -234,7 +241,6 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			else
 				net.sendChain(supportChain);
 		}
-
 	}
 
 	@Override
@@ -298,7 +304,8 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 	@Override
 	public ActionOutput split(List<ActionConf> actions) throws Exception {
-		chain.branchFromRoot(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
+		chain.customBranch(supportChain, 0,
+				getCounter(Consts.CHAINCOUNTER_NAME));
 		supportChain.setActions(actions, this);
 		SplitIterator itr = ChainSplitLayer.getInstance().registerNewSplit();
 		supportChain.setInputLayer(Consts.SPLITS_INPUT_LAYER);
@@ -312,12 +319,23 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 		openedStreams.add(itr);
 
+		incrementChildren(0, -1);
 		return itr;
+	}
+
+	private void incrementChildren(long chain, int v) {
+		List<Integer> value = newChildren.get(chain);
+		if (value == null) {
+			value = new ArrayList<Integer>();
+			newChildren.put(chain, value);
+		}
+		value.add(v);
 	}
 
 	@Override
 	public ActionOutput split(ActionConf action) throws Exception {
-		chain.branchFromRoot(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
+		chain.customBranch(supportChain, 0,
+				getCounter(Consts.CHAINCOUNTER_NAME));
 		supportChain.setAction(action, this);
 		SplitIterator itr = ChainSplitLayer.getInstance().registerNewSplit();
 		supportChain.setInputLayer(Consts.SPLITS_INPUT_LAYER);
@@ -330,6 +348,9 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 				"Chains Dynamically Generated", 1);
 
 		openedStreams.add(itr);
+
+		incrementChildren(0, -1);
+
 		return itr;
 	}
 
@@ -343,8 +364,8 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	@Override
 	public Bucket startTransfer(int nodeId, int bucketId, boolean sort,
 			byte[] sortingFields, byte[] signature) throws IOException {
-		Bucket temp = context.getBuckets().startTransfer(submissionNode, submissionId,
-				nodeId, bucketId, sort, null, signature, this);
+		Bucket temp = context.getBuckets().startTransfer(submissionNode,
+				submissionId, nodeId, bucketId, sort, null, signature, this);
 
 		try {
 			int children = chain.getTotalChainChildren();
@@ -359,14 +380,15 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 				}
 			}
 
-			context.getBuckets().alertTransfer(submissionNode, submissionId, 
-					nodeId, bucketId, chain.getChainId(), chain.getParentChainId(), 
-					children, roots[currentAction], sort, null, signature);
+			context.getBuckets().alertTransfer(submissionNode, submissionId,
+					nodeId, bucketId, chain.getChainId(),
+					chain.getParentChainId(), children, roots[currentAction],
+					sort, null, signature, newChildren);
 		} catch (IOException e) {
 			log.error(e.getMessage(), e);
 			throw e;
 		}
-	
+
 		return temp;
 	}
 
@@ -390,7 +412,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		context.getBuckets().finishTransfer(this.submissionNode, submissionId,
 				nodeId, bucketId, chain.getChainId(), chain.getParentChainId(),
 				children, roots[currentAction], sort, sortingFields, signature,
-				decreaseCounter);
+				decreaseCounter, newChildren);
 	}
 
 	int getNActions() {
@@ -431,5 +453,16 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			context.getSubmissionCache().broadcastCacheObjects(submissionId,
 					key);
 		}
+	}
+
+	public void addAndUpdateCounters(Map<Long, List<Integer>> counters) {
+		for (Map.Entry<Long, List<Integer>> entry : counters.entrySet()) {
+			for (int i : entry.getValue()) {
+				incrementChildren(entry.getKey().longValue(), i);
+			}
+		}
+
+		// TODO: add the counters to the current chain
+
 	}
 }
