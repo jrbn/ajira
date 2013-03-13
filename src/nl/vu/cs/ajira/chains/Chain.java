@@ -106,12 +106,6 @@ public class Chain implements Writable, Query {
 		}
 	}
 
-	// @Override
-	// public int bytesToStore() throws IOException {
-	// return bufferSize + 9 + new SerializedTuple(tuple).bytesToStore()
-	// + tuple.getNElements() + 1;
-	// }
-
 	public void setSubmissionNode(int nodeId) {
 		Utils.encodeInt(buffer, 0, nodeId);
 	}
@@ -148,23 +142,9 @@ public class Chain implements Writable, Query {
 		Utils.encodeInt(buffer, 24, chainChildren);
 	}
 
-	// void setGeneratedRootChains(int rootChains) {
-	// if (log.isDebugEnabled()) {
-	// if (rootChains != 0) {
-	// log.debug("Chain " + getChainId() + ": rootChains = "
-	// + rootChains, new Throwable());
-	// }
-	// }
-	// Utils.encodeInt(buffer, 28, rootChains);
-	// }
-
 	public int getTotalChainChildren() {
 		return Utils.decodeInt(buffer, 24);
 	}
-
-	// public int getGeneratedRootChains() {
-	// return Utils.decodeInt(buffer, 28);
-	// }
 
 	@Override
 	public void setInputLayer(int id) {
@@ -335,9 +315,26 @@ public class Chain implements Writable, Query {
 		setTotalChainChildren(getTotalChainChildren() + 1);
 	}
 
-	void customBranch(Chain newChain, long parentChainId, long newChainId) {
-		newChain.bufferSize = Consts.CHAIN_RESERVED_SPACE;
-		System.arraycopy(buffer, 0, newChain.buffer, 0, bufferSize);
+	void customBranch(Chain newChain, long parentChainId, long newChainId,
+			int startFromAction) {
+		int sizeToCopy = Consts.CHAIN_RESERVED_SPACE;
+		if (startFromAction != -1) {
+			sizeToCopy = bufferSize;
+			// Remove the first n actions
+			while (startFromAction-- >= 0
+					&& sizeToCopy > Consts.CHAIN_RESERVED_SPACE) {
+				sizeToCopy -= 4;
+				int sizeNameAction = Utils.decodeInt(buffer, sizeToCopy);
+				sizeToCopy -= 12 + sizeNameAction; // Skip also the chainID
+				sizeToCopy -= Utils.decodeInt(buffer, sizeToCopy);
+				if (buffer[--sizeToCopy] == 1) {
+					sizeToCopy -= 8;
+				}
+			}
+		}
+
+		newChain.bufferSize = sizeToCopy;
+		System.arraycopy(buffer, 0, newChain.buffer, 0, sizeToCopy);
 
 		// Set up the new chain
 		newChain.setParentChainId(parentChainId);

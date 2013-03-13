@@ -15,7 +15,9 @@ public interface ActionOutput {
 
 	public void branch(ActionConf action) throws Exception;
 
-	public ActionOutput split(List<ActionConf> actions) throws Exception;
+	public ActionOutput split(List<ActionConf> actions, int reconnectAt)
+			throws Exception;
 
-	public ActionOutput split(ActionConf action) throws Exception;
+	public ActionOutput split(ActionConf action, int reconnectAt)
+			throws Exception;
 }

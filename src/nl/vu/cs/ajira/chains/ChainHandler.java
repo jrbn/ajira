@@ -99,7 +99,7 @@ public class ChainHandler implements Runnable {
 				Bucket b = bi.getBucket();
 				Map<Long, List<Integer>> counters = b
 						.getAdditionalChildrenCounts();
-				if (counters != null) {
+				if (counters != null && counters.size() > 0) {
 					// Add them to the ChainExecutor
 					actions.addAndUpdateCounters(counters);
 				}

@@ -310,10 +310,26 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 				"Chains Dynamically Generated", 1);
 	}
 
+	private void incrementChildren(long chain, int v) {
+
+		int remainingActions = nActions - currentAction - 1;
+		if (v > remainingActions) {
+			v -= remainingActions;
+		}
+
+		List<Integer> value = newChildren.get(chain);
+		if (value == null) {
+			value = new ArrayList<Integer>();
+			newChildren.put(chain, value);
+		}
+		value.add(v);
+	}
+
 	@Override
-	public ActionOutput split(List<ActionConf> actions) throws Exception {
+	public ActionOutput split(List<ActionConf> actions, int reconnectAt)
+			throws Exception {
 		chain.customBranch(supportChain, 0,
-				getCounter(Consts.CHAINCOUNTER_NAME));
+				getCounter(Consts.CHAINCOUNTER_NAME), reconnectAt);
 		supportChain.setActions(actions, this);
 		SplitIterator itr = ChainSplitLayer.getInstance().registerNewSplit();
 		supportChain.setInputLayer(Consts.SPLITS_INPUT_LAYER);
@@ -327,23 +343,15 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 		openedStreams.add(itr);
 
-		incrementChildren(0, -1);
+		incrementChildren(0, reconnectAt);
 		return itr;
 	}
 
-	private void incrementChildren(long chain, int v) {
-		List<Integer> value = newChildren.get(chain);
-		if (value == null) {
-			value = new ArrayList<Integer>();
-			newChildren.put(chain, value);
-		}
-		value.add(v);
-	}
-
 	@Override
-	public ActionOutput split(ActionConf action) throws Exception {
+	public ActionOutput split(ActionConf action, int reconnectAt)
+			throws Exception {
 		chain.customBranch(supportChain, 0,
-				getCounter(Consts.CHAINCOUNTER_NAME));
+				getCounter(Consts.CHAINCOUNTER_NAME), reconnectAt);
 		supportChain.setAction(action, this);
 		SplitIterator itr = ChainSplitLayer.getInstance().registerNewSplit();
 		supportChain.setInputLayer(Consts.SPLITS_INPUT_LAYER);
@@ -357,7 +365,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 		openedStreams.add(itr);
 
-		incrementChildren(0, -1);
+		incrementChildren(0, reconnectAt);
 
 		return itr;
 	}
@@ -479,6 +487,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	public void addAndUpdateCounters(Map<Long, List<Integer>> counters) {
 		for (Map.Entry<Long, List<Integer>> entry : counters.entrySet()) {
 			for (int i : entry.getValue()) {
+				i -= nActions;
 				incrementChildren(entry.getKey().longValue(), i);
 			}
 		}
@@ -491,7 +500,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			int n_children = old_children;
 			while (itr.hasNext()) {
 				int v = itr.next();
-				if (v < nActions) {
+				if (v < 0) {
 					itr.remove();
 					n_children++;
 				}

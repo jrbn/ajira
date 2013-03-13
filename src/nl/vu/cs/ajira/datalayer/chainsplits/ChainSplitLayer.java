@@ -34,7 +34,7 @@ public class ChainSplitLayer extends InputLayer {
 		 * Custom constructor.
 		 * 
 		 * @param id
-		 * 		The id of the SplitIterator.
+		 *            The id of the SplitIterator.
 		 */
 		SplitIterator(int id) {
 			this.id = id;
@@ -42,8 +42,7 @@ public class ChainSplitLayer extends InputLayer {
 
 		/**
 		 * 
-		 * @return
-		 * 		The id of the SplitIterator
+		 * @return The id of the SplitIterator
 		 */
 		public int getId() {
 			return id;
@@ -92,12 +91,14 @@ public class ChainSplitLayer extends InputLayer {
 		}
 
 		@Override
-		public ActionOutput split(List<ActionConf> actions) throws Exception {
+		public ActionOutput split(List<ActionConf> actions, int reconnectAt)
+				throws Exception {
 			throw new Exception("Not allowed");
 		}
 
 		@Override
-		public ActionOutput split(ActionConf action) throws Exception {
+		public ActionOutput split(ActionConf action, int reconnectAt)
+				throws Exception {
 			throw new Exception("Not allowed");
 		}
 
