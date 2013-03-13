@@ -7,6 +7,12 @@ import java.util.Arrays;
 
 import nl.vu.cs.ajira.utils.Consts;
 
+/**
+ * 
+ * This class provides the methods that are needed in 
+ * order to manipulate an array of String values. 
+ *
+ */
 public class TStringArray extends SimpleData {
 
 	String[] array;

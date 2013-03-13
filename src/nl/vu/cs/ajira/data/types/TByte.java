@@ -6,6 +6,7 @@ import java.io.IOException;
 
 import nl.vu.cs.ajira.utils.Consts;
 
+
 public class TByte extends SimpleData {
 
 	int value;

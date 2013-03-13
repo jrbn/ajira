@@ -14,6 +14,11 @@ import nl.vu.cs.ajira.storage.Container;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 
+ * This class is used to send chains to other nodes.
+ *
+ */
 class ChainSender implements Runnable {
 
 	static final Logger log = LoggerFactory.getLogger(ChainSender.class);

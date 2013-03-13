@@ -6,6 +6,12 @@ import java.io.IOException;
 
 import nl.vu.cs.ajira.utils.Consts;
 
+/**
+ * 
+ * This class provides the methods that are needed in 
+ * order to manipulate a int value. 
+ *
+ */
 public final class TInt extends SimpleData {
 
 	int value;

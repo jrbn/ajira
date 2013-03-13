@@ -14,9 +14,19 @@ import nl.vu.cs.ajira.chains.Chain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * This class keep track of the chains that have terminated and sends messages
+ * to the corresponding nodes informing that the chain has terminated.
+ * 
+ */
 class ChainTerminator implements Runnable {
 
-	public final static class ChainInfo {
+	/**
+	 * 
+	 * This class is used to keep informations about a chain.
+	 * 
+	 */
+	public static class ChainInfo {
 
 		public final int nodeId;
 		public final int submissionId;
@@ -28,6 +38,23 @@ class ChainTerminator implements Runnable {
 		public final long[] additionalChainCounters;
 		public final int[] additionalChainValues;
 
+		/**
+		 * Custom constructor.
+		 * 
+		 * @param nodeId
+		 *            The id of the node.
+		 * @param submissionId
+		 *            The submission id.
+		 * @param chainId
+		 *            The id of the chain.
+		 * @param parentChainId
+		 *            The id of the parent chain.
+		 * @param nchildren
+		 *            The number of chain children.
+		 * @param generatedRootChains
+		 *            The number of generated root chains.
+		 * 
+		 */
 		public ChainInfo(int nodeId, int submissionId, long chainId,
 				long parentChainId, int nchildren,
 				long[] additionalChainCounters, int[] additionalChainValues) {
@@ -35,6 +62,24 @@ class ChainTerminator implements Runnable {
 					additionalChainCounters, additionalChainValues, null);
 		}
 
+		/**
+		 * Custom constructor.
+		 * 
+		 * @param nodeId
+		 *            The id of the node.
+		 * @param submissionId
+		 *            The submission id.
+		 * @param chainId
+		 *            The id of the chain.
+		 * @param parentChainId
+		 *            The id of the parent chain.
+		 * @param nchildren
+		 *            The number of chain children.
+		 * @param generatedRootChains
+		 *            The number of generated root chains.
+		 * @param exception
+		 *            The exception thrown during the chain's process.
+		 */
 		public ChainInfo(int nodeId, int submissionId, long chainId,
 				long parentChainId, int nchildren,
 				long[] additionalChainCounters, int[] additionalChainValues,
@@ -55,7 +100,17 @@ class ChainTerminator implements Runnable {
 			}
 		}
 
-		public ChainInfo(int nodeId, int submissionId) {
+		/**
+		 * Custom constructor.
+		 * 
+		 * @param nodeId
+		 *            The id of the node.
+		 * @param submissionId
+		 *            The submission id.
+		 * @param generatedRootChains
+		 *            The number of generated root chains.
+		 */
+		public ChainInfo(int nodeId, int submissionId, int generatedRootChains) {
 			this.nodeId = nodeId;
 			this.submissionId = submissionId;
 			this.chainId = -1;
@@ -74,10 +129,24 @@ class ChainTerminator implements Runnable {
 	private final List<ChainInfo> chainsTerminated = Collections
 			.synchronizedList(new LinkedList<ChainTerminator.ChainInfo>());
 
+	/**
+	 * Custom constructor.
+	 * 
+	 * @param context
+	 *            Current context.
+	 */
 	public ChainTerminator(Context context) {
 		this.context = context;
 	}
 
+	/**
+	 * Adds the informations about the chain to the list of terminated chains
+	 * and notifies that a chain is in the list. Therefore, it's corresponding
+	 * messages are sent.
+	 * 
+	 * @param ch
+	 *            The informations about a chain.
+	 */
 	public void addInfo(ChainInfo ch) {
 		synchronized (chainsTerminated) {
 			chainsTerminated.add(ch);
@@ -85,6 +154,15 @@ class ChainTerminator implements Runnable {
 		}
 	}
 
+	/**
+	 * Adds the informations of a chain to the list of terminated chains.
+	 * 
+	 * @param chain
+	 *            The chain whose informations are added at the list of
+	 *            terminated chains.
+	 * @param e
+	 *            The exception thrown when the chain failed.
+	 */
 	public void addFailedChain(Chain chain, Throwable e) {
 		ChainInfo ch = new ChainInfo(chain.getSubmissionNode(),
 				chain.getSubmissionId(), chain.getChainId(),
@@ -93,9 +171,15 @@ class ChainTerminator implements Runnable {
 		addInfo(ch);
 	}
 
+	/**
+	 * Adds the informations of a chain to the list of terminated chains.
+	 * 
+	 * @param chain
+	 *            The chain whose informations are added at the list of
+	 *            terminated chains.
+	 */
 	public void addChain(Chain chain,
 			Map<Long, List<Integer>> additionalCounters) {
-
 		ChainInfo ch = null;
 		if (additionalCounters != null && additionalCounters.size() > 0) {
 			long[] chains = new long[additionalCounters.size()];
@@ -119,6 +203,10 @@ class ChainTerminator implements Runnable {
 		addInfo(ch);
 	}
 
+	/**
+	 * For each chain from the chainsTreminated it sends a message to the
+	 * corresponding nodes informing that the chain has terminated.
+	 */
 	@Override
 	public void run() {
 		ChainInfo header;

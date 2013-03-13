@@ -162,7 +162,10 @@ public class NetworkLayer {
 	/**
 	 * 
 	 * @param chain
+	 *            <<<<<<< HEAD
 	 * @param newChildren
+	 *            ======= The chain that is added at the ChainTerminator.
+	 *            >>>>>>> refs/remotes/origin/master
 	 */
 	public void signalChainTerminated(Chain chain,
 			Map<Long, List<Integer>> additionalCounters) {
@@ -477,8 +480,12 @@ public class NetworkLayer {
 	/**
 	 * 
 	 * @param index
-	 *            The position of the IbisIdentifier that is looked.
-	 * @return The IbisIdentifier found at the position index.
+	 *            <<<<<<< HEAD The position of the IbisIdentifier that is
+	 *            looked.
+	 * @return The IbisIdentifier found at the position index. ======= The
+	 *         position of the IbisIdentifier that is looked (The node id).
+	 * @return The IbisIdentifier found at the position index (The IbisIdentifer
+	 *         corresponding to the node id). >>>>>>> refs/remotes/origin/master
 	 */
 	public IbisIdentifier getPeerLocation(int index) {
 		return assignedPartitions[index];
@@ -682,6 +689,18 @@ public class NetworkLayer {
 		return broadcastPort.newMessage();
 	}
 
+	/**
+	 * This method requests to execute custom code on every node.
+	 * 
+	 * @param nodeId
+	 *            The node id.
+	 * @param submissionId
+	 *            The submission id.
+	 * @param className
+	 *            The name of the class.
+	 * @return True if the operation was successfully completed, false
+	 *         otherwise.
+	 */
 	public boolean executeRemoteCode(int nodeId, int submissionId,
 			String className) {
 		try {
@@ -722,6 +741,14 @@ public class NetworkLayer {
 		return false;
 	}
 
+	/**
+	 * 
+	 * @param submissionId
+	 *            The submission id.
+	 * @param keys
+	 *            The array of key Objects that is broadcast.
+	 * @return The list of remaining objects received.
+	 */
 	public List<Object[]> retrieveObjects(int submissionId, Object[] keys) {
 		try {
 			int c;
@@ -760,6 +787,16 @@ public class NetworkLayer {
 		return null;
 	}
 
+	/**
+	 * Broadcasts the arrays of objects from the parameters.
+	 * 
+	 * @param submissionId
+	 *            The submission id.
+	 * @param keys
+	 *            The array of key Objects that is broadcast.
+	 * @param values
+	 *            The array of value Objects that is broadcast.
+	 */
 	public void broadcastObjects(int submissionId, Object[] keys,
 			Object[] values) {
 		try {
@@ -792,6 +829,16 @@ public class NetworkLayer {
 		}
 	}
 
+	/**
+	 * Broadcasts the objects from the parameters.
+	 * 
+	 * @param submissionId
+	 *            The submission id.
+	 * @param key
+	 *            The key Object that is broadcast.
+	 * @param value
+	 *            The value Object that is broadcast.
+	 */
 	public void broadcastObject(int submissionId, Object key, Object value) {
 		try {
 			int c;
@@ -849,6 +896,18 @@ public class NetworkLayer {
 		}
 	}
 
+	/**
+	 * It sends the objects key and value to the node with the id nodeId.
+	 * 
+	 * @param submissionId
+	 *            The submission id.
+	 * @param nodeId
+	 *            The node id.
+	 * @param key
+	 *            The key Object that is send.
+	 * @param value
+	 *            The value Object that is send.
+	 */
 	public void sendObject(int submissionId, int nodeId, Object key,
 			Object value) {
 		IbisIdentifier id = getPeerLocation(nodeId);
@@ -883,11 +942,15 @@ public class NetworkLayer {
 
 	}
 
+	/**
+	 * Adds the chain to the list of terminated chains.
+	 * 
+	 * @param chain
+	 *            The chain that is added at the list of terminated chains.
+	 * @param exception
+	 *            The exception thrown when the chain failed.
+	 */
 	public void signalChainFailed(Chain chain, Throwable exception) {
 		terminator.addFailedChain(chain, exception);
 	}
-
-	// public void signalChainHasRootChains(Chain chain, int generatedChains) {
-	// terminator.addChainGeneratedRoots(chain, generatedChains);
-	// }
 }

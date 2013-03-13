@@ -8,6 +8,12 @@ import nl.vu.cs.ajira.utils.Consts;
 
 import com.google.common.primitives.Longs;
 
+/**
+ * 
+ * This class provides the methods that are needed in 
+ * order to manipulate a long value. 
+ *
+ */
 public final class TLong extends SimpleData {
 
 	protected long value;
