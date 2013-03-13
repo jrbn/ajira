@@ -8,21 +8,27 @@ import java.util.Arrays;
 import nl.vu.cs.ajira.storage.RawComparator;
 import nl.vu.cs.ajira.utils.Consts;
 
-
 /**
  * 
- * This class provides the methods that are needed in 
- * order to manipulate an array of byte values. 
- *
+ * This class provides the methods that are needed in order to manipulate an
+ * array of byte values.
+ * 
  */
 public class TByteArray extends SimpleData {
 
 	byte[] array;
-	
+
 	/**
-	 * Creates an empty TLongArray object. 
+	 * Creates an empty TLongArray object.
 	 */
 	public TByteArray() {
+	}
+
+	/**
+	 * Creates a TLongArray object with a byte[] as backend.
+	 */
+	public TByteArray(byte[] array) {
+		this.array = array;
 	}
 
 	/**
@@ -36,7 +42,8 @@ public class TByteArray extends SimpleData {
 	/**
 	 * Sets the field of the class.
 	 * 
-	 * @param array is the new array of the object
+	 * @param array
+	 *            is the new array of the object
 	 */
 	public void setArray(byte[] array) {
 		this.array = array;
