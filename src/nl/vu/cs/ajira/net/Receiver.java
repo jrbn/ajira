@@ -158,10 +158,23 @@ class Receiver implements MessageUpcall {
 				idChain = message.readLong();
 				idParentChain = message.readLong();
 				children = message.readInt();
-				// int generatedRootChains = message.readInt();
+
+				long[] additionalC = null;
+				int[] additionalCV = null;
+				int s = message.readInt();
+				if (s > 0) {
+					additionalC = new long[s];
+					additionalCV = new int[s];
+					for (int i = 0; i < s; ++i) {
+						additionalC[i] = message.readLong();
+						additionalCV[i] = message.readInt();
+					}
+				}
+
 				finishMessage(message, time, idSubmission);
 				context.getSubmissionsRegistry().updateCounters(idSubmission,
-						idChain, idParentChain, children);
+						idChain, idParentChain, children, additionalC,
+						additionalCV);
 			} else {
 				// Cleanup submission
 				submissionNode = message.readInt();

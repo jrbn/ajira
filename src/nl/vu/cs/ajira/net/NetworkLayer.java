@@ -162,9 +162,11 @@ public class NetworkLayer {
 	/**
 	 * 
 	 * @param chain
+	 * @param newChildren
 	 */
-	public void signalChainTerminated(Chain chain) {
-		terminator.addChain(chain);
+	public void signalChainTerminated(Chain chain,
+			Map<Long, List<Integer>> additionalCounters) {
+		terminator.addChain(chain, additionalCounters);
 	}
 
 	/**

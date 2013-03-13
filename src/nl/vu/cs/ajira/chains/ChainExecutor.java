@@ -242,6 +242,13 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			else
 				net.sendChain(supportChain);
 		}
+
+		// Send the termination signal to the node responsible of
+		// the submission
+		if (!transferComputation) {
+			net.signalChainTerminated(chain, newChildren);
+		}
+
 	}
 
 	@Override
@@ -410,10 +417,23 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			}
 		}
 
-		context.getBuckets().finishTransfer(this.submissionNode, submissionId,
-				nodeId, bucketId, chain.getChainId(), chain.getParentChainId(),
-				children, roots[currentAction], sort, sortingFields, signature,
-				decreaseCounter, newChildren);
+		// To avoid that the counters in newChildren are spread to all the
+		// nodes, send them
+		// only where the principal chain is going to be executed (this bucket
+		// is stored in transferBucket)...
+		if (bucketId == this.transferBucketId
+				&& (this.transferNodeId == -1 && nodeId == 0 || nodeId == this.transferNodeId)) {
+			context.getBuckets().finishTransfer(this.submissionNode,
+					submissionId, nodeId, bucketId, chain.getChainId(),
+					chain.getParentChainId(), children, roots[currentAction],
+					sort, sortingFields, signature, decreaseCounter,
+					newChildren);
+		} else {
+			context.getBuckets().finishTransfer(this.submissionNode,
+					submissionId, nodeId, bucketId, chain.getChainId(),
+					chain.getParentChainId(), children, roots[currentAction],
+					sort, sortingFields, signature, decreaseCounter, null);
+		}
 	}
 
 	int getNActions() {
@@ -425,9 +445,9 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		return submissionId;
 	}
 
-	boolean isChainFullyExecuted() {
-		return !transferComputation;
-	}
+	// boolean isChainFullyExecuted() {
+	// return !transferComputation;
+	// }
 
 	void setInputIterator(TupleIterator itr) {
 		this.itr = itr;

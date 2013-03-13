@@ -1412,9 +1412,9 @@ public class Bucket {
 			if (existingValue == null) {
 				additionalChildrenCounts.put(value.getKey().longValue(),
 						value.getValue());
+			} else {
+				existingValue.addAll(value.getValue());
 			}
-
-			existingValue.addAll(value.getValue());
 		}
 	}
 

@@ -135,20 +135,6 @@ public class ChainHandler implements Runnable {
 							+ "runtime cycle: " + timeCycle);
 				}
 
-				// Send the termination signal to the node responsible of
-				// the submission
-				if (actions.isChainFullyExecuted()) {
-					net.signalChainTerminated(currentChain);
-				}
-
-				// else if (!actions.wasPrincipalBranch()) {
-				// int generatedChains = currentChain.getGeneratedRootChains();
-				// if (generatedChains > 0) {
-				// net.signalChainHasRootChains(currentChain,
-				// generatedChains);
-				// }
-				// }
-
 				stats.addCounter(currentChain.getSubmissionNode(),
 						currentChain.getSubmissionId(), "Chains Processed", 1);
 

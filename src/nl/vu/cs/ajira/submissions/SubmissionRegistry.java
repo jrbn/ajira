@@ -57,7 +57,8 @@ public class SubmissionRegistry {
 	}
 
 	public void updateCounters(int submissionId, long chainId,
-			long parentChainId, int nchildren) {
+			long parentChainId, int nchildren, long[] additionalChainCounters,
+			int[] additionalChainValues) {
 		Submission sub = getSubmission(submissionId);
 
 		if (log.isDebugEnabled()) {
@@ -81,9 +82,21 @@ public class SubmissionRegistry {
 				}
 			}
 
-			// if (generatedRootChains > 0) {
-			// sub.rootChainsReceived -= generatedRootChains;
-			// }
+			if (additionalChainCounters != null) {
+				for (int i = 0; i < additionalChainCounters.length; ++i) {
+					Integer c = sub.monitors.get(additionalChainCounters[i]);
+					if (c == null) {
+						c = additionalChainValues[i];
+					} else {
+						c += additionalChainValues[i];
+					}
+					if (c == 0) {
+						sub.monitors.remove(additionalChainCounters[i]);
+					} else {
+						sub.monitors.put(additionalChainCounters[i], c);
+					}
+				}
+			}
 
 			if (parentChainId == -1) { // It is one of the root chains
 				sub.rootChainsReceived++;

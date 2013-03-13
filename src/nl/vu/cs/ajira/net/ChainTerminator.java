@@ -6,6 +6,7 @@ import ibis.ipl.WriteMessage;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.chains.Chain;
@@ -15,7 +16,7 @@ import org.slf4j.LoggerFactory;
 
 class ChainTerminator implements Runnable {
 
-	public static class ChainInfo {
+	public final static class ChainInfo {
 
 		public final int nodeId;
 		public final int submissionId;
@@ -24,19 +25,27 @@ class ChainTerminator implements Runnable {
 		public final int nchildren;
 		public final boolean failed;
 		public final Throwable exception;
+		public final long[] additionalChainCounters;
+		public final int[] additionalChainValues;
 
 		public ChainInfo(int nodeId, int submissionId, long chainId,
-				long parentChainId, int nchildren) {
-			this(nodeId, submissionId, chainId, parentChainId, nchildren, null);
+				long parentChainId, int nchildren,
+				long[] additionalChainCounters, int[] additionalChainValues) {
+			this(nodeId, submissionId, chainId, parentChainId, nchildren,
+					additionalChainCounters, additionalChainValues, null);
 		}
 
 		public ChainInfo(int nodeId, int submissionId, long chainId,
-				long parentChainId, int nchildren, Throwable exception) {
+				long parentChainId, int nchildren,
+				long[] additionalChainCounters, int[] additionalChainValues,
+				Throwable exception) {
 			this.nodeId = nodeId;
 			this.submissionId = submissionId;
 			this.chainId = chainId;
 			this.parentChainId = parentChainId;
 			this.nchildren = nchildren;
+			this.additionalChainCounters = additionalChainCounters;
+			this.additionalChainValues = additionalChainValues;
 			if (exception != null) {
 				failed = true;
 				this.exception = exception;
@@ -54,6 +63,8 @@ class ChainTerminator implements Runnable {
 			this.failed = false;
 			this.exception = null;
 			this.nchildren = 0;
+			this.additionalChainCounters = null;
+			this.additionalChainValues = null;
 		}
 	}
 
@@ -77,23 +88,36 @@ class ChainTerminator implements Runnable {
 	public void addFailedChain(Chain chain, Throwable e) {
 		ChainInfo ch = new ChainInfo(chain.getSubmissionNode(),
 				chain.getSubmissionId(), chain.getChainId(),
-				chain.getParentChainId(), chain.getTotalChainChildren(), e);
+				chain.getParentChainId(), chain.getTotalChainChildren(), null,
+				null, e);
 		addInfo(ch);
 	}
 
-	public void addChain(Chain chain) {
-		ChainInfo ch = new ChainInfo(chain.getSubmissionNode(),
-				chain.getSubmissionId(), chain.getChainId(),
-				chain.getParentChainId(), chain.getTotalChainChildren());
+	public void addChain(Chain chain,
+			Map<Long, List<Integer>> additionalCounters) {
+
+		ChainInfo ch = null;
+		if (additionalCounters != null && additionalCounters.size() > 0) {
+			long[] chains = new long[additionalCounters.size()];
+			int[] values = new int[additionalCounters.size()];
+			int i = 0;
+			for (Map.Entry<Long, List<Integer>> entry : additionalCounters
+					.entrySet()) {
+				chains[i] = entry.getKey();
+				values[i] = entry.getValue().size();
+			}
+			ch = new ChainInfo(chain.getSubmissionNode(),
+					chain.getSubmissionId(), chain.getChainId(),
+					chain.getParentChainId(), chain.getTotalChainChildren(),
+					chains, values);
+		} else {
+			ch = new ChainInfo(chain.getSubmissionNode(),
+					chain.getSubmissionId(), chain.getChainId(),
+					chain.getParentChainId(), chain.getTotalChainChildren(),
+					null, null);
+		}
 		addInfo(ch);
 	}
-
-	//
-	// public void addChainGeneratedRoots(Chain chain, int generatedChains) {
-	// ChainInfo ch = new ChainInfo(chain.getSubmissionNode(),
-	// chain.getSubmissionId(), chain.getGeneratedRootChains());
-	// addInfo(ch);
-	// }
 
 	@Override
 	public void run() {
@@ -115,7 +139,9 @@ class ChainTerminator implements Runnable {
 					if (localMode) {
 						context.getSubmissionsRegistry().updateCounters(
 								header.submissionId, header.chainId,
-								header.parentChainId, header.nchildren);
+								header.parentChainId, header.nchildren,
+								header.additionalChainCounters,
+								header.additionalChainValues);
 					} else {
 						IbisIdentifier identifier = ibis
 								.getPeerLocation(header.nodeId);
@@ -127,6 +153,17 @@ class ChainTerminator implements Runnable {
 						msg.writeLong(header.chainId);
 						msg.writeLong(header.parentChainId);
 						msg.writeInt(header.nchildren);
+
+						if (header.additionalChainCounters != null) {
+							msg.writeInt(header.additionalChainCounters.length);
+							for (int i = 0; i < header.additionalChainCounters.length; ++i) {
+								msg.writeLong(header.additionalChainCounters[i]);
+								msg.writeInt(header.additionalChainValues[i]);
+							}
+						} else {
+							msg.writeInt(0);
+						}
+
 						ibis.finishMessage(msg, header.submissionId);
 						if (log.isDebugEnabled()) {
 							log.debug("Sent message with id 2 to " + identifier);
