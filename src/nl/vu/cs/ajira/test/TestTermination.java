@@ -106,8 +106,8 @@ public class TestTermination {
 		List<ActionConf> l = new ArrayList<ActionConf>();
 		l.add(ActionFactory.getActionConf(E.class));
 		l.add(ActionFactory.getActionConf(F.class));
-		c.setParamWritable(Split.SPLIT, new WritableListActions(l));
-		c.setParamInt(Split.RECONNECT_AFTER_ACTIONS, 3);
+		c.setParamWritable(Split.W_SPLIT, new WritableListActions(l));
+		c.setParamInt(Split.I_RECONNECT_AFTER_ACTIONS, 3);
 		branchActions.add(c);
 
 		// Branch

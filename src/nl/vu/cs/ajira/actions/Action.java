@@ -1,7 +1,5 @@
 package nl.vu.cs.ajira.actions;
 
-import java.io.IOException;
-
 import nl.vu.cs.ajira.data.types.TIntArray;
 import nl.vu.cs.ajira.data.types.TStringArray;
 import nl.vu.cs.ajira.data.types.Tuple;
@@ -91,8 +89,9 @@ public abstract class Action {
 		}
 
 		try {
-			b.readFrom(new BDataInput((byte[]) valuesParameters[pos]));
-		} catch (IOException e) {
+			if (valuesParameters[pos] != null)
+				b.readFrom(new BDataInput((byte[]) valuesParameters[pos]));
+		} catch (Exception e) {
 			// Should not happen.
 			log.error("Got unexpected IOException", e);
 		}

@@ -4,6 +4,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
+import nl.vu.cs.ajira.data.types.DataProvider;
 import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.data.types.TupleFactory;
@@ -36,13 +37,23 @@ public class Query implements Writable {
 
 	@Override
 	public void readFrom(DataInput input) throws IOException {
-		// TODO Auto-generated method stub
-
+		int nElements = input.readByte();
+		SimpleData[] data = new SimpleData[nElements];
+		for (int i = 0; i < nElements; ++i) {
+			SimpleData el = DataProvider.getInstance().get(input.readByte());
+			el.readFrom(input);
+			data[i] = el;
+		}
+		tuple.set(data);
 	}
 
 	@Override
 	public void writeTo(DataOutput output) throws IOException {
-		// TODO Auto-generated method stub
-
+		output.writeByte(tuple.getNElements());
+		for (int i = 0; i < tuple.getNElements(); ++i) {
+			SimpleData el = tuple.get(i);
+			output.writeByte(el.getIdDatatype());
+			el.writeTo(output);
+		}
 	}
 }
