@@ -374,7 +374,8 @@ public class Chain implements Writable, InputQuery {
 				bucketId = Utils.decodeInt(buffer, tmpSize);
 			}
 
-			actions.addAction(action, chainId == currentChainId, tmpSize);
+			actions.addAction(action, chainId == currentChainId, tmpSize,
+					chainId);
 		}
 
 		if (stopProcessing) {

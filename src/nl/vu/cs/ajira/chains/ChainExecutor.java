@@ -40,6 +40,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	private int[] rawSizes = new int[Consts.MAX_N_ACTIONS];
 	private Action[] actions = new Action[Consts.MAX_N_ACTIONS];
 	private boolean[] roots = new boolean[Consts.MAX_N_ACTIONS];
+	private long[] responsibleChains = new long[Consts.MAX_N_ACTIONS];
 	private int nActions;
 
 	// Used for branching
@@ -181,10 +182,12 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		openedStreams.clear();
 	}
 
-	void addAction(Action action, boolean root, int chainRawSize) {
+	void addAction(Action action, boolean root, int chainRawSize,
+			long responsibleChain) {
 		actions[nActions] = action;
 		roots[nActions] = root;
 		rawSizes[nActions] = chainRawSize;
+		responsibleChains[nActions] = responsibleChain;
 		nActions++;
 	}
 
@@ -258,9 +261,9 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		return roots[currentAction];
 	}
 
-	boolean wasPrincipalBranch() {
-		return roots[currentAction - 1];
-	}
+	// boolean wasPrincipalBranch() {
+	// return roots[currentAction - 1];
+	// }
 
 	@Override
 	public void branch(List<ActionConf> actions) throws Exception {
@@ -330,7 +333,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	@Override
 	public ActionOutput split(List<ActionConf> actions, int reconnectAt)
 			throws Exception {
-		chain.customBranch(supportChain, 0,
+		chain.customBranch(supportChain, responsibleChains[currentAction],
 				getCounter(Consts.CHAINCOUNTER_NAME), reconnectAt);
 		if (actions != null)
 			supportChain.setActions(actions, this);
@@ -346,14 +349,14 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 		openedStreams.add(itr);
 
-		incrementChildren(0, reconnectAt);
+		incrementChildren(responsibleChains[currentAction], reconnectAt);
 		return itr;
 	}
 
 	@Override
 	public ActionOutput split(ActionConf action, int reconnectAt)
 			throws Exception {
-		chain.customBranch(supportChain, 0,
+		chain.customBranch(supportChain, responsibleChains[currentAction],
 				getCounter(Consts.CHAINCOUNTER_NAME), reconnectAt);
 		if (action != null)
 			supportChain.setAction(action, this);
@@ -369,7 +372,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 		openedStreams.add(itr);
 
-		incrementChildren(0, reconnectAt);
+		incrementChildren(responsibleChains[currentAction], reconnectAt);
 
 		return itr;
 	}
