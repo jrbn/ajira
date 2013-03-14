@@ -24,7 +24,7 @@
 	</target>
 
 	<target name="compile" depends="init" description="">
-		<javac srcdir="${SRC_PATH}" destdir="${BUILD_PATH}" debug="true">
+		<javac includeantruntime="false" srcdir="${SRC_PATH}" destdir="${BUILD_PATH}" debug="true">
 			<classpath>
 				<fileset dir="${LIB_PATH}">
 					<include name="**/*.jar" />

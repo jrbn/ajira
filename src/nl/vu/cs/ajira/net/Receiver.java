@@ -11,7 +11,7 @@ import java.io.ObjectOutputStream;
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.buckets.Bucket;
 import nl.vu.cs.ajira.buckets.Buckets;
-import nl.vu.cs.ajira.buckets.TupleSerializer;
+import nl.vu.cs.ajira.buckets.WritableTuple;
 import nl.vu.cs.ajira.chains.Chain;
 import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Container;
@@ -33,7 +33,7 @@ class Receiver implements MessageUpcall {
 	static final Logger log = LoggerFactory.getLogger(Receiver.class);
 
 	Factory<Chain> chainFactory = new Factory<Chain>(Chain.class);
-	Factory<WritableContainer<TupleSerializer>> bufferFactory;
+	Factory<WritableContainer<WritableTuple>> bufferFactory;
 
 	Context context;
 	Container<Chain> chainsToProcess;
@@ -53,7 +53,7 @@ class Receiver implements MessageUpcall {
 	 *            memory management)
 	 */
 	public Receiver(Context context,
-			Factory<WritableContainer<TupleSerializer>> bufferFactory) {
+			Factory<WritableContainer<WritableTuple>> bufferFactory) {
 		this.context = context;
 		this.chainsToProcess = context.getChainHandlerManager()
 				.getChainsToProcess();
@@ -123,6 +123,21 @@ class Receiver implements MessageUpcall {
 			bucket.updateCounters(idChain, idParentChain, children,
 					isResponsible);
 
+			int additionalCounters = message.readByte();
+			if (additionalCounters > 0) {
+				long[] chains = new long[additionalCounters];
+				int[][] values = new int[additionalCounters][];
+				for (int i = 0; i < additionalCounters; ++i) {
+					chains[i] = message.readLong();
+					int[] v = new int[message.readInt()];
+					for (int j = 0; j < v.length; ++j) {
+						v[j] = message.readByte();
+					}
+					values[i] = v;
+				}
+				bucket.setAdditionalCounters(chains, values);
+			}
+
 			if (bufferKey != -1) {
 				finishMessage(message, time, idSubmission);
 				int idRemoteNode = net.getPeerId(message.origin()
@@ -143,10 +158,23 @@ class Receiver implements MessageUpcall {
 				idChain = message.readLong();
 				idParentChain = message.readLong();
 				children = message.readInt();
-				int generatedRootChains = message.readInt();
+
+				long[] additionalC = null;
+				int[] additionalCV = null;
+				int s = message.readInt();
+				if (s > 0) {
+					additionalC = new long[s];
+					additionalCV = new int[s];
+					for (int i = 0; i < s; ++i) {
+						additionalC[i] = message.readLong();
+						additionalCV[i] = message.readInt();
+					}
+				}
+
 				finishMessage(message, time, idSubmission);
 				context.getSubmissionsRegistry().updateCounters(idSubmission,
-						idChain, idParentChain, children, generatedRootChains);
+						idChain, idParentChain, children, additionalC,
+						additionalCV);
 			} else {
 				// Cleanup submission
 				submissionNode = message.readInt();
@@ -183,7 +211,7 @@ class Receiver implements MessageUpcall {
 			if (data) {
 				net.removeActiveRequest(ticket);
 
-				WritableContainer<TupleSerializer> container = bufferFactory
+				WritableContainer<WritableTuple> container = bufferFactory
 						.get();
 				container.readFrom(new ReadMessageWrapper(message));
 				boolean isFinished = message.readBoolean();
@@ -251,22 +279,22 @@ class Receiver implements MessageUpcall {
 
 				net.stopMonitorCounters();
 				net.broadcastStopMonitoring();
-				
+
 				int bid = submission.getAssignedBucket();
-				
-				WritableContainer<TupleSerializer> tmpBuffer = bufferFactory
+
+				WritableContainer<WritableTuple> tmpBuffer = bufferFactory
 						.get();
 				tmpBuffer.clear();
-				
+
 				WriteMessage reply = net.getMessageToSend(message.origin()
 						.ibisIdentifier(), NetworkLayer.queryReceiverPort);
-				reply.writeBoolean(true);			// Success
+				reply.writeBoolean(true); // Success
 
 				reply.writeDouble(submission.getExecutionTimeInMs());
-				
+
 				boolean isFinished = true;
 				bucket = null;
-				
+
 				if (bid >= 0) {
 					// Read the bucket
 					bucket = buckets.getExistingBucket(
@@ -293,12 +321,12 @@ class Receiver implements MessageUpcall {
 					Runtime.getRuntime().gc();
 				}
 				context.getSubmissionsRegistry().releaseSubmission(submission);
-			} catch(JobFailedException e) {
+			} catch (JobFailedException e) {
 				net.stopMonitorCounters();
 				net.broadcastStopMonitoring();
 				WriteMessage reply = net.getMessageToSend(message.origin()
 						.ibisIdentifier(), NetworkLayer.queryReceiverPort);
-				reply.writeBoolean(false);			// Failure
+				reply.writeBoolean(false); // Failure
 				// Marshal the exception.
 				ByteArrayOutputStream bo = new ByteArrayOutputStream();
 				ObjectOutputStream o = new ObjectOutputStream(bo);
@@ -338,7 +366,7 @@ class Receiver implements MessageUpcall {
 			message.finish();
 
 			bucket = buckets.getExistingBucket(bucketKey, true);
-			WritableContainer<TupleSerializer> tmpBuffer = bufferFactory.get();
+			WritableContainer<WritableTuple> tmpBuffer = bufferFactory.get();
 			tmpBuffer.clear();
 			boolean isFinished = bucket.removeChunk(tmpBuffer);
 
@@ -524,8 +552,10 @@ class Receiver implements MessageUpcall {
 			throws IOException {
 		long bytes = msg.finish();
 		long time = System.currentTimeMillis() - startTime;
-		stats.addCounter(0, submissionId, "Receiver:upcall: time receiving msgs (ms)", time);
-		stats.addCounter(0, submissionId, "Receiver:upcall: bytes received", bytes);
+		stats.addCounter(0, submissionId,
+				"Receiver:upcall: time receiving msgs (ms)", time);
+		stats.addCounter(0, submissionId, "Receiver:upcall: bytes received",
+				bytes);
 		// stats.addCounter(0, submissionId, "Messages read", 1);
 	}
 
@@ -546,8 +576,10 @@ class Receiver implements MessageUpcall {
 			throws IOException {
 		long bytes = msg.bytesRead();
 		long time = System.currentTimeMillis() - startTime;
-		stats.addCounter(0, submissionId, "Receiver:upcall: time receiving msgs (ms)", time);
-		stats.addCounter(0, submissionId, "Receiver:upcall: bytes received", bytes);
+		stats.addCounter(0, submissionId,
+				"Receiver:upcall: time receiving msgs (ms)", time);
+		stats.addCounter(0, submissionId, "Receiver:upcall: bytes received",
+				bytes);
 		// stats.addCounter(0, submissionId, "Messages read", 1);
 	}
 }

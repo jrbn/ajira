@@ -3,17 +3,21 @@ package nl.vu.cs.ajira.net;
 import ibis.ipl.IbisIdentifier;
 import ibis.ipl.WriteMessage;
 import nl.vu.cs.ajira.Context;
+import nl.vu.cs.ajira.actions.support.Query;
 import nl.vu.cs.ajira.chains.Chain;
 import nl.vu.cs.ajira.chains.ChainExecutor;
 import nl.vu.cs.ajira.chains.ChainLocation;
-import nl.vu.cs.ajira.data.types.Tuple;
-import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Container;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * 
+ * This class is used to send chains to other nodes.
+ * 
+ */
 class ChainSender implements Runnable {
 
 	static final Logger log = LoggerFactory.getLogger(ChainSender.class);
@@ -28,9 +32,9 @@ class ChainSender implements Runnable {
 	 * Custom constructor.
 	 * 
 	 * @param context
-	 * 		Current context.
+	 *            Current context.
 	 * @param chainsToSend
-	 * 		The chains that have to be send.
+	 *            The chains that have to be send.
 	 */
 	public ChainSender(Context context, Container<Chain> chainsToSend) {
 		this.chainsToSend = chainsToSend;
@@ -43,7 +47,7 @@ class ChainSender implements Runnable {
 	@Override
 	public void run() {
 		try {
-			Tuple tuple = TupleFactory.newTuple();
+			Query query = new Query();
 			Chain chain = new Chain();
 			Chain supportChain = new Chain();
 
@@ -51,10 +55,10 @@ class ChainSender implements Runnable {
 				chainsToSend.remove(chain);
 				ChainExecutor ac = new ChainExecutor(null, context, chain);
 
-				chain.getInputTuple(tuple);
+				chain.getQuery(query);
 				ChainLocation loc = context
 						.getInputLayer(chain.getInputLayer()).getLocations(
-								tuple, ac);
+								query.getTuple(), ac);
 
 				NetworkLayer ibis = context.getNetworkLayer();
 				IbisIdentifier[] nodes = ibis.getPeersLocation(loc);

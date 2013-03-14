@@ -16,7 +16,7 @@ import java.util.Properties;
 import nl.vu.cs.ajira.actions.ActionFactory;
 import nl.vu.cs.ajira.buckets.Buckets;
 import nl.vu.cs.ajira.buckets.CachedFilesMerger;
-import nl.vu.cs.ajira.buckets.TupleSerializer;
+import nl.vu.cs.ajira.buckets.WritableTuple;
 import nl.vu.cs.ajira.chains.ChainHandlerManager;
 import nl.vu.cs.ajira.chains.ChainNotifier;
 import nl.vu.cs.ajira.data.types.DataProvider;
@@ -175,12 +175,12 @@ public class Ajira {
 				}
 
 				@SuppressWarnings("unchecked")
-				Class<WritableContainer<TupleSerializer>> clazz = (Class<WritableContainer<TupleSerializer>>) (Class<?>) WritableContainer.class;
-				Factory<WritableContainer<TupleSerializer>> bufferFactory = new Factory<WritableContainer<TupleSerializer>>(
+				Class<WritableContainer<WritableTuple>> clazz = (Class<WritableContainer<WritableTuple>>) (Class<?>) WritableContainer.class;
+				Factory<WritableContainer<WritableTuple>> bufferFactory = new Factory<WritableContainer<WritableTuple>>(
 						clazz, Consts.TUPLES_CONTAINER_BUFFER_SIZE);
 				net.setBufferFactory(bufferFactory);
 				net.startIbis();
-				ArrayList<WritableContainer<TupleSerializer>> l = new ArrayList<WritableContainer<TupleSerializer>>(
+				ArrayList<WritableContainer<WritableTuple>> l = new ArrayList<WritableContainer<WritableTuple>>(
 						Consts.STARTING_SIZE_FACTORY);
 				for (int i = 0; i < Consts.STARTING_SIZE_FACTORY; i++) {
 					l.add(bufferFactory.get());

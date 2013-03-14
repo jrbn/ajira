@@ -19,13 +19,13 @@ import org.slf4j.LoggerFactory;
 public class BucketIterator extends TupleIterator {
 	static final Logger log = LoggerFactory.getLogger(BucketIterator.class);
 
-	WritableContainer<TupleSerializer> tuples = new WritableContainer<TupleSerializer>(
+	WritableContainer<WritableTuple> tuples = new WritableContainer<WritableTuple>(
 			Consts.TUPLES_CONTAINER_BUFFER_SIZE);
 
 	Bucket bucket;
 	boolean isUsed;
 	private SimpleData[] signature;
-	private TupleSerializer serializer;
+	private WritableTuple serializer;
 
 	/**
 	 * Initialization function.
@@ -116,6 +116,15 @@ public class BucketIterator extends TupleIterator {
 	@Override
 	public boolean isReady() {
 		return bucket.isFinished();
+	}
+
+	/**
+	 * Returns the associated bucket.
+	 * 
+	 * @return The bucket
+	 */
+	public Bucket getBucket() {
+		return bucket;
 	}
 
 	@Override

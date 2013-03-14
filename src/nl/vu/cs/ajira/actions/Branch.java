@@ -21,6 +21,7 @@ public class Branch extends Action {
 	@Override
 	public void process(Tuple inputTuple, ActionContext context,
 			ActionOutput output) throws Exception {
+		output.output(inputTuple);
 	}
 
 	@Override

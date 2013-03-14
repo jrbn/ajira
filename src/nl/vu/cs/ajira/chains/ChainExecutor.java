@@ -2,16 +2,17 @@ package nl.vu.cs.ajira.chains;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.Map;
 
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.actions.Action;
 import nl.vu.cs.ajira.actions.ActionConf;
 import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.actions.ActionOutput;
+import nl.vu.cs.ajira.actions.support.Query;
 import nl.vu.cs.ajira.buckets.Bucket;
 import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.TInt;
@@ -25,6 +26,9 @@ import nl.vu.cs.ajira.net.NetworkLayer;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.utils.Consts;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ChainExecutor implements ActionContext, ActionOutput {
 
 	private static String TOKENPREFIX = "synchronization_token";
@@ -36,6 +40,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	private int[] rawSizes = new int[Consts.MAX_N_ACTIONS];
 	private Action[] actions = new Action[Consts.MAX_N_ACTIONS];
 	private boolean[] roots = new boolean[Consts.MAX_N_ACTIONS];
+	private long[] responsibleChains = new long[Consts.MAX_N_ACTIONS];
 	private int nActions;
 
 	// Used for branching
@@ -43,6 +48,9 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	private int smallestRuntimeAction;
 	private boolean stopProcess;
 	private TupleIterator itr;
+
+	// Used to create forwards to following actions
+	private Map<Long, List<Integer>> newChildren = new HashMap<Long, List<Integer>>();
 
 	private int currentAction;
 	private int submissionNode;
@@ -54,6 +62,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	private ChainHandler handler;
 
 	private final Chain supportChain = new Chain();
+	private final Query supportQuery = new Query();
 	private final Tuple supportTuple = TupleFactory.newTuple();
 
 	private boolean transferComputation = false;
@@ -61,8 +70,9 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	private int transferBucketId;
 	private boolean localMode;
 	private int childrenToTransfer;
-	
-	private static final Logger log = LoggerFactory.getLogger(ChainExecutor.class);
+
+	private static final Logger log = LoggerFactory
+			.getLogger(ChainExecutor.class);
 
 	public ChainExecutor(ChainHandler handler, Context context) {
 		this.context = context;
@@ -168,13 +178,16 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		this.smallestRuntimeAction = -1;
 		this.stopProcess = false;
 		this.transferComputation = false;
+		this.newChildren.clear();
 		openedStreams.clear();
 	}
 
-	void addAction(Action action, boolean root, int chainRawSize) {
+	void addAction(Action action, boolean root, int chainRawSize,
+			long responsibleChain) {
 		actions[nActions] = action;
 		roots[nActions] = root;
 		rawSizes[nActions] = chainRawSize;
+		responsibleChains[nActions] = responsibleChain;
 		nActions++;
 	}
 
@@ -226,13 +239,19 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			chain.copyTo(supportChain);
 			supportChain.setTotalChainChildren(childrenToTransfer);
 			supportChain.setInputLayer(Consts.BUCKET_INPUT_LAYER_ID);
-			supportTuple.set(new TInt(transferBucketId), new TInt(
+			supportQuery.setElements(new TInt(transferBucketId), new TInt(
 					transferNodeId));
-			supportChain.setInputTuple(supportTuple);
+			supportChain.setQuery(supportQuery);
 			if (localMode)
 				chainsBuffer.add(supportChain);
 			else
 				net.sendChain(supportChain);
+		}
+
+		// Send the termination signal to the node responsible of
+		// the submission
+		if (!transferComputation) {
+			net.signalChainTerminated(chain, newChildren);
 		}
 
 	}
@@ -242,9 +261,9 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		return roots[currentAction];
 	}
 
-	boolean wasPrincipalBranch() {
-		return roots[currentAction - 1];
-	}
+	// boolean wasPrincipalBranch() {
+	// return roots[currentAction - 1];
+	// }
 
 	@Override
 	public void branch(List<ActionConf> actions) throws Exception {
@@ -296,14 +315,34 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 				"Chains Dynamically Generated", 1);
 	}
 
+	private void incrementChildren(long chain, int v) {
+
+		int remainingActions = nActions - currentAction - 1;
+		v -= remainingActions;
+
+		List<Integer> value = newChildren.get(chain);
+		if (value == null) {
+			value = new ArrayList<Integer>();
+			newChildren.put(chain, value);
+		}
+		value.add(v);
+	}
+
 	@Override
-	public ActionOutput split(List<ActionConf> actions) throws Exception {
-		chain.branchFromRoot(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
-		supportChain.setActions(actions, this);
+	public ActionOutput split(List<ActionConf> actions, int reconnectAt)
+			throws Exception {
+		long parentChain = 0;
+		if (reconnectAt != -1) {
+			parentChain = responsibleChains[currentAction];
+		}
+		chain.customBranch(supportChain, parentChain,
+				getCounter(Consts.CHAINCOUNTER_NAME), reconnectAt);
+		if (actions != null)
+			supportChain.setActions(actions, this);
 		SplitIterator itr = ChainSplitLayer.getInstance().registerNewSplit();
 		supportChain.setInputLayer(Consts.SPLITS_INPUT_LAYER);
-		supportChain
-				.setInputTuple(TupleFactory.newTuple(new TInt(itr.getId())));
+		supportQuery.setElements(new TInt(itr.getId()));
+		supportChain.setQuery(supportQuery);
 
 		manager.startSeparateChainHandler(supportChain);
 
@@ -312,17 +351,25 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 		openedStreams.add(itr);
 
+		incrementChildren(parentChain, reconnectAt);
 		return itr;
 	}
 
 	@Override
-	public ActionOutput split(ActionConf action) throws Exception {
-		chain.branchFromRoot(supportChain, getCounter(Consts.CHAINCOUNTER_NAME));
-		supportChain.setAction(action, this);
+	public ActionOutput split(ActionConf action, int reconnectAt)
+			throws Exception {
+		long parentChain = 0;
+		if (reconnectAt != -1) {
+			parentChain = responsibleChains[currentAction];
+		}
+		chain.customBranch(supportChain, parentChain,
+				getCounter(Consts.CHAINCOUNTER_NAME), reconnectAt);
+		if (action != null)
+			supportChain.setAction(action, this);
 		SplitIterator itr = ChainSplitLayer.getInstance().registerNewSplit();
 		supportChain.setInputLayer(Consts.SPLITS_INPUT_LAYER);
-		supportChain
-				.setInputTuple(TupleFactory.newTuple(new TInt(itr.getId())));
+		supportQuery.setElements(new TInt(itr.getId()));
+		supportChain.setQuery(supportQuery);
 
 		manager.startSeparateChainHandler(supportChain);
 
@@ -330,6 +377,9 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 				"Chains Dynamically Generated", 1);
 
 		openedStreams.add(itr);
+
+		incrementChildren(parentChain, reconnectAt);
+
 		return itr;
 	}
 
@@ -343,8 +393,8 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	@Override
 	public Bucket startTransfer(int nodeId, int bucketId, boolean sort,
 			byte[] sortingFields, byte[] signature) throws IOException {
-		Bucket temp = context.getBuckets().startTransfer(submissionNode, submissionId,
-				nodeId, bucketId, sort, null, signature, this);
+		Bucket temp = context.getBuckets().startTransfer(submissionNode,
+				submissionId, nodeId, bucketId, sort, null, signature, this);
 
 		try {
 			int children = chain.getTotalChainChildren();
@@ -359,14 +409,15 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 				}
 			}
 
-			context.getBuckets().alertTransfer(submissionNode, submissionId, 
-					nodeId, bucketId, chain.getChainId(), chain.getParentChainId(), 
-					children, roots[currentAction], sort, null, signature);
+			context.getBuckets().alertTransfer(submissionNode, submissionId,
+					nodeId, bucketId, chain.getChainId(),
+					chain.getParentChainId(), children, roots[currentAction],
+					sort, null, signature, newChildren);
 		} catch (IOException e) {
 			log.error(e.getMessage(), e);
 			throw e;
 		}
-	
+
 		return temp;
 	}
 
@@ -387,10 +438,23 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			}
 		}
 
-		context.getBuckets().finishTransfer(this.submissionNode, submissionId,
-				nodeId, bucketId, chain.getChainId(), chain.getParentChainId(),
-				children, roots[currentAction], sort, sortingFields, signature,
-				decreaseCounter);
+		// To avoid that the counters in newChildren are spread to all the
+		// nodes, send them
+		// only where the principal chain is going to be executed (this bucket
+		// is stored in transferBucket)...
+		if (bucketId == this.transferBucketId
+				&& (this.transferNodeId == -1 && nodeId == 0 || nodeId == this.transferNodeId)) {
+			context.getBuckets().finishTransfer(this.submissionNode,
+					submissionId, nodeId, bucketId, chain.getChainId(),
+					chain.getParentChainId(), children, roots[currentAction],
+					sort, sortingFields, signature, decreaseCounter,
+					newChildren);
+		} else {
+			context.getBuckets().finishTransfer(this.submissionNode,
+					submissionId, nodeId, bucketId, chain.getChainId(),
+					chain.getParentChainId(), children, roots[currentAction],
+					sort, sortingFields, signature, decreaseCounter, null);
+		}
 	}
 
 	int getNActions() {
@@ -402,9 +466,9 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		return submissionId;
 	}
 
-	boolean isChainFullyExecuted() {
-		return !transferComputation;
-	}
+	// boolean isChainFullyExecuted() {
+	// return !transferComputation;
+	// }
 
 	void setInputIterator(TupleIterator itr) {
 		this.itr = itr;
@@ -430,6 +494,57 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		if (!localMode) {
 			context.getSubmissionCache().broadcastCacheObjects(submissionId,
 					key);
+		}
+	}
+
+	public void addAndUpdateCounters(Map<Long, List<Integer>> counters) {
+
+		long chainId = chain.getChainId();
+		int old_children = chain.getTotalChainChildren();
+		int new_children = old_children;
+
+		// Check the old values, just in case...
+		List<Integer> values = newChildren.get(chainId);
+		if (values != null) {
+			Iterator<Integer> itr = values.iterator();
+			while (itr.hasNext()) {
+				int v = itr.next();
+				if (v < 0) {
+					itr.remove();
+					new_children++;
+				}
+			}
+			if (values.size() == 0) {
+				newChildren.remove(chainId);
+			}
+		}
+
+		for (Map.Entry<Long, List<Integer>> entry : counters.entrySet()) {
+			// Check whether the counter is equivalent to the chainId.
+			for (int i : entry.getValue()) {
+				if (entry.getKey().longValue() == chainId) {
+					if (i < 0) {
+						if (!this.transferComputation) {
+							new_children++;
+						} else {
+							incrementChildren(entry.getKey().longValue(), i);
+						}
+					} else {
+						if (i - nActions < 0) {
+							new_children++;
+						} else {
+							incrementChildren(entry.getKey().longValue(), i);
+						}
+					}
+				} else {
+					incrementChildren(entry.getKey().longValue(), i);
+				}
+			}
+
+		}
+
+		if (new_children != old_children) {
+			chain.setTotalChainChildren(new_children);
 		}
 	}
 }

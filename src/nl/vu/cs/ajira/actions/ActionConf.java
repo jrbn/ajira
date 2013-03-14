@@ -12,7 +12,7 @@ import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.TIntArray;
 import nl.vu.cs.ajira.data.types.TStringArray;
 import nl.vu.cs.ajira.data.types.bytearray.BDataOutput;
-import nl.vu.cs.ajira.datalayer.Query;
+import nl.vu.cs.ajira.datalayer.InputQuery;
 import nl.vu.cs.ajira.storage.Writable;
 import nl.vu.cs.ajira.utils.Consts;
 
@@ -23,12 +23,15 @@ public class ActionConf implements Writable {
 
 	public static abstract class Configurator {
 
-		public void process(Query query, ActionConf conf,
+		static protected final Logger log = LoggerFactory
+				.getLogger(Configurator.class);
+
+		public void process(InputQuery query, ActionConf conf,
 				ActionController controller, ActionContext context) {
 			setupAction(query, conf.valuesParameters, controller, context);
 		}
 
-		public abstract void setupAction(Query query, Object[] params,
+		public abstract void setupAction(InputQuery query, Object[] params,
 				ActionController controller, ActionContext context);
 	}
 

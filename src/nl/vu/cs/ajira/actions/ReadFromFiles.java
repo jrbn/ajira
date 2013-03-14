@@ -3,12 +3,12 @@ package nl.vu.cs.ajira.actions;
 import java.io.File;
 
 import nl.vu.cs.ajira.actions.support.FilterHiddenFiles;
-import nl.vu.cs.ajira.buckets.TupleSerializer;
+import nl.vu.cs.ajira.actions.support.Query;
 import nl.vu.cs.ajira.data.types.TInt;
 import nl.vu.cs.ajira.data.types.TString;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.data.types.TupleFactory;
-import nl.vu.cs.ajira.datalayer.Query;
+import nl.vu.cs.ajira.datalayer.InputQuery;
 import nl.vu.cs.ajira.datalayer.files.FileCollection;
 import nl.vu.cs.ajira.datalayer.files.FileLayer;
 import nl.vu.cs.ajira.utils.Consts;
@@ -35,13 +35,13 @@ public class ReadFromFiles extends Action {
 
 	static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
-		public void setupAction(Query query, Object[] params,
+		public void setupAction(InputQuery query, Object[] params,
 				ActionController controller, ActionContext context) {
 			if (params[PATH] != null) {
 				query.setInputLayer(Consts.DEFAULT_INPUT_LAYER_ID);
-				query.setInputTuple(TupleFactory.newTuple(new TInt(
-						FileLayer.OP_LS), new TString((String) params[PATH]),
-						new TString(FilterHiddenFiles.class.getName())));
+				query.setQuery(new Query(new TInt(FileLayer.OP_LS),
+						new TString((String) params[PATH]), new TString(
+								FilterHiddenFiles.class.getName())));
 			}
 		}
 	}
@@ -61,7 +61,7 @@ public class ReadFromFiles extends Action {
 		}
 
 		ActionConf c = ActionFactory.getActionConf(QueryInputLayer.class);
-		c.setParamWritable(QueryInputLayer.TUPLE, new TupleSerializer(tuple));
+		c.setParamWritable(QueryInputLayer.W_QUERY, new Query(tuple));
 		output.branch(c);
 
 		currentFileSplit = new FileCollection();

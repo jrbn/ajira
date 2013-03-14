@@ -8,7 +8,7 @@ import nl.vu.cs.ajira.data.types.TBag;
 import nl.vu.cs.ajira.data.types.TStringArray;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.data.types.TupleFactory;
-import nl.vu.cs.ajira.datalayer.Query;
+import nl.vu.cs.ajira.datalayer.InputQuery;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
 
 import org.slf4j.Logger;
@@ -116,7 +116,7 @@ public class GroupBy extends Action {
 	public static class Configurator extends ActionConf.Configurator {
 
 		@Override
-		public void setupAction(Query query, Object[] params,
+		public void setupAction(InputQuery query, Object[] params,
 				ActionController controller, ActionContext context) {
 
 			// Which fields should be used for the grouping? Get them from the

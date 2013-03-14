@@ -4,6 +4,7 @@ import ibis.ipl.WriteMessage;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import nl.vu.cs.ajira.actions.ActionContext;
@@ -32,11 +33,12 @@ public class Buckets {
 
 	// Buffer factories
 	@SuppressWarnings("unchecked")
-	Class<WritableContainer<TupleSerializer>> clazz = (Class<WritableContainer<TupleSerializer>>) (Class<?>) WritableContainer.class;
+	Class<WritableContainer<WritableTuple>> clazz = (Class<WritableContainer<WritableTuple>>) (Class<?>) WritableContainer.class;
 	// Cannot use the not_sorted factory with Cristi's code.
-	// Factory<WritableContainer<TupleSerializer>> fb_not_sorted = new Factory<WritableContainer<TupleSerializer>>(
-	// 		clazz, Consts.TUPLES_CONTAINER_BUFFER_SIZE);
-	Factory<WritableContainer<TupleSerializer>> fb_sorted = new Factory<WritableContainer<TupleSerializer>>(
+	// Factory<WritableContainer<TupleSerializer>> fb_not_sorted = new
+	// Factory<WritableContainer<TupleSerializer>>(
+	// clazz, Consts.TUPLES_CONTAINER_BUFFER_SIZE);
+	Factory<WritableContainer<WritableTuple>> fb_sorted = new Factory<WritableContainer<WritableTuple>>(
 			clazz, true, Consts.TUPLES_CONTAINER_BUFFER_SIZE);
 
 	CachedFilesMerger merger = null;
@@ -107,9 +109,9 @@ public class Buckets {
 					// Sometimes happens with HashJoin which never gets
 					// executed.
 					// if (b.isFinished()) {
-						releaseBucket(b);
-						count++;
-						size += b.inmemory_size();
+					releaseBucket(b);
+					count++;
+					size += b.inmemory_size();
 					// }
 				}
 			}
@@ -156,8 +158,8 @@ public class Buckets {
 				bucket.init(key, stats, submissionNode, idSubmission, sort, sortRemote,
 						sortingFields, fb_sorted, merger, signature);
 			// } else {
-			// 	bucket.init(key, stats, submissionNode, idSubmission, sort,
-			// 			sortingFields, fb_not_sorted, merger, signature);
+			// bucket.init(key, stats, submissionNode, idSubmission, sort,
+			// sortingFields, fb_not_sorted, merger, signature);
 			// }
 			buckets.put(key, bucket);
 			this.notifyAll();
@@ -346,8 +348,9 @@ public class Buckets {
 
 	public void alertTransfer(int submissionNode, int submission, int node,
 			int bucketID, long chainId, long parentChainId, int nchildren,
-			boolean responsible, boolean sort, byte[] sortingParams, byte[] signature) 
-					throws IOException {
+			boolean responsible, boolean sort, byte[] sortingParams,
+			byte[] signature, Map<Long, List<Integer>> additionalChildren)
+			throws IOException {
 
 		if (node == myPartition || net.getNumberNodes() == 1) {
 			return;
@@ -356,7 +359,7 @@ public class Buckets {
 		Map<Long, TransferInfo> map = activeTransfers[node];
 		long key = getKey(submission, bucketID);
 		TransferInfo info = null;
-		
+
 		// Alert the node that there is an active transfer
 		WriteMessage message = net.getMessageToSend(net.getPeerLocation(node),
 				NetworkLayer.nameMgmtReceiverPort);
@@ -368,10 +371,10 @@ public class Buckets {
 		message.writeLong(parentChainId);
 		message.writeInt(nchildren);
 		message.writeBoolean(responsible);
-	
+
 		// Though the remote bucket is not sorted we do send the sortingFunction
 		// along with its params because the recipient might not have created
-		// its local bucket in time, so, instead, this message creates the local 
+		// its local bucket in time, so, instead, this message creates the local
 		// bucket for it -- if necessary
 		message.writeBoolean(sort);
 		if (sort) {
@@ -397,9 +400,28 @@ public class Buckets {
 				message.writeLong(info.bucket.getKey()); // Local bucket key
 			}
 		}
-		
+
 		message.writeByte((byte) signature.length);
-        message.writeArray(signature);
+		message.writeArray(signature);
+
+		if (additionalChildren != null && additionalChildren.size() > 0) {
+			int size = additionalChildren.size();
+			if (size > 127) {
+				throw new IOException("Not supported");
+			}
+			message.writeByte((byte) size);
+			for (Map.Entry<Long, List<Integer>> entry : additionalChildren
+					.entrySet()) {
+				message.writeLong(entry.getKey());
+				List<Integer> list = entry.getValue();
+				message.writeInt(list.size());
+				for (int v : list) {
+					message.writeByte((byte) v);
+				}
+			}
+		} else {
+			message.writeByte((byte) 0);
+		}
 
 		net.finishMessage(message, submission);
 	}
@@ -442,11 +464,16 @@ public class Buckets {
 	public void finishTransfer(int submissionNode, int submission, int node,
 			int bucketID, long chainId, long parentChainId, int nchildren,
 			boolean responsible, boolean sort, byte[] sortingFields,
-			byte[] signature, boolean decreaseCounter) throws IOException {
+			byte[] signature, boolean decreaseCounter,
+			Map<Long, List<Integer>> additionalChildren) throws IOException {
 
 		if (node == myPartition || net.getNumberNodes() == 1) {
 			Bucket bucket = getOrCreateBucket(submissionNode, submission,
 					bucketID, sort, sort, sortingFields, signature);
+
+			if (additionalChildren != null) {
+				bucket.setAdditionalCounters(additionalChildren);
+			}
 
 			bucket.updateCounters(chainId, parentChainId, nchildren,
 					responsible);
@@ -458,15 +485,14 @@ public class Buckets {
 
 		long key = getKey(submission, bucketID);
 		TransferInfo info = null;
-		
-		synchronized(map) {
+
+		synchronized (map) {
 			info = map.get(key);
 			if (info == null || !info.alerted) {
-                alertTransfer(submissionNode, submission, node, bucketID,
-                        chainId, parentChainId, nchildren, responsible,
-                        sort, sortingFields, signature);
+				alertTransfer(submissionNode, submission, node, bucketID,
+						chainId, parentChainId, nchildren, responsible, sort,
+						sortingFields, signature, additionalChildren);
 			}
-
 
 			if (info != null && decreaseCounter) {
 				info.count--;

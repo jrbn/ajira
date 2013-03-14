@@ -7,6 +7,12 @@ import java.util.Arrays;
 
 import nl.vu.cs.ajira.utils.Consts;
 
+/**
+ * 
+ * This class provides the methods that are needed in 
+ * order to manipulate an array of int values. 
+ *
+ */
 public class TIntArray extends SimpleData {
 
 	int[] array;
@@ -145,6 +151,7 @@ public class TIntArray extends SimpleData {
 	@Override
 	/**
 	 * Compares two TIntArray objects.
+	 * 
 	 * It returns true if they are equal
 	 * It returns false if they are not equal 
 	 */

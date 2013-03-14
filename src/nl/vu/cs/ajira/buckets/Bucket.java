@@ -111,11 +111,11 @@ public class Bucket {
 	private byte[] sortingFields = null;
 	private final TupleComparator comparator = new TupleComparator();
 	private byte[] signature;
-	private TupleSerializer serializer = new TupleSerializer();
+	private WritableTuple serializer = new WritableTuple();
 
 	private long elementsInCache = 0;
 
-	private Factory<WritableContainer<TupleSerializer>> fb = null;
+	private Factory<WritableContainer<WritableTuple>> fb = null;
 	boolean gettingData;
 	private int highestSequence;
 
@@ -124,6 +124,8 @@ public class Bucket {
 	private TupleIterator iter;
 	private long key;
 	private CachedFilesMerger merger;
+
+	private Map<Long, List<Integer>> additionalChildrenCounts = null;
 
 	SortedList<byte[]> minimumSortedList = new SortedList<byte[]>(100,
 			new Comparator<byte[]>() {
@@ -151,9 +153,9 @@ public class Bucket {
 	private int submissionId;
 	private int submissionNode;
 	// Internal tuples - assigned tuples read from local files
-	private WritableContainer<TupleSerializer> inBuffer = null;
+	private WritableContainer<WritableTuple> inBuffer = null;
 	// External tuples - assigned tuples pulled from remote files
-	private WritableContainer<TupleSerializer> exBuffer = null;
+	private WritableContainer<WritableTuple> exBuffer = null;
 	private boolean isInBufferSorted = true;
 	private boolean isExBufferSorted = true;
 
@@ -162,7 +164,7 @@ public class Bucket {
 
 	public static final int N_WBUFFS = 2;
 	@SuppressWarnings("unchecked")
-	private WritableContainer<TupleSerializer>[] writeBuffer = (WritableContainer<TupleSerializer>[]) java.lang.reflect.Array
+	private WritableContainer<WritableTuple>[] writeBuffer = (WritableContainer<WritableTuple>[]) java.lang.reflect.Array
 			.newInstance(WritableContainer.class, N_WBUFFS);
 	private int currWBuffIndex = 0;
 	private boolean removeWChunkDone[] = new boolean[N_WBUFFS];
@@ -230,9 +232,9 @@ public class Bucket {
 	 *            -- a pool of unused buffers
 	 * @throws Exception
 	 */
-	public void addAll(WritableContainer<TupleSerializer> newTuplesContainer,
+	public void addAll(WritableContainer<WritableTuple> newTuplesContainer,
 			boolean isSorted,
-			Factory<WritableContainer<TupleSerializer>> factory)
+			Factory<WritableContainer<WritableTuple>> factory)
 			throws Exception {
 		// Sync with exBuffer -> cacheBuffer() will be sync'd on Bucket.this,
 		// combineInExBuffers() on both objects.
@@ -297,7 +299,7 @@ public class Bucket {
 						cacheBuffer(newTuplesContainer, isSorted, factory);
 					} else {
 						// Copy the container ...
-						WritableContainer<TupleSerializer> box = fb.get();
+						WritableContainer<WritableTuple> box = fb.get();
 						newTuplesContainer.copyTo(box);
 						cacheBuffer(box, isSorted, fb);
 					}
@@ -345,9 +347,9 @@ public class Bucket {
 	 *            Factory used for the buffer generation
 	 * @throws IOException
 	 */
-	private void cacheBuffer(final WritableContainer<TupleSerializer> buffer,
+	private void cacheBuffer(final WritableContainer<WritableTuple> buffer,
 			final boolean sorted,
-			final Factory<WritableContainer<TupleSerializer>> fb)
+			final Factory<WritableContainer<WritableTuple>> fb)
 
 	throws IOException {
 
@@ -457,7 +459,7 @@ public class Bucket {
 	 * 
 	 * @throws IOException
 	 */
-	private void cacheBuffer(final WritableContainer<TupleSerializer> buffer,
+	private void cacheBuffer(final WritableContainer<WritableTuple> buffer,
 			final boolean isSorted) throws IOException {
 
 		if (buffer.getNElements() > 0) {
@@ -522,7 +524,7 @@ public class Bucket {
 	 * @throws Exception
 	 */
 	private boolean copyFullFile(FileMetaData meta,
-			WritableContainer<TupleSerializer> tmpBuffer, byte[] minimum)
+			WritableContainer<WritableTuple> tmpBuffer, byte[] minimum)
 			throws Exception {
 		// Check whether the last element is smaller than the second minimum.
 		// If it is, then we can copy the entire file in the buffer.
@@ -579,7 +581,7 @@ public class Bucket {
 	@SuppressWarnings("unchecked")
 	void init(long key, StatisticsCollector stats, int submissionNode,
 			int submissionId, boolean sort, boolean sortRemote, byte[] sortingFields,
-			Factory<WritableContainer<TupleSerializer>> fb,
+			Factory<WritableContainer<WritableTuple>> fb,
 			CachedFilesMerger merger, byte[] signature) {
 		this.key = key;
 		this.fb = fb;
@@ -602,6 +604,8 @@ public class Bucket {
 		minimumSortedList.clear();
 		cacheFiles.clear();
 		children.clear();
+
+		additionalChildrenCounts = null;
 
 		this.stats = stats;
 		this.submissionNode = submissionNode;
@@ -629,13 +633,13 @@ public class Bucket {
 			}
 
 			this.comparator.init(array);
-			this.serializer = new TupleSerializer(sortingFields,
+			this.serializer = new WritableTuple(sortingFields,
 					signature.length);
 		} else if (sortRemote) {
 			this.serializer = new TupleSerializer(sortingFields,
 					signature.length);
 		} else {
-			this.serializer = new TupleSerializer();
+			this.serializer = new WritableTuple();
 		}
 	}
 
@@ -766,7 +770,7 @@ public class Bucket {
 	 *         to remove (buffer + files) or not
 	 */
 	public synchronized boolean removeChunk(
-			WritableContainer<TupleSerializer> tmpBuffer) {
+			WritableContainer<WritableTuple> tmpBuffer) {
 
 		// If some threads still have to finish writing
 		waitForCachers();
@@ -1128,7 +1132,7 @@ public class Bucket {
 		}
 	}
 
-	public void removeWChunk(WritableContainer<TupleSerializer> tmpBuffer) {
+	public void removeWChunk(WritableContainer<WritableTuple> tmpBuffer) {
 		// Synchronize
 		synchronized (removeWChunk) {
 			boolean done = false;
@@ -1368,11 +1372,54 @@ public class Bucket {
 		return signature;
 	}
 
-	public TupleSerializer getTupleSerializer() {
+	public WritableTuple getTupleSerializer() {
 		return serializer;
 	}
 
 	public TupleComparator getComparator() {
 		return comparator;
+	}
+
+	public synchronized void setAdditionalCounters(long[] additionalChains,
+			int[][] additionalValues) {
+		if (additionalChildrenCounts == null) {
+			additionalChildrenCounts = new HashMap<Long, List<Integer>>();
+		}
+
+		for (int i = 0; i < additionalChains.length; ++i) {
+			List<Integer> values = additionalChildrenCounts
+					.get(additionalChains[i]);
+			if (values == null) {
+				values = new ArrayList<Integer>();
+				additionalChildrenCounts.put(additionalChains[i], values);
+			}
+
+			for (int j : additionalValues[i]) {
+				values.add(j);
+			}
+		}
+	}
+
+	public synchronized void setAdditionalCounters(
+			Map<Long, List<Integer>> additionalCounters) {
+		if (additionalChildrenCounts == null) {
+			additionalChildrenCounts = new HashMap<Long, List<Integer>>();
+		}
+
+		for (Map.Entry<Long, List<Integer>> value : additionalCounters
+				.entrySet()) {
+			List<Integer> existingValue = additionalChildrenCounts.get(value
+					.getKey().longValue());
+			if (existingValue == null) {
+				additionalChildrenCounts.put(value.getKey().longValue(),
+						value.getValue());
+			} else {
+				existingValue.addAll(value.getValue());
+			}
+		}
+	}
+
+	public Map<Long, List<Integer>> getAdditionalChildrenCounts() {
+		return additionalChildrenCounts;
 	}
 }

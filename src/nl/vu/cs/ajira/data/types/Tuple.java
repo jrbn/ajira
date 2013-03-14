@@ -2,6 +2,12 @@ package nl.vu.cs.ajira.data.types;
 
 import java.util.Arrays;
 
+/**
+ * This class provides a generalized type of data. It can
+ * be used as a collection of different types of elements that
+ * extend SimpleData.  
+ *
+ */
 public class Tuple {
 
 	protected SimpleData[] signature;
@@ -114,6 +120,9 @@ public class Tuple {
 		return false;
 	}
 	
+	/**
+	 * Converts the Tuple to its string representation.
+	 */
 	public String toString() {
 		StringBuffer b = new StringBuffer();
 		b.append('<');

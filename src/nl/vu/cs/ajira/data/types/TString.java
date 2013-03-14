@@ -7,6 +7,12 @@ import java.io.IOException;
 import nl.vu.cs.ajira.storage.RawComparator;
 import nl.vu.cs.ajira.utils.Consts;
 
+/**
+ * 
+ * This class provides the methods that are needed in 
+ * order to manipulate a String value. 
+ *
+ */
 public final class TString extends SimpleData {
 
 	String value = null;
