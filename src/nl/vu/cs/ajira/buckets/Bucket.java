@@ -636,7 +636,7 @@ public class Bucket {
 			this.serializer = new WritableTuple(sortingFields,
 					signature.length);
 		} else if (sortRemote) {
-			this.serializer = new TupleSerializer(sortingFields,
+			this.serializer = new WritableTuple(sortingFields,
 					signature.length);
 		} else {
 			this.serializer = new WritableTuple();
