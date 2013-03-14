@@ -6,6 +6,7 @@
 	<property name="BUILD_PATH" value="bin" />
 	<property name="SRC_PATH" value="src" />
 	<property name="LIB_PATH" value="lib" />
+	<property name="CONF_PATH" value="conf" />
 	<property name="AJIRA_JAR_LOCATION" value="ajira-${VERSION}.jar" />
 	<property name="JAR_WEBAPPS_LOCATION" value="ajira-webapps-${VERSION}.jar" />
 	<property name="IPL_PATH" value="${LIB_PATH}/ipl/" />
