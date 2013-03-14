@@ -192,9 +192,12 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 						"addAll works only if the two buffers share the parameter FieldDelimiters");
 			}
 
-			int necessarySpace = buffer.buffer.length
-					- buffer.remainingCapacity(buffer.buffer.length);
+			int necessarySpace = buffer.buffer.length - 1
+					- buffer.remainingCapacity(buffer.buffer.length);	// -1: see code in remainingCapacity --Ceriel
 			if (!grow(necessarySpace)) {
+				if (log.isDebugEnabled()) {
+					log.debug("Grow() fails: necessarySpace = " + necessarySpace);
+				}
 				return false;
 			}
 

@@ -1176,7 +1176,9 @@ public class Bucket {
 						return;
 					}
 
-					tmpBuffer.addAll(writeBuffer[currWBuffIndex]);
+					if (! tmpBuffer.addAll(writeBuffer[currWBuffIndex])) {
+						log.error("OOPS: something wrong!");
+					}
 					writeBuffer[currWBuffIndex].clear();
 
 					// LOG-DEBUG
