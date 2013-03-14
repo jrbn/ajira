@@ -4,7 +4,6 @@ import java.io.File;
 
 import nl.vu.cs.ajira.actions.support.FilterHiddenFiles;
 import nl.vu.cs.ajira.actions.support.Query;
-import nl.vu.cs.ajira.buckets.WritableTuple;
 import nl.vu.cs.ajira.data.types.TInt;
 import nl.vu.cs.ajira.data.types.TString;
 import nl.vu.cs.ajira.data.types.Tuple;
@@ -62,7 +61,7 @@ public class ReadFromFiles extends Action {
 		}
 
 		ActionConf c = ActionFactory.getActionConf(QueryInputLayer.class);
-		c.setParamWritable(QueryInputLayer.W_QUERY, new WritableTuple(tuple));
+		c.setParamWritable(QueryInputLayer.W_QUERY, new Query(tuple));
 		output.branch(c);
 
 		currentFileSplit = new FileCollection();

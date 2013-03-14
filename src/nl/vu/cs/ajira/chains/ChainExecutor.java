@@ -318,9 +318,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	private void incrementChildren(long chain, int v) {
 
 		int remainingActions = nActions - currentAction - 1;
-		if (v > remainingActions) {
-			v -= remainingActions;
-		}
+		v -= remainingActions;
 
 		List<Integer> value = newChildren.get(chain);
 		if (value == null) {
@@ -333,7 +331,11 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	@Override
 	public ActionOutput split(List<ActionConf> actions, int reconnectAt)
 			throws Exception {
-		chain.customBranch(supportChain, responsibleChains[currentAction],
+		long parentChain = 0;
+		if (reconnectAt != -1) {
+			parentChain = responsibleChains[currentAction];
+		}
+		chain.customBranch(supportChain, parentChain,
 				getCounter(Consts.CHAINCOUNTER_NAME), reconnectAt);
 		if (actions != null)
 			supportChain.setActions(actions, this);
@@ -349,14 +351,18 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 		openedStreams.add(itr);
 
-		incrementChildren(responsibleChains[currentAction], reconnectAt);
+		incrementChildren(parentChain, reconnectAt);
 		return itr;
 	}
 
 	@Override
 	public ActionOutput split(ActionConf action, int reconnectAt)
 			throws Exception {
-		chain.customBranch(supportChain, responsibleChains[currentAction],
+		long parentChain = 0;
+		if (reconnectAt != -1) {
+			parentChain = responsibleChains[currentAction];
+		}
+		chain.customBranch(supportChain, parentChain,
 				getCounter(Consts.CHAINCOUNTER_NAME), reconnectAt);
 		if (action != null)
 			supportChain.setAction(action, this);
@@ -372,7 +378,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 		openedStreams.add(itr);
 
-		incrementChildren(responsibleChains[currentAction], reconnectAt);
+		incrementChildren(parentChain, reconnectAt);
 
 		return itr;
 	}
@@ -492,32 +498,53 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	}
 
 	public void addAndUpdateCounters(Map<Long, List<Integer>> counters) {
-		for (Map.Entry<Long, List<Integer>> entry : counters.entrySet()) {
-			for (int i : entry.getValue()) {
-				i -= nActions;
-				incrementChildren(entry.getKey().longValue(), i);
-			}
-		}
 
 		long chainId = chain.getChainId();
+		int old_children = chain.getTotalChainChildren();
+		int new_children = old_children;
+
+		// Check the old values, just in case...
 		List<Integer> values = newChildren.get(chainId);
 		if (values != null) {
 			Iterator<Integer> itr = values.iterator();
-			int old_children = chain.getTotalChainChildren();
-			int n_children = old_children;
 			while (itr.hasNext()) {
 				int v = itr.next();
 				if (v < 0) {
 					itr.remove();
-					n_children++;
+					new_children++;
 				}
 			}
 			if (values.size() == 0) {
 				newChildren.remove(chainId);
 			}
-			if (n_children != old_children) {
-				chain.setTotalChainChildren(n_children);
+		}
+
+		for (Map.Entry<Long, List<Integer>> entry : counters.entrySet()) {
+			// Check whether the counter is equivalent to the chainId.
+			for (int i : entry.getValue()) {
+				if (entry.getKey().longValue() == chainId) {
+					if (i < 0) {
+						if (!this.transferComputation) {
+							new_children++;
+						} else {
+							incrementChildren(entry.getKey().longValue(), i);
+						}
+					} else {
+						if (i - nActions < 0) {
+							new_children++;
+						} else {
+							incrementChildren(entry.getKey().longValue(), i);
+						}
+					}
+				} else {
+					incrementChildren(entry.getKey().longValue(), i);
+				}
 			}
+
+		}
+
+		if (new_children != old_children) {
+			chain.setTotalChainChildren(new_children);
 		}
 	}
 }
