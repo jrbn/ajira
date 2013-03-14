@@ -135,6 +135,8 @@ public class Buckets {
 	 *            Bucket id
 	 * @param sort
 	 *            Activate sort or not on the bucket
+	 * @param sortRemote
+	 * 			  set if this is a to be sorted remote bucket that is not sorted locally
 	 * @param sortingFields
 	 *            What fields to sort on
 	 * @param signature
@@ -143,7 +145,7 @@ public class Buckets {
 	 * @return the bucket
 	 */
 	public synchronized Bucket getOrCreateBucket(int submissionNode,
-			int idSubmission, int idBucket, boolean sort, byte[] sortingFields,
+			int idSubmission, int idBucket, boolean sort, boolean sortRemote, byte[] sortingFields,
 			byte[] signature) {
 		long key = getKey(idSubmission, idBucket);
 		Bucket bucket = buckets.get(key);
@@ -151,7 +153,7 @@ public class Buckets {
 		if (bucket == null) {
 			bucket = new Bucket();
 			// if (sort) {
-				bucket.init(key, stats, submissionNode, idSubmission, sort,
+				bucket.init(key, stats, submissionNode, idSubmission, sort, sortRemote,
 						sortingFields, fb_sorted, merger, signature);
 			// } else {
 			// 	bucket.init(key, stats, submissionNode, idSubmission, sort,
@@ -316,7 +318,7 @@ public class Buckets {
 
 		if (node == myPartition || net.getNumberNodes() == 1) {
 			return getOrCreateBucket(submissionNode, submission, bucketID,
-					sort, sortingFields, signature);
+					sort, sort, sortingFields, signature);
 		}
 
 		Map<Long, TransferInfo> map = activeTransfers[node];
@@ -331,7 +333,7 @@ public class Buckets {
 				info = new TransferInfo();
 				// Remote buckets are not sorted (sorting is disabled)
 				info.bucket = getOrCreateBucket(submissionNode, submission,
-						context.getNewBucketID(), false, null,
+						context.getNewBucketID(), false, sort, null,
 						signature);
 				map.put(key, info);
 			} else {
@@ -371,7 +373,7 @@ public class Buckets {
 		// along with its params because the recipient might not have created
 		// its local bucket in time, so, instead, this message creates the local 
 		// bucket for it -- if necessary
-                message.writeBoolean(sort);
+		message.writeBoolean(sort);
 		if (sort) {
 			if (sortingParams != null && sortingParams.length > 0) {
 				message.writeInt(sortingParams.length);
@@ -444,7 +446,7 @@ public class Buckets {
 
 		if (node == myPartition || net.getNumberNodes() == 1) {
 			Bucket bucket = getOrCreateBucket(submissionNode, submission,
-					bucketID, sort, sortingFields, signature);
+					bucketID, sort, sort, sortingFields, signature);
 
 			bucket.updateCounters(chainId, parentChainId, nchildren,
 					responsible);

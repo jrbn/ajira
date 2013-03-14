@@ -578,7 +578,7 @@ public class Bucket {
 	 */
 	@SuppressWarnings("unchecked")
 	void init(long key, StatisticsCollector stats, int submissionNode,
-			int submissionId, boolean sort, byte[] sortingFields,
+			int submissionId, boolean sort, boolean sortRemote, byte[] sortingFields,
 			Factory<WritableContainer<TupleSerializer>> fb,
 			CachedFilesMerger merger, byte[] signature) {
 		this.key = key;
@@ -631,10 +631,12 @@ public class Bucket {
 			this.comparator.init(array);
 			this.serializer = new TupleSerializer(sortingFields,
 					signature.length);
+		} else if (sortRemote) {
+			this.serializer = new TupleSerializer(sortingFields,
+					signature.length);
 		} else {
 			this.serializer = new TupleSerializer();
 		}
-
 	}
 
 	public synchronized long inmemory_size() {
@@ -801,7 +803,7 @@ public class Bucket {
 						di.close();
 					} else { // Need to sort
 
-						tmpBuffer.setFieldsDelimiter();
+						tmpBuffer.setFieldsDelimiter(true);
 
 						if (log.isDebugEnabled()) {
 							log.debug("Try add the first triple from the in-memory ds to the pool => "
@@ -1084,8 +1086,7 @@ public class Bucket {
 					try {
 						lockWriteBuffer[wBuffIndex].wait();
 					} catch (InterruptedException e) {
-						log.error(e.getMessage());
-						e.printStackTrace();
+						// ignore
 					}
 				}
 

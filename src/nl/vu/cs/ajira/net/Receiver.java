@@ -119,7 +119,7 @@ class Receiver implements MessageUpcall {
 			message.readArray(signature);
 
 			Bucket bucket = buckets.getOrCreateBucket(submissionNode,
-					idSubmission, idBucket, isSorted, cfParams, signature);
+					idSubmission, idBucket, isSorted, isSorted, cfParams, signature);
 			bucket.updateCounters(idChain, idParentChain, children,
 					isResponsible);
 

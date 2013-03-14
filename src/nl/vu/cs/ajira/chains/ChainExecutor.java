@@ -337,7 +337,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	public Bucket getBucket(final int bucketId, final boolean sort,
 			byte[] sortingFields, byte[] signature) {
 		return context.getBuckets().getOrCreateBucket(submissionNode,
-				submissionId, bucketId, sort, sortingFields, signature);
+				submissionId, bucketId, sort, sort, sortingFields, signature);
 	}
 
 	@Override

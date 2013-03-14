@@ -69,6 +69,7 @@ public class BucketIterator extends TupleIterator {
 		if (tuples.getNElements() == 0) {
 			long time = System.currentTimeMillis();
 
+			tuples.clear();
 			bucket.removeWChunk(tuples);
 
 			if (log.isDebugEnabled()) {
