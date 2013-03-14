@@ -14,7 +14,7 @@ import nl.vu.cs.ajira.storage.Writable;
  * params into the custom constructor, otherwise it acts as a simple byte
  * serializer
  */
-public class TupleSerializer implements Writable {
+public class WritableTuple implements Writable {
 	private boolean shouldSort = false;
 	private byte[] fieldsToSort;
 	private byte[] otherFields;
@@ -30,7 +30,7 @@ public class TupleSerializer implements Writable {
 	 * @param nFields
 	 *            Number of fields implied in sorting
 	 */
-	public TupleSerializer(byte[] fieldsToSort, int nFields) {
+	public WritableTuple(byte[] fieldsToSort, int nFields) {
 		shouldSort = true;
 		this.fieldsToSort = fieldsToSort;
 		this.nFields = nFields;
@@ -60,7 +60,7 @@ public class TupleSerializer implements Writable {
 	/**
 	 * Default constructor.
 	 */
-	public TupleSerializer() {
+	public WritableTuple() {
 	}
 
 	/**
@@ -69,7 +69,7 @@ public class TupleSerializer implements Writable {
 	 * @param tuple
 	 *            Initial tuple (acts as a transfer buffer)
 	 */
-	public TupleSerializer(Tuple tuple) {
+	public WritableTuple(Tuple tuple) {
 		this.tuple = tuple;
 	}
 

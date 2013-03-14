@@ -12,7 +12,7 @@ import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.TIntArray;
 import nl.vu.cs.ajira.data.types.TStringArray;
 import nl.vu.cs.ajira.data.types.bytearray.BDataOutput;
-import nl.vu.cs.ajira.datalayer.Query;
+import nl.vu.cs.ajira.datalayer.InputQuery;
 import nl.vu.cs.ajira.storage.Writable;
 import nl.vu.cs.ajira.utils.Consts;
 
@@ -23,12 +23,12 @@ public class ActionConf implements Writable {
 
 	public static abstract class Configurator {
 
-		public void process(Query query, ActionConf conf,
+		public void process(InputQuery query, ActionConf conf,
 				ActionController controller, ActionContext context) {
 			setupAction(query, conf.valuesParameters, controller, context);
 		}
 
-		public abstract void setupAction(Query query, Object[] params,
+		public abstract void setupAction(InputQuery query, Object[] params,
 				ActionController controller, ActionContext context);
 	}
 
@@ -175,11 +175,13 @@ public class ActionConf implements Writable {
 					output.writeByte(v.getIdDatatype());
 					v.writeTo(output);
 				} else if (value instanceof Writable) {
+
 					output.writeByte(4);
 					BDataOutput o = new BDataOutput(new byte[Consts.CHAIN_SIZE]);
 					((Writable) value).writeTo(o);
 					output.writeInt(o.cb.getEnd());
 					output.write(o.cb.getBuffer(), 0, o.cb.getEnd());
+
 				} else if (value instanceof byte[]) {
 					output.writeByte(4);
 					byte[] v = (byte[]) value;

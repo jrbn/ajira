@@ -12,6 +12,7 @@ import nl.vu.cs.ajira.actions.Action;
 import nl.vu.cs.ajira.actions.ActionConf;
 import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.actions.ActionOutput;
+import nl.vu.cs.ajira.actions.support.Query;
 import nl.vu.cs.ajira.buckets.Bucket;
 import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.TInt;
@@ -60,6 +61,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	private ChainHandler handler;
 
 	private final Chain supportChain = new Chain();
+	private final Query supportQuery = new Query();
 	private final Tuple supportTuple = TupleFactory.newTuple();
 
 	private boolean transferComputation = false;
@@ -234,9 +236,9 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			chain.copyTo(supportChain);
 			supportChain.setTotalChainChildren(childrenToTransfer);
 			supportChain.setInputLayer(Consts.BUCKET_INPUT_LAYER_ID);
-			supportTuple.set(new TInt(transferBucketId), new TInt(
+			supportQuery.setElements(new TInt(transferBucketId), new TInt(
 					transferNodeId));
-			supportChain.setInputTuple(supportTuple);
+			supportChain.setQuery(supportQuery);
 			if (localMode)
 				chainsBuffer.add(supportChain);
 			else
@@ -334,8 +336,8 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			supportChain.setActions(actions, this);
 		SplitIterator itr = ChainSplitLayer.getInstance().registerNewSplit();
 		supportChain.setInputLayer(Consts.SPLITS_INPUT_LAYER);
-		supportChain
-				.setInputTuple(TupleFactory.newTuple(new TInt(itr.getId())));
+		supportQuery.setElements(new TInt(itr.getId()));
+		supportChain.setQuery(supportQuery);
 
 		manager.startSeparateChainHandler(supportChain);
 
@@ -357,8 +359,8 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			supportChain.setAction(action, this);
 		SplitIterator itr = ChainSplitLayer.getInstance().registerNewSplit();
 		supportChain.setInputLayer(Consts.SPLITS_INPUT_LAYER);
-		supportChain
-				.setInputTuple(TupleFactory.newTuple(new TInt(itr.getId())));
+		supportQuery.setElements(new TInt(itr.getId()));
+		supportChain.setQuery(supportQuery);
 
 		manager.startSeparateChainHandler(supportChain);
 

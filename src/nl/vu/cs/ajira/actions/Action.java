@@ -2,14 +2,14 @@ package nl.vu.cs.ajira.actions;
 
 import java.io.IOException;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import nl.vu.cs.ajira.data.types.TIntArray;
 import nl.vu.cs.ajira.data.types.TStringArray;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.data.types.bytearray.BDataInput;
 import nl.vu.cs.ajira.storage.Writable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class Action {
 
@@ -72,7 +72,8 @@ public abstract class Action {
 		}
 
 		if (pos < 0 || pos >= valuesParameters.length) {
-			throw new IllegalArgumentException("Position not valid (" + pos + ")");
+			throw new IllegalArgumentException("Position not valid (" + pos
+					+ ")");
 		}
 
 		return valuesParameters[pos];
@@ -85,7 +86,8 @@ public abstract class Action {
 		}
 
 		if (pos < 0 || pos >= valuesParameters.length) {
-			throw new IllegalArgumentException("Position not valid (" + pos + ")");
+			throw new IllegalArgumentException("Position not valid (" + pos
+					+ ")");
 		}
 
 		try {

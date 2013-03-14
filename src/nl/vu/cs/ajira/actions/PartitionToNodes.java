@@ -7,7 +7,7 @@ import nl.vu.cs.ajira.data.types.DataProvider;
 import nl.vu.cs.ajira.data.types.TIntArray;
 import nl.vu.cs.ajira.data.types.TStringArray;
 import nl.vu.cs.ajira.data.types.Tuple;
-import nl.vu.cs.ajira.datalayer.Query;
+import nl.vu.cs.ajira.datalayer.InputQuery;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +45,7 @@ public class PartitionToNodes extends Action {
 
 	public static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
-		public void setupAction(Query query, Object[] params,
+		public void setupAction(InputQuery query, Object[] params,
 				ActionController controller, ActionContext context) {
 			if (params[NPARTITIONS_PER_NODE] == null) {
 				if (params[BUCKET_IDS] == null) {
@@ -170,8 +170,8 @@ public class PartitionToNodes extends Action {
 				for (int i = 1; i < nPartitionsPerNode; i++) {
 					ActionConf c = ActionFactory
 							.getActionConf(ReadFromBucket.class);
-					c.setParamInt(ReadFromBucket.BUCKET_ID, bucketIds[i]);
-					c.setParamInt(ReadFromBucket.NODE_ID, -1);
+					c.setParamInt(ReadFromBucket.I_BUCKET_ID, bucketIds[i]);
+					c.setParamInt(ReadFromBucket.S_NODE_ID, -1);
 					output.branch(c);
 				}
 			}

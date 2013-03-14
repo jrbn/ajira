@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
  *  that is used inside the framework for sorting tuples (data
  *  with a tuple structure).
  */
-public class TupleComparator extends RawComparator<TupleSerializer> {
+public class TupleComparator extends RawComparator<WritableTuple> {
 	static final Logger log = LoggerFactory.getLogger(TupleComparator.class);
 
 	public long timeConverting;

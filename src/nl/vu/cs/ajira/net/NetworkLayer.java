@@ -20,7 +20,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import nl.vu.cs.ajira.Context;
-import nl.vu.cs.ajira.buckets.TupleSerializer;
+import nl.vu.cs.ajira.buckets.WritableTuple;
 import nl.vu.cs.ajira.chains.Chain;
 import nl.vu.cs.ajira.chains.ChainLocation;
 import nl.vu.cs.ajira.mgmt.StatisticsCollector;
@@ -89,7 +89,7 @@ public class NetworkLayer {
 	Container<Chain> chainsToSend = new CheckedConcurrentWritableContainer<Chain>(
 			Consts.SIZE_BUFFERS_CHAIN_SEND);
 
-	Factory<WritableContainer<TupleSerializer>> bufferFactory = null;
+	Factory<WritableContainer<WritableTuple>> bufferFactory = null;
 
 	protected boolean monitorCounters = false;
 
@@ -116,7 +116,7 @@ public class NetworkLayer {
 	 *            memory management).
 	 */
 	public void setBufferFactory(
-			Factory<WritableContainer<TupleSerializer>> bufferFactory) {
+			Factory<WritableContainer<WritableTuple>> bufferFactory) {
 		this.bufferFactory = bufferFactory;
 	}
 

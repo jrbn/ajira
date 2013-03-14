@@ -11,14 +11,15 @@ import nl.vu.cs.ajira.actions.ActionConf;
 import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.actions.ActionController;
 import nl.vu.cs.ajira.actions.ActionFactory;
-import nl.vu.cs.ajira.buckets.TupleSerializer;
+import nl.vu.cs.ajira.actions.support.Query;
+import nl.vu.cs.ajira.buckets.WritableTuple;
 import nl.vu.cs.ajira.data.types.DataProvider;
 import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.data.types.bytearray.BDataInput;
 import nl.vu.cs.ajira.data.types.bytearray.BDataOutput;
-import nl.vu.cs.ajira.datalayer.Query;
+import nl.vu.cs.ajira.datalayer.InputQuery;
 import nl.vu.cs.ajira.storage.Writable;
 import nl.vu.cs.ajira.utils.Consts;
 import nl.vu.cs.ajira.utils.Utils;
@@ -26,7 +27,7 @@ import nl.vu.cs.ajira.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Chain implements Writable, Query {
+public class Chain implements Writable, InputQuery {
 
 	static final Logger log = LoggerFactory.getLogger(Chain.class);
 
@@ -83,7 +84,7 @@ public class Chain implements Writable, Query {
 				signature[i] = DataProvider.getInstance().get(input.readByte());
 			}
 			tuple.set(signature);
-			new TupleSerializer(tuple).readFrom(input);
+			new WritableTuple(tuple).readFrom(input);
 		} else {
 			tuple.clear();
 		}
@@ -100,7 +101,7 @@ public class Chain implements Writable, Query {
 			for (int i = 0; i < tuple.getNElements(); ++i) {
 				output.write(tuple.get(i).getIdDatatype());
 			}
-			new TupleSerializer(tuple).writeTo(output);
+			new WritableTuple(tuple).writeTo(output);
 		} else {
 			output.writeBoolean(false);
 		}
@@ -165,13 +166,13 @@ public class Chain implements Writable, Query {
 	}
 
 	@Override
-	public void setInputTuple(Tuple tuple) {
-		tuple.copyTo(this.tuple);
+	public void setQuery(Query query) {
+		query.getTuple().copyTo(this.tuple);
 	}
 
 	@Override
-	public void getInputTuple(Tuple tuple) {
-		this.tuple.copyTo(tuple);
+	public void getQuery(Query query) {
+		tuple.copyTo(query.getTuple());
 	}
 
 	public int setActions(List<ActionConf> actions, ActionContext context)

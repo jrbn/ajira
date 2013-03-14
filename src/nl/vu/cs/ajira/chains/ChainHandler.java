@@ -5,6 +5,7 @@ import java.util.Map;
 
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.actions.ActionFactory;
+import nl.vu.cs.ajira.actions.support.Query;
 import nl.vu.cs.ajira.buckets.Bucket;
 import nl.vu.cs.ajira.buckets.BucketIterator;
 import nl.vu.cs.ajira.data.types.Tuple;
@@ -38,7 +39,8 @@ public class ChainHandler implements Runnable {
 	private boolean submissionFailed;
 	private int status = STATUS_INACTIVE;
 	public boolean singleChain = false;
-	private Tuple tuple = TupleFactory.newTuple();
+	private final Query query = new Query();
+	private final Tuple tuple = TupleFactory.newTuple();
 	private ChainExecutor actions;
 
 	ChainHandler(Context context) {
@@ -81,10 +83,10 @@ public class ChainHandler implements Runnable {
 		if (actions.getNActions() > 0) {
 
 			// Read the input tuple from the knowledge base
-			currentChain.getInputTuple(tuple);
+			currentChain.getQuery(query);
 			int il = currentChain.getInputLayer();
 			InputLayer input = context.getInputLayer(il);
-			TupleIterator itr = input.getIterator(tuple, actions);
+			TupleIterator itr = input.getIterator(query.getTuple(), actions);
 			if (!itr.isReady()) {
 				context.getChainNotifier().addWaiter(itr, currentChain);
 				currentChain = new Chain();
