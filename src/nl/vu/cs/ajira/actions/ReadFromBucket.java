@@ -1,9 +1,9 @@
 package nl.vu.cs.ajira.actions;
 
+import nl.vu.cs.ajira.actions.support.Query;
 import nl.vu.cs.ajira.data.types.TInt;
 import nl.vu.cs.ajira.data.types.Tuple;
-import nl.vu.cs.ajira.data.types.TupleFactory;
-import nl.vu.cs.ajira.datalayer.Query;
+import nl.vu.cs.ajira.datalayer.InputQuery;
 import nl.vu.cs.ajira.utils.Consts;
 
 public class ReadFromBucket extends Action {
@@ -12,23 +12,20 @@ public class ReadFromBucket extends Action {
 	int bucketId;
 	boolean branch = false;
 
-	public static final int BUCKET_ID = 0;
-	public static final String S_BUCKET_ID = "bucket_id";
-	public static final int NODE_ID = 1;
-	public static final String S_NODE_ID = "node_id";
+	public static final int I_BUCKET_ID = 0;
+	public static final int S_NODE_ID = 1;
 
 	static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
-		public void setupAction(Query query, Object[] params,
+		public void setupAction(InputQuery query, Object[] params,
 				ActionController controller, ActionContext context) {
-			if (params[NODE_ID] == null) {
-				params[NODE_ID] = -1;
+			if (params[S_NODE_ID] == null) {
+				params[S_NODE_ID] = -1;
 			}
 
 			query.setInputLayer(Consts.BUCKET_INPUT_LAYER_ID);
-			query.setInputTuple(TupleFactory.newTuple(new TInt(
-					(Integer) params[BUCKET_ID]), new TInt(
-					(Integer) params[NODE_ID])));
+			query.setQuery(new Query(new TInt((Integer) params[I_BUCKET_ID]),
+					new TInt((Integer) params[S_NODE_ID])));
 
 			controller.doNotAddCurrentAction();
 		}
@@ -36,15 +33,15 @@ public class ReadFromBucket extends Action {
 
 	@Override
 	public void registerActionParameters(ActionConf conf) {
-		conf.registerParameter(BUCKET_ID, S_BUCKET_ID, null, true);
-		conf.registerParameter(NODE_ID, S_NODE_ID, -1, false);
+		conf.registerParameter(I_BUCKET_ID, "bucket id", null, true);
+		conf.registerParameter(S_NODE_ID, "node id", -1, false);
 		conf.registerCustomConfigurator(ParametersProcessor.class);
 	}
 
 	@Override
 	public void startProcess(ActionContext context) throws Exception {
-		bucketId = getParamInt(BUCKET_ID);
-		node = getParamInt(NODE_ID);
+		bucketId = getParamInt(I_BUCKET_ID);
+		node = getParamInt(S_NODE_ID);
 	}
 
 	@Override

@@ -26,11 +26,13 @@ public class ChainNotifier {
 		this.context = context;
 		ac = new ChainExecutor(null, context);
 	}
-	
+
 	/**
-	 * Removes all waiters from a specific submission id. To be used when a submission
-	 * fails for some reason.
-	 * @param submissionId the submission that failed.
+	 * Removes all waiters from a specific submission id. To be used when a
+	 * submission fails for some reason.
+	 * 
+	 * @param submissionId
+	 *            the submission that failed.
 	 */
 	public synchronized void removeWaiters(int submissionId) {
 		TupleIterator[] w = waiters.keySet().toArray(new TupleIterator[0]);
@@ -47,15 +49,15 @@ public class ChainNotifier {
 	public synchronized void addWaiter(TupleIterator iter, Chain chain) {
 		waiters.put(iter, chain);
 		iter.registerReadyNotifier(this);
-		if (log.isInfoEnabled()) {
-			log.info("Add waiter " + iter + "; size is now " + waiters.size());
+		if (log.isDebugEnabled()) {
+			log.debug("Add waiter " + iter + "; size is now " + waiters.size());
 		}
 	}
 
 	public void markReady(TupleIterator iter) {
 		Chain chain;
-		if (log.isInfoEnabled()) {
-			log.info("Mark ready for iter " + iter);
+		if (log.isDebugEnabled()) {
+			log.debug("Mark ready for iter " + iter);
 		}
 		synchronized (this) {
 			chain = waiters.get(iter);

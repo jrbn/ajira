@@ -25,12 +25,11 @@ public class CBDataInput extends BDataInput {
 	 */
 	public void readFully(byte[] b, int off, int len) {
 		if (len > cb.buffer.length - cb.start) {
-			System.arraycopy(cb.buffer, cb.start, b, off, cb.buffer.length
-					- cb.start);
+			int len1 = cb.buffer.length - cb.start;
+			System.arraycopy(cb.buffer, cb.start, b, off, len1);
 			System.arraycopy(cb.buffer, 0, b,
-					off + cb.buffer.length - cb.start, len - cb.buffer.length
-							+ cb.start);
-			cb.start = len - cb.buffer.length + cb.start;
+					off + len1, len - len1);
+			cb.start = len - len1;
 		} else {
 			super.readFully(b, off, len);
 		}

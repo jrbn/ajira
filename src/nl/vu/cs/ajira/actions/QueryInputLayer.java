@@ -1,32 +1,30 @@
 package nl.vu.cs.ajira.actions;
 
-import nl.vu.cs.ajira.buckets.TupleSerializer;
+import nl.vu.cs.ajira.actions.support.Query;
 import nl.vu.cs.ajira.data.types.Tuple;
-import nl.vu.cs.ajira.datalayer.Query;
+import nl.vu.cs.ajira.datalayer.InputQuery;
 import nl.vu.cs.ajira.utils.Consts;
 
 public class QueryInputLayer extends Action {
 
-	public static final int TUPLE = 0;
-	public static final String S_TUPLE = "tuple";
-	public static final int INPUT_LAYER = 1;
-	public static final String S_INPUT_LAYER = "input_layer";
+	public static final int W_QUERY = 0;
+	public static final int I_INPUTLAYER = 1;
 
 	static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
-		public void setupAction(Query query, Object[] params,
+		public void setupAction(InputQuery query, Object[] params,
 				ActionController controller, ActionContext context) {
-			query.setInputLayer(((Integer) params[INPUT_LAYER]).intValue());
-			TupleSerializer t = (TupleSerializer) params[TUPLE];
-			query.setInputTuple(t.getTuple());
+			query.setInputLayer(((Integer) params[I_INPUTLAYER]).intValue());
+			Query t = (Query) params[W_QUERY];
+			query.setQuery(t);
 			controller.doNotAddCurrentAction();
 		}
 	}
 
 	@Override
 	public void registerActionParameters(ActionConf conf) {
-		conf.registerParameter(TUPLE, S_TUPLE, null, true);
-		conf.registerParameter(INPUT_LAYER, S_INPUT_LAYER,
+		conf.registerParameter(W_QUERY, "query", null, true);
+		conf.registerParameter(I_INPUTLAYER, "input layer",
 				Consts.DEFAULT_INPUT_LAYER_ID, false);
 		conf.registerCustomConfigurator(ParametersProcessor.class);
 	}

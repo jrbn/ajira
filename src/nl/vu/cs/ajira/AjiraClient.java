@@ -17,7 +17,7 @@ import java.io.ObjectInputStream;
 import java.util.List;
 import java.util.Properties;
 
-import nl.vu.cs.ajira.buckets.TupleSerializer;
+import nl.vu.cs.ajira.buckets.WritableTuple;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.net.NetworkLayer;
 import nl.vu.cs.ajira.net.ReadMessageWrapper;
@@ -139,7 +139,7 @@ public class AjiraClient {
 				}
 			}
 			/* double time = */r.readDouble();
-			WritableContainer<TupleSerializer> tmpBuffer = new WritableContainer<TupleSerializer>(
+			WritableContainer<WritableTuple> tmpBuffer = new WritableContainer<WritableTuple>(
 					Consts.TUPLES_CONTAINER_BUFFER_SIZE);
 			tmpBuffer.readFrom(new ReadMessageWrapper(r));
 			boolean isFinished = r.readBoolean();
@@ -148,7 +148,7 @@ public class AjiraClient {
 			}
 			r.finish();
 			v.clear();
-			TupleSerializer ts = new TupleSerializer();
+			WritableTuple ts = new WritableTuple();
 			while (tmpBuffer.remove(ts)) {
 				v.add(ts.getTuple());
 			}
@@ -173,14 +173,14 @@ public class AjiraClient {
 			msg.writeByte((byte) 9);
 			msg.writeLong(bucketKey);
 			msg.finish();
-			WritableContainer<TupleSerializer> tmpBuffer = new WritableContainer<TupleSerializer>(
+			WritableContainer<WritableTuple> tmpBuffer = new WritableContainer<WritableTuple>(
 					Consts.TUPLES_CONTAINER_BUFFER_SIZE);
 			ReadMessage r = rp.receive();
 			tmpBuffer.readFrom(new ReadMessageWrapper(r));
 			boolean isFinished = r.readBoolean();
 			r.finish();
 			v.clear();
-			TupleSerializer ts = new TupleSerializer();
+			WritableTuple ts = new WritableTuple();
 			while (tmpBuffer.remove(ts)) {
 				v.add(ts.getTuple());
 			}

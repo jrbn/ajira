@@ -226,21 +226,27 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 
 	@Override
 	public boolean remove(K element) {
-		try {
-			if (start == end)
-				return false;
 
-			if (enableFieldDelimitors) // Skip the length of the just read
-				// element
-				input.skipBytes(4);
-
-			element.readFrom(input);
-			--nElements;
-			return true;
-		} catch (Exception e) {
-			log.error("Error in parsing the element from the buffer", e);
+		if (start == end)
 			return false;
+
+		if (enableFieldDelimitors) // Skip the length of the just read
+			// element
+			input.skipBytes(4);
+
+		if (log.isDebugEnabled()) {
+			if (nElements <= 0) {
+				log.error("OOPS: remove on empty container? start = " + start + ", end = " + end);
+			}
 		}
+
+		try {
+			element.readFrom(input);
+		} catch (IOException e) {
+			log.error("Should not happen", e);
+		}
+		--nElements;
+		return true;
 	}
 
 	public byte[] removeRaw(byte[] value) {
@@ -500,7 +506,11 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 		return true;
 	}
 
-	public void setFieldsDelimiter() {
-		enableFieldDelimitors = true;
+	public void setFieldsDelimiter(boolean enable) {
+		if (nElements > 0 && enableFieldDelimitors != enable) {
+			throw new UnsupportedOperationException(
+					"setFieldsDelimiter only works on empty buffers");
+		}
+		enableFieldDelimitors = enable;
 	}
 }

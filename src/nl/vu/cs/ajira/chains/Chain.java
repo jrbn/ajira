@@ -11,14 +11,15 @@ import nl.vu.cs.ajira.actions.ActionConf;
 import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.actions.ActionController;
 import nl.vu.cs.ajira.actions.ActionFactory;
-import nl.vu.cs.ajira.buckets.TupleSerializer;
+import nl.vu.cs.ajira.actions.support.Query;
+import nl.vu.cs.ajira.buckets.WritableTuple;
 import nl.vu.cs.ajira.data.types.DataProvider;
 import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.data.types.bytearray.BDataInput;
 import nl.vu.cs.ajira.data.types.bytearray.BDataOutput;
-import nl.vu.cs.ajira.datalayer.Query;
+import nl.vu.cs.ajira.datalayer.InputQuery;
 import nl.vu.cs.ajira.storage.Writable;
 import nl.vu.cs.ajira.utils.Consts;
 import nl.vu.cs.ajira.utils.Utils;
@@ -26,7 +27,7 @@ import nl.vu.cs.ajira.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Chain implements Writable, Query {
+public class Chain implements Writable, InputQuery {
 
 	static final Logger log = LoggerFactory.getLogger(Chain.class);
 
@@ -75,12 +76,6 @@ public class Chain implements Writable, Query {
 		bufferSize = input.readInt();
 		input.readFully(buffer, 0, bufferSize);
 
-		if (log.isDebugEnabled()) {
-			if (getGeneratedRootChains() != 0) {
-				log.debug("ReadFrom: generatedRootChains = " + getGeneratedRootChains(), new Throwable());
-			}
-		}
-		
 		if (input.readBoolean()) {
 			// Read the number of elements and their types
 			int n = input.readByte();
@@ -89,7 +84,7 @@ public class Chain implements Writable, Query {
 				signature[i] = DataProvider.getInstance().get(input.readByte());
 			}
 			tuple.set(signature);
-			new TupleSerializer(tuple).readFrom(input);
+			new WritableTuple(tuple).readFrom(input);
 		} else {
 			tuple.clear();
 		}
@@ -97,11 +92,6 @@ public class Chain implements Writable, Query {
 
 	@Override
 	public void writeTo(DataOutput output) throws IOException {
-		if (log.isDebugEnabled()) {
-			if (getGeneratedRootChains() != 0) {
-				log.debug("WriteTo: generatedRootChains = " + getGeneratedRootChains(), new Throwable());
-			}
-		}
 		output.writeInt(bufferSize);
 		output.write(buffer, 0, bufferSize);
 
@@ -111,17 +101,11 @@ public class Chain implements Writable, Query {
 			for (int i = 0; i < tuple.getNElements(); ++i) {
 				output.write(tuple.get(i).getIdDatatype());
 			}
-			new TupleSerializer(tuple).writeTo(output);
+			new WritableTuple(tuple).writeTo(output);
 		} else {
 			output.writeBoolean(false);
 		}
 	}
-
-	// @Override
-	// public int bytesToStore() throws IOException {
-	// return bufferSize + 9 + new SerializedTuple(tuple).bytesToStore()
-	// + tuple.getNElements() + 1;
-	// }
 
 	public void setSubmissionNode(int nodeId) {
 		Utils.encodeInt(buffer, 0, nodeId);
@@ -159,21 +143,8 @@ public class Chain implements Writable, Query {
 		Utils.encodeInt(buffer, 24, chainChildren);
 	}
 
-	void setGeneratedRootChains(int rootChains) {
-		if (log.isDebugEnabled()) {
-			if (rootChains != 0) {
-				log.debug("Chain " + getChainId() + ": rootChains = " + rootChains, new Throwable());
-			}
-		}
-		Utils.encodeInt(buffer, 28, rootChains);
-	}
-
 	public int getTotalChainChildren() {
 		return Utils.decodeInt(buffer, 24);
-	}
-
-	public int getGeneratedRootChains() {
-		return Utils.decodeInt(buffer, 28);
 	}
 
 	@Override
@@ -195,20 +166,20 @@ public class Chain implements Writable, Query {
 	}
 
 	@Override
-	public void setInputTuple(Tuple tuple) {
-		tuple.copyTo(this.tuple);
+	public void setQuery(Query query) {
+		query.getTuple().copyTo(this.tuple);
 	}
 
 	@Override
-	public void getInputTuple(Tuple tuple) {
-		this.tuple.copyTo(tuple);
+	public void getQuery(Query query) {
+		tuple.copyTo(query.getTuple());
 	}
 
 	public int setActions(List<ActionConf> actions, ActionContext context)
 			throws Exception {
-		
+
 		int retval = -1;
-		
+
 		if (actions != null) {
 
 			for (int i = 0; i < actions.size(); ++i) {
@@ -257,7 +228,7 @@ public class Chain implements Writable, Query {
 			throws Exception {
 
 		int retval = -1;
-		
+
 		// Process the parameters and possibly insert instructions to control
 		// the flow.
 		if (action.getConfigurator() != null) {
@@ -340,27 +311,36 @@ public class Chain implements Writable, Query {
 		newChain.setParentChainId(this.getChainId());
 		newChain.setChainId(newChainId);
 		newChain.setTotalChainChildren(0);
-		newChain.setGeneratedRootChains(0);
 
-		// Update counters of the new chain.
+		// Update counters of the new chain
 		setTotalChainChildren(getTotalChainChildren() + 1);
 	}
 
-	void branchFromRoot(Chain newChain, long newChainId) {
-		if (log.isDebugEnabled()) {
-			log.debug("branchFromRoot: newChainId = " + newChainId + ", chainId = " + getChainId(), new Throwable());
+	void customBranch(Chain newChain, long parentChainId, long newChainId,
+			int startFromAction) {
+		int sizeToCopy = Consts.CHAIN_RESERVED_SPACE;
+		if (startFromAction != -1) {
+			sizeToCopy = bufferSize;
+			// Remove the first n actions
+			while (startFromAction-- >= 0
+					&& sizeToCopy > Consts.CHAIN_RESERVED_SPACE) {
+				sizeToCopy -= 4;
+				int sizeNameAction = Utils.decodeInt(buffer, sizeToCopy);
+				sizeToCopy -= 12 + sizeNameAction; // Skip also the chainID
+				sizeToCopy -= Utils.decodeInt(buffer, sizeToCopy);
+				if (buffer[--sizeToCopy] == 1) {
+					sizeToCopy -= 8;
+				}
+			}
 		}
-		newChain.bufferSize = Consts.CHAIN_RESERVED_SPACE;
-		System.arraycopy(buffer, 0, newChain.buffer, 0, bufferSize);
+
+		newChain.bufferSize = sizeToCopy;
+		System.arraycopy(buffer, 0, newChain.buffer, 0, sizeToCopy);
 
 		// Set up the new chain
-		newChain.setParentChainId(-1);
+		newChain.setParentChainId(parentChainId);
 		newChain.setChainId(newChainId);
 		newChain.setTotalChainChildren(0);
-		newChain.setGeneratedRootChains(0);
-
-		// Update this counter
-		setGeneratedRootChains(getGeneratedRootChains() + 1);
 	}
 
 	void getActions(ChainExecutor actions, ActionFactory ap) throws IOException {
@@ -394,7 +374,8 @@ public class Chain implements Writable, Query {
 				bucketId = Utils.decodeInt(buffer, tmpSize);
 			}
 
-			actions.addAction(action, chainId == currentChainId, tmpSize);
+			actions.addAction(action, chainId == currentChainId, tmpSize,
+					chainId);
 		}
 
 		if (stopProcessing) {

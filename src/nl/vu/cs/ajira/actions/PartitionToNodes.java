@@ -7,7 +7,7 @@ import nl.vu.cs.ajira.data.types.DataProvider;
 import nl.vu.cs.ajira.data.types.TIntArray;
 import nl.vu.cs.ajira.data.types.TStringArray;
 import nl.vu.cs.ajira.data.types.Tuple;
-import nl.vu.cs.ajira.datalayer.Query;
+import nl.vu.cs.ajira.datalayer.InputQuery;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +45,7 @@ public class PartitionToNodes extends Action {
 
 	public static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
-		public void setupAction(Query query, Object[] params,
+		public void setupAction(InputQuery query, Object[] params,
 				ActionController controller, ActionContext context) {
 			if (params[NPARTITIONS_PER_NODE] == null) {
 				if (params[BUCKET_IDS] == null) {
@@ -73,6 +73,10 @@ public class PartitionToNodes extends Action {
 				f[i++] = (byte) DataProvider.getId(v);
 			}
 			params[TUPLE_FIELDS] = f;
+
+			if (params[SORT] == null) {
+				params[SORT] = new Boolean(false);
+			}
 
 			controller.continueComputationOn(-1,
 					((TIntArray) params[BUCKET_IDS]).getArray()[0]);
@@ -118,40 +122,35 @@ public class PartitionToNodes extends Action {
 
 	@Override
 	public void process(Tuple inputTuple, ActionContext context,
-			ActionOutput output) {
-		try {
-
-			Bucket b = null;
-			if (partition) {
-				// First partition the data
-				if (partitioner == null) {
-					partitioner = (Partitioner) Class.forName(sPartitioner)
-							.newInstance();
-					partitioner.init(context);
-				}
-
-				int partition = partitioner.partition(inputTuple, nPartitions);
-				b = bucketsCache[partition];
-				if (b == null) {
-					int nodeNo = partition / nPartitionsPerNode;
-					int bucketNo = bucketIds[partition % nPartitionsPerNode];
-					b = context.startTransfer(nodeNo, bucketNo, shouldSort,
-							sortingFields, tupleFields);
-					bucketsCache[partition] = b;
-				}
-			} else {
-				b = bucketsCache[0];
-				if (b == null) {
-					b = context.startTransfer(0, bucketIds[0], shouldSort,
-							sortingFields, tupleFields);
-					bucketsCache[0] = b;
-				}
+			ActionOutput output) throws Exception {
+		Bucket b = null;
+		if (partition) {
+			// First partition the data
+			if (partitioner == null) {
+				partitioner = (Partitioner) Class.forName(sPartitioner)
+						.newInstance();
+				partitioner.init(context);
 			}
 
-			b.add(inputTuple);
-		} catch (Exception e) {
-			log.error("Failed processing tuple.", e);
+			int partition = partitioner.partition(inputTuple, nPartitions);
+			b = bucketsCache[partition];
+			if (b == null) {
+				int nodeNo = partition / nPartitionsPerNode;
+				int bucketNo = bucketIds[partition % nPartitionsPerNode];
+				b = context.startTransfer(nodeNo, bucketNo, shouldSort,
+						sortingFields, tupleFields);
+				bucketsCache[partition] = b;
+			}
+		} else {
+			b = bucketsCache[0];
+			if (b == null) {
+				b = context.startTransfer(0, bucketIds[0], shouldSort,
+						sortingFields, tupleFields);
+				bucketsCache[0] = b;
+			}
 		}
+
+		b.add(inputTuple);
 	}
 
 	@Override
@@ -171,8 +170,8 @@ public class PartitionToNodes extends Action {
 				for (int i = 1; i < nPartitionsPerNode; i++) {
 					ActionConf c = ActionFactory
 							.getActionConf(ReadFromBucket.class);
-					c.setParamInt(ReadFromBucket.BUCKET_ID, bucketIds[i]);
-					c.setParamInt(ReadFromBucket.NODE_ID, -1);
+					c.setParamInt(ReadFromBucket.I_BUCKET_ID, bucketIds[i]);
+					c.setParamInt(ReadFromBucket.S_NODE_ID, -1);
 					output.branch(c);
 				}
 			}

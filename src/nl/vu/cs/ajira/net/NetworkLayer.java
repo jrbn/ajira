@@ -20,7 +20,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import nl.vu.cs.ajira.Context;
-import nl.vu.cs.ajira.buckets.TupleSerializer;
+import nl.vu.cs.ajira.buckets.WritableTuple;
 import nl.vu.cs.ajira.chains.Chain;
 import nl.vu.cs.ajira.chains.ChainLocation;
 import nl.vu.cs.ajira.mgmt.StatisticsCollector;
@@ -35,10 +35,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * 
- * This class provides methods that facilitate the
- * communication between nodes. It creates ports,
- * sends messages, signals.
- *
+ * This class provides methods that facilitate the communication between nodes.
+ * It creates ports, sends messages, signals.
+ * 
  */
 public class NetworkLayer {
 
@@ -90,7 +89,7 @@ public class NetworkLayer {
 	Container<Chain> chainsToSend = new CheckedConcurrentWritableContainer<Chain>(
 			Consts.SIZE_BUFFERS_CHAIN_SEND);
 
-	Factory<WritableContainer<TupleSerializer>> bufferFactory = null;
+	Factory<WritableContainer<WritableTuple>> bufferFactory = null;
 
 	protected boolean monitorCounters = false;
 
@@ -111,19 +110,19 @@ public class NetworkLayer {
 
 	/**
 	 * Sets the bufferFactory of the class.
+	 * 
 	 * @param bufferFactory
-	 * 			The factory used for generating buffers 
-	 * 			(buffer allocation and memory management).
+	 *            The factory used for generating buffers (buffer allocation and
+	 *            memory management).
 	 */
 	public void setBufferFactory(
-			Factory<WritableContainer<TupleSerializer>> bufferFactory) {
+			Factory<WritableContainer<WritableTuple>> bufferFactory) {
 		this.bufferFactory = bufferFactory;
 	}
 
 	/**
 	 * 
-	 * @return
-	 * 		The NetworkLayer instance of the class.
+	 * @return The NetworkLayer instance of the class.
 	 */
 	public static NetworkLayer getInstance() {
 		return instance;
@@ -133,28 +132,28 @@ public class NetworkLayer {
 
 	/**
 	 * 
-	 * @return
-	 * 		The server.
+	 * @return The server.
 	 */
 	public IbisIdentifier getServer() {
 		return server;
 	}
 
 	/**
-	 * Adds a new chain at the list of chains 
-	 * that need to be send.
+	 * Adds a new chain at the list of chains that need to be send.
+	 * 
 	 * @param chain
-	 * 		The chain that is added at the list.
+	 *            The chain that is added at the list.
 	 */
 	public void sendChain(Chain chain) {
 		chainsToSend.add(chain);
 	}
 
 	/**
-	 * Adds the chains from the parameter to 
-	 * the list of chains that need to be send.
+	 * Adds the chains from the parameter to the list of chains that need to be
+	 * send.
+	 * 
 	 * @param chainsToProcess
-	 * 			A container of chains that need to be processed.
+	 *            A container of chains that need to be processed.
 	 */
 	public void sendChains(WritableContainer<Chain> chainsToProcess) {
 		chainsToSend.addAll(chainsToProcess);
@@ -163,9 +162,14 @@ public class NetworkLayer {
 	/**
 	 * 
 	 * @param chain
+	 *            <<<<<<< HEAD
+	 * @param newChildren
+	 *            ======= The chain that is added at the ChainTerminator.
+	 *            >>>>>>> refs/remotes/origin/master
 	 */
-	public void signalChainTerminated(Chain chain) {
-		terminator.addChain(chain);
+	public void signalChainTerminated(Chain chain,
+			Map<Long, List<Integer>> additionalCounters) {
+		terminator.addChain(chain, additionalCounters);
 	}
 
 	/**
@@ -198,8 +202,8 @@ public class NetworkLayer {
 	}
 
 	/**
-	 * The server waits until all ibises have send
-	 * a "ready" signal to the server.
+	 * The server waits until all ibises have send a "ready" signal to the
+	 * server.
 	 */
 	public void waitUntilAllReady() {
 		int n = getNumberNodes() - 1;
@@ -214,9 +218,9 @@ public class NetworkLayer {
 				}
 			}
 			try {
-			    Thread.sleep(100);
+				Thread.sleep(100);
 			} catch (InterruptedException e) {
-			    // ignore
+				// ignore
 			}
 		}
 	}
@@ -230,12 +234,10 @@ public class NetworkLayer {
 	}
 
 	/**
-	 * Creates a new Ibis instance. Waits for all
-	 * the ibises from the pool to join. Keeps 
-	 * track of the identifier of every Ibis.
-	 * The server is elected to be on the first
-	 * partition. It is created a monitor for
-	 * each ibis.  
+	 * Creates a new Ibis instance. Waits for all the ibises from the pool to
+	 * join. Keeps track of the identifier of every Ibis. The server is elected
+	 * to be on the first partition. It is created a monitor for each ibis.
+	 * 
 	 * @throws Exception
 	 */
 	public void startIbis() throws Exception {
@@ -245,8 +247,8 @@ public class NetworkLayer {
 					requestPortType, queryPortType, mgmtRequestPortType,
 					broadcastPortType);
 
-			poolSize = Integer.valueOf(System.getProperty("ibis.pool.size",
-					"1"));
+			poolSize = Integer.valueOf(System
+					.getProperty("ibis.pool.size", "1"));
 
 			assignedPartitions = new IbisIdentifier[poolSize];
 
@@ -306,13 +308,12 @@ public class NetworkLayer {
 	}
 
 	/**
-	 * Starts the threads corresponding to the
-	 * ChainTerminator and ChainSender. Enables
-	 * the connections for the ports and creates 
-	 * ports between each pair of ibises.
+	 * Starts the threads corresponding to the ChainTerminator and ChainSender.
+	 * Enables the connections for the ports and creates ports between each pair
+	 * of ibises.
 	 * 
 	 * @param context
-	 * 		Current context.
+	 *            Current context.
 	 */
 	public void startupConnections(Context context) {
 		stats = context.getStatisticsCollector();
@@ -384,10 +385,8 @@ public class NetworkLayer {
 
 	/**
 	 * 
-	 * @return
-	 * 		The id of the partition.
-	 * 		Is the position in the assignedPartitions 
-	 * 		array of the ibis.
+	 * @return The id of the partition. Is the position in the
+	 *         assignedPartitions array of the ibis.
 	 */
 	public int getMyPartition() {
 		return partitionId;
@@ -395,8 +394,7 @@ public class NetworkLayer {
 
 	/**
 	 * 
-	 * @return
-	 * 		The number of partitions (ibisses).
+	 * @return The number of partitions (ibisses).
 	 */
 	public int getNumberNodes() {
 		if (assignedPartitions == null)
@@ -425,31 +423,25 @@ public class NetworkLayer {
 	/**
 	 * 
 	 * @param receiver
-	 * 		The identifier of the Ibis that will 
-	 * 		receive the message.
-	 * @return
-	 * 		A new WriteMessage object constructed for
-	 * 		the parameters of the method. 
+	 *            The identifier of the Ibis that will receive the message.
+	 * @return A new WriteMessage object constructed for the parameters of the
+	 *         method.
 	 */
 	public WriteMessage getMessageToSend(IbisIdentifier receiver) {
 		return getMessageToSend(receiver, nameReceiverPort);
 	}
 
 	/**
-	 * Creates a new message for the port
-	 * that has the name of the receiverPort
-	 * concatenated with the name of the
-	 * receiver. If such a port does not exists
-	 * it is created.   
+	 * Creates a new message for the port that has the name of the receiverPort
+	 * concatenated with the name of the receiver. If such a port does not
+	 * exists it is created.
 	 * 
 	 * @param receiver
-	 * 		The identifier of the Ibis that will 
-	 * 		receive the message.
-	 * @param receiverPort 
-	 * 		The name of the port.		
-	 * @return
-	 * 		A new WriteMessage object constructed for
-	 * 		the parameters of the method. 
+	 *            The identifier of the Ibis that will receive the message.
+	 * @param receiverPort
+	 *            The name of the port.
+	 * @return A new WriteMessage object constructed for the parameters of the
+	 *         method.
 	 */
 	public WriteMessage getMessageToSend(IbisIdentifier receiver,
 			String receiverPort) {
@@ -486,13 +478,14 @@ public class NetworkLayer {
 	}
 
 	/**
-	 *  
+	 * 
 	 * @param index
-	 * 		The position of the IbisIdentifier 
-	 * 		that is looked.
-	 * @return
-	 * 		The IbisIdentifier found at the 
-	 * 		position index.
+	 *            <<<<<<< HEAD The position of the IbisIdentifier that is
+	 *            looked.
+	 * @return The IbisIdentifier found at the position index. ======= The
+	 *         position of the IbisIdentifier that is looked (The node id).
+	 * @return The IbisIdentifier found at the position index (The IbisIdentifer
+	 *         corresponding to the node id). >>>>>>> refs/remotes/origin/master
 	 */
 	public IbisIdentifier getPeerLocation(int index) {
 		return assignedPartitions[index];
@@ -501,9 +494,8 @@ public class NetworkLayer {
 	/**
 	 * 
 	 * @param id
-	 * 		The identifier of the ibis.
-	 * @return
-	 * 		The id of the IbisIdentifier.
+	 *            The identifier of the ibis.
+	 * @return The id of the IbisIdentifier.
 	 */
 	public int getPeerId(IbisIdentifier id) {
 		return assignedIds.get(id.name());
@@ -512,10 +504,8 @@ public class NetworkLayer {
 	/**
 	 * 
 	 * @param loc
-	 * 	
-	 * @return
-	 * 		All or some of the IbisIdentifiers 
-	 * 		depending on the parameter.
+	 * 
+	 * @return All or some of the IbisIdentifiers depending on the parameter.
 	 */
 	public IbisIdentifier[] getPeersLocation(ChainLocation loc) {
 		if (loc.getValue() == ChainLocation.V_ALL_NODES) {
@@ -531,19 +521,17 @@ public class NetworkLayer {
 
 	/**
 	 * 
-	 * Creates a new SendPort and connects
-	 * to the receiver.
+	 * Creates a new SendPort and connects to the receiver.
 	 * 
 	 * @param senderPortType
-	 * 		The type of the sender port. 
+	 *            The type of the sender port.
 	 * @param senderPort
-	 * 		The name of the sender port.
+	 *            The name of the sender port.
 	 * @param receiver
-	 * 		The Ibis instance that receives messages.
+	 *            The Ibis instance that receives messages.
 	 * @param receiverPort
-	 * 		The name of the receiver.
-	 * @return
-	 * 		The port that is created.
+	 *            The name of the receiver.
+	 * @return The port that is created.
 	 */
 	private SendPort startSenderPort(PortType senderPortType,
 			String senderPort, IbisIdentifier receiver, String receiverPort) {
@@ -568,8 +556,7 @@ public class NetworkLayer {
 	}
 
 	/**
-	 * Sends a message to all the peers, 
-	 * except it, telling them to terminate.
+	 * Sends a message to all the peers, except it, telling them to terminate.
 	 * 
 	 * @throws IOException
 	 */
@@ -588,8 +575,7 @@ public class NetworkLayer {
 
 	/**
 	 * 
-	 * @return
-	 * 		The number of bytes sent.
+	 * @return The number of bytes sent.
 	 */
 	public long getSentBytes() {
 		try {
@@ -602,8 +588,7 @@ public class NetworkLayer {
 
 	/**
 	 * 
-	 * @return
-	 * 		The number of messages sent.
+	 * @return The number of messages sent.
 	 */
 	public long getSentMessages() {
 		try {
@@ -617,8 +602,7 @@ public class NetworkLayer {
 
 	/**
 	 * 
-	 * @return
-	 * 		The number of bytes received.
+	 * @return The number of bytes received.
 	 */
 	public long getReceivedBytes() {
 		try {
@@ -631,8 +615,7 @@ public class NetworkLayer {
 
 	/**
 	 * 
-	 * @return
-	 * 		The number of messages received.
+	 * @return The number of messages received.
 	 */
 	public long getReceivedMessages() {
 		try {
@@ -663,14 +646,13 @@ public class NetworkLayer {
 	}
 
 	/**
-	 * Finishes sending the message msg and adds at 
-	 * the counters informations about the sending
-	 * time and the bytes that were sent.
+	 * Finishes sending the message msg and adds at the counters informations
+	 * about the sending time and the bytes that were sent.
 	 * 
 	 * @param msg
-	 * 		The message that was sent. 
+	 *            The message that was sent.
 	 * @param submissionId
-	 * 		The subbmission id.
+	 *            The subbmission id.
 	 * @throws IOException
 	 */
 	public void finishMessage(WriteMessage msg, int submissionId)
@@ -678,7 +660,8 @@ public class NetworkLayer {
 		SendPort p = msg.localPort();
 		long bytes = msg.finish();
 		long startTime = timers.get(p.name());
-		stats.addCounter(0, submissionId, "NetworkLayer: time sending msgs (ms)",
+		stats.addCounter(0, submissionId,
+				"NetworkLayer: time sending msgs (ms)",
 				System.currentTimeMillis() - startTime);
 		stats.addCounter(0, submissionId, "NetworkLayer: bytes sent", bytes);
 		// stats.addCounter(0, submissionId, "Messages sent", 1);
@@ -699,14 +682,25 @@ public class NetworkLayer {
 
 	/**
 	 * 
-	 * @return
-	 * 		A WriteMessge object for the broadcast port.
+	 * @return A WriteMessge object for the broadcast port.
 	 * @throws IOException
 	 */
 	public WriteMessage getMessageToBroadcast() throws IOException {
 		return broadcastPort.newMessage();
 	}
 
+	/**
+	 * This method requests to execute custom code on every node.
+	 * 
+	 * @param nodeId
+	 *            The node id.
+	 * @param submissionId
+	 *            The submission id.
+	 * @param className
+	 *            The name of the class.
+	 * @return True if the operation was successfully completed, false
+	 *         otherwise.
+	 */
 	public boolean executeRemoteCode(int nodeId, int submissionId,
 			String className) {
 		try {
@@ -747,6 +741,14 @@ public class NetworkLayer {
 		return false;
 	}
 
+	/**
+	 * 
+	 * @param submissionId
+	 *            The submission id.
+	 * @param keys
+	 *            The array of key Objects that is broadcast.
+	 * @return The list of remaining objects received.
+	 */
 	public List<Object[]> retrieveObjects(int submissionId, Object[] keys) {
 		try {
 			int c;
@@ -785,6 +787,16 @@ public class NetworkLayer {
 		return null;
 	}
 
+	/**
+	 * Broadcasts the arrays of objects from the parameters.
+	 * 
+	 * @param submissionId
+	 *            The submission id.
+	 * @param keys
+	 *            The array of key Objects that is broadcast.
+	 * @param values
+	 *            The array of value Objects that is broadcast.
+	 */
 	public void broadcastObjects(int submissionId, Object[] keys,
 			Object[] values) {
 		try {
@@ -817,6 +829,16 @@ public class NetworkLayer {
 		}
 	}
 
+	/**
+	 * Broadcasts the objects from the parameters.
+	 * 
+	 * @param submissionId
+	 *            The submission id.
+	 * @param key
+	 *            The key Object that is broadcast.
+	 * @param value
+	 *            The value Object that is broadcast.
+	 */
 	public void broadcastObject(int submissionId, Object key, Object value) {
 		try {
 			int c;
@@ -849,8 +871,7 @@ public class NetworkLayer {
 	}
 
 	/**
-	 * It broadcast to every Ibis to 
-	 * start monitoring.
+	 * It broadcast to every Ibis to start monitoring.
 	 * 
 	 * @throws IOException
 	 */
@@ -861,10 +882,9 @@ public class NetworkLayer {
 			msg.finish();
 		}
 	}
-	
+
 	/**
-	 * It broadcast to every Ibis to 
-	 * stop monitoring.  
+	 * It broadcast to every Ibis to stop monitoring.
 	 * 
 	 * @throws IOException
 	 */
@@ -876,7 +896,18 @@ public class NetworkLayer {
 		}
 	}
 
-
+	/**
+	 * It sends the objects key and value to the node with the id nodeId.
+	 * 
+	 * @param submissionId
+	 *            The submission id.
+	 * @param nodeId
+	 *            The node id.
+	 * @param key
+	 *            The key Object that is send.
+	 * @param value
+	 *            The value Object that is send.
+	 */
 	public void sendObject(int submissionId, int nodeId, Object key,
 			Object value) {
 		IbisIdentifier id = getPeerLocation(nodeId);
@@ -911,11 +942,15 @@ public class NetworkLayer {
 
 	}
 
+	/**
+	 * Adds the chain to the list of terminated chains.
+	 * 
+	 * @param chain
+	 *            The chain that is added at the list of terminated chains.
+	 * @param exception
+	 *            The exception thrown when the chain failed.
+	 */
 	public void signalChainFailed(Chain chain, Throwable exception) {
 		terminator.addFailedChain(chain, exception);
-	}
-
-	public void signalChainHasRootChains(Chain chain, int generatedChains) {
-		terminator.addChainGeneratedRoots(chain, generatedChains);
 	}
 }

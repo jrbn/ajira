@@ -6,6 +6,7 @@ import ibis.ipl.WriteMessage;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.chains.Chain;
@@ -13,39 +14,83 @@ import nl.vu.cs.ajira.chains.Chain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * This class keep track of the chains that have terminated and sends messages
+ * to the corresponding nodes informing that the chain has terminated.
+ * 
+ */
 class ChainTerminator implements Runnable {
 
+	/**
+	 * 
+	 * This class is used to keep informations about a chain.
+	 * 
+	 */
 	public static class ChainInfo {
 
 		public final int nodeId;
 		public final int submissionId;
 		public final long chainId;
 		public final long parentChainId;
-		public final int generatedRootChains;
 		public final int nchildren;
 		public final boolean failed;
 		public final Throwable exception;
+		public final long[] additionalChainCounters;
+		public final int[] additionalChainValues;
 
+		/**
+		 * Custom constructor.
+		 * 
+		 * @param nodeId
+		 *            The id of the node.
+		 * @param submissionId
+		 *            The submission id.
+		 * @param chainId
+		 *            The id of the chain.
+		 * @param parentChainId
+		 *            The id of the parent chain.
+		 * @param nchildren
+		 *            The number of chain children.
+		 * @param generatedRootChains
+		 *            The number of generated root chains.
+		 * 
+		 */
 		public ChainInfo(int nodeId, int submissionId, long chainId,
-				long parentChainId, int nchildren, int generatedRootChains) {
+				long parentChainId, int nchildren,
+				long[] additionalChainCounters, int[] additionalChainValues) {
 			this(nodeId, submissionId, chainId, parentChainId, nchildren,
-					generatedRootChains, null);
+					additionalChainCounters, additionalChainValues, null);
 		}
 
+		/**
+		 * Custom constructor.
+		 * 
+		 * @param nodeId
+		 *            The id of the node.
+		 * @param submissionId
+		 *            The submission id.
+		 * @param chainId
+		 *            The id of the chain.
+		 * @param parentChainId
+		 *            The id of the parent chain.
+		 * @param nchildren
+		 *            The number of chain children.
+		 * @param generatedRootChains
+		 *            The number of generated root chains.
+		 * @param exception
+		 *            The exception thrown during the chain's process.
+		 */
 		public ChainInfo(int nodeId, int submissionId, long chainId,
-				long parentChainId, int nchildren, int generatedRootChains,
+				long parentChainId, int nchildren,
+				long[] additionalChainCounters, int[] additionalChainValues,
 				Throwable exception) {
 			this.nodeId = nodeId;
 			this.submissionId = submissionId;
 			this.chainId = chainId;
 			this.parentChainId = parentChainId;
 			this.nchildren = nchildren;
-			this.generatedRootChains = generatedRootChains;
-			if (log.isDebugEnabled()) {
-				if (generatedRootChains != 0) {
-					log.debug("GeneratedRootChains = " + generatedRootChains, new Throwable());
-				}
-			}
+			this.additionalChainCounters = additionalChainCounters;
+			this.additionalChainValues = additionalChainValues;
 			if (exception != null) {
 				failed = true;
 				this.exception = exception;
@@ -55,20 +100,26 @@ class ChainTerminator implements Runnable {
 			}
 		}
 
+		/**
+		 * Custom constructor.
+		 * 
+		 * @param nodeId
+		 *            The id of the node.
+		 * @param submissionId
+		 *            The submission id.
+		 * @param generatedRootChains
+		 *            The number of generated root chains.
+		 */
 		public ChainInfo(int nodeId, int submissionId, int generatedRootChains) {
 			this.nodeId = nodeId;
 			this.submissionId = submissionId;
 			this.chainId = -1;
-			this.generatedRootChains = generatedRootChains;
-			if (log.isDebugEnabled()) {
-				if (generatedRootChains != 0) {
-					log.debug("GeneratedRootChains = " + generatedRootChains, new Throwable());
-				}
-			}
 			this.parentChainId = -2;
 			this.failed = false;
 			this.exception = null;
 			this.nchildren = 0;
+			this.additionalChainCounters = null;
+			this.additionalChainValues = null;
 		}
 	}
 
@@ -78,10 +129,24 @@ class ChainTerminator implements Runnable {
 	private final List<ChainInfo> chainsTerminated = Collections
 			.synchronizedList(new LinkedList<ChainTerminator.ChainInfo>());
 
+	/**
+	 * Custom constructor.
+	 * 
+	 * @param context
+	 *            Current context.
+	 */
 	public ChainTerminator(Context context) {
 		this.context = context;
 	}
 
+	/**
+	 * Adds the informations about the chain to the list of terminated chains
+	 * and notifies that a chain is in the list. Therefore, it's corresponding
+	 * messages are sent.
+	 * 
+	 * @param ch
+	 *            The informations about a chain.
+	 */
 	public void addInfo(ChainInfo ch) {
 		synchronized (chainsTerminated) {
 			chainsTerminated.add(ch);
@@ -89,28 +154,59 @@ class ChainTerminator implements Runnable {
 		}
 	}
 
+	/**
+	 * Adds the informations of a chain to the list of terminated chains.
+	 * 
+	 * @param chain
+	 *            The chain whose informations are added at the list of
+	 *            terminated chains.
+	 * @param e
+	 *            The exception thrown when the chain failed.
+	 */
 	public void addFailedChain(Chain chain, Throwable e) {
 		ChainInfo ch = new ChainInfo(chain.getSubmissionNode(),
 				chain.getSubmissionId(), chain.getChainId(),
-				chain.getParentChainId(), chain.getTotalChainChildren(),
-				chain.getGeneratedRootChains(), e);
+				chain.getParentChainId(), chain.getTotalChainChildren(), null,
+				null, e);
 		addInfo(ch);
 	}
 
-	public void addChain(Chain chain) {
-		ChainInfo ch = new ChainInfo(chain.getSubmissionNode(),
-				chain.getSubmissionId(), chain.getChainId(),
-				chain.getParentChainId(), chain.getTotalChainChildren(),
-				chain.getGeneratedRootChains());
+	/**
+	 * Adds the informations of a chain to the list of terminated chains.
+	 * 
+	 * @param chain
+	 *            The chain whose informations are added at the list of
+	 *            terminated chains.
+	 */
+	public void addChain(Chain chain,
+			Map<Long, List<Integer>> additionalCounters) {
+		ChainInfo ch = null;
+		if (additionalCounters != null && additionalCounters.size() > 0) {
+			long[] chains = new long[additionalCounters.size()];
+			int[] values = new int[additionalCounters.size()];
+			int i = 0;
+			for (Map.Entry<Long, List<Integer>> entry : additionalCounters
+					.entrySet()) {
+				chains[i] = entry.getKey();
+				values[i] = entry.getValue().size();
+			}
+			ch = new ChainInfo(chain.getSubmissionNode(),
+					chain.getSubmissionId(), chain.getChainId(),
+					chain.getParentChainId(), chain.getTotalChainChildren(),
+					chains, values);
+		} else {
+			ch = new ChainInfo(chain.getSubmissionNode(),
+					chain.getSubmissionId(), chain.getChainId(),
+					chain.getParentChainId(), chain.getTotalChainChildren(),
+					null, null);
+		}
 		addInfo(ch);
 	}
 
-	public void addChainGeneratedRoots(Chain chain, int generatedChains) {
-		ChainInfo ch = new ChainInfo(chain.getSubmissionNode(),
-				chain.getSubmissionId(), chain.getGeneratedRootChains());
-		addInfo(ch);
-	}
-
+	/**
+	 * For each chain from the chainsTreminated it sends a message to the
+	 * corresponding nodes informing that the chain has terminated.
+	 */
 	@Override
 	public void run() {
 		ChainInfo header;
@@ -132,7 +228,8 @@ class ChainTerminator implements Runnable {
 						context.getSubmissionsRegistry().updateCounters(
 								header.submissionId, header.chainId,
 								header.parentChainId, header.nchildren,
-								header.generatedRootChains);
+								header.additionalChainCounters,
+								header.additionalChainValues);
 					} else {
 						IbisIdentifier identifier = ibis
 								.getPeerLocation(header.nodeId);
@@ -144,7 +241,17 @@ class ChainTerminator implements Runnable {
 						msg.writeLong(header.chainId);
 						msg.writeLong(header.parentChainId);
 						msg.writeInt(header.nchildren);
-						msg.writeInt(header.generatedRootChains);
+
+						if (header.additionalChainCounters != null) {
+							msg.writeInt(header.additionalChainCounters.length);
+							for (int i = 0; i < header.additionalChainCounters.length; ++i) {
+								msg.writeLong(header.additionalChainCounters[i]);
+								msg.writeInt(header.additionalChainValues[i]);
+							}
+						} else {
+							msg.writeInt(0);
+						}
+
 						ibis.finishMessage(msg, header.submissionId);
 						if (log.isDebugEnabled()) {
 							log.debug("Sent message with id 2 to " + identifier);
@@ -154,7 +261,8 @@ class ChainTerminator implements Runnable {
 					// Broadcast to all the nodes that the submission ID
 					// should be removed.
 					if (localMode) {
-						context.cleanupSubmission(header.nodeId, header.submissionId, header.exception);
+						context.cleanupSubmission(header.nodeId,
+								header.submissionId, header.exception);
 					} else {
 						WriteMessage msg = ibis.getMessageToBroadcast();
 						msg.writeByte((byte) 2);

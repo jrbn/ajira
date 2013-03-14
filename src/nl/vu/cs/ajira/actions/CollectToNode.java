@@ -4,7 +4,7 @@ import nl.vu.cs.ajira.buckets.Bucket;
 import nl.vu.cs.ajira.data.types.DataProvider;
 import nl.vu.cs.ajira.data.types.TStringArray;
 import nl.vu.cs.ajira.data.types.Tuple;
-import nl.vu.cs.ajira.datalayer.Query;
+import nl.vu.cs.ajira.datalayer.InputQuery;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +34,7 @@ public class CollectToNode extends Action {
 
 	static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
-		public void setupAction(Query query, Object[] params,
+		public void setupAction(InputQuery query, Object[] params,
 				ActionController controller, ActionContext context) {
 			if (params[NODE_ID] == null) {
 				params[NODE_ID] = context.getMyNodeId();
