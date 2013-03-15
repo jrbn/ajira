@@ -317,7 +317,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 	private void incrementChildren(long chain, int v) {
 
-		int remainingActions = nActions - currentAction - 1;
+		int remainingActions = nActions - currentAction;
 		v -= remainingActions;
 
 		List<Integer> value = newChildren.get(chain);
@@ -331,6 +331,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	@Override
 	public ActionOutput split(List<ActionConf> actions, int reconnectAt)
 			throws Exception {
+		chain.setRawSize(rawSizes[currentAction]);
 		long parentChain = 0;
 		if (reconnectAt != -1) {
 			parentChain = responsibleChains[currentAction];
@@ -351,13 +352,14 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 		openedStreams.add(itr);
 
-		incrementChildren(parentChain, reconnectAt);
+		incrementChildren(parentChain, reconnectAt + 1);
 		return itr;
 	}
 
 	@Override
 	public ActionOutput split(ActionConf action, int reconnectAt)
 			throws Exception {
+		chain.setRawSize(rawSizes[currentAction]);
 		long parentChain = 0;
 		if (reconnectAt != -1) {
 			parentChain = responsibleChains[currentAction];
@@ -378,7 +380,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 		openedStreams.add(itr);
 
-		incrementChildren(parentChain, reconnectAt);
+		incrementChildren(parentChain, reconnectAt + 1);
 
 		return itr;
 	}

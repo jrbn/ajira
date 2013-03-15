@@ -322,7 +322,7 @@ public class Chain implements Writable, InputQuery {
 		if (startFromAction != -1) {
 			sizeToCopy = bufferSize;
 			// Remove the first n actions
-			while (startFromAction-- >= 0
+			while (startFromAction-- > 0
 					&& sizeToCopy > Consts.CHAIN_RESERVED_SPACE) {
 				sizeToCopy -= 4;
 				int sizeNameAction = Utils.decodeInt(buffer, sizeToCopy);
