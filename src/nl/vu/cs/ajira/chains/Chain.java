@@ -305,8 +305,26 @@ public class Chain implements Writable, InputQuery {
 		tuple.copyTo(newChain.tuple);
 	}
 
-	public void branch(Chain newChain, long newChainId) {
-		copyTo(newChain);
+	public void branch(Chain newChain, long newChainId, int skippingActions) {
+		if (skippingActions > 0) {
+			int originalSize = bufferSize;
+			// Remove the first n actions
+			while (skippingActions-- > 0
+					&& bufferSize > Consts.CHAIN_RESERVED_SPACE) {
+				bufferSize -= 4;
+				int sizeNameAction = Utils.decodeInt(buffer, bufferSize);
+				bufferSize -= 12 + sizeNameAction; // Skip also the chainID
+				bufferSize -= Utils.decodeInt(buffer, bufferSize);
+				if (buffer[--bufferSize] == 1) {
+					bufferSize -= 8;
+				}
+			}
+			copyTo(newChain);
+			bufferSize = originalSize;
+		} else {
+			copyTo(newChain);
+		}
+
 		// Set up the new chain
 		newChain.setParentChainId(this.getChainId());
 		newChain.setChainId(newChainId);

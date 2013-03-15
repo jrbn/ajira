@@ -70,7 +70,8 @@ class ChainSender implements Runnable {
 					int i = nodes.length - 1;
 					while (i != 0) {
 						chain.branch(supportChain,
-								context.getChainCounter(ac.getSubmissionId()));
+								context.getChainCounter(ac.getSubmissionId()),
+								0);
 
 						if (nodes[i].compareTo(ibis.ibis.identifier()) == 0) {
 							chainsToProcess.add(supportChain);
