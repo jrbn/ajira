@@ -43,7 +43,7 @@ public class ChainHandlerManager {
 			log.debug("Starting Chain Handler " + j + " ...");
 			ChainHandler handler = new ChainHandler(context);
 			Thread thread = new Thread(handler);
-			thread.setName("Chain Handler");
+			thread.setName("Chain Handler" + j);
 			thread.start();
 			chainHandlers.add(handler);
 		}
@@ -51,7 +51,7 @@ public class ChainHandlerManager {
 
 	public void startSeparateChainHandler(Chain chain) {
 		ChainHandler handler = new ChainHandler(context, chain);
-		ThreadPool.createNew(handler, "Chain Handler");
+		ThreadPool.createNew(handler, "Separate Chain Handler");
 		chainHandlers.add(handler);
 	}
 
