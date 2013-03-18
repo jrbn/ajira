@@ -475,10 +475,19 @@ public class Bucket {
 	 */
 	private void checkFinished() throws IOException {
 
+		if (log.isDebugEnabled()) {
+			log.debug("checkFinished: nChainsReceived = " + nChainsReceived
+					+ ", nBucketReceived = " + nBucketReceived + ", highestSequence = "
+					+ highestSequence + ", children.size() = " + children.size()
+					+ ", receivedMainChain = " + receivedMainChain);
+		}
 		if (nChainsReceived == nBucketReceived && highestSequence != -1
 				&& children.size() == 0 && receivedMainChain) {
 			for (int i = 0; i < highestSequence + 1; ++i)
 				if (sequencesReceived[i] != 0) {
+					if (log.isDebugEnabled()) {
+						log.debug("sequencesReceived[" + i + "] = " + sequencesReceived[i]);
+					}
 					return;
 				}
 			if (log.isDebugEnabled()) {
