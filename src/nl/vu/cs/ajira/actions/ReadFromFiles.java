@@ -21,10 +21,9 @@ public class ReadFromFiles extends Action {
 	public static final String MINIMUM_SPLIT_SIZE = "splitinput.minimumsize";
 	public static final int MINIMUM_FILE_SPLIT = (4 * 1024 * 1024); // 4 MB
 
-	public static final int PATH = 0;
-	public static final String S_PATH = "path";
-	public static final int CUSTOM_READER = 1;
-	public static final String S_CUSTOM_READER = "custom_reader";
+	public static final int S_PATH = 0;
+	public static final int S_CUSTOM_READER = 1;
+	public static final int S_FILE_FILTER = 2;
 
 	static final Logger log = LoggerFactory.getLogger(ReadFromFiles.class);
 
@@ -37,11 +36,11 @@ public class ReadFromFiles extends Action {
 		@Override
 		public void setupAction(InputQuery query, Object[] params,
 				ActionController controller, ActionContext context) {
-			if (params[PATH] != null) {
+			if (params[S_PATH] != null) {
 				query.setInputLayer(Consts.DEFAULT_INPUT_LAYER_ID);
 				query.setQuery(new Query(new TInt(FileLayer.OP_LS),
-						new TString((String) params[PATH]), new TString(
-								FilterHiddenFiles.class.getName())));
+						new TString((String) params[S_PATH]), new TString(
+								(String) params[S_FILE_FILTER])));
 			}
 		}
 	}
@@ -69,14 +68,16 @@ public class ReadFromFiles extends Action {
 
 	@Override
 	public void registerActionParameters(ActionConf conf) {
-		conf.registerParameter(PATH, S_PATH, null, true);
-		conf.registerParameter(CUSTOM_READER, S_CUSTOM_READER, null, false);
+		conf.registerParameter(S_PATH, "path", null, true);
+		conf.registerParameter(S_CUSTOM_READER, "custom reader", null, false);
+		conf.registerParameter(S_FILE_FILTER, "Filter",
+				FilterHiddenFiles.class.getName(), false);
 		conf.registerCustomConfigurator(ParametersProcessor.class);
 	}
 
 	@Override
 	public void startProcess(ActionContext context) throws Exception {
-		customReader = getParamString(CUSTOM_READER);
+		customReader = getParamString(S_CUSTOM_READER);
 		minimumFileSplitSize = context.getSystemParamInt(MINIMUM_SPLIT_SIZE,
 				MINIMUM_FILE_SPLIT);
 		currentFileSplit = new FileCollection();

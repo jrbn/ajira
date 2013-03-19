@@ -80,7 +80,7 @@ public class WordCount {
 		// Read the input files
 		ActionConf action = ActionFactory
 				.getActionConf(ReadFromFiles.class);
-		action.setParamString(ReadFromFiles.PATH, inDir);
+		action.setParamString(ReadFromFiles.S_PATH, inDir);
 		actions.add(action);
 
 		// Count the words
