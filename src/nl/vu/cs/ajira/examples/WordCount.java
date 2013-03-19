@@ -22,6 +22,8 @@ import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.submissions.Job;
 import nl.vu.cs.ajira.submissions.JobFailedException;
 import nl.vu.cs.ajira.submissions.Submission;
+import nl.vu.cs.ajira.utils.Configuration;
+import nl.vu.cs.ajira.utils.Consts;
 
 public class WordCount {
 
@@ -143,6 +145,10 @@ public class WordCount {
 
 		// Start up the cluster
 		Ajira ajira = new Ajira();
+		Configuration conf = ajira.getConfiguration();
+
+		// Init some configuration params of the cluster
+		conf.setInt(Consts.N_PROC_THREADS, 2);
 		ajira.startup();
 
 		// With this command we ensure that we submit the job only once
