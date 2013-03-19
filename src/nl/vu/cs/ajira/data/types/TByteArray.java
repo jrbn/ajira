@@ -89,11 +89,6 @@ public class TByteArray extends SimpleData {
 		}
 	}
 
-	// @Override
-	// public int bytesToStore() throws IOException {
-	// return (array == null) ? 4 : 4 + array.length;
-	// }
-
 	@Override
 	/**
 	 * Copies the array of the current object in the parameters'array.
@@ -139,5 +134,10 @@ public class TByteArray extends SimpleData {
 	 */
 	public boolean equals(SimpleData el) {
 		return compareTo(el) == 0;
+	}
+
+	@Override
+	public int hashCode() {
+		return Arrays.hashCode(array);
 	}
 }

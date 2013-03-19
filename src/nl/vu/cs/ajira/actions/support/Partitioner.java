@@ -8,5 +8,6 @@ public abstract class Partitioner {
 	public void init(ActionContext context) {
 	}
 
-	abstract public int partition(Tuple tuple, int nnodes) throws Exception;
+	abstract public int partition(Tuple tuple, int nnodes,
+			byte[] partition_fields) throws Exception;
 }
