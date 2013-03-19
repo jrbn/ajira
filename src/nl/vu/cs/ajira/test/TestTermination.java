@@ -89,7 +89,7 @@ public class TestTermination {
 		List<ActionConf> actions = new ArrayList<ActionConf>();
 
 		ActionConf c = ActionFactory.getActionConf(ReadFromFiles.class);
-		c.setParamString(ReadFromFiles.PATH, inDir);
+		c.setParamString(ReadFromFiles.S_PATH, inDir);
 		actions.add(c);
 
 		// A
@@ -98,7 +98,7 @@ public class TestTermination {
 		// Read the input files
 		List<ActionConf> branchActions = new ArrayList<ActionConf>();
 		c = ActionFactory.getActionConf(ReadFromFiles.class);
-		c.setParamString(ReadFromFiles.PATH, inDir);
+		c.setParamString(ReadFromFiles.S_PATH, inDir);
 		branchActions.add(c);
 
 		// Split
