@@ -24,7 +24,7 @@ public class GroupBy extends Action {
 		private SimpleData[] key;
 		private int sizeKey;
 		boolean elementAvailable;
-		boolean hasMore;
+		boolean moreGroups;
 
 		private Tuple inputTuple;
 
@@ -46,7 +46,7 @@ public class GroupBy extends Action {
 			}
 			this.outputTuple = TupleFactory.newTuple(sValues);
 
-			this.hasMore = itr.nextTuple();
+			this.moreGroups = true;
 
 			for (int i = 0; i < sizeKey; ++i) {
 				key[i] = DataProvider.getInstance().get(
@@ -55,6 +55,7 @@ public class GroupBy extends Action {
 		}
 
 		public void initKey() {
+
 			this.elementAvailable = true;
 			// Copy the key elements in the internal key data structure
 			for (int i = 0; i < sizeKey; ++i) {
@@ -77,19 +78,22 @@ public class GroupBy extends Action {
 
 				// Move to the next element
 				try {
-					if (hasMore) {
+
+					boolean nextElement = itr.nextTuple();
+					moreGroups = nextElement;
+
+					if (nextElement) {
 						itr.getTuple(inputTuple);
 						for (int i = 0; i < sizeKey && elementAvailable; ++i) {
 							elementAvailable = inputTuple.get(i).equals(key[i]);
 						}
-						hasMore = itr.nextTuple();
 					} else {
 						elementAvailable = false;
 					}
 				} catch (Exception e) {
 					log.error("Error with the iterator", e);
 					elementAvailable = false;
-					hasMore = false;
+					moreGroups = false;
 				}
 			}
 
@@ -128,6 +132,8 @@ public class GroupBy extends Action {
 			byte[] fieldsToSort = (byte[]) params[FIELDS_TO_GROUP];
 			partition.setParamByteArray(PartitionToNodes.SORTING_FIELDS,
 					fieldsToSort);
+			partition.setParamByteArray(PartitionToNodes.BA_PARTITION_FIELDS,
+					fieldsToSort);
 			partition.setParamStringArray(PartitionToNodes.TUPLE_FIELDS,
 					(TStringArray) params[TUPLE_FIELDS]);
 			if (params[NPARTITIONS_PER_NODE] != null) {
@@ -157,14 +163,14 @@ public class GroupBy extends Action {
 	@Override
 	public void process(Tuple tuple, ActionContext context,
 			ActionOutput actionOutput) throws Exception {
+
 		itr = new GroupIterator(context.getInputIterator(), tuple, outputTuple,
 				posFieldsToGroup.length);
 		outputTuple[posFieldsToGroup.length] = new TBag(itr);
-
 		do {
 			itr.initKey();
 			actionOutput.output(outputTuple);
 			itr.resetIterator();
-		} while (itr.hasMore);
+		} while (itr.moreGroups);
 	}
 }

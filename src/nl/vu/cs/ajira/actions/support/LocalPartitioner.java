@@ -13,7 +13,8 @@ public class LocalPartitioner extends Partitioner {
 	}
 
 	@Override
-	public int partition(Tuple tuple, int nnodes) throws Exception {
+	public int partition(Tuple tuple, int nnodes, byte[] partition_fields)
+			throws Exception {
 		return myNode;
 	}
 }

@@ -27,11 +27,13 @@ public class PartitionToNodes extends Action {
 	private static final String S_SORTING_FIELDS = "sorting_fields";
 	public static final int TUPLE_FIELDS = 5;
 	private static final String S_TUPLE_FIELDS = "tuple_fields";
+	public static final int BA_PARTITION_FIELDS = 6;
 
 	static final Logger log = LoggerFactory.getLogger(PartitionToNodes.class);
 
 	private boolean shouldSort;
 	private byte[] sortingFields = null;
+	private byte[] partitionFields = null;
 
 	private byte[] tupleFields = null;
 
@@ -93,6 +95,8 @@ public class PartitionToNodes extends Action {
 		conf.registerParameter(BUCKET_IDS, S_BUCKET_IDS, null, false);
 		conf.registerParameter(SORTING_FIELDS, S_SORTING_FIELDS, null, false);
 		conf.registerParameter(TUPLE_FIELDS, S_TUPLE_FIELDS, null, true);
+		conf.registerParameter(BA_PARTITION_FIELDS, "partition fields", null,
+				false);
 
 		conf.registerCustomConfigurator(ParametersProcessor.class);
 	}
@@ -104,6 +108,7 @@ public class PartitionToNodes extends Action {
 
 		sPartitioner = getParamString(PARTITIONER);
 		nPartitionsPerNode = getParamInt(NPARTITIONS_PER_NODE);
+		partitionFields = getParamByteArray(BA_PARTITION_FIELDS);
 
 		bucketIds = getParamIntArray(BUCKET_IDS);
 		nPartitions = nPartitionsPerNode * context.getNumberNodes();
@@ -132,7 +137,9 @@ public class PartitionToNodes extends Action {
 				partitioner.init(context);
 			}
 
-			int partition = partitioner.partition(inputTuple, nPartitions);
+			int partition = partitioner.partition(inputTuple, nPartitions,
+					partitionFields);
+
 			b = bucketsCache[partition];
 			if (b == null) {
 				int nodeNo = partition / nPartitionsPerNode;
