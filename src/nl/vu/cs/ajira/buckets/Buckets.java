@@ -286,6 +286,7 @@ public class Buckets {
 		int count = 1;
 		Bucket bucket;
 		boolean alerted = false;
+		boolean responsible = false;
 	}
 
 	/**
@@ -393,11 +394,15 @@ public class Buckets {
 				// There was no triple in the bucket OR
 				// the remote node has already been alerted
 				message.writeLong(-1); // Flag
+				if (info != null && responsible) {
+					info.responsible = true;
+				}
 			} else {
 				// There will be something in the bucket, alert
 				// the node responsible with this remote-data.
 				info.alerted = true;
 				message.writeLong(info.bucket.getKey()); // Local bucket key
+				info.responsible = responsible;
 			}
 		}
 
@@ -488,7 +493,8 @@ public class Buckets {
 
 		synchronized (map) {
 			info = map.get(key);
-			if (info == null || !info.alerted) {
+
+			if (info == null || !info.alerted || (responsible && ! info.responsible)) {
 				alertTransfer(submissionNode, submission, node, bucketID,
 						chainId, parentChainId, nchildren, responsible, sort,
 						sortingFields, signature, additionalChildren);
