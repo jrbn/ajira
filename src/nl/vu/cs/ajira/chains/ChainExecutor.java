@@ -408,7 +408,8 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	public Bucket startTransfer(int nodeId, int bucketId, boolean sort,
 			byte[] sortingFields, byte[] signature) throws IOException {
 		Bucket temp = context.getBuckets().startTransfer(submissionNode,
-				submissionId, nodeId, bucketId, sort, null, signature, this);
+				submissionId, nodeId, bucketId, sort, sortingFields, signature,
+				this);
 
 		try {
 			int children = chain.getTotalChainChildren();

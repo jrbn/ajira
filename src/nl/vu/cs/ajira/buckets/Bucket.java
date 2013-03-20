@@ -233,8 +233,7 @@ public class Bucket {
 	 * @throws Exception
 	 */
 	public void addAll(WritableContainer<WritableTuple> newTuplesContainer,
-			boolean isSorted,
-			Factory<WritableContainer<WritableTuple>> factory)
+			boolean isSorted, Factory<WritableContainer<WritableTuple>> factory)
 			throws Exception {
 		// Sync with exBuffer -> cacheBuffer() will be sync'd on Bucket.this,
 		// combineInExBuffers() on both objects.
@@ -477,8 +476,9 @@ public class Bucket {
 
 		if (log.isDebugEnabled()) {
 			log.debug("checkFinished: nChainsReceived = " + nChainsReceived
-					+ ", nBucketReceived = " + nBucketReceived + ", highestSequence = "
-					+ highestSequence + ", children.size() = " + children.size()
+					+ ", nBucketReceived = " + nBucketReceived
+					+ ", highestSequence = " + highestSequence
+					+ ", children.size() = " + children.size()
 					+ ", receivedMainChain = " + receivedMainChain);
 		}
 		if (nChainsReceived == nBucketReceived && highestSequence != -1
@@ -486,7 +486,8 @@ public class Bucket {
 			for (int i = 0; i < highestSequence + 1; ++i)
 				if (sequencesReceived[i] != 0) {
 					if (log.isDebugEnabled()) {
-						log.debug("sequencesReceived[" + i + "] = " + sequencesReceived[i]);
+						log.debug("sequencesReceived[" + i + "] = "
+								+ sequencesReceived[i]);
 					}
 					return;
 				}
@@ -589,8 +590,8 @@ public class Bucket {
 	 */
 	@SuppressWarnings("unchecked")
 	void init(long key, StatisticsCollector stats, int submissionNode,
-			int submissionId, boolean sort, boolean sortRemote, byte[] sortingFields,
-			Factory<WritableContainer<WritableTuple>> fb,
+			int submissionId, boolean sort, boolean sortRemote,
+			byte[] sortingFields, Factory<WritableContainer<WritableTuple>> fb,
 			CachedFilesMerger merger, byte[] signature) {
 		this.key = key;
 		this.fb = fb;
@@ -642,11 +643,9 @@ public class Bucket {
 			}
 
 			this.comparator.init(array);
-			this.serializer = new WritableTuple(sortingFields,
-					signature.length);
+			this.serializer = new WritableTuple(sortingFields, signature.length);
 		} else if (sortRemote) {
-			this.serializer = new WritableTuple(sortingFields,
-					signature.length);
+			this.serializer = new WritableTuple(sortingFields, signature.length);
 		} else {
 			this.serializer = new WritableTuple();
 		}
@@ -1185,7 +1184,7 @@ public class Bucket {
 						return;
 					}
 
-					if (! tmpBuffer.addAll(writeBuffer[currWBuffIndex])) {
+					if (!tmpBuffer.addAll(writeBuffer[currWBuffIndex])) {
 						log.error("OOPS: something wrong!");
 					}
 					writeBuffer[currWBuffIndex].clear();
