@@ -152,7 +152,6 @@ public class Ajira {
 
 			/***** NET *******/
 			NetworkLayer net = NetworkLayer.getInstance();
-			StatisticsCollector stats = new StatisticsCollector(conf, net);
 			boolean serverMode = true;
 
 			String ibisPoolSize = System.getProperty("ibis.pool.size");
@@ -197,6 +196,8 @@ public class Ajira {
 				log.info("Cluster starting up");
 			}
 
+			StatisticsCollector stats = new StatisticsCollector(conf, net);
+			
 			/**** OTHER SHARED DATA STRUCTURES ****/
 			CachedFilesMerger merger = new CachedFilesMerger();
 			Buckets tuplesContainer = new Buckets(stats, merger, net);
