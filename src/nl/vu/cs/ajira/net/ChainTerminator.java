@@ -26,7 +26,7 @@ class ChainTerminator implements Runnable {
 	 * This class is used to keep informations about a chain.
 	 * 
 	 */
-	public static class ChainInfo {
+	private static class ChainInfo {
 
 		public final int nodeId;
 		public final int submissionId;
@@ -51,8 +51,6 @@ class ChainTerminator implements Runnable {
 		 *            The id of the parent chain.
 		 * @param nchildren
 		 *            The number of chain children.
-		 * @param generatedRootChains
-		 *            The number of generated root chains.
 		 * 
 		 */
 		public ChainInfo(int nodeId, int submissionId, long chainId,
@@ -75,8 +73,6 @@ class ChainTerminator implements Runnable {
 		 *            The id of the parent chain.
 		 * @param nchildren
 		 *            The number of chain children.
-		 * @param generatedRootChains
-		 *            The number of generated root chains.
 		 * @param exception
 		 *            The exception thrown during the chain's process.
 		 */

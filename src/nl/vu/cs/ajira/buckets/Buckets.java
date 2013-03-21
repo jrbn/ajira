@@ -34,10 +34,8 @@ public class Buckets {
 	// Buffer factories
 	@SuppressWarnings("unchecked")
 	Class<WritableContainer<WritableTuple>> clazz = (Class<WritableContainer<WritableTuple>>) (Class<?>) WritableContainer.class;
-	// Cannot use the not_sorted factory with Cristi's code.
-	// Factory<WritableContainer<TupleSerializer>> fb_not_sorted = new
-	// Factory<WritableContainer<TupleSerializer>>(
-	// clazz, Consts.TUPLES_CONTAINER_BUFFER_SIZE);
+	Factory<WritableContainer<WritableTuple>> fb_not_sorted = new Factory<WritableContainer<WritableTuple>>(
+			clazz, Consts.TUPLES_CONTAINER_BUFFER_SIZE);
 	Factory<WritableContainer<WritableTuple>> fb_sorted = new Factory<WritableContainer<WritableTuple>>(
 			clazz, true, Consts.TUPLES_CONTAINER_BUFFER_SIZE);
 
@@ -154,13 +152,8 @@ public class Buckets {
 
 		if (bucket == null) {
 			bucket = new Bucket();
-			// if (sort) {
-				bucket.init(key, stats, submissionNode, idSubmission, sort, sortRemote,
-						sortingFields, fb_sorted, merger, signature);
-			// } else {
-			// bucket.init(key, stats, submissionNode, idSubmission, sort,
-			// sortingFields, fb_not_sorted, merger, signature);
-			// }
+			bucket.init(key, stats, submissionNode, idSubmission, sort, sortRemote,
+					sortingFields, sort || sortRemote ? fb_sorted : fb_not_sorted, merger, signature);
 			buckets.put(key, bucket);
 			this.notifyAll();
 		}
@@ -335,7 +328,7 @@ public class Buckets {
 				info = new TransferInfo();
 				// Remote buckets are not sorted (sorting is disabled)
 				info.bucket = getOrCreateBucket(submissionNode, submission,
-						context.getNewBucketID(), false, sort, null,
+						context.getNewBucketID(), false, sort, sortingFields,
 						signature);
 				map.put(key, info);
 			} else {

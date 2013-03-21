@@ -162,10 +162,7 @@ public class NetworkLayer {
 	/**
 	 * 
 	 * @param chain
-	 *            <<<<<<< HEAD
-	 * @param newChildren
-	 *            ======= The chain that is added at the ChainTerminator.
-	 *            >>>>>>> refs/remotes/origin/master
+	 *       The chain that is added at the ChainTerminator.
 	 */
 	public void signalChainTerminated(Chain chain,
 			Map<Long, List<Integer>> additionalCounters) {
@@ -480,12 +477,8 @@ public class NetworkLayer {
 	/**
 	 * 
 	 * @param index
-	 *            <<<<<<< HEAD The position of the IbisIdentifier that is
-	 *            looked.
-	 * @return The IbisIdentifier found at the position index. ======= The
-	 *         position of the IbisIdentifier that is looked (The node id).
-	 * @return The IbisIdentifier found at the position index (The IbisIdentifer
-	 *         corresponding to the node id). >>>>>>> refs/remotes/origin/master
+	 *            The position of the wanted IbisIdentifier.
+	 * @return The IbisIdentifier found at the specified position.
 	 */
 	public IbisIdentifier getPeerLocation(int index) {
 		return assignedPartitions[index];

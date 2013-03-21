@@ -61,10 +61,12 @@ public class Chain implements Writable, InputQuery {
 			listActions.add(conf);
 		}
 	}
+	
+	private static final int CHAIN_RESERVED_SPACE = 39;
 
 	private FlowController controller = new FlowController();
 
-	private int bufferSize = Consts.CHAIN_RESERVED_SPACE;
+	private int bufferSize = CHAIN_RESERVED_SPACE;
 	private final byte[] buffer = new byte[Consts.CHAIN_SIZE];
 	private final Tuple tuple = TupleFactory.newTuple();
 
@@ -310,7 +312,7 @@ public class Chain implements Writable, InputQuery {
 			int originalSize = bufferSize;
 			// Remove the first n actions
 			while (skippingActions-- > 0
-					&& bufferSize > Consts.CHAIN_RESERVED_SPACE) {
+					&& bufferSize > CHAIN_RESERVED_SPACE) {
 				bufferSize -= 4;
 				int sizeNameAction = Utils.decodeInt(buffer, bufferSize);
 				bufferSize -= 12 + sizeNameAction; // Skip also the chainID
@@ -336,12 +338,12 @@ public class Chain implements Writable, InputQuery {
 
 	void customBranch(Chain newChain, long parentChainId, long newChainId,
 			int startFromAction) {
-		int sizeToCopy = Consts.CHAIN_RESERVED_SPACE;
+		int sizeToCopy = CHAIN_RESERVED_SPACE;
 		if (startFromAction != -1) {
 			sizeToCopy = bufferSize;
 			// Remove the first n actions
 			while (startFromAction-- > 0
-					&& sizeToCopy > Consts.CHAIN_RESERVED_SPACE) {
+					&& sizeToCopy > CHAIN_RESERVED_SPACE) {
 				sizeToCopy -= 4;
 				int sizeNameAction = Utils.decodeInt(buffer, sizeToCopy);
 				sizeToCopy -= 12 + sizeNameAction; // Skip also the chainID
@@ -370,7 +372,7 @@ public class Chain implements Writable, InputQuery {
 		int nodeId = 0;
 		int bucketId = 0;
 
-		while (tmpSize > Consts.CHAIN_RESERVED_SPACE && !stopProcessing) {
+		while (tmpSize > CHAIN_RESERVED_SPACE && !stopProcessing) {
 			tmpSize -= 4;
 			int size = Utils.decodeInt(buffer, tmpSize);
 			String sAction = new String(buffer, tmpSize - size, size);
