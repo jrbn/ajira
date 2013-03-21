@@ -266,7 +266,7 @@ public class SubmissionRegistry {
 
 	public void getStatistics(Submission submission) {
 		try {
-			Thread.sleep(500);
+			Thread.sleep(Consts.STATISTICS_COLLECTION_INTERVAL);
 		} catch (InterruptedException e) {
 			// ignore
 		}

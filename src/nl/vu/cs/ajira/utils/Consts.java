@@ -18,6 +18,8 @@ public class Consts {
 	public static final int MAX_SEGMENTS_RECEIVED = 2048;
 
 	public static final int MAX_TUPLE_SENDERS = 8;
+	
+	public static final int STATISTICS_COLLECTION_INTERVAL = 5000;	// In ms. Not too low, it may affect performance.
 
 	public static final int DATATYPE_TLONG = 0;
 	public static final int DATATYPE_TSTRING = 1;

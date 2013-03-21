@@ -2,6 +2,7 @@ package nl.vu.cs.ajira.mgmt;
 
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.chains.ChainHandlerManager;
+import nl.vu.cs.ajira.utils.Consts;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,11 +23,14 @@ public class NodeHouseKeeper implements Runnable {
 
 	@Override
 	public void run() {
+		long lastTime = System.currentTimeMillis();
 		while (true) {
 			try {
 				manager.doHouseKeeping();
-				if (!local) {
+				long tm = System.currentTimeMillis();
+				if (!local && tm - lastTime >= Consts.STATISTICS_COLLECTION_INTERVAL) {
 					stats.sendStatisticsAway();
+					lastTime = tm;
 				}
 				Thread.sleep(500);
 			} catch (Exception e) {
