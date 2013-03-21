@@ -427,7 +427,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			context.getBuckets().alertTransfer(submissionNode, submissionId,
 					nodeId, bucketId, chain.getChainId(),
 					chain.getParentChainId(), children, roots[currentAction],
-					sort, null, signature, newChildren);
+					sort, sortingFields, signature, newChildren);
 		} catch (IOException e) {
 			log.error(e.getMessage(), e);
 			throw e;
