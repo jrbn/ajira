@@ -6,32 +6,6 @@ import java.util.Arrays;
  * This class provides a generalized type of data. It can be used as a
  * collection of different types of elements that extend SimpleData.
  * 
- */
-/**
- * @author Jacopo Urbani
- *
- */
-/**
- * @author Jacopo Urbani
- *
- */
-/**
- * @author Jacopo Urbani
- *
- */
-/**
- * @author Jacopo Urbani
- *
- */
-/**
- * @author Jacopo Urbani
- *
- */
-/**
- * @author Jacopo Urbani
- *
- */
-/**
  * @author Jacopo Urbani
  * 
  */
