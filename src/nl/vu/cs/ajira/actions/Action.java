@@ -12,40 +12,45 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The <code>Action</code> class is the base class for all actions.
- * An action is the building block for Ajira. The heart of an action is its
- * {@link #process(Tuple, ActionContext, ActionOutput)}  method, which processes
- * the input data and provides the data for the next action in the chain.
- * Before processing the data, {@link #startProcess(ActionContext)} is called,
- * once, and when the data is exhausted, {@link #stopProcess(ActionContext, ActionOutput)}
- * is called. Also, actions can be configured with action-specific parameters,
- * through the {@link #registerActionParameters(ActionConf)} method.
+ * The <code>Action</code> class is the base class for all actions. An action is
+ * the building block for Ajira. The heart of an action is its
+ * {@link #process(Tuple, ActionContext, ActionOutput)} method, which processes
+ * the input data and provides the data for the next action in the chain. Before
+ * processing the data, {@link #startProcess(ActionContext)} is called, once,
+ * and when the data is exhausted,
+ * {@link #stopProcess(ActionContext, ActionOutput)} is called. Also, actions
+ * can be configured with action-specific parameters, through the
+ * {@link #registerActionParameters(ActionConf)} method.
  * <p>
  * This abstract class provides default (empty) implementations for
  * {@link #registerActionParameters(ActionConf),
- * {@link #startProcess(ActionContext)}, and {@link #stopProcess(ActionContext, ActionOutput)}. 
- * There is no default implementation for {@link #process(Tuple, ActionContext, ActionOutput)};
- * An action should do something, after all.
- * <p>
- * Ajira provides various actions, but actions can be user-specified as well, see the
- * {@link nl.vu.cs.ajira.examples} package.
+ * 
+ * @link #startProcess(ActionContext)}, and
+ *       {@link #stopProcess(ActionContext, ActionOutput)}. There is no default
+ *       implementation for {@link #process(Tuple, ActionContext, ActionOutput)}
+ *       ; An action should do something, after all.
+ *       <p>
+ *       Ajira provides various actions, but actions can be user-specified as
+ *       well, see the {@link nl.vu.cs.ajira.examples} package.
  */
 public abstract class Action {
 
 	/** The configuration parameters of this action. */
 	private Object[] valuesParameters = null;
-	
+
 	/** Logging. */
-	private static final Logger log = LoggerFactory.getLogger(Action.class);
+	protected static final Logger log = LoggerFactory.getLogger(Action.class);
 
 	/***** ACTION PROCESSING ******/
 
 	/**
-	 * Overriding this method allows the user (action implementor) to store parameter
-	 * specifications in the {@link ActionConf} object, by means of the
-	 * {@link ActionConf#registerParameter(int, String, Object, boolean)}
+	 * Overriding this method allows the user (action implementor) to store
+	 * parameter specifications in the {@link ActionConf} object, by means of
+	 * the {@link ActionConf#registerParameter(int, String, Object, boolean)}
 	 * method.
-	 * @param conf the action configuration.
+	 * 
+	 * @param conf
+	 *            the action configuration.
 	 */
 	protected void registerActionParameters(ActionConf conf) {
 		// empty default implementation.
@@ -53,7 +58,10 @@ public abstract class Action {
 
 	/**
 	 * Overriding this method allows for initialization of the process.
-	 * @param context allows for access to the context in which this action is executed.
+	 * 
+	 * @param context
+	 *            allows for access to the context in which this action is
+	 *            executed.
 	 * @throws Exception
 	 */
 	public void startProcess(ActionContext context) throws Exception {
@@ -62,14 +70,19 @@ public abstract class Action {
 
 	/**
 	 * This is the only method that <strong>must</strong> be specified by the
-	 * specific <code>Action</code> implementation. It is called once for each input
-	 * tuple (specified by the first parameter). Output tuples must be passed on to the
-	 * {@link ActionOutput#output(Tuple)} or the {@link ActionOutput#output(nl.vu.cs.ajira.data.types.SimpleData...)}
+	 * specific <code>Action</code> implementation. It is called once for each
+	 * input tuple (specified by the first parameter). Output tuples must be
+	 * passed on to the {@link ActionOutput#output(Tuple)} or the
+	 * {@link ActionOutput#output(nl.vu.cs.ajira.data.types.SimpleData...)}
 	 * method.
 	 * 
-	 * @param tuple the input tuple.
-	 * @param context allows for access to the context in which this action is executed.
-	 * @param actionOutput to pass on the result of processing the input tuple. 
+	 * @param tuple
+	 *            the input tuple.
+	 * @param context
+	 *            allows for access to the context in which this action is
+	 *            executed.
+	 * @param actionOutput
+	 *            to pass on the result of processing the input tuple.
 	 * @throws Exception
 	 */
 	public abstract void process(Tuple tuple, ActionContext context,
@@ -78,8 +91,11 @@ public abstract class Action {
 	/**
 	 * Overriding this method allows for finishing up the process.
 	 * 
-	 * @param context allows for access to the context in which this action is executed.
-	 * @param actionOutput to pass on possible left-overs.
+	 * @param context
+	 *            allows for access to the context in which this action is
+	 *            executed.
+	 * @param actionOutput
+	 *            to pass on possible left-overs.
 	 * @throws Exception
 	 */
 	public void stopProcess(ActionContext context, ActionOutput actionOutput)
@@ -94,14 +110,17 @@ public abstract class Action {
 	}
 
 	/**
-	 * Obtains the parameter, supposed to be of type <code>integer</code>, at the specified position.
-	 * @param pos the index of the required parameter.
+	 * Obtains the parameter, supposed to be of type <code>integer</code>, at
+	 * the specified position.
+	 * 
+	 * @param pos
+	 *            the index of the required parameter.
 	 * @return the value of the parameter.
 	 * @throws IllegalArgumentException
-	 * 			when there are no parameters, or the specified position is
-	 * 			out of range, or the parameter is null.
+	 *             when there are no parameters, or the specified position is
+	 *             out of range, or the parameter is null.
 	 * @throws ClassCastException
-	 * 			when the specified parameter is of the wrong type.
+	 *             when the specified parameter is of the wrong type.
 	 */
 	protected final int getParamInt(int pos) {
 		Object obj = getParam(pos);
@@ -112,14 +131,17 @@ public abstract class Action {
 	}
 
 	/**
-	 * Obtains the parameter, supposed to be of type <code>long</code>, at the specified position.
-	 * @param pos the index of the required parameter.
+	 * Obtains the parameter, supposed to be of type <code>long</code>, at the
+	 * specified position.
+	 * 
+	 * @param pos
+	 *            the index of the required parameter.
 	 * @return the value of the parameter.
 	 * @throws IllegalArgumentException
-	 * 			when there are no parameters, or the specified position is
-	 * 			out of range, or the parameter is null.
+	 *             when there are no parameters, or the specified position is
+	 *             out of range, or the parameter is null.
 	 * @throws ClassCastException
-	 * 			when the specified parameter is of the wrong type.
+	 *             when the specified parameter is of the wrong type.
 	 */
 	protected final long getParamLong(int pos) {
 		Object obj = getParam(pos);
@@ -130,14 +152,17 @@ public abstract class Action {
 	}
 
 	/**
-	 * Obtains the parameter, supposed to be of type <code>boolean</code>, at the specified position.
-	 * @param pos the index of the required parameter.
+	 * Obtains the parameter, supposed to be of type <code>boolean</code>, at
+	 * the specified position.
+	 * 
+	 * @param pos
+	 *            the index of the required parameter.
 	 * @return the value of the parameter.
 	 * @throws IllegalArgumentException
-	 * 			when there are no parameters, or the specified position is
-	 * 			out of range, or the parameter is null.
+	 *             when there are no parameters, or the specified position is
+	 *             out of range, or the parameter is null.
 	 * @throws ClassCastException
-	 * 			when the specified parameter is of the wrong type.
+	 *             when the specified parameter is of the wrong type.
 	 */
 	protected final boolean getParamBoolean(int pos) {
 		Object obj = getParam(pos);
@@ -146,16 +171,19 @@ public abstract class Action {
 		}
 		return (Boolean) obj;
 	}
-	
+
 	/**
-	 * Obtains the parameter, supposed to be of type <code>String</code>, at the specified position.
-	 * @param pos the index of the required parameter.
+	 * Obtains the parameter, supposed to be of type <code>String</code>, at the
+	 * specified position.
+	 * 
+	 * @param pos
+	 *            the index of the required parameter.
 	 * @return the value of the parameter.
 	 * @throws IllegalArgumentException
-	 * 			when there are no parameters, or the specified position is
-	 * 			out of range.
+	 *             when there are no parameters, or the specified position is
+	 *             out of range.
 	 * @throws ClassCastException
-	 * 			when the specified parameter is of the wrong type.
+	 *             when the specified parameter is of the wrong type.
 	 */
 	protected final String getParamString(int pos) {
 		return (String) getParam(pos);
@@ -163,11 +191,13 @@ public abstract class Action {
 
 	/**
 	 * Returns the value of the parameter at the specified position.
-	 * @param pos the index of the required parameter.
+	 * 
+	 * @param pos
+	 *            the index of the required parameter.
 	 * @return the value of the parameter.
 	 * @throws IllegalArgumentException
-	 * 			when there are no parameters, or the specified position is
-	 * 			out of range.
+	 *             when there are no parameters, or the specified position is
+	 *             out of range.
 	 */
 	protected final Object getParam(int pos) {
 		if (valuesParameters == null) {
@@ -185,37 +215,42 @@ public abstract class Action {
 
 	/**
 	 * Stores the value of the {@link Writable} at the specified position.
-	 * @param b the {@link Writable} to store into.
-	 * @param pos the index of the required parameter.
+	 * 
+	 * @param b
+	 *            the {@link Writable} to store into.
+	 * @param pos
+	 *            the index of the required parameter.
 	 * @throws IllegalArgumentException
-	 * 			when there are no parameters, or the specified position is
-	 * 			out of range, or an unexpected <code>Writable</code> type is
-	 * 			specified.
+	 *             when there are no parameters, or the specified position is
+	 *             out of range, or an unexpected <code>Writable</code> type is
+	 *             specified.
 	 * @throws ClassCastException
-	 * 			when the specified parameter is of the wrong type.
+	 *             when the specified parameter is of the wrong type.
 	 */
 	protected final void getParamWritable(Writable b, int pos) {
 		Object obj = getParam(pos);
-		if (obj == null) {
-			throw new IllegalArgumentException("The value is null");
-		}
 		try {
-			b.readFrom(new BDataInput((byte[]) obj));
+			if (obj != null)
+				b.readFrom(new BDataInput((byte[]) obj));
 		} catch (IOException e) {
 			throw new IllegalArgumentException(
-					"Unmarshalling exception; possibly a wrong Writable type?", e);
+					"Unmarshalling exception; possibly a wrong Writable type?",
+					e);
 		}
 	}
 
 	/**
-	 * Obtains the parameter, supposed to be of type <code>byte[]</code>, at the specified position.
-	 * @param pos the index of the required parameter.
+	 * Obtains the parameter, supposed to be of type <code>byte[]</code>, at the
+	 * specified position.
+	 * 
+	 * @param pos
+	 *            the index of the required parameter.
 	 * @return the value of the parameter.
 	 * @throws IllegalArgumentException
-	 * 			when there are no parameters, or the specified position is
-	 * 			out of range.
+	 *             when there are no parameters, or the specified position is
+	 *             out of range.
 	 * @throws ClassCastException
-	 * 			when the specified parameter is of the wrong type.
+	 *             when the specified parameter is of the wrong type.
 	 */
 	protected final byte[] getParamByteArray(int pos) {
 		Object o = getParam(pos);
@@ -223,14 +258,17 @@ public abstract class Action {
 	}
 
 	/**
-	 * Obtains the parameter, supposed to be of type <code>int[]</code>, at the specified position.
-	 * @param pos the index of the required parameter.
+	 * Obtains the parameter, supposed to be of type <code>int[]</code>, at the
+	 * specified position.
+	 * 
+	 * @param pos
+	 *            the index of the required parameter.
 	 * @return the value of the parameter.
 	 * @throws IllegalArgumentException
-	 * 			when there are no parameters, or the specified position is
-	 * 			out of range.
+	 *             when there are no parameters, or the specified position is
+	 *             out of range.
 	 * @throws ClassCastException
-	 * 			when the specified parameter is of the wrong type.
+	 *             when the specified parameter is of the wrong type.
 	 */
 	protected final int[] getParamIntArray(int pos) {
 		Object o = getParam(pos);
@@ -241,14 +279,17 @@ public abstract class Action {
 	}
 
 	/**
-	 * Obtains the parameter, supposed to be of type <code>String[]</code>, at the specified position.
-	 * @param pos the index of the required parameter.
+	 * Obtains the parameter, supposed to be of type <code>String[]</code>, at
+	 * the specified position.
+	 * 
+	 * @param pos
+	 *            the index of the required parameter.
 	 * @return the value of the parameter.
 	 * @throws IllegalArgumentException
-	 * 			when there are no parameters, or the specified position is
-	 * 			out of range.
+	 *             when there are no parameters, or the specified position is
+	 *             out of range.
 	 * @throws ClassCastException
-	 * 			when the specified parameter is of the wrong type.
+	 *             when the specified parameter is of the wrong type.
 	 */
 	protected final String[] getParamStringArray(int pos) {
 		Object o = getParam(pos);
