@@ -27,6 +27,13 @@ public class Query implements Writable {
 		this.tuple.set(data);
 	}
 
+	public Query(String[] array) throws Exception {
+		this();
+		SimpleData[] data = new SimpleData[array.length];
+		for (int i = 0; i < data.length; ++i)
+			data[i] = (SimpleData) Class.forName(array[i]).newInstance();
+	}
+
 	public void setElements(SimpleData... data) {
 		tuple.set(data);
 	}

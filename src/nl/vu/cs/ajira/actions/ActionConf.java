@@ -27,12 +27,14 @@ public class ActionConf implements Writable {
 				.getLogger(Configurator.class);
 
 		public void process(InputQuery query, ActionConf conf,
-				ActionController controller, ActionContext context) {
+				ActionController controller, ActionContext context)
+				throws Exception {
 			setupAction(query, conf.valuesParameters, controller, context);
 		}
 
 		public abstract void setupAction(InputQuery query, Object[] params,
-				ActionController controller, ActionContext context);
+				ActionController controller, ActionContext context)
+				throws Exception;
 	}
 
 	static class ParamItem {
