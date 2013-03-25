@@ -176,4 +176,12 @@ public class Tuple {
 		}
 		return hashcode;
 	}
+
+	public String[] getSignature() {
+		String[] signature = new String[nElements];
+		for (int i = 0; i < nElements; ++i) {
+			signature[i] = this.signature[i].getClass().getName();
+		}
+		return signature;
+	}
 }
