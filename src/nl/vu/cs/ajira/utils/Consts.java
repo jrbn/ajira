@@ -5,7 +5,7 @@ public class Consts {
 	/********** DEFAULT VALUES **********/
 	public static final int MAX_N_ACTIONS = 128;
 	public static final int CHAIN_SIZE = 10 * 1024;
-	
+
 	public static final int SIZE_BUFFERS_CHAIN_SEND = 4 * 1024 * 1024;
 	public static final int SIZE_BUFFERS_CHAINS_PROCESS = 64 * 1024 * 1024;
 	public static final int TUPLES_CONTAINER_BUFFER_SIZE = 128 * 1024 * 1024;
@@ -18,8 +18,12 @@ public class Consts {
 	public static final int MAX_SEGMENTS_RECEIVED = 2048;
 
 	public static final int MAX_TUPLE_SENDERS = 8;
-	
-	public static final int STATISTICS_COLLECTION_INTERVAL = 5000;	// In ms. Not too low, it may affect performance.
+
+	public static final int STATISTICS_COLLECTION_INTERVAL = 1000; // In ms. Not
+																	// too low,
+																	// it may
+																	// affect
+																	// performance.
 
 	public static final int DATATYPE_TLONG = 0;
 	public static final int DATATYPE_TSTRING = 1;
