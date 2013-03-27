@@ -74,7 +74,7 @@ public class ReadFromFiles extends Action {
 		conf.registerParameter(S_CUSTOM_READER, "custom reader", null, false);
 		conf.registerParameter(S_FILE_FILTER, "Filter",
 				FilterHiddenFiles.class.getName(), false);
-		conf.registerCustomConfigurator(ParametersProcessor.class);
+		conf.registerCustomConfigurator(new ParametersProcessor());
 	}
 
 	@Override

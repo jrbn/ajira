@@ -150,7 +150,7 @@ public class GroupBy extends Action {
 		conf.registerParameter(TUPLE_FIELDS, "fields", null, true);
 		conf.registerParameter(NPARTITIONS_PER_NODE, "partitionsPerNode", null,
 				false);
-		conf.registerCustomConfigurator(Configurator.class);
+		conf.registerCustomConfigurator(new Configurator());
 	}
 
 	@Override

@@ -43,7 +43,7 @@ public class QueryInputLayer extends Action {
 		conf.registerParameter(I_INPUTLAYER, "input layer",
 				Consts.DEFAULT_INPUT_LAYER_ID, false);
 		conf.registerParameter(SA_SIGNATURE_QUERY, "signature", null, false);
-		conf.registerCustomConfigurator(ParametersProcessor.class);
+		conf.registerCustomConfigurator(new ParametersProcessor());
 	}
 
 	@Override

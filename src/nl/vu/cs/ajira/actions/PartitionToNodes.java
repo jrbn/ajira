@@ -98,7 +98,7 @@ public class PartitionToNodes extends Action {
 		conf.registerParameter(BA_PARTITION_FIELDS, "partition fields", null,
 				false);
 
-		conf.registerCustomConfigurator(ParametersProcessor.class);
+		conf.registerCustomConfigurator(new ParametersProcessor());
 	}
 
 	@Override

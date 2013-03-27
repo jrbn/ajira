@@ -62,7 +62,7 @@ public class CollectToNode extends Action {
 		conf.registerParameter(SORT, S_SORT, false, false);
 		conf.registerParameter(SORTING_FIELDS, S_SORTING_FIELDS, null, false);
 		conf.registerParameter(TUPLE_FIELDS, S_TUPLE_FIELDS, null, true);
-		conf.registerCustomConfigurator(ParametersProcessor.class);
+		conf.registerCustomConfigurator(new ParametersProcessor());
 	}
 
 	@Override

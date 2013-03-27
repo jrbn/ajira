@@ -42,7 +42,7 @@ public class WriteToBucket extends Action {
 	public void registerActionParameters(ActionConf conf) {
 		conf.registerParameter(BUCKET_ID, S_BUCKET_ID, null, true);
 		conf.registerParameter(TUPLE_FIELDS, S_TUPLE_FIELDS, null, true);
-		conf.registerCustomConfigurator(ParametersProcessor.class);
+		conf.registerCustomConfigurator(new ParametersProcessor());
 	}
 
 	@Override
