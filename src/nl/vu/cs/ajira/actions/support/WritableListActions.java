@@ -21,12 +21,11 @@ public class WritableListActions implements Writable {
 		setActions(listActions);
 	}
 
-	public void setActions(List<ActionConf> actions) {
-		this.actions = actions;
-	}
-
 	public ActionConf[] getActions() {
-		return actions.toArray(new ActionConf[actions.size()]);
+		if (actions != null)
+			return actions.toArray(new ActionConf[actions.size()]);
+		else
+			return null;
 	}
 
 	@Override
@@ -39,6 +38,10 @@ public class WritableListActions implements Writable {
 			a.readFrom(input);
 			actions.add(a);
 		}
+	}
+
+	public void setActions(List<ActionConf> actions) {
+		this.actions = actions;
 	}
 
 	@Override
