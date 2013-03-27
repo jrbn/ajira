@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import nl.vu.cs.ajira.Context;
+import nl.vu.cs.ajira.actions.ActionConf;
 import nl.vu.cs.ajira.actions.ActionFactory;
 import nl.vu.cs.ajira.buckets.Bucket;
 import nl.vu.cs.ajira.buckets.Buckets;
@@ -166,16 +167,18 @@ public class SubmissionRegistry {
 
 		try {
 			submissions.put(submissionId, sub);
+			
+			ActionConf[] actions = job.getActions();
 
-			if (job.getActions() == null) {
+			if (actions == null) {
 				throw new Exception("No action is defined!");
 			}
 
 			Chain chain = new Chain();
 			chain.setParentChainId(-1);
 			chain.setInputLayer(Consts.DEFAULT_INPUT_LAYER_ID);
-			int resultBucket = chain.setActions(job.getActions(),
-					new ChainExecutor(null, context, chain));
+			int resultBucket = chain.setActions(
+					new ChainExecutor(null, context, chain), actions);
 
 			if (resultBucket != -1) {
 				sub.assignedBucket = resultBucket;

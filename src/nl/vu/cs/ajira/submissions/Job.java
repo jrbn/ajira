@@ -53,7 +53,7 @@ public class Job implements Writable {
 		this.actions = actions;
 	}
 
-	public List<ActionConf> getActions() {
-		return actions;
+	public ActionConf[] getActions() {
+		return actions.toArray(new ActionConf[actions.size()]);
 	}
 }

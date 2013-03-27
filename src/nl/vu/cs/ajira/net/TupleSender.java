@@ -20,21 +20,20 @@ import org.slf4j.LoggerFactory;
 
 /**
  * This class is used to process the incoming requests for 
- * a tuple transfer and to answer them by sending in 
- * turn chunks from the assigned/specified remote-bucket.
+ * a tuple transfer and to answer them by sending chunks
+ * from the assigned/specified remote-bucket.
  */
 class TupleSender {
-	static final Logger log = LoggerFactory.getLogger(TupleSender.class);
+	private static final Logger log = LoggerFactory.getLogger(TupleSender.class);
 
-	final Context context;
-	final Buckets buckets;
-	final Factory<TupleInfo> tuFactory = new Factory<TupleInfo>(TupleInfo.class);
-
+	private final Context context;
+	private final Buckets buckets;
+	
 	private final List<TupleInfo> checkList = new LinkedList<TupleInfo>();
 	private final List<TupleInfo> sendList = new LinkedList<TupleInfo>();
 	private int checkerTime = 1;
 
-	Factory<WritableContainer<WritableTuple>> bufferFactory;
+	private Factory<WritableContainer<WritableTuple>> bufferFactory;
 
 	/**
 	 * Custom constructor.
@@ -94,7 +93,7 @@ class TupleSender {
 	public void handleNewRequest(long localBufferKey, int remoteNodeId,
 			int idSubmission, int idBucket, long ticket, int sequence,
 			int nrequest) {
-		final TupleInfo tu = tuFactory.get();
+		final TupleInfo tu = new TupleInfo();
 
 		tu.bucketKey = localBufferKey;
 		tu.remoteNodeId = remoteNodeId;
@@ -263,6 +262,5 @@ class TupleSender {
 		}
 
 		bufferFactory.release(tmpBuffer);
-		tuFactory.release(info);
 	}
 }

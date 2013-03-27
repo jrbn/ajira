@@ -29,7 +29,7 @@ public class Split extends Action {
 	public void process(Tuple inputTuple, ActionContext context,
 			ActionOutput output) throws Exception {
 		if (alternativePath == null) {
-			alternativePath = output.split(actions.getActions(), reconnectAt);
+			alternativePath = output.split(reconnectAt, actions.getActions());
 		}
 		alternativePath.output(inputTuple);
 		output.output(inputTuple);

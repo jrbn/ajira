@@ -266,35 +266,10 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	// }
 
 	@Override
-	public void branch(List<ActionConf> actions) throws Exception {
+	public void branch(ActionConf... actions) throws Exception {
 		chain.setRawSize(rawSizes[currentAction]);
 		chain.branch(supportChain, getCounter(Consts.CHAINCOUNTER_NAME), 0);
-		supportChain.setActions(actions, this);
-		if (!stopProcess && currentAction > 0) {
-			cRuntimeBranching[currentAction]++;
-			if (currentAction > smallestRuntimeAction) {
-				smallestRuntimeAction = currentAction;
-			}
-		}
-
-		if (transferComputation && currentAction == nActions - 1) {
-			childrenToTransfer++;
-		}
-
-		if (localMode)
-			chainsBuffer.add(supportChain);
-		else
-			net.sendChain(supportChain);
-
-		stats.addCounter(chain.getSubmissionNode(), chain.getSubmissionId(),
-				"Chains Dynamically Generated", 1);
-	}
-
-	@Override
-	public void branch(ActionConf action) throws Exception {
-		chain.setRawSize(rawSizes[currentAction]);
-		chain.branch(supportChain, getCounter(Consts.CHAINCOUNTER_NAME), 0);
-		supportChain.setAction(action, this);
+		supportChain.setActions(this, actions);
 		if (!stopProcess && currentAction > 0) {
 			cRuntimeBranching[currentAction]++;
 			if (currentAction > smallestRuntimeAction) {
@@ -329,7 +304,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	}
 
 	@Override
-	public ActionOutput split(List<ActionConf> actions, int reconnectAt)
+	public ActionOutput split(int reconnectAt, ActionConf... actions)
 			throws Exception {
 		chain.setRawSize(rawSizes[currentAction]);
 
@@ -347,7 +322,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		}
 
 		if (actions != null)
-			supportChain.setActions(actions, this);
+			supportChain.setActions(this, actions);
 		SplitIterator itr = ChainSplitLayer.getInstance().registerNewSplit();
 		supportChain.setInputLayer(Consts.SPLITS_INPUT_LAYER);
 		supportQuery.setElements(new TInt(itr.getId()));
@@ -359,41 +334,6 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 				"Chains Dynamically Generated", 1);
 
 		openedStreams.add(itr);
-		return itr;
-	}
-
-	@Override
-	public ActionOutput split(ActionConf action, int reconnectAt)
-			throws Exception {
-		chain.setRawSize(rawSizes[currentAction]);
-
-		if (transferComputation && reconnectAt < (nActions - currentAction - 1)) {
-			chain.branch(supportChain, getCounter(Consts.CHAINCOUNTER_NAME),
-					reconnectAt);
-		} else {
-			long parentChain = 0;
-			if (reconnectAt != -1) {
-				parentChain = responsibleChains[currentAction];
-			}
-			chain.customBranch(supportChain, parentChain,
-					getCounter(Consts.CHAINCOUNTER_NAME), reconnectAt);
-			incrementChildren(parentChain, reconnectAt + 1);
-		}
-
-		if (action != null)
-			supportChain.setAction(action, this);
-		SplitIterator itr = ChainSplitLayer.getInstance().registerNewSplit();
-		supportChain.setInputLayer(Consts.SPLITS_INPUT_LAYER);
-		supportQuery.setElements(new TInt(itr.getId()));
-		supportChain.setQuery(supportQuery);
-
-		manager.startSeparateChainHandler(supportChain);
-
-		stats.addCounter(chain.getSubmissionNode(), chain.getSubmissionId(),
-				"Chains Dynamically Generated", 1);
-
-		openedStreams.add(itr);
-
 		return itr;
 	}
 

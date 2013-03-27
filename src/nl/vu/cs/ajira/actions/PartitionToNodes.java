@@ -134,11 +134,10 @@ public class PartitionToNodes extends Action {
 			if (partitioner == null) {
 				partitioner = (Partitioner) Class.forName(sPartitioner)
 						.newInstance();
-				partitioner.init(context);
+				partitioner.init(context, nPartitions, partitionFields);
 			}
 
-			int partition = partitioner.partition(inputTuple, nPartitions,
-					partitionFields);
+			int partition = partitioner.partition(inputTuple);
 
 			b = bucketsCache[partition];
 			if (b == null) {

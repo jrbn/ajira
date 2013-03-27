@@ -1,6 +1,5 @@
 package nl.vu.cs.ajira.datalayer.chainsplits;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -81,23 +80,12 @@ public class ChainSplitLayer extends InputLayer {
 		}
 
 		@Override
-		public void branch(List<ActionConf> actions) throws Exception {
+		public void branch(ActionConf... actions) throws Exception {
 			throw new Exception("Not allowed");
 		}
 
 		@Override
-		public void branch(ActionConf action) throws Exception {
-			throw new Exception("Not allowed");
-		}
-
-		@Override
-		public ActionOutput split(List<ActionConf> actions, int reconnectAt)
-				throws Exception {
-			throw new Exception("Not allowed");
-		}
-
-		@Override
-		public ActionOutput split(ActionConf action, int reconnectAt)
+		public ActionOutput split(int reconnectAt, ActionConf... actions)
 				throws Exception {
 			throw new Exception("Not allowed");
 		}

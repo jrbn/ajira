@@ -25,8 +25,8 @@ public class WritableListActions implements Writable {
 		this.actions = actions;
 	}
 
-	public List<ActionConf> getActions() {
-		return actions;
+	public ActionConf[] getActions() {
+		return actions.toArray(new ActionConf[actions.size()]);
 	}
 
 	@Override

@@ -177,15 +177,15 @@ public class Chain implements Writable, InputQuery {
 		tuple.copyTo(query.getTuple());
 	}
 
-	public int setActions(List<ActionConf> actions, ActionContext context)
+	public int setActions(ActionContext context, ActionConf... actions)
 			throws Exception {
 
 		int retval = -1;
 
 		if (actions != null) {
 
-			for (int i = 0; i < actions.size(); ++i) {
-				ActionConf action = actions.get(i);
+			for (int i = 0; i < actions.length; ++i) {
+				ActionConf action = actions[i];
 				int paramMissing = action.validateParameters();
 				if (paramMissing != -1) {
 					String actionName = action.getClassName();
@@ -196,11 +196,11 @@ public class Chain implements Writable, InputQuery {
 				}
 			}
 
-			for (int i = actions.size() - 1; i >= 0; i--) {
-				ActionConf c = actions.get(i);
+			for (int i = actions.length - 1; i >= 0; i--) {
+				ActionConf c = actions[i];
 				try {
 					int v = addAction(c, context);
-					if (i == actions.size() - 1) {
+					if (i == actions.length - 1) {
 						retval = v;
 					}
 				} catch (Exception e) {
@@ -212,18 +212,6 @@ public class Chain implements Writable, InputQuery {
 			throw new Exception("No action is defined");
 		}
 		return retval;
-	}
-
-	public void setAction(ActionConf action, ActionContext context)
-			throws Exception {
-		int paramMissing = action.validateParameters();
-		if (paramMissing != -1) {
-			String actionName = action.getClassName();
-			String paramName = action.getParamName(paramMissing);
-			throw new Exception("Action " + actionName
-					+ ": the required parameter " + paramName + " is not set.");
-		}
-		addAction(action, context);
 	}
 
 	private int addAction(ActionConf action, ActionContext context)
@@ -240,11 +228,9 @@ public class Chain implements Writable, InputQuery {
 				if (action.getConfigurator() != null
 						&& controller.listActions.size() > 0) {
 					// Add the actions from the last
-					List<ActionConf> list = controller.listActions;
+					ActionConf[] list = controller.listActions.toArray(new ActionConf[controller.listActions.size()]);
 					controller.listActions = new ArrayList<ActionConf>();
-					for (int i = list.size() - 1; i >= 0; --i) {
-						setAction(list.get(i), context);
-					}
+					setActions(context, list);
 				}
 				return retval;
 			}
@@ -288,11 +274,9 @@ public class Chain implements Writable, InputQuery {
 		if (action.getConfigurator() != null
 				&& controller.listActions.size() > 0) {
 			// Add the actions from the last
-			List<ActionConf> list = controller.listActions;
+			ActionConf[] list = controller.listActions.toArray(new ActionConf[controller.listActions.size()]);
 			controller.listActions = new ArrayList<ActionConf>();
-			for (int i = list.size() - 1; i >= 0; --i) {
-				setAction(list.get(i), context);
-			}
+			setActions(context, list);
 		}
 		return retval;
 	}

@@ -23,15 +23,14 @@ import org.slf4j.LoggerFactory;
  * {@link #registerActionParameters(ActionConf)} method.
  * <p>
  * This abstract class provides default (empty) implementations for
- * {@link #registerActionParameters(ActionConf),
- * 
- * @link #startProcess(ActionContext)}, and
- *       {@link #stopProcess(ActionContext, ActionOutput)}. There is no default
- *       implementation for {@link #process(Tuple, ActionContext, ActionOutput)}
- *       ; An action should do something, after all.
- *       <p>
- *       Ajira provides various actions, but actions can be user-specified as
- *       well, see the {@link nl.vu.cs.ajira.examples} package.
+ * {@link #registerActionParameters(ActionConf)},
+ * {@link #startProcess(ActionContext)}, and
+ * {@link #stopProcess(ActionContext, ActionOutput)}. There is no default
+ * implementation for {@link #process(Tuple, ActionContext, ActionOutput)};
+ * An action should do something, after all.
+ * <p>
+ * Ajira provides various actions, but actions can be user-specified as
+ * well, see the {@link nl.vu.cs.ajira.examples} package.
  */
 public abstract class Action {
 
