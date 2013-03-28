@@ -61,7 +61,7 @@ public class Chain implements Writable, InputQuery {
 			listActions.add(conf);
 		}
 	}
-	
+
 	private static final int CHAIN_RESERVED_SPACE = 39;
 
 	private FlowController controller = new FlowController();
@@ -228,7 +228,9 @@ public class Chain implements Writable, InputQuery {
 				if (action.getConfigurator() != null
 						&& controller.listActions.size() > 0) {
 					// Add the actions from the last
-					ActionConf[] list = controller.listActions.toArray(new ActionConf[controller.listActions.size()]);
+					ActionConf[] list = controller.listActions
+							.toArray(new ActionConf[controller.listActions
+									.size()]);
 					controller.listActions = new ArrayList<ActionConf>();
 					setActions(context, list);
 				}
@@ -243,10 +245,12 @@ public class Chain implements Writable, InputQuery {
 				bufferSize += 9;
 				retval = controller.bucketId;
 			} else {
+				cos.setCurrentPosition(bufferSize);
 				cos.writeBoolean(false);
 				bufferSize++;
 			}
 		} else {
+			cos.setCurrentPosition(bufferSize);
 			cos.writeBoolean(false);
 			bufferSize++;
 		}
@@ -274,7 +278,8 @@ public class Chain implements Writable, InputQuery {
 		if (action.getConfigurator() != null
 				&& controller.listActions.size() > 0) {
 			// Add the actions from the last
-			ActionConf[] list = controller.listActions.toArray(new ActionConf[controller.listActions.size()]);
+			ActionConf[] list = controller.listActions
+					.toArray(new ActionConf[controller.listActions.size()]);
 			controller.listActions = new ArrayList<ActionConf>();
 			setActions(context, list);
 		}
@@ -295,8 +300,7 @@ public class Chain implements Writable, InputQuery {
 		if (skippingActions > 0) {
 			int originalSize = bufferSize;
 			// Remove the first n actions
-			while (skippingActions-- > 0
-					&& bufferSize > CHAIN_RESERVED_SPACE) {
+			while (skippingActions-- > 0 && bufferSize > CHAIN_RESERVED_SPACE) {
 				bufferSize -= 4;
 				int sizeNameAction = Utils.decodeInt(buffer, bufferSize);
 				bufferSize -= 12 + sizeNameAction; // Skip also the chainID
@@ -326,8 +330,7 @@ public class Chain implements Writable, InputQuery {
 		if (startFromAction != -1) {
 			sizeToCopy = bufferSize;
 			// Remove the first n actions
-			while (startFromAction-- > 0
-					&& sizeToCopy > CHAIN_RESERVED_SPACE) {
+			while (startFromAction-- > 0 && sizeToCopy > CHAIN_RESERVED_SPACE) {
 				sizeToCopy -= 4;
 				int sizeNameAction = Utils.decodeInt(buffer, sizeToCopy);
 				sizeToCopy -= 12 + sizeNameAction; // Skip also the chainID
