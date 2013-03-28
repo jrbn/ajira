@@ -15,15 +15,15 @@ public class CollectToNode extends Action {
 
 	/* PARAMETERS */
 	public static final int NODE_ID = 0;
-	private static final String S_NODE_ID = "node_id";
+	private static final String S_NODE_ID = "NODE_ID";
 	private static final int BUCKET_ID = 1;
-	private static final String S_BUCKET_ID = "bucket_id";
+	private static final String S_BUCKET_ID = "BUCKET_ID";
 	public static final int SORT = 2;
-	private static final String S_SORT = "sort";
+	private static final String S_SORT = "SORT";
 	public static final int SORTING_FIELDS = 3;
-	private static final String S_SORTING_FIELDS = "sorting_fields";
+	private static final String S_SORTING_FIELDS = "SORTING_FIELDS";
 	public static final int TUPLE_FIELDS = 4;
-	private static final String S_TUPLE_FIELDS = "tuple_fields";
+	private static final String S_TUPLE_FIELDS = "TUPLE_FIELDS";
 
 	private int nodeId;
 	private int bucketId = -1;

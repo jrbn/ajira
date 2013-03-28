@@ -12,7 +12,7 @@ public class Sample extends Action {
 	static final Logger log = LoggerFactory.getLogger(Sample.class);
 
 	public static final int SAMPLE_RATE = 0;
-	public static final String S_SAMPLE_RATE = "sample_rate";
+	public static final String S_SAMPLE_RATE = "SAMPLE_RATE";
 
 	int sampling;
 	Random rand = new Random();

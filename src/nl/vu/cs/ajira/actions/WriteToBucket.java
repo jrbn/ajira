@@ -15,9 +15,9 @@ public class WriteToBucket extends Action {
 	public static final int ALL_NODES = -1;
 
 	public static final int BUCKET_ID = 0;
-	private static final String S_BUCKET_ID = "Bucket ID";
+	private static final String S_BUCKET_ID = "BUCKET_ID";
 	public static final int TUPLE_FIELDS = 1;
-	private static final String S_TUPLE_FIELDS = "tuple_fields";
+	private static final String S_TUPLE_FIELDS = "TUPLE_FIELDS";
 
 	private Bucket bucket = null;
 	private int bucketID;

@@ -2,13 +2,21 @@ package nl.vu.cs.ajira.actions;
 
 import nl.vu.cs.ajira.data.types.Tuple;
 
+/**
+ * This action waits for a specific token to be signaled in the {@link ActionContext}
+ * before allowing the tuples to pass through unchanged.
+ */
 public class WaitFor extends Action {
 
+	/**
+	 * The <code>TOKEN</code> parameter, of type <code>int</code>, is required, and specifies
+	 * the signal to wait for.
+	 */
 	public static final int TOKEN = 0;
 
 	@Override
 	public void registerActionParameters(ActionConf conf) {
-		conf.registerParameter(TOKEN, "token", null, true);
+		conf.registerParameter(TOKEN, "TOKEN", null, true);
 	}
 
 	@Override

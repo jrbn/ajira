@@ -132,7 +132,7 @@ public class GroupBy extends Action {
 			byte[] fieldsToSort = (byte[]) params[FIELDS_TO_GROUP];
 			partition.setParamByteArray(PartitionToNodes.SORTING_FIELDS,
 					fieldsToSort);
-			partition.setParamByteArray(PartitionToNodes.BA_PARTITION_FIELDS,
+			partition.setParamByteArray(PartitionToNodes.PARTITION_FIELDS,
 					fieldsToSort);
 			partition.setParamStringArray(PartitionToNodes.TUPLE_FIELDS,
 					(TStringArray) params[TUPLE_FIELDS]);
@@ -146,9 +146,9 @@ public class GroupBy extends Action {
 
 	@Override
 	public void registerActionParameters(ActionConf conf) {
-		conf.registerParameter(FIELDS_TO_GROUP, "fieldsToGroup", null, true);
-		conf.registerParameter(TUPLE_FIELDS, "fields", null, true);
-		conf.registerParameter(NPARTITIONS_PER_NODE, "partitionsPerNode", null,
+		conf.registerParameter(FIELDS_TO_GROUP, "FIELDS_TO_GROUP", null, true);
+		conf.registerParameter(TUPLE_FIELDS, "TUPLE_FIELDS", null, true);
+		conf.registerParameter(NPARTITIONS_PER_NODE, "NPARTITIONS_PER_NODE", null,
 				false);
 		conf.registerCustomConfigurator(new Configurator());
 	}

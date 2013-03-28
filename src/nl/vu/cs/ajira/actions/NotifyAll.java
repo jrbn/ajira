@@ -9,7 +9,7 @@ public class NotifyAll extends Action {
 
 	@Override
 	public void registerActionParameters(ActionConf conf) {
-		conf.registerParameter(TOKEN, "token", null, true);
+		conf.registerParameter(TOKEN, "TOKEN", null, true);
 	}
 
 	@Override

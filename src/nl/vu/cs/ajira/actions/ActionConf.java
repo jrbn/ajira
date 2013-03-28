@@ -38,7 +38,17 @@ public class ActionConf implements Writable {
 		static protected final Logger log = LoggerFactory
 				.getLogger(Configurator.class);
 
-		// TODO: get rid of this method and make Chain.addAction call setupAction instead? --Ceriel
+		/**
+		 * Sets up the action configuration parameters.
+		 * @param query
+		 * @param conf
+		 * 		the <code>ActionConf</code> object
+		 * @param controller
+		 * 		can be used to control the flow
+		 * @param context
+		 * 		the context in which the action will be executed
+		 * @throws Exception
+		 */
 		public void process(InputQuery query, ActionConf conf,
 				ActionController controller, ActionContext context)
 				throws Exception {
@@ -46,17 +56,17 @@ public class ActionConf implements Writable {
 		}
 
 		/**
-		 * Sets up the action parameters.
+		 * Sets up the action configuration parameters.
 		 * @param query
 		 * @param params
-		 * 		the parameters as specified by the user
+		 * 		the values of the configuration parameters
 		 * @param controller
 		 * 		can be used to control the flow
 		 * @param context
 		 * 		the context in which the action will be executed
 		 * @throws Exception
 		 */
-		public abstract void setupAction(InputQuery query, Object[] params,
+		protected abstract void setupAction(InputQuery query, Object[] params,
 				ActionController controller, ActionContext context)
 				throws Exception;
 	}
@@ -144,7 +154,8 @@ public class ActionConf implements Writable {
 	 * @param id
 	 * 		the position of the parameter in the parameters array
 	 * @param nameParam
-	 * 		the name of the parameter
+	 * 		the name of the parameter; preferably, this should be the name of the constant
+	 *      used to indicate <code>id</code>.
 	 * @param defaultValue
 	 * 		the default value
 	 * @param isRequired

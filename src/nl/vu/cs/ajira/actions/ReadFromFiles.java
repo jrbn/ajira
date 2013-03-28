@@ -21,9 +21,9 @@ public class ReadFromFiles extends Action {
 	public static final String MINIMUM_SPLIT_SIZE = "splitinput.minimumsize";
 	public static final int MINIMUM_FILE_SPLIT = (4 * 1024 * 1024); // 4 MB
 
-	public static final int S_PATH = 0;
-	public static final int S_CUSTOM_READER = 1;
-	public static final int S_FILE_FILTER = 2;
+	public static final int PATH = 0;
+	public static final int CUSTOM_READER = 1;
+	public static final int FILE_FILTER = 2;
 
 	static final Logger log = LoggerFactory.getLogger(ReadFromFiles.class);
 
@@ -36,11 +36,11 @@ public class ReadFromFiles extends Action {
 		@Override
 		public void setupAction(InputQuery query, Object[] params,
 				ActionController controller, ActionContext context) {
-			if (params[S_PATH] != null) {
+			if (params[PATH] != null) {
 				query.setInputLayer(Consts.DEFAULT_INPUT_LAYER_ID);
 				query.setQuery(new Query(new TInt(FileLayer.OP_LS),
-						new TString((String) params[S_PATH]), new TString(
-								(String) params[S_FILE_FILTER])));
+						new TString((String) params[PATH]), new TString(
+								(String) params[FILE_FILTER])));
 			}
 		}
 	}
@@ -60,8 +60,8 @@ public class ReadFromFiles extends Action {
 		}
 
 		ActionConf c = ActionFactory.getActionConf(QueryInputLayer.class);
-		c.setParamWritable(QueryInputLayer.W_QUERY, new Query(tuple));
-		c.setParamStringArray(QueryInputLayer.SA_SIGNATURE_QUERY,
+		c.setParamWritable(QueryInputLayer.QUERY, new Query(tuple));
+		c.setParamStringArray(QueryInputLayer.SIGNATURE_QUERY,
 				tuple.getSignature());
 		output.branch(c);
 
@@ -70,16 +70,16 @@ public class ReadFromFiles extends Action {
 
 	@Override
 	public void registerActionParameters(ActionConf conf) {
-		conf.registerParameter(S_PATH, "path", null, true);
-		conf.registerParameter(S_CUSTOM_READER, "custom reader", null, false);
-		conf.registerParameter(S_FILE_FILTER, "Filter",
+		conf.registerParameter(PATH, "PATH", null, true);
+		conf.registerParameter(CUSTOM_READER, "CUSTOM_READER", null, false);
+		conf.registerParameter(FILE_FILTER, "FILE_FILTER",
 				FilterHiddenFiles.class.getName(), false);
 		conf.registerCustomConfigurator(new ParametersProcessor());
 	}
 
 	@Override
 	public void startProcess(ActionContext context) throws Exception {
-		customReader = getParamString(S_CUSTOM_READER);
+		customReader = getParamString(CUSTOM_READER);
 		minimumFileSplitSize = context.getSystemParamInt(MINIMUM_SPLIT_SIZE,
 				MINIMUM_FILE_SPLIT);
 		currentFileSplit = new FileCollection();

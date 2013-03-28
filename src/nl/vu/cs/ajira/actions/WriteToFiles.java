@@ -19,9 +19,9 @@ public class WriteToFiles extends Action {
 	final static Logger log = LoggerFactory.getLogger(WriteToFiles.class);
 
 	public static final int CUSTOM_WRITER = 0;
-	private static final String S_CUSTOM_WRITER = "custom_writer";
+	private static final String S_CUSTOM_WRITER = "CUSTOM_WRITER";
 	public static final int OUTPUT_DIR = 1;
-	private static final String S_OUTPUT_DIR = "output_dir";
+	private static final String S_OUTPUT_DIR = "OUTPUT_DIR";
 
 	static public class StandardFileWriter {
 

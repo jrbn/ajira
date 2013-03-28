@@ -12,20 +12,20 @@ public class ReadFromBucket extends Action {
 	int bucketId;
 	boolean branch = false;
 
-	public static final int I_BUCKET_ID = 0;
-	public static final int S_NODE_ID = 1;
+	public static final int BUCKET_ID = 0;
+	public static final int NODE_ID = 1;
 
 	static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
 		public void setupAction(InputQuery query, Object[] params,
 				ActionController controller, ActionContext context) {
-			if (params[S_NODE_ID] == null) {
-				params[S_NODE_ID] = -1;
+			if (params[NODE_ID] == null) {
+				params[NODE_ID] = -1;
 			}
 
 			query.setInputLayer(Consts.BUCKET_INPUT_LAYER_ID);
-			query.setQuery(new Query(new TInt((Integer) params[I_BUCKET_ID]),
-					new TInt((Integer) params[S_NODE_ID])));
+			query.setQuery(new Query(new TInt((Integer) params[BUCKET_ID]),
+					new TInt((Integer) params[NODE_ID])));
 
 			controller.doNotAddCurrentAction();
 		}
@@ -33,15 +33,15 @@ public class ReadFromBucket extends Action {
 
 	@Override
 	public void registerActionParameters(ActionConf conf) {
-		conf.registerParameter(I_BUCKET_ID, "bucket id", null, true);
-		conf.registerParameter(S_NODE_ID, "node id", -1, false);
+		conf.registerParameter(BUCKET_ID, "BUCKET_ID", null, true);
+		conf.registerParameter(NODE_ID, "NODE_ID", -1, false);
 		conf.registerCustomConfigurator(new ParametersProcessor());
 	}
 
 	@Override
 	public void startProcess(ActionContext context) throws Exception {
-		bucketId = getParamInt(I_BUCKET_ID);
-		node = getParamInt(S_NODE_ID);
+		bucketId = getParamInt(BUCKET_ID);
+		node = getParamInt(NODE_ID);
 	}
 
 	@Override

@@ -7,7 +7,7 @@ public class Branch extends Action {
 
 	/***** PARAMETERS *****/
 	public static final int BRANCH = 0;
-	public static final String S_BRANCH = "branch";
+	public static final String S_BRANCH = "BRANCH";
 
 	@Override
 	public void registerActionParameters(ActionConf conf) {

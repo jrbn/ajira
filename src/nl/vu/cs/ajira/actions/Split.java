@@ -5,23 +5,23 @@ import nl.vu.cs.ajira.data.types.Tuple;
 
 public class Split extends Action {
 
-	public static final int W_SPLIT = 0;
-	public static final int I_RECONNECT_AFTER_ACTIONS = 1;
+	public static final int SPLIT = 0;
+	public static final int RECONNECT_AFTER_ACTIONS = 1;
 	private WritableListActions actions = new WritableListActions();
 	private ActionOutput alternativePath = null;
 	private int reconnectAt;
 
 	@Override
 	public void registerActionParameters(ActionConf conf) {
-		conf.registerParameter(W_SPLIT, "split", null, false);
-		conf.registerParameter(I_RECONNECT_AFTER_ACTIONS, "reconnect at", -1,
+		conf.registerParameter(SPLIT, "SPLIT", null, false);
+		conf.registerParameter(RECONNECT_AFTER_ACTIONS, "RECONNECT_AFTER_ACTIONS", -1,
 				false);
 	}
 
 	@Override
 	public void startProcess(ActionContext context) throws Exception {
-		getParamWritable(actions, W_SPLIT);
-		reconnectAt = getParamInt(I_RECONNECT_AFTER_ACTIONS);
+		getParamWritable(actions, SPLIT);
+		reconnectAt = getParamInt(RECONNECT_AFTER_ACTIONS);
 		alternativePath = null;
 	}
 

@@ -43,10 +43,11 @@ public abstract class Action {
 	/***** ACTION PROCESSING ******/
 
 	/**
-	 * Overriding this method allows the user (action implementor) to store
-	 * parameter specifications in the {@link ActionConf} object, by means of
-	 * the {@link ActionConf#registerParameter(int, String, Object, boolean)}
-	 * method.
+	 * Stores the parameter specifications in the {@link ActionConf} object, by
+	 * calling the {@link ActionConf#registerParameter(int, String, Object, boolean)}
+	 * method for each configuration parameter. Also, a custom parameter configurator
+	 * can be installed, by calling
+	 * {@link ActionConf#registerCustomConfigurator(ActionConf.Configurator)}.
 	 * 
 	 * @param conf
 	 *            the action configuration.
@@ -56,11 +57,10 @@ public abstract class Action {
 	}
 
 	/**
-	 * Overriding this method allows for initialization of the process.
+	 * Initialization of the process.
 	 * 
 	 * @param context
-	 *            allows for access to the context in which this action is
-	 *            executed.
+	 *            context in which this action is executed.
 	 * @throws Exception
 	 */
 	public void startProcess(ActionContext context) throws Exception {
@@ -68,18 +68,15 @@ public abstract class Action {
 	}
 
 	/**
-	 * This is the only method that <strong>must</strong> be specified by the
-	 * specific <code>Action</code> implementation. It is called once for each
-	 * input tuple (specified by the first parameter). Output tuples must be
-	 * passed on to the {@link ActionOutput#output(Tuple)} or the
+	 * This method is called once for each input tuple (specified by the first parameter).
+	 * Output tuples are passed on to the {@link ActionOutput#output(Tuple)} or the
 	 * {@link ActionOutput#output(nl.vu.cs.ajira.data.types.SimpleData...)}
 	 * method.
 	 * 
 	 * @param tuple
 	 *            the input tuple.
 	 * @param context
-	 *            allows for access to the context in which this action is
-	 *            executed.
+	 *            the context in which this action is executed.
 	 * @param actionOutput
 	 *            to pass on the result of processing the input tuple.
 	 * @throws Exception
@@ -91,8 +88,7 @@ public abstract class Action {
 	 * Overriding this method allows for finishing up the process.
 	 * 
 	 * @param context
-	 *            allows for access to the context in which this action is
-	 *            executed.
+	 *            the context in which this action is executed.
 	 * @param actionOutput
 	 *            to pass on possible left-overs.
 	 * @throws Exception
@@ -102,7 +98,7 @@ public abstract class Action {
 		// empty default implementation.
 	}
 
-	/***** PARAMETERS MANAGEMENT ******/
+	/* PARAMETERS MANAGEMENT */
 
 	final void setParams(Object[] params) {
 		this.valuesParameters = params;
