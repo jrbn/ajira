@@ -27,7 +27,7 @@ public class CollectToNode extends Action {
 	private byte[] fields;
 	private Bucket bucket;
 
-	static class ParametersProcessor extends ActionConf.Configurator {
+	private static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
 		public void setupAction(InputQuery query, Object[] params,
 				ActionController controller, ActionContext context) {

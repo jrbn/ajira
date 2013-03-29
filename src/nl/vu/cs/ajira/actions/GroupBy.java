@@ -117,7 +117,7 @@ public class GroupBy extends Action {
 	private byte[] posFieldsToGroup;
 	private SimpleData[] outputTuple;
 
-	public static class Configurator extends ActionConf.Configurator {
+	private static class Configurator extends ActionConf.Configurator {
 
 		@Override
 		public void setupAction(InputQuery query, Object[] params,

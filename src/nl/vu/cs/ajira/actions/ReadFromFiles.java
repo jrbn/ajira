@@ -16,23 +16,49 @@ import nl.vu.cs.ajira.utils.Consts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * The <code>ReadFromFiles<code> action uses the input layer to obtain a list of files,
+ * spits them up into chunks of a certain size, and divides these over the available
+ * nodes, to read those files. A next action gets the tuples read from these files as
+ * input. Note that all this may cause chains to be executed on all available nodes.
+ */
 public class ReadFromFiles extends Action {
 
+	// TODO: Why is this not a configuration parameter of the action, but a configuration parameter
+	// of the action context? --Ceriel
 	public static final String MINIMUM_SPLIT_SIZE = "splitinput.minimumsize";
 	public static final int MINIMUM_FILE_SPLIT = (4 * 1024 * 1024); // 4 MB
 
+	/**
+	 * The <code>S_PATH</code> parameter, of type <code>String</code>, is required and indicates the
+	 * directory containing the files to be read.
+	 */
 	public static final int S_PATH = 0;
+	
+	/**
+	 * The <code>S_CUSTOM_READER</code> parameter, of type <code>String</code>, is not required,
+	 * and, if provided, should contain the class name of a subclass of
+	 * {@link nl.vu.cs.ajira.datalayer.files.DefaultFileParser}. This subclass should have a public
+	 * constructor with a single {@link java.io.File} parameter.
+	 */
 	public static final int S_CUSTOM_READER = 1;
+	
+	/**
+	 * The <code>S_FILE_FILTER</code> parameter, of type <code>String</code>, is not required,
+	 * and, if provided, should contain the class name of an implementation of the
+	 * {@link java.io.FilenameFilter} interface. This class should have a public
+	 * parameterless constructor.
+	 */
 	public static final int S_FILE_FILTER = 2;
 
-	static final Logger log = LoggerFactory.getLogger(ReadFromFiles.class);
+	private static final Logger log = LoggerFactory.getLogger(ReadFromFiles.class);
 
 	private int minimumFileSplitSize;
 	private FileCollection currentFileSplit;
 	private int splitId;
 	private String customReader = null;
 
-	static class ParametersProcessor extends ActionConf.Configurator {
+	private static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
 		public void setupAction(InputQuery query, Object[] params,
 				ActionController controller, ActionContext context) {
@@ -60,7 +86,7 @@ public class ReadFromFiles extends Action {
 		}
 
 		ActionConf c = ActionFactory.getActionConf(QueryInputLayer.class);
-		c.setParamWritable(QueryInputLayer.QUERY, new Query(tuple));
+		c.setParamWritable(QueryInputLayer.W_QUERY, new Query(tuple));
 		c.setParamStringArray(QueryInputLayer.SA_SIGNATURE_QUERY,
 				tuple.getSignature());
 		output.branch(c);

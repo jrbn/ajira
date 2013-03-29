@@ -6,11 +6,11 @@ import nl.vu.cs.ajira.data.types.Tuple;
 public class Branch extends Action {
 
 	/***** PARAMETERS *****/
-	public static final int BRANCH = 0;
+	public static final int W_BRANCH = 0;
 
 	@Override
 	public void registerActionParameters(ActionConf conf) {
-		conf.registerParameter(BRANCH, "BRANCH", null, true);
+		conf.registerParameter(W_BRANCH, "W_BRANCH", null, true);
 	}
 
 	@Override
@@ -28,7 +28,7 @@ public class Branch extends Action {
 			throws Exception {
 		if (context.isPrincipalBranch()) {
 			WritableListActions branch = new WritableListActions();
-			getParamWritable(branch, BRANCH);
+			getParamWritable(branch, W_BRANCH);
 			output.branch(branch.getActions());
 		}
 	}
