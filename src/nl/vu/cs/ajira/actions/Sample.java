@@ -11,20 +11,19 @@ public class Sample extends Action {
 
 	static final Logger log = LoggerFactory.getLogger(Sample.class);
 
-	public static final int SAMPLE_RATE = 0;
-	public static final String S_SAMPLE_RATE = "SAMPLE_RATE";
+	public static final int I_SAMPLE_RATE = 0;
 
 	int sampling;
 	Random rand = new Random();
 
 	@Override
 	public void registerActionParameters(ActionConf conf) {
-		conf.registerParameter(SAMPLE_RATE, S_SAMPLE_RATE, null, true);
+		conf.registerParameter(I_SAMPLE_RATE, "I_SAMPLE_RATE", null, true);
 	}
 
 	@Override
 	public void startProcess(ActionContext context) throws Exception {
-		sampling = getParamInt(SAMPLE_RATE);
+		sampling = getParamInt(I_SAMPLE_RATE);
 	}
 
 	@Override

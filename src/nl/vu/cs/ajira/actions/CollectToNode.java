@@ -14,16 +14,11 @@ public class CollectToNode extends Action {
 	static final Logger log = LoggerFactory.getLogger(CollectToNode.class);
 
 	/* PARAMETERS */
-	public static final int NODE_ID = 0;
-	private static final String S_NODE_ID = "NODE_ID";
-	private static final int BUCKET_ID = 1;
-	private static final String S_BUCKET_ID = "BUCKET_ID";
-	public static final int SORT = 2;
-	private static final String S_SORT = "SORT";
-	public static final int SORTING_FIELDS = 3;
-	private static final String S_SORTING_FIELDS = "SORTING_FIELDS";
-	public static final int TUPLE_FIELDS = 4;
-	private static final String S_TUPLE_FIELDS = "TUPLE_FIELDS";
+	public static final int I_NODE_ID = 0;
+	private static final int I_BUCKET_ID = 1;
+	public static final int B_SORT = 2;
+	public static final int IA_SORTING_FIELDS = 3;
+	public static final int SA_TUPLE_FIELDS = 4;
 
 	private int nodeId;
 	private int bucketId = -1;
@@ -36,42 +31,43 @@ public class CollectToNode extends Action {
 		@Override
 		public void setupAction(InputQuery query, Object[] params,
 				ActionController controller, ActionContext context) {
-			if (params[NODE_ID] == null) {
-				params[NODE_ID] = context.getMyNodeId();
+			if (params[I_NODE_ID] == null) {
+				params[I_NODE_ID] = context.getMyNodeId();
 			}
-			params[BUCKET_ID] = context.getNewBucketID();
+			params[I_BUCKET_ID] = context.getNewBucketID();
 			controller.continueComputationOn(
-					((Integer) params[NODE_ID]).intValue(),
-					(Integer) params[BUCKET_ID]);
+					((Integer) params[I_NODE_ID]).intValue(),
+					(Integer) params[I_BUCKET_ID]);
 
 			// Convert the tuple fields in numbers
-			TStringArray fields = (TStringArray) params[TUPLE_FIELDS];
+			TStringArray fields = (TStringArray) params[SA_TUPLE_FIELDS];
 			byte[] f = new byte[fields.getArray().length];
 			int i = 0;
 			for (String v : fields.getArray()) {
 				f[i++] = (byte) DataProvider.getId(v);
 			}
-			params[TUPLE_FIELDS] = f;
+			params[SA_TUPLE_FIELDS] = f;
+			params[IA_SORTING_FIELDS] = convertToBytes(params[IA_SORTING_FIELDS]);
 		}
 	}
 
 	@Override
 	public void registerActionParameters(ActionConf conf) {
-		conf.registerParameter(NODE_ID, S_NODE_ID, null, false);
-		conf.registerParameter(BUCKET_ID, S_BUCKET_ID, null, false);
-		conf.registerParameter(SORT, S_SORT, false, false);
-		conf.registerParameter(SORTING_FIELDS, S_SORTING_FIELDS, null, false);
-		conf.registerParameter(TUPLE_FIELDS, S_TUPLE_FIELDS, null, true);
+		conf.registerParameter(I_NODE_ID, "I_NODE_ID", null, false);
+		conf.registerParameter(I_BUCKET_ID, "I_BUCKET_ID", null, false);
+		conf.registerParameter(B_SORT, "B_SORT", false, false);
+		conf.registerParameter(IA_SORTING_FIELDS, "IA_SORTING_FIELDS", null, false);
+		conf.registerParameter(SA_TUPLE_FIELDS, "SA_TUPLE_FIELDS", null, true);
 		conf.registerCustomConfigurator(new ParametersProcessor());
 	}
 
 	@Override
 	public void startProcess(ActionContext context) throws Exception {
-		nodeId = getParamInt(NODE_ID);
-		bucketId = getParamInt(BUCKET_ID);
-		sort = getParamBoolean(SORT);
-		sortingFields = getParamByteArray(SORTING_FIELDS);
-		fields = getParamByteArray(TUPLE_FIELDS);
+		nodeId = getParamInt(I_NODE_ID);
+		bucketId = getParamInt(I_BUCKET_ID);
+		sort = getParamBoolean(B_SORT);
+		sortingFields = getParamByteArray(IA_SORTING_FIELDS);
+		fields = getParamByteArray(SA_TUPLE_FIELDS);
 		bucket = null;
 	}
 

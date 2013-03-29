@@ -82,7 +82,7 @@ public class WordCount {
 		// Read the input files
 		ActionConf action = ActionFactory
 				.getActionConf(ReadFromFiles.class);
-		action.setParamString(ReadFromFiles.PATH, inDir);
+		action.setParamString(ReadFromFiles.S_PATH, inDir);
 		actions.add(action);
 
 		// Count the words
@@ -90,9 +90,9 @@ public class WordCount {
 
 		// Groups the pairs
 		action = ActionFactory.getActionConf(GroupBy.class);
-		action.setParamStringArray(GroupBy.TUPLE_FIELDS,
+		action.setParamStringArray(GroupBy.SA_TUPLE_FIELDS,
 				TString.class.getName(), TInt.class.getName());
-		action.setParamByteArray(GroupBy.FIELDS_TO_GROUP, (byte) 0);
+		action.setParamByteArray(GroupBy.IA_FIELDS_TO_GROUP, (byte) 0);
 		actions.add(action);
 
 		// Sum the counts
@@ -100,7 +100,7 @@ public class WordCount {
 
 		// Write the results on files
 		action = ActionFactory.getActionConf(WriteToFiles.class);
-		action.setParamString(WriteToFiles.OUTPUT_DIR, outDir);
+		action.setParamString(WriteToFiles.S_OUTPUT_DIR, outDir);
 		actions.add(action);
 
 		job.setActions(actions);

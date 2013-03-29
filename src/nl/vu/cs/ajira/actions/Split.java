@@ -6,7 +6,7 @@ import nl.vu.cs.ajira.data.types.Tuple;
 public class Split extends Action {
 
 	public static final int SPLIT = 0;
-	public static final int RECONNECT_AFTER_ACTIONS = 1;
+	public static final int I_RECONNECT_AFTER_ACTIONS = 1;
 	private WritableListActions actions = new WritableListActions();
 	private ActionOutput alternativePath = null;
 	private int reconnectAt;
@@ -14,14 +14,14 @@ public class Split extends Action {
 	@Override
 	public void registerActionParameters(ActionConf conf) {
 		conf.registerParameter(SPLIT, "SPLIT", null, false);
-		conf.registerParameter(RECONNECT_AFTER_ACTIONS, "RECONNECT_AFTER_ACTIONS", -1,
+		conf.registerParameter(I_RECONNECT_AFTER_ACTIONS, "I_RECONNECT_AFTER_ACTIONS", -1,
 				false);
 	}
 
 	@Override
 	public void startProcess(ActionContext context) throws Exception {
 		getParamWritable(actions, SPLIT);
-		reconnectAt = getParamInt(RECONNECT_AFTER_ACTIONS);
+		reconnectAt = getParamInt(I_RECONNECT_AFTER_ACTIONS);
 		alternativePath = null;
 	}
 

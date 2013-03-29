@@ -14,10 +14,8 @@ public class WriteToBucket extends Action {
 	static final Logger log = LoggerFactory.getLogger(WriteToBucket.class);
 	public static final int ALL_NODES = -1;
 
-	public static final int BUCKET_ID = 0;
-	private static final String S_BUCKET_ID = "BUCKET_ID";
-	public static final int TUPLE_FIELDS = 1;
-	private static final String S_TUPLE_FIELDS = "TUPLE_FIELDS";
+	public static final int I_BUCKET_ID = 0;
+	public static final int SA_TUPLE_FIELDS = 1;
 
 	private Bucket bucket = null;
 	private int bucketID;
@@ -28,27 +26,27 @@ public class WriteToBucket extends Action {
 		public void setupAction(InputQuery query, Object[] params,
 				ActionController controller, ActionContext context) {
 			// Convert the tuple fields in numbers
-			TStringArray fields = (TStringArray) params[TUPLE_FIELDS];
+			TStringArray fields = (TStringArray) params[SA_TUPLE_FIELDS];
 			byte[] f = new byte[fields.getArray().length];
 			int i = 0;
 			for (String v : fields.getArray()) {
 				f[i++] = (byte) DataProvider.getId(v);
 			}
-			params[TUPLE_FIELDS] = f;
+			params[SA_TUPLE_FIELDS] = f;
 		}
 	}
 
 	@Override
 	public void registerActionParameters(ActionConf conf) {
-		conf.registerParameter(BUCKET_ID, S_BUCKET_ID, null, true);
-		conf.registerParameter(TUPLE_FIELDS, S_TUPLE_FIELDS, null, true);
+		conf.registerParameter(I_BUCKET_ID, "I_BUCKET_ID", null, true);
+		conf.registerParameter(SA_TUPLE_FIELDS, "SA_TUPLE_FIELDS", null, true);
 		conf.registerCustomConfigurator(new ParametersProcessor());
 	}
 
 	@Override
 	public void startProcess(ActionContext context) throws Exception {
-		bucketID = getParamInt(BUCKET_ID);
-		fields = getParamByteArray(TUPLE_FIELDS);
+		bucketID = getParamInt(I_BUCKET_ID);
+		fields = getParamByteArray(SA_TUPLE_FIELDS);
 		bucket = context.getBucket(bucketID, false, null, fields);
 	}
 

@@ -7,11 +7,10 @@ public class Branch extends Action {
 
 	/***** PARAMETERS *****/
 	public static final int BRANCH = 0;
-	public static final String S_BRANCH = "BRANCH";
 
 	@Override
 	public void registerActionParameters(ActionConf conf) {
-		conf.registerParameter(BRANCH, S_BRANCH, null, true);
+		conf.registerParameter(BRANCH, "BRANCH", null, true);
 	}
 
 	@Override

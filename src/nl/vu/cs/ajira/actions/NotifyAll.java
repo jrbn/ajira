@@ -4,17 +4,17 @@ import nl.vu.cs.ajira.data.types.Tuple;
 
 public class NotifyAll extends Action {
 
-	public static final int TOKEN = 0;
+	public static final int I_TOKEN = 0;
 	int token;
 
 	@Override
 	public void registerActionParameters(ActionConf conf) {
-		conf.registerParameter(TOKEN, "TOKEN", null, true);
+		conf.registerParameter(I_TOKEN, "I_TOKEN", null, true);
 	}
 
 	@Override
 	public void startProcess(ActionContext context) throws Exception {
-		token = getParamInt(TOKEN);
+		token = getParamInt(I_TOKEN);
 	}
 
 	@Override
