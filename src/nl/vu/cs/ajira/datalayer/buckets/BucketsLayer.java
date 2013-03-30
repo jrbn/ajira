@@ -47,7 +47,7 @@ public class BucketsLayer extends InputLayer {
 
 	/**
 	 * Returns the ChainLocation for the location with the value 
-	 * of the last element of the tuple. If it does not exists
+	 * of the last element of the tuple. If it does not exist
 	 * it constructs a new ChainLocation.
 	 */
 	@Override

@@ -9,19 +9,19 @@ import nl.vu.cs.ajira.data.types.Tuple;
 public class WaitFor extends Action {
 
 	/**
-	 * The <code>TOKEN</code> parameter, of type <code>int</code>, is required, and specifies
+	 * The <code>I_TOKEN</code> parameter, of type <code>int</code>, is required, and specifies
 	 * the signal to wait for.
 	 */
-	public static final int TOKEN = 0;
+	public static final int I_TOKEN = 0;
 
 	@Override
 	public void registerActionParameters(ActionConf conf) {
-		conf.registerParameter(TOKEN, "TOKEN", null, true);
+		conf.registerParameter(I_TOKEN, "I_TOKEN", null, true);
 	}
 
 	@Override
 	public void startProcess(ActionContext context) throws Exception {
-		int token = getParamInt(TOKEN);
+		int token = getParamInt(I_TOKEN);
 		context.waitFor(token);
 	}
 

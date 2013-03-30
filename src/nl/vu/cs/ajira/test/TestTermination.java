@@ -87,7 +87,7 @@ public class TestTermination {
 		ActionSequence actions = new ActionSequence();
 
 		ActionConf c = ActionFactory.getActionConf(ReadFromFiles.class);
-		c.setParamString(ReadFromFiles.PATH, inDir);
+		c.setParamString(ReadFromFiles.S_PATH, inDir);
 		actions.add(c);
 
 		// A
@@ -96,7 +96,7 @@ public class TestTermination {
 		// Read the input files
 		ActionSequence branchActions = new ActionSequence();
 		c = ActionFactory.getActionConf(ReadFromFiles.class);
-		c.setParamString(ReadFromFiles.PATH, inDir);
+		c.setParamString(ReadFromFiles.S_PATH, inDir);
 		branchActions.add(c);
 
 		// Split
@@ -104,13 +104,13 @@ public class TestTermination {
 		ActionSequence l = new ActionSequence();
 		l.add(ActionFactory.getActionConf(E.class));
 		l.add(ActionFactory.getActionConf(F.class));
-		c.setParamWritable(Split.SPLIT, l);
-		c.setParamInt(Split.RECONNECT_AFTER_ACTIONS, 3);
+		c.setParamWritable(Split.W_SPLIT, l);
+		c.setParamInt(Split.I_RECONNECT_AFTER_ACTIONS, 3);
 		branchActions.add(c);
 
 		// Branch
 		c = ActionFactory.getActionConf(Branch.class);
-		c.setParamWritable(Branch.BRANCH, branchActions);
+		c.setParamWritable(Branch.W_BRANCH, branchActions);
 		actions.add(c);
 
 		// B
@@ -118,9 +118,9 @@ public class TestTermination {
 
 		// Partition
 		c = ActionFactory.getActionConf(PartitionToNodes.class);
-		c.setParamStringArray(PartitionToNodes.TUPLE_FIELDS,
+		c.setParamStringArray(PartitionToNodes.SA_TUPLE_FIELDS,
 				TString.class.getName());
-		c.setParamInt(PartitionToNodes.NPARTITIONS_PER_NODE, 2);
+		c.setParamInt(PartitionToNodes.I_NPARTITIONS_PER_NODE, 2);
 		actions.add(c);
 
 		// C
@@ -128,9 +128,9 @@ public class TestTermination {
 
 		// Partition
 		c = ActionFactory.getActionConf(PartitionToNodes.class);
-		c.setParamStringArray(PartitionToNodes.TUPLE_FIELDS,
+		c.setParamStringArray(PartitionToNodes.SA_TUPLE_FIELDS,
 				TString.class.getName());
-		c.setParamInt(PartitionToNodes.NPARTITIONS_PER_NODE, 4);
+		c.setParamInt(PartitionToNodes.I_NPARTITIONS_PER_NODE, 4);
 		actions.add(c);
 
 		// D
@@ -138,7 +138,7 @@ public class TestTermination {
 
 		// Write the results on files
 		c = ActionFactory.getActionConf(WriteToFiles.class);
-		c.setParamString(WriteToFiles.OUTPUT_DIR, outDir);
+		c.setParamString(WriteToFiles.S_OUTPUT_DIR, outDir);
 		actions.add(c);
 
 		job.setActions(actions);

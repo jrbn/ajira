@@ -109,15 +109,15 @@ public class GroupBy extends Action {
 		}
 	}
 
-	public static int FIELDS_TO_GROUP = 0;
-	public static final int TUPLE_FIELDS = 1;
-	public static final int NPARTITIONS_PER_NODE = 2;
+	public static int IA_FIELDS_TO_GROUP = 0;
+	public static final int SA_TUPLE_FIELDS = 1;
+	public static final int I_NPARTITIONS_PER_NODE = 2;
 
 	private GroupIterator itr;
 	private byte[] posFieldsToGroup;
 	private SimpleData[] outputTuple;
 
-	public static class Configurator extends ActionConf.Configurator {
+	private static class Configurator extends ActionConf.Configurator {
 
 		@Override
 		public void setupAction(InputQuery query, Object[] params,
@@ -127,18 +127,20 @@ public class GroupBy extends Action {
 			// parameter
 			ActionConf partition = ActionFactory
 					.getActionConf(PartitionToNodes.class);
+			
+			params[IA_FIELDS_TO_GROUP] = convertToBytes(params[IA_FIELDS_TO_GROUP]);
 
-			partition.setParamBoolean(PartitionToNodes.SORT, true);
-			byte[] fieldsToSort = (byte[]) params[FIELDS_TO_GROUP];
-			partition.setParamByteArray(PartitionToNodes.SORTING_FIELDS,
+			partition.setParamBoolean(PartitionToNodes.B_SORT, true);
+			byte[] fieldsToSort = (byte[]) params[IA_FIELDS_TO_GROUP];
+			partition.setParamByteArray(PartitionToNodes.IA_SORTING_FIELDS,
 					fieldsToSort);
-			partition.setParamByteArray(PartitionToNodes.PARTITION_FIELDS,
+			partition.setParamByteArray(PartitionToNodes.IA_PARTITION_FIELDS,
 					fieldsToSort);
-			partition.setParamStringArray(PartitionToNodes.TUPLE_FIELDS,
-					(TStringArray) params[TUPLE_FIELDS]);
-			if (params[NPARTITIONS_PER_NODE] != null) {
-				partition.setParamInt(PartitionToNodes.NPARTITIONS_PER_NODE,
-						(Integer) params[NPARTITIONS_PER_NODE]);
+			partition.setParamStringArray(PartitionToNodes.SA_TUPLE_FIELDS,
+					(TStringArray) params[SA_TUPLE_FIELDS]);
+			if (params[I_NPARTITIONS_PER_NODE] != null) {
+				partition.setParamInt(PartitionToNodes.I_NPARTITIONS_PER_NODE,
+						(Integer) params[I_NPARTITIONS_PER_NODE]);
 			}
 			controller.addAction(partition);
 		}
@@ -146,16 +148,16 @@ public class GroupBy extends Action {
 
 	@Override
 	public void registerActionParameters(ActionConf conf) {
-		conf.registerParameter(FIELDS_TO_GROUP, "FIELDS_TO_GROUP", null, true);
-		conf.registerParameter(TUPLE_FIELDS, "TUPLE_FIELDS", null, true);
-		conf.registerParameter(NPARTITIONS_PER_NODE, "NPARTITIONS_PER_NODE", null,
+		conf.registerParameter(IA_FIELDS_TO_GROUP, "FIELDS_TO_GROUP", null, true);
+		conf.registerParameter(SA_TUPLE_FIELDS, "TUPLE_FIELDS", null, true);
+		conf.registerParameter(I_NPARTITIONS_PER_NODE, "NPARTITIONS_PER_NODE", null,
 				false);
 		conf.registerCustomConfigurator(new Configurator());
 	}
 
 	@Override
 	public void startProcess(ActionContext context) throws Exception {
-		posFieldsToGroup = getParamByteArray(FIELDS_TO_GROUP);
+		posFieldsToGroup = getParamByteArray(IA_FIELDS_TO_GROUP);
 		outputTuple = new SimpleData[posFieldsToGroup.length + 1];
 		itr = null;
 	}

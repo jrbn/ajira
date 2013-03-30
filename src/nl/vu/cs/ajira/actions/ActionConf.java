@@ -69,6 +69,22 @@ public class ActionConf implements Writable {
 		protected abstract void setupAction(InputQuery query, Object[] params,
 				ActionController controller, ActionContext context)
 				throws Exception;
+		
+		// Converts an int[] to byte[].
+		protected Object convertToBytes(Object o) {
+			if (o == null) {
+				return o;
+			}
+			if (o instanceof int[]) {
+				int[] v = (int[]) o;
+				byte[] b = new byte[v.length];
+				for (int i = 0; i < b.length; i++) {
+					b[i] = (byte) v[i];
+				}
+				return b;
+			}
+			return o;
+		}
 	}
 
 	static class ParamItem {

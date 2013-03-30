@@ -22,68 +22,62 @@ public class PartitionToNodes extends Action {
 	/* PARAMETERS */
 
 	/**
-	 * The <code>SORT</code> parameter is of type <code>boolean</code>, is not
+	 * The <code>B_SORT</code> parameter is of type <code>boolean</code>, is not
 	 * required, and defaults to <code>false</code>. When set, the resulting
 	 * partitions will be sorted.
 	 */
-	public static final int SORT = 0;
-	private static final String S_SORT = "SORT";
+
+	public static final int B_SORT = 0;
 
 	/**
-	 * The <code>PARTITIONER</code> parameter is of type <code>String</code>, is
-	 * not required, and defaults to the class name of {@link HashPartitioner}.
-	 * It indicates a class name of a class that must implement
-	 * {@link Partitioner}, and must have a public parameterless constructor.
+	 * The <code>S_PARTITIONER</code> parameter is of type <code>String</code>,
+	 * is not required, and defaults to the class name of
+	 * {@link HashPartitioner}. It indicates a class name of a class that must
+	 * implement {@link Partitioner}, and must have a public parameterless
+	 * constructor.
 	 */
-	public static final int PARTITIONER = 1;
-	private static final String S_PARTITIONER = "PARTITIONER";
-
+	public static final int S_PARTITIONER = 1;
 	/**
-	 * The <code>NPARTITIONS_PER_NODE</code> parameter is of type
+	 * The <code>I_NPARTITIONS_PER_NODE</code> parameter is of type
 	 * <code>int</code>, is not required, and defaults to <code>1</code> if no
 	 * destination buckets were specified, otherwise it defaults to the number
 	 * of destination buckets. It indicates the number of partitions per node.
 	 */
-	public static final int NPARTITIONS_PER_NODE = 2;
-	private static final String S_NPARTITIONS_PER_NODE = "NPARTITIONS_PER_NODE";
+	public static final int I_NPARTITIONS_PER_NODE = 2;
 
 	/**
-	 * The <code>BUCKET_IDS</code> parameter is of type {@link TIntArray} and is
-	 * not required. If not specified, new bucket identifications are generated
-	 * on the fly, as needed. When specified, it contains a list of integers,
-	 * one bucket identifier for each partition per node.
+	 * The <code>IA_BUCKET_IDS</code> parameter is of type {@link TIntArray} and
+	 * is not required. If not specified, new bucket identifications are
+	 * generated on the fly, as needed. When specified, it contains a list of
+	 * integers, one bucket identifier for each partition per node.
 	 */
-	private static final int BUCKET_IDS = 3;
-	private static final String S_BUCKET_IDS = "BUCKET_IDS";
+	private static final int IA_BUCKET_IDS = 3;
 
 	/**
-	 * The <code>SORTING_FIELDS</code> parameter is of type <code>byte[]</code>,
-	 * is not required, and is only significant when the result has to be
-	 * sorted. In that case, this field determines which fields of the tuples
-	 * are going to be considered when sorting. For instance, if the byte array
-	 * contains <code>{2, 0}</code>, the sorting will use field 2 and field 0,
-	 * in that order. When not specified, all fields are used, in ascending
-	 * order.
+	 * The <code>IA_SORTING_FIELDS</code> parameter is of type
+	 * <code>int[]</code>, is not required, and is only significant when the
+	 * result has to be sorted. In that case, this field determines which fields
+	 * of the tuples are going to be considered when sorting. For instance, if
+	 * the int array contains <code>{2, 0}</code>, the sorting will use field 2
+	 * and field 0, in that order. When not specified, all fields are used, in
+	 * ascending order.
 	 */
-	public static final int SORTING_FIELDS = 4;
-	private static final String S_SORTING_FIELDS = "SORTING_FIELDS";
+	public static final int IA_SORTING_FIELDS = 4;
 
 	/**
-	 * The <code>TUPLE_FIELDS</code> parameter is of type <code>String[]</code>,
-	 * is required, and specifies the class name of the type of each field in
-	 * the tuple (see {@link nl.vu.cs.ajira.data.types}).
+	 * The <code>SA_TUPLE_FIELDS</code> parameter is of type
+	 * <code>String[]</code>, is required, and specifies the class name of the
+	 * type of each field in the tuple (see {@link nl.vu.cs.ajira.data.types}).
 	 */
-	public static final int TUPLE_FIELDS = 5;
-	private static final String S_TUPLE_FIELDS = "TUPLE_FIELDS";
+	public static final int SA_TUPLE_FIELDS = 5;
 
 	/**
-	 * The <code>PARTITION_FIELDS</code> parameter is of type
-	 * <code>byte[]</code>, and is not required This field determines which
+	 * The <code>IA_PARTITION_FIELDS</code> parameter is of type
+	 * <code>int[]</code>, and is not required. This field determines which
 	 * fields of the tuples are going to be considered when partitioning (see
 	 * {@link Partitioner#init(ActionContext, int, byte[])}.
 	 */
-	public static final int PARTITION_FIELDS = 6;
-	private static final String S_PARTITION_FIELDS = "PARTITION_FIELDS";
+	public static final int IA_PARTITION_FIELDS = 6;
 
 	static final Logger log = LoggerFactory.getLogger(PartitionToNodes.class);
 
@@ -105,68 +99,72 @@ public class PartitionToNodes extends Action {
 		@Override
 		public void setupAction(InputQuery query, Object[] params,
 				ActionController controller, ActionContext context) {
-			if (params[NPARTITIONS_PER_NODE] == null) {
-				if (params[BUCKET_IDS] == null) {
-					params[NPARTITIONS_PER_NODE] = 1;
+			if (params[I_NPARTITIONS_PER_NODE] == null) {
+				if (params[IA_BUCKET_IDS] == null) {
+					params[I_NPARTITIONS_PER_NODE] = 1;
 				} else {
-					TIntArray t = (TIntArray) params[BUCKET_IDS];
-					params[NPARTITIONS_PER_NODE] = t.getArray().length;
+					TIntArray t = (TIntArray) params[IA_BUCKET_IDS];
+					params[I_NPARTITIONS_PER_NODE] = t.getArray().length;
 				}
 			}
 
-			if (params[BUCKET_IDS] == null) {
-				int np = (Integer) params[NPARTITIONS_PER_NODE];
+			if (params[IA_BUCKET_IDS] == null) {
+				int np = (Integer) params[I_NPARTITIONS_PER_NODE];
 				TIntArray array = new TIntArray(np);
 				for (int i = 0; i < np; ++i) {
 					array.getArray()[i] = context.getNewBucketID();
 				}
-				params[BUCKET_IDS] = array;
+				params[IA_BUCKET_IDS] = array;
 			}
 
 			// Convert the tuple fields in numbers
-			TStringArray fields = (TStringArray) params[TUPLE_FIELDS];
+			TStringArray fields = (TStringArray) params[SA_TUPLE_FIELDS];
 			byte[] f = new byte[fields.getArray().length];
 			int i = 0;
 			for (String v : fields.getArray()) {
 				f[i++] = (byte) DataProvider.getId(v);
 			}
-			params[TUPLE_FIELDS] = f;
+			params[SA_TUPLE_FIELDS] = f;
 
-			if (params[SORT] == null) {
-				params[SORT] = new Boolean(false);
+			if (params[B_SORT] == null) {
+				params[B_SORT] = new Boolean(false);
 			}
 
+			params[IA_SORTING_FIELDS] = convertToBytes(params[IA_SORTING_FIELDS]);
+			params[IA_PARTITION_FIELDS] = convertToBytes(params[IA_PARTITION_FIELDS]);
+
 			controller.continueComputationOn(-1,
-					((TIntArray) params[BUCKET_IDS]).getArray()[0]);
+					((TIntArray) params[IA_BUCKET_IDS]).getArray()[0]);
 		}
 	}
 
 	@Override
 	public void registerActionParameters(ActionConf conf) {
-		conf.registerParameter(SORT, S_SORT, false, false);
-		conf.registerParameter(PARTITIONER, S_PARTITIONER,
+		conf.registerParameter(B_SORT, "B_SORT", false, false);
+		conf.registerParameter(S_PARTITIONER, "S_PARTITIONER",
 				HashPartitioner.class.getName(), false);
-		conf.registerParameter(NPARTITIONS_PER_NODE, S_NPARTITIONS_PER_NODE,
-				null, false);
-		conf.registerParameter(BUCKET_IDS, S_BUCKET_IDS, null, false);
-		conf.registerParameter(SORTING_FIELDS, S_SORTING_FIELDS, null, false);
-		conf.registerParameter(TUPLE_FIELDS, S_TUPLE_FIELDS, null, true);
-		conf.registerParameter(PARTITION_FIELDS, S_PARTITION_FIELDS, null,
+		conf.registerParameter(I_NPARTITIONS_PER_NODE,
+				"I_NPARTITIONS_PER_NODE", null, false);
+		conf.registerParameter(IA_BUCKET_IDS, "IA_BUCKET_IDS", null, false);
+		conf.registerParameter(IA_SORTING_FIELDS, "IA_SORTING_FIELDS", null,
 				false);
+		conf.registerParameter(SA_TUPLE_FIELDS, "SA_TUPLE_FIELDS", null, true);
+		conf.registerParameter(IA_PARTITION_FIELDS, "IA_PARTITION_FIELDS",
+				null, false);
 
 		conf.registerCustomConfigurator(new ParametersProcessor());
 	}
 
 	@Override
 	public void startProcess(ActionContext context) throws Exception {
-		shouldSort = getParamBoolean(SORT);
-		sortingFields = getParamByteArray(SORTING_FIELDS);
+		shouldSort = getParamBoolean(B_SORT);
+		sortingFields = getParamByteArray(IA_SORTING_FIELDS);
 
-		sPartitioner = getParamString(PARTITIONER);
-		nPartitionsPerNode = getParamInt(NPARTITIONS_PER_NODE);
-		partitionFields = getParamByteArray(PARTITION_FIELDS);
+		sPartitioner = getParamString(S_PARTITIONER);
+		nPartitionsPerNode = getParamInt(I_NPARTITIONS_PER_NODE);
+		partitionFields = getParamByteArray(IA_PARTITION_FIELDS);
 
-		bucketIds = getParamIntArray(BUCKET_IDS);
+		bucketIds = getParamIntArray(IA_BUCKET_IDS);
 		nPartitions = nPartitionsPerNode * context.getNumberNodes();
 		if (nPartitions > 1) {
 			partition = true;
@@ -174,7 +172,7 @@ public class PartitionToNodes extends Action {
 			partition = false;
 		}
 
-		tupleFields = getParamByteArray(TUPLE_FIELDS);
+		tupleFields = getParamByteArray(SA_TUPLE_FIELDS);
 
 		// Init variables
 		bucketsCache = new Bucket[nPartitions];
@@ -232,8 +230,8 @@ public class PartitionToNodes extends Action {
 			for (int i = 1; i < nPartitionsPerNode; i++) {
 				ActionConf c = ActionFactory
 						.getActionConf(ReadFromBucket.class);
-				c.setParamInt(ReadFromBucket.BUCKET_ID, bucketIds[i]);
-				c.setParamInt(ReadFromBucket.NODE_ID, -1);
+				c.setParamInt(ReadFromBucket.I_BUCKET_ID, bucketIds[i]);
+				c.setParamInt(ReadFromBucket.I_NODE_ID, -1);
 				output.branch(new ActionSequence(c));
 			}
 		}

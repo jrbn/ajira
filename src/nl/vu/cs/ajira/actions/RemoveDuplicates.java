@@ -4,7 +4,8 @@ import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.data.types.TupleFactory;
 
 /**
- * This action removes duplicates from sorted input.
+ * The <code>RemoveDuplicates</code> action removes duplicates from sorted input: only
+ * unique input tuples are passed on to the {@link ActionOutput}.
  */
 public class RemoveDuplicates extends Action {
 
