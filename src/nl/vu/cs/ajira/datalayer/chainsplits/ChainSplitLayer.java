@@ -4,9 +4,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import nl.vu.cs.ajira.Context;
-import nl.vu.cs.ajira.actions.ActionConf;
 import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.actions.ActionOutput;
+import nl.vu.cs.ajira.actions.ActionSequence;
 import nl.vu.cs.ajira.chains.ChainLocation;
 import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.TInt;
@@ -25,7 +25,7 @@ public class ChainSplitLayer extends InputLayer {
 	public static class SplitIterator extends TupleIterator implements
 			ActionOutput {
 
-		private int id;
+		private final int id;
 		private boolean isOpen = true;
 		private Tuple tuple = null;
 
@@ -80,12 +80,12 @@ public class ChainSplitLayer extends InputLayer {
 		}
 
 		@Override
-		public void branch(ActionConf... actions) throws Exception {
+		public void branch(ActionSequence actions) throws Exception {
 			throw new Exception("Not allowed");
 		}
 
 		@Override
-		public ActionOutput split(int reconnectAt, ActionConf... actions)
+		public ActionOutput split(int reconnectAt, ActionSequence actions)
 				throws Exception {
 			throw new Exception("Not allowed");
 		}

@@ -19,12 +19,12 @@ import java.util.Properties;
 
 import nl.vu.cs.ajira.buckets.WritableTuple;
 import nl.vu.cs.ajira.data.types.Tuple;
+import nl.vu.cs.ajira.exceptions.JobFailedException;
 import nl.vu.cs.ajira.net.NetworkLayer;
 import nl.vu.cs.ajira.net.ReadMessageWrapper;
 import nl.vu.cs.ajira.net.WriteMessageWrapper;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.submissions.Job;
-import nl.vu.cs.ajira.submissions.JobFailedException;
 import nl.vu.cs.ajira.utils.Consts;
 
 import org.slf4j.Logger;

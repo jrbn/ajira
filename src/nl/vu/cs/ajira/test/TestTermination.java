@@ -1,24 +1,21 @@
 package nl.vu.cs.ajira.test;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import nl.vu.cs.ajira.Ajira;
 import nl.vu.cs.ajira.actions.Action;
 import nl.vu.cs.ajira.actions.ActionConf;
 import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.actions.ActionFactory;
 import nl.vu.cs.ajira.actions.ActionOutput;
+import nl.vu.cs.ajira.actions.ActionSequence;
 import nl.vu.cs.ajira.actions.Branch;
 import nl.vu.cs.ajira.actions.PartitionToNodes;
 import nl.vu.cs.ajira.actions.ReadFromFiles;
 import nl.vu.cs.ajira.actions.Split;
 import nl.vu.cs.ajira.actions.WriteToFiles;
-import nl.vu.cs.ajira.actions.support.WritableListActions;
 import nl.vu.cs.ajira.data.types.TString;
 import nl.vu.cs.ajira.data.types.Tuple;
+import nl.vu.cs.ajira.exceptions.ActionNotConfiguredException;
 import nl.vu.cs.ajira.submissions.Job;
-import nl.vu.cs.ajira.submissions.JobFailedException;
 import nl.vu.cs.ajira.submissions.Submission;
 import nl.vu.cs.ajira.utils.Consts;
 
@@ -84,9 +81,10 @@ public class TestTermination {
 		}
 	}
 
-	public static Job createJob(String inDir, String outDir) {
+	public static Job createJob(String inDir, String outDir)
+			throws ActionNotConfiguredException {
 		Job job = new Job();
-		List<ActionConf> actions = new ArrayList<ActionConf>();
+		ActionSequence actions = new ActionSequence();
 
 		ActionConf c = ActionFactory.getActionConf(ReadFromFiles.class);
 		c.setParamString(ReadFromFiles.PATH, inDir);
@@ -96,24 +94,23 @@ public class TestTermination {
 		actions.add(ActionFactory.getActionConf(A.class));
 
 		// Read the input files
-		List<ActionConf> branchActions = new ArrayList<ActionConf>();
+		ActionSequence branchActions = new ActionSequence();
 		c = ActionFactory.getActionConf(ReadFromFiles.class);
 		c.setParamString(ReadFromFiles.PATH, inDir);
 		branchActions.add(c);
 
 		// Split
 		c = ActionFactory.getActionConf(Split.class);
-		List<ActionConf> l = new ArrayList<ActionConf>();
+		ActionSequence l = new ActionSequence();
 		l.add(ActionFactory.getActionConf(E.class));
 		l.add(ActionFactory.getActionConf(F.class));
-		c.setParamWritable(Split.SPLIT, new WritableListActions(l));
+		c.setParamWritable(Split.SPLIT, l);
 		c.setParamInt(Split.RECONNECT_AFTER_ACTIONS, 3);
 		branchActions.add(c);
 
 		// Branch
 		c = ActionFactory.getActionConf(Branch.class);
-		c.setParamWritable(Branch.BRANCH,
-				new WritableListActions(branchActions));
+		c.setParamWritable(Branch.BRANCH, branchActions);
 		actions.add(c);
 
 		// B
@@ -159,15 +156,16 @@ public class TestTermination {
 		if (ajira.amItheServer()) {
 
 			// Configure the job
-			Job job = createJob(args[0], args[1]);
-
-			// Launch it!
-			Submission sub;
 			try {
+				Job job = createJob(args[0], args[1]);
+
+				// Launch it!
+				Submission sub;
+
 				sub = ajira.waitForCompletion(job);
 				// Print output
 				sub.printStatistics();
-			} catch (JobFailedException e) {
+			} catch (Exception e) {
 				System.err.println("Job failed: " + e);
 				e.printStackTrace(System.err);
 				Throwable ex = e.getCause();

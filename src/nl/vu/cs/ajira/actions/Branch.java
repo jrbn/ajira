@@ -1,6 +1,5 @@
 package nl.vu.cs.ajira.actions;
 
-import nl.vu.cs.ajira.actions.support.WritableListActions;
 import nl.vu.cs.ajira.data.types.Tuple;
 
 public class Branch extends Action {
@@ -28,9 +27,9 @@ public class Branch extends Action {
 	public void stopProcess(ActionContext context, ActionOutput output)
 			throws Exception {
 		if (context.isPrincipalBranch()) {
-			WritableListActions branch = new WritableListActions();
+			ActionSequence branch = new ActionSequence();
 			getParamWritable(branch, BRANCH);
-			output.branch(branch.getActions());
+			output.branch(branch);
 		}
 	}
 }

@@ -7,13 +7,14 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import nl.vu.cs.ajira.Context;
-import nl.vu.cs.ajira.actions.ActionConf;
 import nl.vu.cs.ajira.actions.ActionFactory;
+import nl.vu.cs.ajira.actions.ActionSequence;
 import nl.vu.cs.ajira.buckets.Bucket;
 import nl.vu.cs.ajira.buckets.Buckets;
 import nl.vu.cs.ajira.chains.Chain;
 import nl.vu.cs.ajira.chains.ChainExecutor;
 import nl.vu.cs.ajira.data.types.DataProvider;
+import nl.vu.cs.ajira.exceptions.JobFailedException;
 import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.net.NetworkLayer;
 import nl.vu.cs.ajira.storage.Container;
@@ -167,8 +168,8 @@ public class SubmissionRegistry {
 
 		try {
 			submissions.put(submissionId, sub);
-			
-			ActionConf[] actions = job.getActions();
+
+			ActionSequence actions = job.getActions();
 
 			if (actions == null) {
 				throw new Exception("No action is defined!");
@@ -177,8 +178,8 @@ public class SubmissionRegistry {
 			Chain chain = new Chain();
 			chain.setParentChainId(-1);
 			chain.setInputLayer(Consts.DEFAULT_INPUT_LAYER_ID);
-			int resultBucket = chain.setActions(
-					new ChainExecutor(null, context, chain), actions);
+			int resultBucket = chain.setActions(new ChainExecutor(null,
+					context, chain), actions);
 
 			if (resultBucket != -1) {
 				sub.assignedBucket = resultBucket;

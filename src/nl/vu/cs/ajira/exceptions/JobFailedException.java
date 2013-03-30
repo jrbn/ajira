@@ -1,4 +1,4 @@
-package nl.vu.cs.ajira.submissions;
+package nl.vu.cs.ajira.exceptions;
 
 /**
  * This exception gets thrown when a job fails for some reason. The cause of the

@@ -13,67 +13,74 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The <code>PartitionToNodes</code> action divides its input into partitions, one or more
- * per node participating in the run. Various parameters allow the user to control the
- * partitioning.
+ * The <code>PartitionToNodes</code> action divides its input into partitions,
+ * one or more per node participating in the run. Various parameters allow the
+ * user to control the partitioning.
  */
 public class PartitionToNodes extends Action {
 
 	/* PARAMETERS */
-	
+
 	/**
-	 *  The <code>SORT</code> parameter is of type <code>boolean</code>, is not required, and defaults
-	 *  to <code>false</code>. When set, the resulting partitions will be sorted.
+	 * The <code>SORT</code> parameter is of type <code>boolean</code>, is not
+	 * required, and defaults to <code>false</code>. When set, the resulting
+	 * partitions will be sorted.
 	 */
 	public static final int SORT = 0;
 	private static final String S_SORT = "SORT";
-	
+
 	/**
-	 * The <code>PARTITIONER</code> parameter is of type <code>String</code>, is not required, and
-	 * defaults to the class name of {@link HashPartitioner}. It indicates a class name of a
-	 * class that must implement {@link Partitioner}, and must have a public parameterless constructor.
+	 * The <code>PARTITIONER</code> parameter is of type <code>String</code>, is
+	 * not required, and defaults to the class name of {@link HashPartitioner}.
+	 * It indicates a class name of a class that must implement
+	 * {@link Partitioner}, and must have a public parameterless constructor.
 	 */
 	public static final int PARTITIONER = 1;
 	private static final String S_PARTITIONER = "PARTITIONER";
-	
+
 	/**
-	 * The <code>NPARTITIONS_PER_NODE</code> parameter is of type <code>int</code>, is not required,
-	 * and defaults to <code>1</code> if no destination buckets were specified, otherwise it defaults
-	 * to the number of destination buckets. It indicates the number of partitions per node.
+	 * The <code>NPARTITIONS_PER_NODE</code> parameter is of type
+	 * <code>int</code>, is not required, and defaults to <code>1</code> if no
+	 * destination buckets were specified, otherwise it defaults to the number
+	 * of destination buckets. It indicates the number of partitions per node.
 	 */
 	public static final int NPARTITIONS_PER_NODE = 2;
 	private static final String S_NPARTITIONS_PER_NODE = "NPARTITIONS_PER_NODE";
-	
+
 	/**
-	 * The <code>BUCKET_IDS</code> parameter is of type {@link TIntArray} and is not required.
-	 * If not specified, new bucket identifications are generated on the fly, as needed.
-	 * When specified, it contains a list of integers, one bucket identifier for each partition
-	 * per node.
+	 * The <code>BUCKET_IDS</code> parameter is of type {@link TIntArray} and is
+	 * not required. If not specified, new bucket identifications are generated
+	 * on the fly, as needed. When specified, it contains a list of integers,
+	 * one bucket identifier for each partition per node.
 	 */
 	private static final int BUCKET_IDS = 3;
 	private static final String S_BUCKET_IDS = "BUCKET_IDS";
-	
+
 	/**
-	 * The <code>SORTING_FIELDS</code> parameter is of type <code>byte[]</code>, is not required,
-	 * and is only significant when the result has to be sorted. In that case, this field determines
-	 * which fields of the tuples are going to be considered when sorting. For instance, if the
-	 * byte array contains <code>{2, 0}</code>, the sorting will use field 2 and field 0, in that
-	 * order. When not specified, all fields are used, in ascending order.
+	 * The <code>SORTING_FIELDS</code> parameter is of type <code>byte[]</code>,
+	 * is not required, and is only significant when the result has to be
+	 * sorted. In that case, this field determines which fields of the tuples
+	 * are going to be considered when sorting. For instance, if the byte array
+	 * contains <code>{2, 0}</code>, the sorting will use field 2 and field 0,
+	 * in that order. When not specified, all fields are used, in ascending
+	 * order.
 	 */
 	public static final int SORTING_FIELDS = 4;
 	private static final String S_SORTING_FIELDS = "SORTING_FIELDS";
-	
+
 	/**
-	 * The <code>TUPLE_FIELDS</code> parameter is of type <code>String[]</code>, is required, and
-	 * specifies the class name of the type of each field in the tuple (see {@link nl.vu.cs.ajira.data.types}).
+	 * The <code>TUPLE_FIELDS</code> parameter is of type <code>String[]</code>,
+	 * is required, and specifies the class name of the type of each field in
+	 * the tuple (see {@link nl.vu.cs.ajira.data.types}).
 	 */
 	public static final int TUPLE_FIELDS = 5;
 	private static final String S_TUPLE_FIELDS = "TUPLE_FIELDS";
-	
+
 	/**
-	 * The <code>PARTITION_FIELDS</code> parameter is of type <code>byte[]</code>, and is not required
-	 * This field determines which fields of the tuples are going to be considered when partitioning
-	 * (see {@link Partitioner#init(ActionContext, int, byte[])}.
+	 * The <code>PARTITION_FIELDS</code> parameter is of type
+	 * <code>byte[]</code>, and is not required This field determines which
+	 * fields of the tuples are going to be considered when partitioning (see
+	 * {@link Partitioner#init(ActionContext, int, byte[])}.
 	 */
 	public static final int PARTITION_FIELDS = 6;
 	private static final String S_PARTITION_FIELDS = "PARTITION_FIELDS";
@@ -209,13 +216,14 @@ public class PartitionToNodes extends Action {
 	}
 
 	@Override
-	public void stopProcess(ActionContext context, ActionOutput output) throws Exception {
-		
+	public void stopProcess(ActionContext context, ActionOutput output)
+			throws Exception {
+
 		for (int i = 0; i < nPartitions; ++i) {
 			int nodeNo = i / nPartitionsPerNode;
 			int bucketNo = bucketIds[i % nPartitionsPerNode];
-			context.finishTransfer(nodeNo, bucketNo, shouldSort,
-					sortingFields, bucketsCache[i] != null, tupleFields);
+			context.finishTransfer(nodeNo, bucketNo, shouldSort, sortingFields,
+					bucketsCache[i] != null, tupleFields);
 		}
 
 		// Send the chains to process the buckets to all the nodes that
@@ -226,7 +234,7 @@ public class PartitionToNodes extends Action {
 						.getActionConf(ReadFromBucket.class);
 				c.setParamInt(ReadFromBucket.BUCKET_ID, bucketIds[i]);
 				c.setParamInt(ReadFromBucket.NODE_ID, -1);
-				output.branch(c);
+				output.branch(new ActionSequence(c));
 			}
 		}
 

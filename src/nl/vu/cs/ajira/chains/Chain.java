@@ -11,6 +11,7 @@ import nl.vu.cs.ajira.actions.ActionConf;
 import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.actions.ActionController;
 import nl.vu.cs.ajira.actions.ActionFactory;
+import nl.vu.cs.ajira.actions.ActionSequence;
 import nl.vu.cs.ajira.actions.support.Query;
 import nl.vu.cs.ajira.buckets.WritableTuple;
 import nl.vu.cs.ajira.data.types.DataProvider;
@@ -64,7 +65,7 @@ public class Chain implements Writable, InputQuery {
 
 	private static final int CHAIN_RESERVED_SPACE = 39;
 
-	private FlowController controller = new FlowController();
+	private final FlowController controller = new FlowController();
 
 	private int bufferSize = CHAIN_RESERVED_SPACE;
 	private final byte[] buffer = new byte[Consts.CHAIN_SIZE];
@@ -177,30 +178,17 @@ public class Chain implements Writable, InputQuery {
 		tuple.copyTo(query.getTuple());
 	}
 
-	public int setActions(ActionContext context, ActionConf... actions)
+	public int setActions(ActionContext context, ActionSequence actions)
 			throws Exception {
 
 		int retval = -1;
 
 		if (actions != null) {
-
-			for (int i = 0; i < actions.length; ++i) {
-				ActionConf action = actions[i];
-				int paramMissing = action.validateParameters();
-				if (paramMissing != -1) {
-					String actionName = action.getClassName();
-					String paramName = action.getParamName(paramMissing);
-					throw new Exception("Action " + actionName + " (" + i
-							+ "): the required parameter " + paramName
-							+ " is not set.");
-				}
-			}
-
-			for (int i = actions.length - 1; i >= 0; i--) {
-				ActionConf c = actions[i];
+			for (int i = actions.length() - 1; i >= 0; i--) {
+				ActionConf c = actions.get(i);
 				try {
 					int v = addAction(c, context);
-					if (i == actions.length - 1) {
+					if (i == actions.length() - 1) {
 						retval = v;
 					}
 				} catch (Exception e) {
@@ -228,11 +216,9 @@ public class Chain implements Writable, InputQuery {
 				if (action.getConfigurator() != null
 						&& controller.listActions.size() > 0) {
 					// Add the actions from the last
-					ActionConf[] list = controller.listActions
-							.toArray(new ActionConf[controller.listActions
-									.size()]);
+					List<ActionConf> listToAdd = controller.listActions;
 					controller.listActions = new ArrayList<ActionConf>();
-					setActions(context, list);
+					setActions(context, new ActionSequence(listToAdd));
 				}
 				return retval;
 			}
@@ -278,10 +264,9 @@ public class Chain implements Writable, InputQuery {
 		if (action.getConfigurator() != null
 				&& controller.listActions.size() > 0) {
 			// Add the actions from the last
-			ActionConf[] list = controller.listActions
-					.toArray(new ActionConf[controller.listActions.size()]);
+			List<ActionConf> listToAdd = controller.listActions;
 			controller.listActions = new ArrayList<ActionConf>();
-			setActions(context, list);
+			setActions(context, new ActionSequence(listToAdd));
 		}
 		return retval;
 	}

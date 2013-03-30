@@ -9,9 +9,9 @@ import java.util.Map;
 
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.actions.Action;
-import nl.vu.cs.ajira.actions.ActionConf;
 import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.actions.ActionOutput;
+import nl.vu.cs.ajira.actions.ActionSequence;
 import nl.vu.cs.ajira.actions.support.Query;
 import nl.vu.cs.ajira.buckets.Bucket;
 import nl.vu.cs.ajira.data.types.SimpleData;
@@ -33,33 +33,33 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 	private static String TOKENPREFIX = "synchronization_token";
 
-	private Context context;
-	private StatisticsCollector stats;
+	private final Context context;
+	private final StatisticsCollector stats;
 
-	private List<SplitIterator> openedStreams = new ArrayList<SplitIterator>();
-	private int[] rawSizes = new int[Consts.MAX_N_ACTIONS];
-	private Action[] actions = new Action[Consts.MAX_N_ACTIONS];
-	private boolean[] roots = new boolean[Consts.MAX_N_ACTIONS];
-	private long[] responsibleChains = new long[Consts.MAX_N_ACTIONS];
+	private final List<SplitIterator> openedStreams = new ArrayList<SplitIterator>();
+	private final int[] rawSizes = new int[Consts.MAX_N_ACTIONS];
+	private final Action[] actions = new Action[Consts.MAX_N_ACTIONS];
+	private final boolean[] roots = new boolean[Consts.MAX_N_ACTIONS];
+	private final long[] responsibleChains = new long[Consts.MAX_N_ACTIONS];
 	private int nActions;
 
 	// Used for branching
-	private int[] cRuntimeBranching = new int[Consts.MAX_N_ACTIONS];
+	private final int[] cRuntimeBranching = new int[Consts.MAX_N_ACTIONS];
 	private int smallestRuntimeAction;
 	private boolean stopProcess;
 	private TupleIterator itr;
 
 	// Used to create forwards to following actions
-	private Map<Long, List<Integer>> newChildren = new HashMap<Long, List<Integer>>();
+	private final Map<Long, List<Integer>> newChildren = new HashMap<Long, List<Integer>>();
 
 	private int currentAction;
 	private int submissionNode;
 	private int submissionId;
 	private Chain chain;
-	private WritableContainer<Chain> chainsBuffer;
-	private ChainHandlerManager manager;
-	private NetworkLayer net;
-	private ChainHandler handler;
+	private final WritableContainer<Chain> chainsBuffer;
+	private final ChainHandlerManager manager;
+	private final NetworkLayer net;
+	private final ChainHandler handler;
 
 	private final Chain supportChain = new Chain();
 	private final Query supportQuery = new Query();
@@ -68,7 +68,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	private boolean transferComputation = false;
 	private int transferNodeId;
 	private int transferBucketId;
-	private boolean localMode;
+	private final boolean localMode;
 	private int childrenToTransfer;
 
 	private static final Logger log = LoggerFactory
@@ -261,12 +261,8 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		return roots[currentAction];
 	}
 
-	// boolean wasPrincipalBranch() {
-	// return roots[currentAction - 1];
-	// }
-
 	@Override
-	public void branch(ActionConf... actions) throws Exception {
+	public void branch(ActionSequence actions) throws Exception {
 		chain.setRawSize(rawSizes[currentAction]);
 		chain.branch(supportChain, getCounter(Consts.CHAINCOUNTER_NAME), 0);
 		supportChain.setActions(this, actions);
@@ -304,7 +300,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	}
 
 	@Override
-	public ActionOutput split(int reconnectAt, ActionConf... actions)
+	public ActionOutput split(int reconnectAt, ActionSequence actions)
 			throws Exception {
 		chain.setRawSize(rawSizes[currentAction]);
 
