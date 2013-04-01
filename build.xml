@@ -52,7 +52,7 @@
 	<target name="jar" depends="compile">
 		<!--Complete JAR -->
 		<jar destfile="${AJIRA_JAR_LOCATION}">
-			<fileset dir="${BUILD_PATH}"/>
+			<fileset dir="${BUILD_PATH}" includes="**/*.class"/>
 			<fileset dir="." includes ="jsp/**/*.jsp"/>
 			<manifest>
 				<attribute name="Main-Class" value="nl.vu.cs.ajira.Ajira" />
@@ -65,13 +65,19 @@
 	</target>
 	
 	<target depends="jar" name="fat-jar">
-	        <jar destfile="${AJIRA_FAT_JAR_LOCATION}">
+	        <jar destfile="tmp-${AJIRA_FAT_JAR_LOCATION}">
 	            <zipgroupfileset dir="${LIB_PATH}" includes="**/*.jar" />
 	        	<zipgroupfileset dir="." includes="*.jar" />
-	        	<manifest>
-	        		<attribute name="Main-Class" value="nl.vu.cs.ajira.Ajira" />
-	            </manifest>	        
-	        </jar>			
+	        </jar>
+			<unjar src="tmp-${AJIRA_FAT_JAR_LOCATION}" dest="tmp-fat-jar"/>
+			<delete dir="tmp-fat-jar/META-INF"/>
+			<jar basedir="tmp-fat-jar" destfile="${AJIRA_FAT_JAR_LOCATION}">
+				<manifest>
+					<attribute name="Main-Class" value="nl.vu.cs.ajira.Ajira" />
+				</manifest>
+			</jar>
+			<delete dir="tmp-fat-jar/"/>
+			<delete file="tmp-${AJIRA_FAT_JAR_LOCATION}"/>			
 	    </target>
 
 	<target name="deploy" depends="jar" description="Copy the jar in a specific location">
