@@ -57,6 +57,9 @@
 		</jar>
 		<!--Only webapps JAR -->
 		<jar destfile="${JAR_WEBAPPS_LOCATION}">
+		<manifest>
+			<attribute name="Main-Class" value="nl.vu.cs.ajira.Ajira" />
+		</manifest>
 	<fileset dir="." includes ="jsp/**/*.jsp"/>
 	</jar>
 	</target>
@@ -66,6 +69,9 @@
 	            <zipgroupfileset dir="${LIB_PATH}" includes="**/*.jar" />
 	        	<zipgroupfileset dir="." includes="*.jar" />
 	        </jar>
+			<manifest>
+				<attribute name="Main-Class" value="nl.vu.cs.ajira.Ajira" />
+		    </manifest>
 	    </target>
 
 	<target name="deploy" depends="jar" description="Copy the jar in a specific location">
