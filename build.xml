@@ -54,24 +54,24 @@
 		<jar destfile="${AJIRA_JAR_LOCATION}">
 			<fileset dir="${BUILD_PATH}"/>
 			<fileset dir="." includes ="jsp/**/*.jsp"/>
+			<manifest>
+				<attribute name="Main-Class" value="nl.vu.cs.ajira.Ajira" />
+			</manifest>
 		</jar>
 		<!--Only webapps JAR -->
-		<jar destfile="${JAR_WEBAPPS_LOCATION}">
-		<manifest>
-			<attribute name="Main-Class" value="nl.vu.cs.ajira.Ajira" />
-		</manifest>
-	<fileset dir="." includes ="jsp/**/*.jsp"/>
-	</jar>
+		<jar destfile="${JAR_WEBAPPS_LOCATION}">		
+			<fileset dir="." includes ="jsp/**/*.jsp"/>			
+		</jar>
 	</target>
 	
 	<target depends="jar" name="fat-jar">
 	        <jar destfile="${AJIRA_FAT_JAR_LOCATION}">
 	            <zipgroupfileset dir="${LIB_PATH}" includes="**/*.jar" />
 	        	<zipgroupfileset dir="." includes="*.jar" />
-	        </jar>
-			<manifest>
-				<attribute name="Main-Class" value="nl.vu.cs.ajira.Ajira" />
-		    </manifest>
+	        	<manifest>
+	        		<attribute name="Main-Class" value="nl.vu.cs.ajira.Ajira" />
+	            </manifest>	        
+	        </jar>			
 	    </target>
 
 	<target name="deploy" depends="jar" description="Copy the jar in a specific location">
