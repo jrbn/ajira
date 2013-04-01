@@ -1,7 +1,6 @@
 .project
 .classpath
 ajira-*.jar
-logback.xml
 bin
 tmp-eclipse
 .settings
