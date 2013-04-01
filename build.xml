@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project name="querypie" default="jar" basedir=".">
+<project name="ajira" default="jar" basedir=".">
 
 	<property name="VERSION" value="0.1" />
 	<property name="BUILD_PATH" value="bin" />
@@ -8,6 +8,7 @@
 	<property name="LIB_PATH" value="lib" />
 	<property name="CONF_PATH" value="conf" />
 	<property name="AJIRA_JAR_LOCATION" value="ajira-${VERSION}.jar" />
+	<property name="AJIRA_FAT_JAR_LOCATION" value="ajira-fat-${VERSION}.jar" />
 	<property name="JAR_WEBAPPS_LOCATION" value="ajira-webapps-${VERSION}.jar" />
 	<property name="IPL_PATH" value="${LIB_PATH}/ipl/" />
 	<property name="LOG_PATH" value="${LIB_PATH}/logging/" />
@@ -59,6 +60,13 @@
 	<fileset dir="." includes ="jsp/**/*.jsp"/>
 	</jar>
 	</target>
+	
+	<target depends="jar" name="fat-jar">
+	        <jar destfile="${AJIRA_FAT_JAR_LOCATION}">
+	            <zipgroupfileset dir="${LIB_PATH}" includes="**/*.jar" />
+	        	<zipgroupfileset dir="." includes="*.jar" />
+	        </jar>
+	    </target>
 
 	<target name="deploy" depends="jar" description="Copy the jar in a specific location">
 		<scp file="${JAR_LOCATION}" todir="${JAR_REMOTE_LOCATION}" keyfile="${SCP_PRIVATE_KEY}" passphrase="${SCP_PASSPHRASE}" trust="true" />
