@@ -16,13 +16,17 @@ import nl.vu.cs.ajira.data.types.TLong;
 import nl.vu.cs.ajira.data.types.TString;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.exceptions.ActionNotConfiguredException;
-import nl.vu.cs.ajira.exceptions.JobFailedException;
 import nl.vu.cs.ajira.submissions.Job;
 import nl.vu.cs.ajira.submissions.Submission;
 import nl.vu.cs.ajira.utils.Configuration;
 import nl.vu.cs.ajira.utils.Consts;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class WordCount {
+
+	static final Logger log = LoggerFactory.getLogger(WordCount.class);
 
 	/**
 	 * This action splits the text in input in a sequence of words. Each word is
@@ -131,27 +135,16 @@ public class WordCount {
 
 			// Configure the job and launch it!
 			try {
+
 				Job job = createJob(args[0], args[1]);
 				Submission sub = ajira.waitForCompletion(job);
-				// Print output
 				sub.printStatistics();
+
 			} catch (ActionNotConfiguredException e) {
-				System.err
-						.println("One of the actions was not properly configured"
-								+ e);
-				System.exit(1);
-			} catch (JobFailedException e) {
-				System.err.println("Job failed: " + e);
-				e.printStackTrace(System.err);
-				Throwable ex = e.getCause();
-				while (ex != null) {
-					System.err.println("Caused by " + ex);
-					ex.printStackTrace(System.err);
-					ex = e.getCause();
-				}
-			} finally {
-				ajira.shutdown();
+				log.error("The job was not properly configured", e);
 			}
+
+			ajira.shutdown();
 
 		}
 	}

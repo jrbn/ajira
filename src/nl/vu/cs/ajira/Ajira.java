@@ -59,7 +59,7 @@ public class Ajira {
 
 	static final Logger log = LoggerFactory.getLogger(Ajira.class);
 
-	private Configuration conf = new Configuration();
+	private final Configuration conf = new Configuration();
 	private Context globalContext = null;
 	private boolean localMode;
 
@@ -197,7 +197,7 @@ public class Ajira {
 			}
 
 			StatisticsCollector stats = new StatisticsCollector(conf, net);
-			
+
 			/**** OTHER SHARED DATA STRUCTURES ****/
 			CachedFilesMerger merger = new CachedFilesMerger();
 			Buckets tuplesContainer = new Buckets(stats, merger, net);
@@ -314,7 +314,7 @@ public class Ajira {
 	 * @throws JobFailedException
 	 *             in case the job fails for some reason.
 	 */
-	public Submission waitForCompletion(Job job) throws JobFailedException {
+	public Submission waitForCompletion(Job job) {
 		Submission sub = globalContext.getSubmissionsRegistry()
 				.waitForCompletion(globalContext, job);
 		globalContext.getSubmissionsRegistry().getStatistics(sub);

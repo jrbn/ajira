@@ -164,10 +164,10 @@ public class Bucket {
 
 	public static final int N_WBUFFS = 2;
 	@SuppressWarnings("unchecked")
-	private WritableContainer<WritableTuple>[] writeBuffer = (WritableContainer<WritableTuple>[]) java.lang.reflect.Array
+	private final WritableContainer<WritableTuple>[] writeBuffer = (WritableContainer<WritableTuple>[]) java.lang.reflect.Array
 			.newInstance(WritableContainer.class, N_WBUFFS);
 	private int currWBuffIndex = 0;
-	private boolean removeWChunkDone[] = new boolean[N_WBUFFS];
+	private final boolean removeWChunkDone[] = new boolean[N_WBUFFS];
 
 	private final Object removeWChunk = new Object(),
 			lockWriteBuffer[] = new Object[N_WBUFFS];
@@ -1140,7 +1140,8 @@ public class Bucket {
 		}
 	}
 
-	public void removeWChunk(WritableContainer<WritableTuple> tmpBuffer) {
+	public void removeWChunk(WritableContainer<WritableTuple> tmpBuffer)
+			throws Exception {
 		// Synchronize
 		synchronized (removeWChunk) {
 			boolean done = false;
@@ -1200,7 +1201,8 @@ public class Bucket {
 					lockWriteBuffer[currWBuffIndex].notifyAll();
 					currWBuffIndex = (currWBuffIndex + 1) % N_WBUFFS;
 				} catch (Exception e) {
-					e.printStackTrace();
+					log.error("Generic error", e);
+					throw e;
 				}
 			}
 

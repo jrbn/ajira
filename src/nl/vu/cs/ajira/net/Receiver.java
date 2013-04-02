@@ -13,7 +13,6 @@ import nl.vu.cs.ajira.buckets.Bucket;
 import nl.vu.cs.ajira.buckets.Buckets;
 import nl.vu.cs.ajira.buckets.WritableTuple;
 import nl.vu.cs.ajira.chains.Chain;
-import nl.vu.cs.ajira.exceptions.JobFailedException;
 import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Container;
 import nl.vu.cs.ajira.storage.Factory;
@@ -119,7 +118,8 @@ class Receiver implements MessageUpcall {
 			message.readArray(signature);
 
 			Bucket bucket = buckets.getOrCreateBucket(submissionNode,
-					idSubmission, idBucket, isSorted, isSorted, cfParams, signature);
+					idSubmission, idBucket, isSorted, isSorted, cfParams,
+					signature);
 			bucket.updateCounters(idChain, idParentChain, children,
 					isResponsible);
 
@@ -321,7 +321,8 @@ class Receiver implements MessageUpcall {
 					Runtime.getRuntime().gc();
 				}
 				context.getSubmissionsRegistry().releaseSubmission(submission);
-			} catch (JobFailedException e) {
+			} catch (Exception e) {
+				log.error("Error", e);
 				net.stopMonitorCounters();
 				net.broadcastStopMonitoring();
 				WriteMessage reply = net.getMessageToSend(message.origin()
@@ -340,8 +341,6 @@ class Receiver implements MessageUpcall {
 				if (log.isDebugEnabled()) {
 					log.debug("Sent failure reply");
 				}
-			} catch (Exception e) {
-				log.error("Error", e);
 			}
 			break;
 		case 8:

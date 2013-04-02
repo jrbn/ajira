@@ -39,6 +39,7 @@ public class Consts {
 
 	public static final String STATE_OPEN = "ACTIVE";
 	public static final String STATE_FINISHED = "FINISHED";
+	public static final String STATE_FAILED = "FAILED";
 	public static final String STATE_INIT_FAILED = "INIT_FAILED";
 
 	public static final int DEFAULT_INPUT_LAYER_ID = 0;
