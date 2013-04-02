@@ -14,7 +14,6 @@ import nl.vu.cs.ajira.buckets.Buckets;
 import nl.vu.cs.ajira.chains.Chain;
 import nl.vu.cs.ajira.chains.ChainExecutor;
 import nl.vu.cs.ajira.data.types.DataProvider;
-import nl.vu.cs.ajira.exceptions.JobFailedException;
 import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.net.NetworkLayer;
 import nl.vu.cs.ajira.storage.Container;
@@ -148,7 +147,7 @@ public class SubmissionRegistry {
 			if (sub.getState() == Consts.STATE_FINISHED) {
 				return;
 			}
-			sub.setFinished(Consts.STATE_FINISHED);
+			sub.setFinished(Consts.STATE_FAILED);
 			sub.setException(e);
 			sub.notifyAll();
 		}
@@ -230,26 +229,22 @@ public class SubmissionRegistry {
 		}
 	}
 
-	public Submission waitForCompletion(Context context, Job job)
-			throws JobFailedException {
-
-		Submission submission;
+	public Submission waitForCompletion(Context context, Job job) {
+		Submission submission = null;
 		try {
 			submission = submitNewJob(context, job);
-		} catch (Throwable e1) {
-			throw new JobFailedException("Job submission failed", e1);
+		} catch (Throwable e) {
+			submission.setException(e);
+			submission.setState(Consts.STATE_FAILED);
 		}
 
 		// Pool the submission registry to know when it is present and return it
 		synchronized (submission) {
-			while (!submission.getState().equalsIgnoreCase(
-					Consts.STATE_FINISHED)
-					&& !submission.getState().equalsIgnoreCase(
-							Consts.STATE_INIT_FAILED)) {
+			while (submission.getState().equalsIgnoreCase(Consts.STATE_OPEN)) {
 				try {
-					submission.wait(1000);
+					submission.wait();
 				} catch (InterruptedException e) {
-					// ignore
+					// Nothing...
 				}
 			}
 		}
@@ -258,13 +253,10 @@ public class SubmissionRegistry {
 		try {
 			cleanupSubmission(submission);
 		} catch (Throwable e) {
-			// TODO: what to do here?
-			// Should probably not affect the job.
+			submission.setException(e);
+			submission.setState(Consts.STATE_FAILED);
 		}
-		Throwable e = submission.getException();
-		if (e != null) {
-			throw new JobFailedException(e);
-		}
+
 		return submission;
 	}
 

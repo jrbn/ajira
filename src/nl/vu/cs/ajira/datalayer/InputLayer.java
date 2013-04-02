@@ -26,7 +26,7 @@ public abstract class InputLayer {
 		if (storage == null) {
 			String className = configuration.get(Consts.STORAGE_IMPL, null);
 			if (className == null) {
-				log.info("Storage implementation class not defined!. Use FileLayer instead.");
+				log.info("Input Layer not specified. Use FileLayer ...");
 				className = FileLayer.class.getName();
 			}
 
@@ -40,11 +40,10 @@ public abstract class InputLayer {
 	}
 
 	/**
-	 * Loads the InputLayer for the current context
-	 * and logs the time.
+	 * Loads the InputLayer for the current context and logs the time.
 	 * 
 	 * @param context
-	 * 		Current context
+	 *            Current context
 	 * @throws Exception
 	 */
 	public void startup(Context context) throws Exception {
@@ -58,7 +57,7 @@ public abstract class InputLayer {
 	 * Loads the InputLayer for the current context.
 	 * 
 	 * @param context
-	 * 		Current context
+	 *            Current context
 	 * @throws Exception
 	 */
 	protected abstract void load(Context context) throws Exception;

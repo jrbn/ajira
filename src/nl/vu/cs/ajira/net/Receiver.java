@@ -13,13 +13,13 @@ import nl.vu.cs.ajira.buckets.Bucket;
 import nl.vu.cs.ajira.buckets.Buckets;
 import nl.vu.cs.ajira.buckets.WritableTuple;
 import nl.vu.cs.ajira.chains.Chain;
-import nl.vu.cs.ajira.exceptions.JobFailedException;
 import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Container;
 import nl.vu.cs.ajira.storage.Factory;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.submissions.Job;
 import nl.vu.cs.ajira.submissions.Submission;
+import nl.vu.cs.ajira.utils.Consts;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,6 +76,7 @@ class Receiver implements MessageUpcall {
 			ClassNotFoundException {
 		long time = System.currentTimeMillis();
 		byte messageId = message.readByte();
+		WriteMessage reply;
 
 		if (log.isDebugEnabled()) {
 			Thread.currentThread().setName(
@@ -119,7 +120,8 @@ class Receiver implements MessageUpcall {
 			message.readArray(signature);
 
 			Bucket bucket = buckets.getOrCreateBucket(submissionNode,
-					idSubmission, idBucket, isSorted, isSorted, cfParams, signature);
+					idSubmission, idBucket, isSorted, isSorted, cfParams,
+					signature);
 			bucket.updateCounters(idChain, idParentChain, children,
 					isResponsible);
 
@@ -272,22 +274,22 @@ class Receiver implements MessageUpcall {
 			net.startMonitorCounters();
 			net.broadcastStartMonitoring();
 
-			try {
-				Submission submission = null;
-				submission = context.getSubmissionsRegistry()
+			Submission submission = context.getSubmissionsRegistry()
 						.waitForCompletion(context, job);
 
-				net.stopMonitorCounters();
-				net.broadcastStopMonitoring();
+			net.stopMonitorCounters();
+			net.broadcastStopMonitoring();
 
+			reply = net.getMessageToSend(message.origin()
+					.ibisIdentifier(), NetworkLayer.queryReceiverPort);
+			
+			if (submission.getState().equals(Consts.STATE_FINISHED)) {
 				int bid = submission.getAssignedBucket();
 
 				WritableContainer<WritableTuple> tmpBuffer = bufferFactory
 						.get();
 				tmpBuffer.clear();
 
-				WriteMessage reply = net.getMessageToSend(message.origin()
-						.ibisIdentifier(), NetworkLayer.queryReceiverPort);
 				reply.writeBoolean(true); // Success
 
 				reply.writeDouble(submission.getExecutionTimeInMs());
@@ -321,16 +323,12 @@ class Receiver implements MessageUpcall {
 					Runtime.getRuntime().gc();
 				}
 				context.getSubmissionsRegistry().releaseSubmission(submission);
-			} catch (JobFailedException e) {
-				net.stopMonitorCounters();
-				net.broadcastStopMonitoring();
-				WriteMessage reply = net.getMessageToSend(message.origin()
-						.ibisIdentifier(), NetworkLayer.queryReceiverPort);
+			} else {
 				reply.writeBoolean(false); // Failure
 				// Marshal the exception.
 				ByteArrayOutputStream bo = new ByteArrayOutputStream();
 				ObjectOutputStream o = new ObjectOutputStream(bo);
-				o.writeObject(e);
+				o.writeObject(submission.getException());
 				o.flush();
 				o.close();
 				byte[] buf = bo.toByteArray();
@@ -340,8 +338,6 @@ class Receiver implements MessageUpcall {
 				if (log.isDebugEnabled()) {
 					log.debug("Sent failure reply");
 				}
-			} catch (Exception e) {
-				log.error("Error", e);
 			}
 			break;
 		case 8:
@@ -370,7 +366,7 @@ class Receiver implements MessageUpcall {
 			tmpBuffer.clear();
 			boolean isFinished = bucket.removeChunk(tmpBuffer);
 
-			WriteMessage reply = net.getMessageToSend(message.origin()
+			reply = net.getMessageToSend(message.origin()
 					.ibisIdentifier(), NetworkLayer.queryReceiverPort);
 			tmpBuffer.writeTo(new WriteMessageWrapper(reply));
 			reply.writeBoolean(isFinished);

@@ -25,7 +25,6 @@ import nl.vu.cs.ajira.datalayer.InputLayerRegistry;
 import nl.vu.cs.ajira.datalayer.buckets.BucketsLayer;
 import nl.vu.cs.ajira.datalayer.chainsplits.ChainSplitLayer;
 import nl.vu.cs.ajira.datalayer.dummy.DummyLayer;
-import nl.vu.cs.ajira.exceptions.JobFailedException;
 import nl.vu.cs.ajira.mgmt.NodeHouseKeeper;
 import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.mgmt.WebServer;
@@ -59,7 +58,7 @@ public class Ajira {
 
 	static final Logger log = LoggerFactory.getLogger(Ajira.class);
 
-	private Configuration conf = new Configuration();
+	private final Configuration conf = new Configuration();
 	private Context globalContext = null;
 	private boolean localMode;
 
@@ -197,7 +196,7 @@ public class Ajira {
 			}
 
 			StatisticsCollector stats = new StatisticsCollector(conf, net);
-			
+
 			/**** OTHER SHARED DATA STRUCTURES ****/
 			CachedFilesMerger merger = new CachedFilesMerger();
 			Buckets tuplesContainer = new Buckets(stats, merger, net);
@@ -320,10 +319,8 @@ public class Ajira {
 	 *            The specification of the job to launch
 	 * @return The corresponding submission object that contains informations
 	 *         and statistics about the processed job.
-	 * @throws JobFailedException
-	 *             in case the job fails for some reason.
 	 */
-	public Submission waitForCompletion(Job job) throws JobFailedException {
+	public Submission waitForCompletion(Job job) {
 		Submission sub = globalContext.getSubmissionsRegistry()
 				.waitForCompletion(globalContext, job);
 		globalContext.getSubmissionsRegistry().getStatistics(sub);

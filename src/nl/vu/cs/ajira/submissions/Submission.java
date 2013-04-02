@@ -15,7 +15,7 @@ public class Submission {
 	private final long startupTime;
 	private long endTime;
 	private final int submissionId;
-	private int finalStatsReceived;
+	private final int finalStatsReceived;
 	private String state;
 	private Throwable exception;
 
@@ -74,6 +74,7 @@ public class Submission {
 
 	public synchronized void setState(String state) {
 		this.state = state;
+		this.notifyAll();
 	}
 
 	public void setFinished(String state) {
@@ -111,12 +112,12 @@ public class Submission {
 
 		System.out.println(stats);
 	}
-	
+
 	public Throwable getException() {
-	    return exception;
+		return exception;
 	}
 
 	public void setException(Throwable exception) {
-	    this.exception = exception;
+		this.exception = exception;
 	}
 }
