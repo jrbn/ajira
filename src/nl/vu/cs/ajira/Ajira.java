@@ -282,6 +282,15 @@ public class Ajira {
 			log.error("Error creation program", e);
 		}
 	}
+	
+	/**
+	 * This method returns <code>true</code> if this is a single-node run,
+	 * <code>false</code> otherwise.
+	 * @return whether this is a single-node run
+	 */
+	public boolean isLocalMode() {
+		return localMode;
+	}
 
 	/**
 	 * This methods returns the node ID of the machine in the cluster. For

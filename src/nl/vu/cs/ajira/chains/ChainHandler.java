@@ -120,7 +120,7 @@ public class ChainHandler implements Runnable {
 				actions.startProcess();
 
 				// Process the data on the chain
-				boolean eof = false;
+				boolean eof;
 				do {
 					eof = !itr.nextTuple();
 					if (!eof) {
@@ -156,11 +156,11 @@ public class ChainHandler implements Runnable {
 		}
 	}
 
-	private synchronized boolean getSubmissionFailed() {
+	private boolean getSubmissionFailed() {
 		return submissionFailed;
 	}
 
-	public synchronized void submissionFailed(int submissionId) {
+	public void submissionFailed(int submissionId) {
 		if (currentChain != null
 				&& currentChain.getSubmissionId() == submissionId) {
 			submissionFailed = true;

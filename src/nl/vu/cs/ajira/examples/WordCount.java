@@ -108,7 +108,6 @@ public class WordCount {
 	 * Example program: The superfamous WordCount!
 	 * 
 	 * @param args
-	 * @throws ActionNotConfiguredException
 	 */
 	public static void main(String[] args) {
 
@@ -139,6 +138,7 @@ public class WordCount {
 				System.err
 						.println("One of the actions was not properly configured"
 								+ e);
+				e.printStackTrace(System.err);
 				System.exit(1);
 			} catch (JobFailedException e) {
 				System.err.println("Job failed: " + e);

@@ -29,7 +29,7 @@ public class WriteToFiles extends Action {
 	 * is not required, and defaults to the class name of {@link StandardFileWriter}.
 	 * When supplied, it should indicate a class name of a class that must extend
 	 * {@link StandardFileWriter}, and must have a public constructor with two parameters:
-	 * an {@link ActionContext}, and a {@link file}.
+	 * an {@link ActionContext}, and a {@link File}.
 	 */
 	public static final int S_CUSTOM_WRITER = 0;
 	

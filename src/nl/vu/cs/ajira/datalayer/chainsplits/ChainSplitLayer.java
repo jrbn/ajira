@@ -92,7 +92,7 @@ public class ChainSplitLayer extends InputLayer {
 
 		// FIXME: Very very inefficient. Need to fix it!
 		@Override
-		public void output(SimpleData... data) throws Exception {
+		public synchronized void output(SimpleData... data) throws Exception {
 			this.tuple = TupleFactory.newTuple(data);
 			notify();
 			wait();
