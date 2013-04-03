@@ -544,6 +544,7 @@ public class Bucket {
 					meta.remainingSize)) {
 				elementsInCache -= meta.nElements;
 				meta.stream.close();
+				new File(meta.filename).delete();
 				sortedCacheFiles.remove(minimum);
 
 				return true;
@@ -914,6 +915,7 @@ public class Bucket {
 														meta);
 											} else { // File is finished.
 												meta.stream.close();
+												new File(meta.filename).delete();
 											}
 										}
 									} catch (Exception e) {
