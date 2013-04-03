@@ -59,26 +59,12 @@ public class ChainHandler implements Runnable {
 		chain.copyTo(this.currentChain);
 	}
 
-	private void processChain() {
+	private void processChain() throws Exception {
 
-		status = STATUS_ACTIVE;
 		// Init the environment
 		actions.init(currentChain);
 
-		try {
-			currentChain.getActions(actions, ap);
-		} catch (Throwable e) {
-			// Broadcast all the nodes that a chain part of a job has
-			// failed.
-			log.error("getActions() on chain failed, cancelling the job ...", e);
-			try {
-				net.signalChainFailed(currentChain, e);
-			} catch (Throwable e1) {
-				log.error("Failed in managing to cancel the job", e);
-			}
-			status = STATUS_INACTIVE;
-			return;
-		}
+		currentChain.getActions(actions, ap);
 
 		if (actions.getNActions() > 0) {
 
@@ -90,7 +76,6 @@ public class ChainHandler implements Runnable {
 			if (!itr.isReady()) {
 				context.getChainNotifier().addWaiter(itr, currentChain);
 				currentChain = new Chain();
-				status = STATUS_INACTIVE;
 				return;
 			}
 
@@ -140,18 +125,8 @@ public class ChainHandler implements Runnable {
 				stats.addCounter(currentChain.getSubmissionNode(),
 						currentChain.getSubmissionId(), "Chains Processed", 1);
 
-			} catch (Throwable e) {
-				// Broadcast all the nodes that a chain part of a job has
-				// failed.
-				log.error("Chain failed. Cancelling the job ...", e);
-				try {
-					net.signalChainFailed(currentChain, e);
-				} catch (Exception e1) {
-					log.error("Failed in managing to cancel the job.", e);
-				}
 			} finally {
 				input.releaseIterator(itr, actions);
-				status = STATUS_INACTIVE;
 			}
 		}
 	}
@@ -174,7 +149,19 @@ public class ChainHandler implements Runnable {
 			if (log.isDebugEnabled()) {
 				log.debug("Single chain handler");
 			}
-			processChain();
+			status = STATUS_ACTIVE;
+			try {
+				processChain();
+			} catch(Throwable e) {
+				// Broadcast all the nodes that a chain part of a job has
+				// failed.
+				log.error("chain failed, cancelling the job ...", e);
+				try {
+					net.signalChainFailed(currentChain, e);
+				} catch (Throwable e1) {
+					log.error("Failed in managing to cancel the job", e);
+				}
+			}
 			if (log.isDebugEnabled()) {
 				log.debug("Single chain handler done");
 			}
@@ -185,7 +172,21 @@ public class ChainHandler implements Runnable {
 		while (true) {
 			// Get a new chain to process
 			chainsToProcess.remove(currentChain);
-			processChain();
+			try {
+				status = STATUS_ACTIVE;
+				processChain();
+			} catch (Throwable e) {
+				// Broadcast all the nodes that a chain part of a job has
+				// failed.
+				log.error("Chain failed. Cancelling the job ...", e);
+				try {
+					net.signalChainFailed(currentChain, e);
+				} catch (Exception e1) {
+					log.error("Failed in managing to cancel the job.", e);
+				}
+			} finally {
+				status = STATUS_INACTIVE;
+			}
 		}
 	}
 
