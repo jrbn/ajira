@@ -9,6 +9,7 @@ import java.util.Map;
 
 import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
+import nl.vu.cs.ajira.mgmt.MemoryManager;
 import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.net.NetworkLayer;
 import nl.vu.cs.ajira.storage.Factory;
@@ -32,20 +33,16 @@ public class Buckets {
 	private final Map<Long, Bucket> buckets = new HashMap<Long, Bucket>();
 
 	// Buffer factories
-	@SuppressWarnings("unchecked")
-	Class<WritableContainer<WritableTuple>> clazz = (Class<WritableContainer<WritableTuple>>) (Class<?>) WritableContainer.class;
-	Factory<WritableContainer<WritableTuple>> fb_not_sorted = new Factory<WritableContainer<WritableTuple>>(
-			clazz, Consts.TUPLES_CONTAINER_BUFFER_SIZE);
-	Factory<WritableContainer<WritableTuple>> fb_sorted = new Factory<WritableContainer<WritableTuple>>(
-			clazz, true, Consts.TUPLES_CONTAINER_BUFFER_SIZE);
+	private final Factory<WritableContainer<WritableTuple>> fb_not_sorted;
+	private final Factory<WritableContainer<WritableTuple>> fb_sorted;
 
-	CachedFilesMerger merger = null;
-	NetworkLayer net = null;
+	private CachedFilesMerger merger = null;
+	private NetworkLayer net = null;
 	private final Map<Long, TransferInfo>[] activeTransfers;
 
-	StatisticsCollector stats;
+	private final StatisticsCollector stats;
 
-	int myPartition = 0;
+	private int myPartition = 0;
 
 	/**
 	 * Custom constructor.
@@ -69,6 +66,14 @@ public class Buckets {
 		for (int i = 0; i < activeTransfers.length; ++i) {
 			activeTransfers[i] = new HashMap<Long, Buckets.TransferInfo>();
 		}
+
+		Class<WritableContainer<WritableTuple>> clazz = (Class<WritableContainer<WritableTuple>>) (Class<?>) WritableContainer.class;
+		fb_not_sorted = new Factory<WritableContainer<WritableTuple>>(clazz,
+				Consts.TUPLES_CONTAINER_MAX_BUFFER_SIZE);
+		fb_sorted = new Factory<WritableContainer<WritableTuple>>(clazz, true,
+				Consts.TUPLES_CONTAINER_MAX_BUFFER_SIZE);
+		MemoryManager.getInstance().registerFactory(fb_not_sorted);
+		MemoryManager.getInstance().registerFactory(fb_sorted);
 	}
 
 	/**
@@ -136,7 +141,8 @@ public class Buckets {
 	 * @param sort
 	 *            Activate sort or not on the bucket
 	 * @param sortRemote
-	 * 			  set if this is a to be sorted remote bucket that is not sorted locally
+	 *            set if this is a to be sorted remote bucket that is not sorted
+	 *            locally
 	 * @param sortingFields
 	 *            What fields to sort on
 	 * @param signature
@@ -145,15 +151,16 @@ public class Buckets {
 	 * @return the bucket
 	 */
 	public synchronized Bucket getOrCreateBucket(int submissionNode,
-			int idSubmission, int idBucket, boolean sort, boolean sortRemote, byte[] sortingFields,
-			byte[] signature) {
+			int idSubmission, int idBucket, boolean sort, boolean sortRemote,
+			byte[] sortingFields, byte[] signature) {
 		long key = getKey(idSubmission, idBucket);
 		Bucket bucket = buckets.get(key);
 
 		if (bucket == null) {
 			bucket = new Bucket();
-			bucket.init(key, stats, submissionNode, idSubmission, sort, sortRemote,
-					sortingFields, sort || sortRemote ? fb_sorted : fb_not_sorted, merger, signature);
+			bucket.init(key, stats, submissionNode, idSubmission, sort,
+					sortRemote, sortingFields, sort || sortRemote ? fb_sorted
+							: fb_not_sorted, merger, signature);
 			buckets.put(key, bucket);
 			this.notifyAll();
 		}
@@ -482,10 +489,11 @@ public class Buckets {
 		synchronized (map) {
 			info = map.get(key);
 
-                        // If decreaseCounter is not set, there has not been a corresponding
-                        // startTransfer call, so alertTransfer has not been called yet for this
-                        // transfer.
-			if (info == null || !info.alerted || ! decreaseCounter) {
+			// If decreaseCounter is not set, there has not been a corresponding
+			// startTransfer call, so alertTransfer has not been called yet for
+			// this
+			// transfer.
+			if (info == null || !info.alerted || !decreaseCounter) {
 				alertTransfer(submissionNode, submission, node, bucketID,
 						chainId, parentChainId, nchildren, responsible, sort,
 						sortingFields, signature, additionalChildren);

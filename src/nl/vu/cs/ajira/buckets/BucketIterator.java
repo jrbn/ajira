@@ -20,7 +20,7 @@ public class BucketIterator extends TupleIterator {
 	static final Logger log = LoggerFactory.getLogger(BucketIterator.class);
 
 	WritableContainer<WritableTuple> tuples = new WritableContainer<WritableTuple>(
-			Consts.TUPLES_CONTAINER_BUFFER_SIZE);
+			Consts.TUPLES_CONTAINER_MAX_BUFFER_SIZE);
 
 	Bucket bucket;
 	boolean isUsed;

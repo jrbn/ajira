@@ -25,6 +25,7 @@ import nl.vu.cs.ajira.datalayer.InputLayerRegistry;
 import nl.vu.cs.ajira.datalayer.buckets.BucketsLayer;
 import nl.vu.cs.ajira.datalayer.chainsplits.ChainSplitLayer;
 import nl.vu.cs.ajira.datalayer.dummy.DummyLayer;
+import nl.vu.cs.ajira.mgmt.MemoryManager;
 import nl.vu.cs.ajira.mgmt.NodeHouseKeeper;
 import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.mgmt.WebServer;
@@ -175,7 +176,8 @@ public class Ajira {
 				@SuppressWarnings("unchecked")
 				Class<WritableContainer<WritableTuple>> clazz = (Class<WritableContainer<WritableTuple>>) (Class<?>) WritableContainer.class;
 				Factory<WritableContainer<WritableTuple>> bufferFactory = new Factory<WritableContainer<WritableTuple>>(
-						clazz, Consts.TUPLES_CONTAINER_BUFFER_SIZE);
+						clazz, Consts.TUPLES_CONTAINER_MAX_BUFFER_SIZE);
+				MemoryManager.getInstance().registerFactory(bufferFactory);
 				net.setBufferFactory(bufferFactory);
 				net.startIbis();
 				ArrayList<WritableContainer<WritableTuple>> l = new ArrayList<WritableContainer<WritableTuple>>(
@@ -281,10 +283,11 @@ public class Ajira {
 			log.error("Error creation program", e);
 		}
 	}
-	
+
 	/**
 	 * This method returns <code>true</code> if this is a single-node run,
 	 * <code>false</code> otherwise.
+	 * 
 	 * @return whether this is a single-node run
 	 */
 	public boolean isLocalMode() {
