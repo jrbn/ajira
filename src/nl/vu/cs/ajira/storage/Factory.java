@@ -59,7 +59,7 @@ public class Factory<K> {
 			for (int i = 0; i < bufferSize; ++i) {
 				Object el = buffer[i];
 				if (el instanceof WritableContainer) {
-					estimatedSize += ((WritableContainer<?>) el).getRawSize();
+					estimatedSize += ((WritableContainer<?>) el).getTotalCapacity();
 				}
 			}
 			return estimatedSize;
@@ -67,7 +67,7 @@ public class Factory<K> {
 			for (int i = 0; i < Consts.N_ELEMENTS_TO_SAMPLE; ++i) {
 				Object el = buffer[r.nextInt(bufferSize)];
 				if (el instanceof WritableContainer) {
-					estimatedSize += ((WritableContainer<?>) el).getRawSize();
+					estimatedSize += ((WritableContainer<?>) el).getTotalCapacity();
 				}
 			}
 			return estimatedSize / Consts.N_ELEMENTS_TO_SAMPLE * bufferSize;

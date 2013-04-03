@@ -163,7 +163,7 @@ public class ByteArray {
 		}
 		if (len > buffer.length) {
 			int allowedLength = MemoryManager.getInstance().canAllocate(len);
-			if (allowedLength < buffer.length * 1.20) {
+			if (allowedLength < buffer.length * 1.20) {		// ?????? --Ceriel
 				return false;
 			}
 			growBuffer(allowedLength);

@@ -12,7 +12,7 @@ public class Consts {
 
 	public static final int SIZE_BUFFERS_CHAIN_SEND = 4 * 1024 * 1024;
 	public static final int SIZE_BUFFERS_CHAINS_PROCESS = 64 * 1024 * 1024;
-	public static final int TUPLES_CONTAINER_MAX_BUFFER_SIZE = 512 * 1024 * 1024;
+	public static final int TUPLES_CONTAINER_MAX_BUFFER_SIZE = 128 * 1024 * 1024;
 
 	// Factory initialization
 	public static final int STARTING_SIZE_FACTORY = 0;
