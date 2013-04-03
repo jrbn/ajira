@@ -124,7 +124,45 @@ public class Utils {
 		value[start++] = (byte) (number >> 8);
 		value[start] = (byte) (number);
 	}
+	
+	private static int numBytesPackedLong(long number) {
+		long max = 32;
+		if (number < 0) {
+			throw new Error("Negative number in encode2Long2()" + number);
+		}
+		for (int i = 1; i <= 8; i++) {
+			if (number < max) {
+				return i;
+			}
+			max *= 256;
+		}
+		throw new Error("number too large for encodeLong2(): " + number);
+	}
+	
+	// Order preserving packed encoding of long values.
+	public static int encodePackedLong(byte[] value, int start, long number) {
+		int nbytes = numBytesPackedLong(number);
+		for (int i = nbytes-1; i > 0; i--) {
+			value[start+i] = (byte) ((int)number & 255);
+			number >>= 8;
+		}
+		
+		value[start] = (byte) (((nbytes-1) << 5) + ((int) number & 31));
+		return start + nbytes;
+	}
 
+	public static long decodePackedLong(byte[] value, int[] position) {
+		int start = position[0];
+		int nbytes = (value[start] & 255) >> 5;
+		long retval = (value[start] & 31);
+		for (int i = 1; i < nbytes; i++) {
+			retval <<= 8;
+			retval += (value[start+i] & 255);
+		}
+		position[1] = start + nbytes;
+		return retval;
+	}
+	
 	public static int decodeInt(byte[] value, int start) {
 		return ((value[start] & 0xFF) << 24)
 				+ ((value[start + 1] & 0xFF) << 16)
@@ -152,138 +190,6 @@ public class Utils {
 
 	public static void encodeInt(ByteBuffer buffer, int start, int number) {
 		buffer.putInt(start, number);
-	}
-
-	public static int encodeInt2(byte[] value, int start, int number) {
-		if (number < 0x40) { // Need at most 6 bytes to store it. I can use only
-								// one byte
-			value[start++] = (byte) (number & 0x3F);
-		} else if (number < 0x4000) { // Need at most 2 bytes. I can use only
-										// two bytes and set the first to 1
-			value[start++] = (byte) (0x40 + (number >> 8 & 0x3F));
-			value[start++] = (byte) (number & 0xFF);
-		} else if (number < 0x400000) {
-			value[start++] = (byte) (0x80 + (number >> 16 & 0x3F));
-			value[start++] = (byte) (number >> 8 & 0xFF);
-			value[start++] = (byte) (number & 0xFF);
-		} else {
-			value[start++] = (byte) (0xC0 + (number >> 24 & 0x3F));
-			value[start++] = (byte) (number >> 16 & 0xFF);
-			value[start++] = (byte) (number >> 8 & 0xFF);
-			value[start++] = (byte) (number & 0xFF);
-		}
-
-		return start;
-	}
-
-	public static int encodeLong2(byte[] value, int start, long number) {
-
-		// First write the counter
-		int valueId = (int) (number >> 40);
-		start = encodeInt2(value, start, valueId);
-
-		// Clean the first part
-		number &= 0xFFFFFFFFFFl;
-		if (number < 0x20) { // Need only one byte
-			value[start++] = (byte) (number & 0x1F);
-		} else if (number < 0x2000) {
-			value[start++] = (byte) (0x20 + (number >> 8 & 0x1F));
-			value[start++] = (byte) (number & 0xFF);
-		} else if (number < 0x200000) {
-			value[start++] = (byte) (0x40 + (number >> 16 & 0x1F));
-			value[start++] = (byte) (number >> 8 & 0xFF);
-			value[start++] = (byte) (number & 0xFF);
-		} else if (number < 0x200000) {
-			value[start++] = (byte) (0x60 + (number >> 24 & 0x1F));
-			value[start++] = (byte) (number >> 16 & 0xFF);
-			value[start++] = (byte) (number >> 8 & 0xFF);
-			value[start++] = (byte) (number & 0xFF);
-		} else { // 5 bytes
-			value[start++] = (byte) (0x80 + (number >> 32 & 0x1F));
-			value[start++] = (byte) (number >> 24 & 0xFF);
-			value[start++] = (byte) (number >> 16 & 0xFF);
-			value[start++] = (byte) (number >> 8 & 0xFF);
-			value[start++] = (byte) (number & 0xFF);
-		}
-
-		return start;
-	}
-
-	public static int decodeInt2(byte[] value, int[] position) {
-		int start = position[0];
-		int output = value[start] & 0x3F;
-		int additionalBytes = (value[start++] & 0xFF) >> 6;
-		switch (additionalBytes) {
-		case 1:
-			output = (output << 8) + (value[start++] & 0xFF);
-			break;
-		case 2:
-			output = (output << 8) + (value[start++] & 0xFF);
-			output = (output << 8) + (value[start++] & 0xFF);
-			break;
-		case 3:
-			output = (output << 8) + (value[start++] & 0xFF);
-			output = (output << 8) + (value[start++] & 0xFF);
-			output = (output << 8) + (value[start++] & 0xFF);
-			break;
-		}
-
-		position[1] = start;
-		return output;
-	}
-
-	public static long decodeLong2(byte[] value, int[] position) {
-		// Inlined decodeInt2 --Ceriel
-		int start = position[0];
-		int firstPart = value[start] & 0x3F;
-		int additionalBytes = (value[start++] & 0xFF) >> 6;
-		switch (additionalBytes) {
-		case 1:
-			firstPart = (firstPart << 8) + (value[start++] & 0xFF);
-			break;
-		case 2:
-			firstPart = (firstPart << 8) + (value[start++] & 0xFF);
-			firstPart = (firstPart << 8) + (value[start++] & 0xFF);
-			break;
-		case 3:
-			firstPart = (firstPart << 8) + (value[start++] & 0xFF);
-			firstPart = (firstPart << 8) + (value[start++] & 0xFF);
-			firstPart = (firstPart << 8) + (value[start++] & 0xFF);
-			break;
-		}
-
-		long output = (long) firstPart << 40;
-		additionalBytes = (value[start] & 0xFF) >> 5;
-		int b1 = value[start++] & 0x1F;
-		switch (additionalBytes) {
-		case 0:
-			output += b1;
-			break;
-		case 1:
-			b1 = (b1 << 8) + (value[start++] & 0xFF);
-			output += b1;
-			break;
-		case 2:
-			b1 = (b1 << 8) + (value[start++] & 0xFF);
-			b1 = (b1 << 8) + (value[start++] & 0xFF);
-			output += b1;
-			break;
-		case 3:
-			b1 = (b1 << 8) + (value[start++] & 0xFF);
-			b1 = (b1 << 8) + (value[start++] & 0xFF);
-			b1 = (b1 << 8) + (value[start++] & 0xFF);
-			output += b1;
-			break;
-		case 4:
-			b1 = (b1 << 8) + (value[start++] & 0xFF);
-			b1 = (b1 << 8) + (value[start++] & 0xFF);
-			b1 = (b1 << 8) + (value[start++] & 0xFF);
-			output += ((long) b1 << 8) + (value[start++] & 0xFF);
-			break;
-		}
-
-		position[1] = start;
-		return output;
 	}
 
 	public static String getDuration(long time) {
