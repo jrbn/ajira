@@ -25,7 +25,6 @@ import nl.vu.cs.ajira.datalayer.InputLayerRegistry;
 import nl.vu.cs.ajira.datalayer.buckets.BucketsLayer;
 import nl.vu.cs.ajira.datalayer.chainsplits.ChainSplitLayer;
 import nl.vu.cs.ajira.datalayer.dummy.DummyLayer;
-import nl.vu.cs.ajira.exceptions.JobFailedException;
 import nl.vu.cs.ajira.mgmt.MemoryManager;
 import nl.vu.cs.ajira.mgmt.NodeHouseKeeper;
 import nl.vu.cs.ajira.mgmt.StatisticsCollector;
@@ -286,6 +285,16 @@ public class Ajira {
 	}
 
 	/**
+	 * This method returns <code>true</code> if this is a single-node run,
+	 * <code>false</code> otherwise.
+	 * 
+	 * @return whether this is a single-node run
+	 */
+	public boolean isLocalMode() {
+		return localMode;
+	}
+
+	/**
 	 * This methods returns the node ID of the machine in the cluster. For
 	 * example, if there are three machines, then it will return 0, 1, or 2.
 	 * 
@@ -313,8 +322,6 @@ public class Ajira {
 	 *            The specification of the job to launch
 	 * @return The corresponding submission object that contains informations
 	 *         and statistics about the processed job.
-	 * @throws JobFailedException
-	 *             in case the job fails for some reason.
 	 */
 	public Submission waitForCompletion(Job job) {
 		Submission sub = globalContext.getSubmissionsRegistry()

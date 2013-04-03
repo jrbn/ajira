@@ -3,6 +3,7 @@
 <project name="ajira" default="jar" basedir=".">
 
 	<property name="VERSION" value="0.1" />
+	<property name="debuglevel"    value="source,lines,vars" />
 	<property name="BUILD_PATH" value="bin" />
 	<property name="SRC_PATH" value="src" />
 	<property name="LIB_PATH" value="lib" />
@@ -26,7 +27,7 @@
 	</target>
 
 	<target name="compile" depends="init" description="">
-		<javac includeantruntime="false" srcdir="${SRC_PATH}" destdir="${BUILD_PATH}">
+	    <javac includeantruntime="false" debug="true"  debuglevel="${debuglevel}" srcdir="${SRC_PATH}" destdir="${BUILD_PATH}">
 			<classpath>
 				<fileset dir="${LIB_PATH}">
 					<include name="**/*.jar" />

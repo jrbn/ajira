@@ -112,7 +112,6 @@ public class WordCount {
 	 * Example program: The superfamous WordCount!
 	 * 
 	 * @param args
-	 * @throws ActionNotConfiguredException
 	 */
 	public static void main(String[] args) {
 
@@ -135,17 +134,18 @@ public class WordCount {
 
 			// Configure the job and launch it!
 			try {
-
 				Job job = createJob(args[0], args[1]);
 				Submission sub = ajira.waitForCompletion(job);
 				sub.printStatistics();
+				if (sub.getState().equals(Consts.STATE_FAILED)) {
+					log.error("The job failed", sub.getException());
+				}
 
 			} catch (ActionNotConfiguredException e) {
 				log.error("The job was not properly configured", e);
+			} finally {
+				ajira.shutdown();
 			}
-
-			ajira.shutdown();
-
 		}
 	}
 }
