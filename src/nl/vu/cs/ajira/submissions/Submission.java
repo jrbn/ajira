@@ -111,6 +111,11 @@ public class Submission {
 				+ " ms.\n**************************************************\n";
 
 		System.out.println(stats);
+		
+		if (getState().equals(Consts.STATE_FAILED) && exception != null) {
+			System.out.println("Job failed with exception " + exception);
+			exception.printStackTrace(System.out);
+		}
 	}
 
 	public Throwable getException() {
