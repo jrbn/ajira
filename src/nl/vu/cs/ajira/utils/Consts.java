@@ -3,27 +3,27 @@ package nl.vu.cs.ajira.utils;
 public class Consts {
 
 	/********** DEFAULT VALUES **********/
+	public static final double MAX_MEMORY_TO_USE = 0.75; // 75%
+	public static final double MIN_MEMORY_SIZE_BEFORE_CLEANING = 0.10;
+	public static final int N_ELEMENTS_TO_SAMPLE = 10;
+
 	public static final int MAX_N_ACTIONS = 128;
 	public static final int CHAIN_SIZE = 10 * 1024;
 
 	public static final int SIZE_BUFFERS_CHAIN_SEND = 4 * 1024 * 1024;
 	public static final int SIZE_BUFFERS_CHAINS_PROCESS = 64 * 1024 * 1024;
-	public static final int TUPLES_CONTAINER_BUFFER_SIZE = 128 * 1024 * 1024;
+	public static final int TUPLES_CONTAINER_MAX_BUFFER_SIZE = 512 * 1024 * 1024;
 
+	// Factory initialization
 	public static final int STARTING_SIZE_FACTORY = 0;
+	public static final int N_ELEMENTS_FACTORY = 10000;
 
 	public static final int MIN_SIZE_TO_SEND = 128 * 1024 * 1024;
-	public static final int N_ELEMENTS_FACTORY = 100000;
-
 	public static final int MAX_SEGMENTS_RECEIVED = 2048;
 
 	public static final int MAX_TUPLE_SENDERS = 8;
 
-	public static final int STATISTICS_COLLECTION_INTERVAL = 1000; // In ms. Not
-																	// too low,
-																	// it may
-																	// affect
-																	// performance.
+	public static final int STATISTICS_COLLECTION_INTERVAL = 1000;
 
 	public static final int DATATYPE_TLONG = 0;
 	public static final int DATATYPE_TSTRING = 1;

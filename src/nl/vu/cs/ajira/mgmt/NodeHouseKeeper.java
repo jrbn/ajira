@@ -11,9 +11,10 @@ public class NodeHouseKeeper implements Runnable {
 
 	static final Logger log = LoggerFactory.getLogger(NodeHouseKeeper.class);
 
-	private ChainHandlerManager manager;
-	private StatisticsCollector stats;
-	private boolean local;
+	private final ChainHandlerManager manager;
+	private final MemoryManager mem_manager = MemoryManager.getInstance();
+	private final StatisticsCollector stats;
+	private final boolean local;
 
 	public NodeHouseKeeper(Context context) {
 		this.manager = context.getChainHandlerManager();
@@ -27,12 +28,14 @@ public class NodeHouseKeeper implements Runnable {
 		while (true) {
 			try {
 				manager.doHouseKeeping();
+				mem_manager.doHouseKeeping();
 				long tm = System.currentTimeMillis();
-				if (!local && tm - lastTime >= Consts.STATISTICS_COLLECTION_INTERVAL) {
+				if (!local
+						&& tm - lastTime >= Consts.STATISTICS_COLLECTION_INTERVAL) {
 					stats.sendStatisticsAway();
 					lastTime = tm;
 				}
-				Thread.sleep(500);
+				Thread.sleep(300);
 			} catch (Exception e) {
 				log.error("Error", e);
 			}

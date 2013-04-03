@@ -140,7 +140,7 @@ public class AjiraClient {
 			}
 			/* double time = */r.readDouble();
 			WritableContainer<WritableTuple> tmpBuffer = new WritableContainer<WritableTuple>(
-					Consts.TUPLES_CONTAINER_BUFFER_SIZE);
+					Consts.TUPLES_CONTAINER_MAX_BUFFER_SIZE);
 			tmpBuffer.readFrom(new ReadMessageWrapper(r));
 			boolean isFinished = r.readBoolean();
 			if (!isFinished) {
@@ -174,7 +174,7 @@ public class AjiraClient {
 			msg.writeLong(bucketKey);
 			msg.finish();
 			WritableContainer<WritableTuple> tmpBuffer = new WritableContainer<WritableTuple>(
-					Consts.TUPLES_CONTAINER_BUFFER_SIZE);
+					Consts.TUPLES_CONTAINER_MAX_BUFFER_SIZE);
 			ReadMessage r = rp.receive();
 			tmpBuffer.readFrom(new ReadMessageWrapper(r));
 			boolean isFinished = r.readBoolean();

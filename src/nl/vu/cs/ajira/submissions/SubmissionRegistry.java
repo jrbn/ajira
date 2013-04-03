@@ -261,11 +261,15 @@ public class SubmissionRegistry {
 	}
 
 	public void getStatistics(Submission submission) {
-		try {
-			Thread.sleep(Consts.STATISTICS_COLLECTION_INTERVAL);
-		} catch (InterruptedException e) {
-			// ignore
+		if (net.getNumberNodes() > 1) {
+			// TODO: to replace with a faster method to retrieve the statistics
+			try {
+				Thread.sleep(Consts.STATISTICS_COLLECTION_INTERVAL);
+			} catch (InterruptedException e) {
+				// ignore
+			}
 		}
+
 		submission.counters = stats.removeCountersSubmission(submission
 				.getSubmissionId());
 	}

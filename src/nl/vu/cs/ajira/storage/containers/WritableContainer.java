@@ -1,8 +1,15 @@
 package nl.vu.cs.ajira.storage.containers;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -13,6 +20,7 @@ import nl.vu.cs.ajira.data.types.bytearray.ByteArray;
 import nl.vu.cs.ajira.data.types.bytearray.CBDataInput;
 import nl.vu.cs.ajira.data.types.bytearray.CBDataOutput;
 import nl.vu.cs.ajira.data.types.bytearray.FDataInput;
+import nl.vu.cs.ajira.data.types.bytearray.FDataOutput;
 import nl.vu.cs.ajira.storage.Container;
 import nl.vu.cs.ajira.storage.Factory;
 import nl.vu.cs.ajira.storage.RawComparator;
@@ -20,6 +28,8 @@ import nl.vu.cs.ajira.storage.Writable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xerial.snappy.SnappyInputStream;
+import org.xerial.snappy.SnappyOutputStream;
 
 public class WritableContainer<K extends Writable> extends ByteArray implements
 		Writable, Container<K> {
@@ -38,12 +48,12 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 	/**
 	 * Creates a new object.
 	 * 
-	 * @param circular 
-	 * 		Influences the class used for the input and output fields.
+	 * @param circular
+	 *            Influences the class used for the input and output fields.
 	 * @param enableFieldMarks
-	 * 		Is the new value of enableFieldDelimitors.
+	 *            Is the new value of enableFieldDelimitors.
 	 * @param maxSize
-	 * 		The maximum size of the ByteArray's buffer. 
+	 *            The maximum size of the ByteArray's buffer.
 	 */
 	public WritableContainer(Boolean circular, Boolean enableFieldMarks,
 			int maxSize) {
@@ -62,34 +72,32 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 	}
 
 	/**
-	 * Constructs a new object and uses CBDataInput 
-	 * class for the input and output fields.
+	 * Constructs a new object and uses CBDataInput class for the input and
+	 * output fields.
 	 * 
 	 * @param enableFieldMarks
-	 * 		Is the new value of enableFieldDelimitors.
+	 *            Is the new value of enableFieldDelimitors.
 	 * @param size
-	 * 		The maximum size of the ByteArray's buffer.
+	 *            The maximum size of the ByteArray's buffer.
 	 */
 	public WritableContainer(Boolean enableFieldMarks, Integer size) {
 		this(new Boolean(true), enableFieldMarks, size);
 	}
 
 	/**
-	 * Constructs a new object. Uses CBDataInput 
-	 * class for the input and output fields and
-	 * set the enableFieldDelimitors to false.
+	 * Constructs a new object. Uses CBDataInput class for the input and output
+	 * fields and set the enableFieldDelimitors to false.
 	 * 
 	 * @param size
-	 * 		The maximum size of the ByteArray's buffer.
+	 *            The maximum size of the ByteArray's buffer.
 	 */
 	public WritableContainer(Integer size) {
 		this(true, false, size);
 	}
 
 	/**
-	 * Reads from the input the number of elements,
-	 * if it should enable delimiters and the elements
-	 * of the buffer.
+	 * Reads from the input the number of elements, if it should enable
+	 * delimiters and the elements of the buffer.
 	 */
 	@Override
 	public void readFrom(DataInput input) throws IOException {
@@ -107,9 +115,8 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 	}
 
 	/**
-	 * Writes in the output the number of elements,
-	 * if the delimiters are enabled and the elments
-	 * of the buffer.
+	 * Writes in the output the number of elements, if the delimiters are
+	 * enabled and the elments of the buffer.
 	 */
 	@Override
 	public void writeTo(DataOutput output) throws IOException {
@@ -193,10 +200,15 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 			}
 
 			int necessarySpace = buffer.buffer.length - 1
-					- buffer.remainingCapacity(buffer.buffer.length);	// -1: see code in remainingCapacity --Ceriel
+					- buffer.remainingCapacity(buffer.buffer.length); // -1: see
+																		// code
+																		// in
+																		// remainingCapacity
+																		// --Ceriel
 			if (!grow(necessarySpace)) {
 				if (log.isDebugEnabled()) {
-					log.debug("Grow() fails: necessarySpace = " + necessarySpace);
+					log.debug("Grow() fails: necessarySpace = "
+							+ necessarySpace);
 				}
 				return false;
 			}
@@ -239,7 +251,8 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 
 		if (log.isDebugEnabled()) {
 			if (nElements <= 0) {
-				log.error("OOPS: remove on empty container? start = " + start + ", end = " + end);
+				log.error("OOPS: remove on empty container? start = " + start
+						+ ", end = " + end);
 			}
 		}
 
@@ -403,32 +416,85 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 		} else { // It's too big. Must use another array
 			WritableContainer<K> newArray = fb.get();
 			newArray.clear();
-			newArray.grow((int) size);
-			for (int index : indexes) {
-				try {
-					newArray.output.writeInt(coordinates[index + 1]);
-				} catch (IOException e) {
-					log.error("Internal error, should not happen", e);
+			if (newArray.grow((int) size)) {
+				for (int index : indexes) {
+					try {
+						newArray.output.writeInt(coordinates[index + 1]);
+					} catch (IOException e) {
+						log.error("Internal error, should not happen", e);
+					}
+					if (coordinates[index] + coordinates[index + 1] > buffer.length) {
+						// Note, newArray cannot wrap, since it is new ...
+						int len1 = buffer.length - coordinates[index];
+						System.arraycopy(buffer, coordinates[index],
+								newArray.buffer, newArray.end, len1);
+						System.arraycopy(buffer, 0, newArray.buffer,
+								newArray.end + len1, coordinates[index + 1]
+										- len1);
+					} else {
+						System.arraycopy(buffer, coordinates[index],
+								newArray.buffer, newArray.end,
+								coordinates[index + 1]);
+					}
+					newArray.end += coordinates[index + 1];
+					newArray.nElements++;
 				}
-				if (coordinates[index] + coordinates[index + 1] > buffer.length) {
-					// Note, newArray cannot wrap, since it is new ...
-					int len1 = buffer.length - coordinates[index];
-					System.arraycopy(buffer, coordinates[index],
-							newArray.buffer, newArray.end, len1);
-					System.arraycopy(buffer, 0, newArray.buffer, newArray.end
-							+ len1, coordinates[index + 1] - len1);
-				} else {
-					System.arraycopy(buffer, coordinates[index],
-							newArray.buffer, newArray.end,
-							coordinates[index + 1]);
-				}
-				newArray.end += coordinates[index + 1];
-				newArray.nElements++;
-			}
-			newArray.copyTo(this);
-			newArray.clear();
-			fb.release(newArray);
+				newArray.copyTo(this);
+				newArray.clear();
+				fb.release(newArray);
+			} else {
+				// I don't need it
+				newArray.clear();
+				fb.release(newArray);
 
+				// Not enough space to create an additional array. Store the
+				// data on disk and reread it.
+				try {
+					File cacheFile = File.createTempFile("cache", "tmp");
+					cacheFile.deleteOnExit();
+
+					OutputStream fout = new SnappyOutputStream(
+							new BufferedOutputStream(new FileOutputStream(
+									cacheFile), 65536));
+					FDataOutput cacheOutputStream = new FDataOutput(fout);
+
+					// Copy all stuff on the file
+					int s = 0;
+					try {
+						for (int index : indexes) {
+							s += 4 + coordinates[index + 1];
+							cacheOutputStream.writeInt(coordinates[index + 1]);
+							if (coordinates[index] + coordinates[index + 1] > buffer.length) {
+								int len1 = buffer.length - coordinates[index];
+								cacheOutputStream.write(buffer,
+										coordinates[index], len1);
+								cacheOutputStream.write(buffer, 0,
+										coordinates[index + 1] - len1);
+							} else {
+								cacheOutputStream.write(buffer,
+										coordinates[index],
+										coordinates[index + 1]);
+							}
+						}
+					} catch (IOException e) {
+						log.error("Internal error, should not happen", e);
+					}
+					cacheOutputStream.close();
+
+					// Reread file
+					InputStream fin = new SnappyInputStream(
+							new BufferedInputStream(new FileInputStream(
+									cacheFile), 65536));
+					FDataInput fInputCache = new FDataInput(fin);
+					fInputCache.readFully(buffer, 0, s);
+					start = 0;
+					end = s;
+					nElements = indexes.length;
+
+				} catch (Exception e) {
+					log.error("Generic exeption", e);
+				}
+			}
 		}
 
 		log.debug("Time repopulate (\t" + indexes.length + "\t):\t"
@@ -469,7 +535,7 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 			} else {
 				output.write(key);
 			}
-		} catch(IOException e) {
+		} catch (IOException e) {
 			log.error("Internal error, should not happen", e);
 		}
 
