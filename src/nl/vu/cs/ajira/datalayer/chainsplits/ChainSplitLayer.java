@@ -48,15 +48,19 @@ public class ChainSplitLayer extends InputLayer {
 		}
 
 		@Override
-		public synchronized boolean next() throws Exception {
+		public synchronized boolean next() {
 			while (isOpen && tuple == null) {
-				wait();
+				try {
+					wait();
+				} catch (InterruptedException e) {
+					// ignore
+				}
 			}
 			return isOpen;
 		}
 
 		@Override
-		public synchronized void getTuple(Tuple tuple) throws Exception {
+		public synchronized void getTuple(Tuple tuple) {
 			this.tuple.copyTo(tuple);
 			this.tuple = null;
 			notify();
@@ -68,10 +72,17 @@ public class ChainSplitLayer extends InputLayer {
 		}
 
 		@Override
-		public synchronized void output(Tuple tuple) throws Exception {
+		public synchronized void output(Tuple tuple) {
+			while (this.tuple != null) {
+				try {
+					wait();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
 			this.tuple = tuple;
 			notify();
-			wait();
 		}
 
 		public synchronized void close() {
@@ -92,10 +103,17 @@ public class ChainSplitLayer extends InputLayer {
 
 		// FIXME: Very very inefficient. Need to fix it!
 		@Override
-		public synchronized void output(SimpleData... data) throws Exception {
+		public synchronized void output(SimpleData... data) {
+			while (this.tuple != null) {
+				try {
+					wait();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
 			this.tuple = TupleFactory.newTuple(data);
 			notify();
-			wait();
 		}
 	}
 
