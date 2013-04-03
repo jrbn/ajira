@@ -73,16 +73,13 @@ public class ChainSplitLayer extends InputLayer {
 
 		@Override
 		public synchronized void output(Tuple tuple) {
-			while (this.tuple != null) {
-				try {
-					wait();
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
 			this.tuple = tuple;
 			notify();
+			try {
+				wait();
+			} catch (InterruptedException e) {
+				// ignore
+			}
 		}
 
 		public synchronized void close() {
@@ -104,16 +101,13 @@ public class ChainSplitLayer extends InputLayer {
 		// FIXME: Very very inefficient. Need to fix it!
 		@Override
 		public synchronized void output(SimpleData... data) {
-			while (this.tuple != null) {
-				try {
-					wait();
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
 			this.tuple = TupleFactory.newTuple(data);
 			notify();
+			try {
+				wait();
+			} catch (InterruptedException e) {
+				// ignore
+			}
 		}
 	}
 
