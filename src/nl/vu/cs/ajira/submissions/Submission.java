@@ -108,7 +108,7 @@ public class Submission {
 			stats += "NONE";
 		}
 		stats += "\n-> execution time: " + getExecutionTimeInMs()
-				+ " ms.\n**************************************************\n";
+				+ " ms.";
 
 		System.out.println(stats);
 		
@@ -116,6 +116,7 @@ public class Submission {
 			System.out.println("Job failed with exception " + exception);
 			exception.printStackTrace(System.out);
 		}
+		System.out.println("**************************************************\n");
 	}
 
 	public Throwable getException() {
