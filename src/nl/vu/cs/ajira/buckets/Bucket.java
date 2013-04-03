@@ -777,9 +777,13 @@ public class Bucket {
 	 * @return True/false, depending on whether the bucket still contains tuples
 	 *         to remove (buffer + files) or not
 	 */
-	public synchronized boolean removeChunk(
+	public boolean removeChunk(
 			WritableContainer<WritableTuple> tmpBuffer) {
-
+		return removeChunk(tmpBuffer, true);
+	}
+	
+	private synchronized boolean removeChunk(WritableContainer<WritableTuple> tmpBuffer, boolean logTime) {
+		
 		// If some threads still have to finish writing
 		waitForCachers();
 
@@ -963,9 +967,15 @@ public class Bucket {
 				log.error("Error in retrieving the results", e);
 			}
 
-			stats.addCounter(submissionNode, submissionId,
-					"Bucket:removeChunk: overall time (ms)",
-					System.currentTimeMillis() - totTime);
+			long tm = System.currentTimeMillis() - totTime;
+			if (log.isDebugEnabled()) {
+				log.debug("removeChunk: time = " + tm + " ms.");
+			}
+			if (logTime) {
+				stats.addCounter(submissionNode, submissionId,
+						"Bucket:removeChunk: overall time (ms)",
+						tm);
+			}
 
 			return isFinished
 					&& elementsInCache == 0
@@ -1086,8 +1096,6 @@ public class Bucket {
 		}
 
 		for (;;) {
-			long timeStart, timeEnd;
-
 			synchronized (lockWriteBuffer[wBuffIndex]) {
 				if (writeBuffer[wBuffIndex] == null) {
 					writeBuffer[wBuffIndex] = fb.get();
@@ -1108,10 +1116,9 @@ public class Bucket {
 							+ "], " + "call removeChunk");
 				}
 
-				timeStart = System.currentTimeMillis();
-				removeChunk(writeBuffer[wBuffIndex]);
-				timeEnd = System.currentTimeMillis();
-
+				// Don't log time of this removeChunk call, time is measured in removeWChunk.
+				removeChunk(writeBuffer[wBuffIndex], false);
+				
 				if (writeBuffer[wBuffIndex].getNElements() == 0) {
 					// LOG-DEBUG
 					if (log.isDebugEnabled()) {
@@ -1127,16 +1134,6 @@ public class Bucket {
 				lockWriteBuffer[wBuffIndex].notifyAll();
 				wBuffIndex = (wBuffIndex + 1) % N_WBUFFS;
 			}
-
-			stats.addCounter(submissionNode, submissionId,
-					"Bucket:removeChunk: overall time (ms)",
-					(timeStart - timeEnd));
-			// this is not a bug - we subtract the time spent
-			// on this background-call from the removeChunk overall time
-			// (otherwise would mean that we spend more time on
-			// removing chunks; this method executes in background
-			// and its spent time is measured inside removeWChunk
-			// separately)
 		}
 	}
 
