@@ -159,7 +159,7 @@ public class Utils {
 			retval <<= 8;
 			retval += (value[start+i] & 255);
 		}
-		position[1] = start + nbytes;
+		position[0] = start + nbytes;
 		return retval;
 	}
 	
