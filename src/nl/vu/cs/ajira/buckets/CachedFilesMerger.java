@@ -100,29 +100,46 @@ public class CachedFilesMerger implements Runnable {
 			// Check if bucket is eligible for merging
 			synchronized (bucket) {
 				if (bucket.sortedCacheFiles.size() > 3) {
-					// Take one random stream
-					int index1, index2;
-
-					do {
-						index1 = nextInt(bucket.minimumSortedList.size());
-						min1 = bucket.minimumSortedList.get(index1);
-					} while (!bucket.sortedCacheFiles.containsKey(min1));
+					// Take two streams with the smallest remaining size.
+					long sz = Long.MAX_VALUE;
+					int listsz = bucket.minimumSortedList.size();
+					int index1 = -1, index2 = -1;
+					
+					for (int i = 0; i < listsz; i++) {
+						byte[] b = bucket.minimumSortedList.get(i);
+						FileMetaData f = bucket.sortedCacheFiles.get(b);
+						if (f == null) {
+							continue;
+						}
+						if (f.remainingSize < sz) {
+							min1 = b;
+							sz = f.remainingSize;
+							index1 = i;
+						}
+					}
 
 					bucket.minimumSortedList.remove(index1);
 					stream1 = bucket.sortedCacheFiles.remove(min1);
+					
+					sz = Long.MAX_VALUE;
+					listsz = bucket.minimumSortedList.size();
+					
+					for (int i = 0; i < listsz; i++) {
+						byte[] b = bucket.minimumSortedList.get(i);
+						FileMetaData f = bucket.sortedCacheFiles.get(b);
+						if (f == null) {
+							continue;
+						}
+						if (f.remainingSize < sz) {
+							sz = f.remainingSize;
+							index2 = i;
+							min2 = b;
+						}
+					}
 
-					do {
-						index2 = nextInt(bucket.minimumSortedList.size());
-						min2 = bucket.minimumSortedList.get(index2);
-					} while (min1 == min2
-							|| !bucket.sortedCacheFiles.containsKey(min2));
-
-					// Fix: moved to above. Removing one may affect the index of
-					// the other. --Ceriel
-					// bucket.minimumSortedList.remove(index1);
 					bucket.minimumSortedList.remove(index2);
-					// stream1 = bucket.sortedCacheFiles.remove(min1);
 					stream2 = bucket.sortedCacheFiles.remove(min2);
+
 					bucket.numCachers++;
 					merge = true;
 
