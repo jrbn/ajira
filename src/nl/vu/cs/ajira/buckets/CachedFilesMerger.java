@@ -1,5 +1,7 @@
 package nl.vu.cs.ajira.buckets;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -8,10 +10,10 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.zip.Deflater;
-import java.util.zip.DeflaterOutputStream;
-import java.util.zip.Inflater;
-import java.util.zip.InflaterInputStream;
+//import java.util.zip.Deflater;
+//import java.util.zip.DeflaterOutputStream;
+//import java.util.zip.Inflater;
+//import java.util.zip.InflaterInputStream;
 
 import nl.vu.cs.ajira.buckets.Bucket.FileMetaData;
 import nl.vu.cs.ajira.data.types.bytearray.FDataInput;
@@ -19,6 +21,10 @@ import nl.vu.cs.ajira.data.types.bytearray.FDataOutput;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+// import org.xerial.snappy.SnappyInputStream;
+// import org.xerial.snappy.SnappyOutputStream;
+import org.iq80.snappy.SnappyInputStream;
+import org.iq80.snappy.SnappyOutputStream;
 
 /**
  * This class represents the implementation of the cache merger. When the number
@@ -173,8 +179,10 @@ public class CachedFilesMerger implements Runnable {
 					cacheFile = File.createTempFile("merged_files", "tmp");
 					cacheFile.deleteOnExit();
 
-					OutputStream fout = new DeflaterOutputStream(new FileOutputStream(
-									cacheFile), new Deflater(Bucket.COMPRESSION), 65536);
+					// OutputStream fout = new DeflaterOutputStream(new FileOutputStream(
+					// 				cacheFile), new Deflater(Bucket.COMPRESSION), 65536);
+					OutputStream fout = new SnappyOutputStream(new BufferedOutputStream(
+							new FileOutputStream(cacheFile), 65536));
 					// Open an output stream to write into the temporary file
 					cacheOutputStream = new FDataOutput(fout);
 
@@ -270,8 +278,10 @@ public class CachedFilesMerger implements Runnable {
 					// Open an input stream for the merged cached file.
 					// This new stream (file descriptor) will replace the
 					// older ones that were merged.
-					FDataInput is = new FDataInput(new InflaterInputStream(
-							new FileInputStream(cacheFile), new Inflater(), 65536));
+					FDataInput is = new FDataInput(new SnappyInputStream(
+							new BufferedInputStream(new FileInputStream(cacheFile), 65536)));
+					// FDataInput is = new FDataInput(new InflaterInputStream(
+					// 		new FileInputStream(cacheFile), new Inflater(), 65536));
 					int length = is.readInt();
 					byte[] rawValue = new byte[length];
 					is.readFully(rawValue);

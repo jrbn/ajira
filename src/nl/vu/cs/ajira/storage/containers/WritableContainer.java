@@ -1,5 +1,7 @@
 package nl.vu.cs.ajira.storage.containers;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.File;
@@ -10,10 +12,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.zip.Deflater;
-import java.util.zip.DeflaterOutputStream;
-import java.util.zip.Inflater;
-import java.util.zip.InflaterInputStream;
+//import java.util.zip.Deflater;
+//import java.util.zip.DeflaterOutputStream;
+//import java.util.zip.Inflater;
+//import java.util.zip.InflaterInputStream;
 
 import nl.vu.cs.ajira.buckets.TupleComparator;
 import nl.vu.cs.ajira.data.types.bytearray.BDataInput;
@@ -28,6 +30,8 @@ import nl.vu.cs.ajira.storage.Factory;
 import nl.vu.cs.ajira.storage.RawComparator;
 import nl.vu.cs.ajira.storage.Writable;
 
+import org.iq80.snappy.SnappyInputStream;
+import org.iq80.snappy.SnappyOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -453,8 +457,10 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 					File cacheFile = File.createTempFile("cache", "tmp");
 					cacheFile.deleteOnExit();
 
-					OutputStream fout = new DeflaterOutputStream(
-							new FileOutputStream(cacheFile), new Deflater(2), 65536);
+					OutputStream fout = new SnappyOutputStream(new BufferedOutputStream(
+							new FileOutputStream(cacheFile), 65536));
+					// OutputStream fout = new DeflaterOutputStream(
+					// 		new FileOutputStream(cacheFile), new Deflater(2), 65536);
 					FDataOutput cacheOutputStream = new FDataOutput(fout);
 
 					// Copy all stuff on the file
@@ -481,8 +487,10 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 					cacheOutputStream.close();
 
 					// Reread file
-					InputStream fin = new InflaterInputStream(new FileInputStream(
-									cacheFile), new Inflater(), 65536);
+					InputStream fin = new SnappyInputStream(
+							new BufferedInputStream(new FileInputStream(cacheFile), 65536));
+					// InputStream fin = new InflaterInputStream(new FileInputStream(
+					// 				cacheFile), new Inflater(), 65536);
 					FDataInput fInputCache = new FDataInput(fin);
 					fInputCache.readFully(buffer, 0, s);
 					cacheFile.delete();
