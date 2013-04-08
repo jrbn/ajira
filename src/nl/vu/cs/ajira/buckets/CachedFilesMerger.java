@@ -1,7 +1,5 @@
 package nl.vu.cs.ajira.buckets;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -10,6 +8,10 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.Inflater;
+import java.util.zip.InflaterInputStream;
 
 import nl.vu.cs.ajira.buckets.Bucket.FileMetaData;
 import nl.vu.cs.ajira.data.types.bytearray.FDataInput;
@@ -17,8 +19,6 @@ import nl.vu.cs.ajira.data.types.bytearray.FDataOutput;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xerial.snappy.SnappyInputStream;
-import org.xerial.snappy.SnappyOutputStream;
 
 /**
  * This class represents the implementation of the cache merger. When the number
@@ -64,7 +64,6 @@ public class CachedFilesMerger implements Runnable {
 	 */
 	@Override
 	public void run() {
-		byte[] tmpbuffer = new byte[1024 * 1024];
 
 		while (true) {
 			Bucket bucket = null;
@@ -163,7 +162,8 @@ public class CachedFilesMerger implements Runnable {
 				byte[] lastElement = null;
 				long totalSize = 0;
 				long totalelements = 0;
-
+				byte[] tmpbuffer = new byte[1024 * 1024];
+				
 				try {
 					// Compute the new number of elements (total merged
 					// elements)
@@ -173,9 +173,8 @@ public class CachedFilesMerger implements Runnable {
 					cacheFile = File.createTempFile("merged_files", "tmp");
 					cacheFile.deleteOnExit();
 
-					OutputStream fout =
-							new SnappyOutputStream(new BufferedOutputStream(new FileOutputStream(
-									cacheFile), 65536));
+					OutputStream fout = new DeflaterOutputStream(new FileOutputStream(
+									cacheFile), new Deflater(Bucket.COMPRESSION), 65536);
 					// Open an output stream to write into the temporary file
 					cacheOutputStream = new FDataOutput(fout);
 
@@ -188,10 +187,8 @@ public class CachedFilesMerger implements Runnable {
 						totalSize += finishStream(stream1, min1,
 								cacheOutputStream, tmpbuffer);
 						lastElement = stream1.lastElement;
-						stream1.stream.close();
-						new File(stream1.filename).delete();
-						stream2.stream.close();
-						new File(stream2.filename).delete();
+						stream1.finished();
+						stream2.finished();
 						stream1 = stream2 = null;
 					} else if (stream1.lastElement != null
 							&& comp.compare(stream1.lastElement, 0,
@@ -202,10 +199,8 @@ public class CachedFilesMerger implements Runnable {
 						totalSize += finishStream(stream2, min2,
 								cacheOutputStream, tmpbuffer);
 						lastElement = stream2.lastElement;
-						stream1.stream.close();
-						new File(stream1.filename).delete();
-						stream2.stream.close();
-						new File(stream2.filename).delete();
+						stream1.finished();
+						stream2.finished();
 						stream1 = stream2 = null;
 					}
 
@@ -228,8 +223,7 @@ public class CachedFilesMerger implements Runnable {
 								stream1.stream.readFully(min1);
 								stream1.remainingSize -= 4 + length;
 							} else {
-								stream1.stream.close();
-								new File(stream1.filename).delete();
+								stream1.finished();
 								stream1 = null;
 							}
 						} else {
@@ -249,8 +243,7 @@ public class CachedFilesMerger implements Runnable {
 								stream2.stream.readFully(min2);
 								stream2.remainingSize -= 4 + length;
 							} else {
-								stream2.stream.close();
-								new File(stream2.filename).delete();
+								stream2.finished();
 								stream2 = null;
 							}
 						}
@@ -260,16 +253,14 @@ public class CachedFilesMerger implements Runnable {
 						totalSize += finishStream(stream1, min1,
 								cacheOutputStream, tmpbuffer);
 						lastElement = stream1.lastElement;
-						stream1.stream.close();
-						new File(stream1.filename).delete();
+						stream1.finished();
 					}
 
 					if (stream2 != null) {
 						totalSize += finishStream(stream2, min2,
 								cacheOutputStream, tmpbuffer);
 						lastElement = stream2.lastElement;
-						stream2.stream.close();
-						new File(stream2.filename).delete();
+						stream2.finished();
 					}
 
 					// Close the output stream for the temporary
@@ -279,8 +270,8 @@ public class CachedFilesMerger implements Runnable {
 					// Open an input stream for the merged cached file.
 					// This new stream (file descriptor) will replace the
 					// older ones that were merged.
-					FDataInput is = new FDataInput(new SnappyInputStream(new BufferedInputStream(
-									new FileInputStream(cacheFile), 65536)));
+					FDataInput is = new FDataInput(new InflaterInputStream(
+							new FileInputStream(cacheFile), new Inflater(), 65536));
 					int length = is.readInt();
 					byte[] rawValue = new byte[length];
 					is.readFully(rawValue);
