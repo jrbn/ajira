@@ -27,7 +27,7 @@ public class Tuple {
 	 * @param data
 	 *            is a array of SimpleData objects
 	 */
-	protected Tuple(SimpleData[] data) {
+	protected Tuple(SimpleData... data) {
 		set(data);
 	}
 
