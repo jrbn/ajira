@@ -4,7 +4,9 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
+import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.Tuple;
+import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.data.types.bytearray.BDataOutput;
 import nl.vu.cs.ajira.storage.Writable;
 
@@ -71,6 +73,10 @@ public class WritableTuple implements Writable {
 	 */
 	public WritableTuple(Tuple tuple) {
 		this.tuple = tuple;
+	}
+
+	public WritableTuple(SimpleData... data) {
+		this(TupleFactory.newTuple(data));
 	}
 
 	public void setTuple(Tuple tuple) {
