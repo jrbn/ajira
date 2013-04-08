@@ -77,25 +77,21 @@ public class Utils {
 		return dir.mkdir();
 	}
 
-	public static class BytesComparator implements Comparator<byte[]> {
+	public static class BytesComparator implements Comparator<byte[]>, java.io.Serializable {
 		@Override
 		public int compare(byte[] o1, byte[] o2) {
-			for (int i = 0, j = 0; i < o1.length && j < o2.length; i++, j++) {
-				int a = (o1[i] & 0xff);
-				int b = (o2[j] & 0xff);
-				if (a != b) {
-					return a - b;
+			for (int i = 0; i < o1.length && i < o2.length; i++) {
+				if (o1[i] != o2[i]) {
+					return (o1[i] & 0xff) - (o2[i] & 0xff);
 				}
 			}
 			return o1.length - o2.length;
 		}
 
 		public int compare(byte[] o1, byte[] o2, int maxBytes) {
-			for (int i = 0, j = 0; i < maxBytes; i++, j++) {
-				int a = (o1[i] & 0xff);
-				int b = (o2[j] & 0xff);
-				if (a != b) {
-					return a - b;
+			for (int i = 0; i < maxBytes; i++) {
+				if (o1[i] != o2[i]) {
+					return (o1[i] & 0xff) - (o2[i] & 0xff);
 				}
 			}
 			return 0;
