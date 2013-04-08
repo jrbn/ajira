@@ -27,7 +27,8 @@ public class ChainSplitLayer extends InputLayer {
 
 		private final int id;
 		private boolean isOpen = true;
-		private Tuple tuple = null;
+		private Tuple tuple = TupleFactory.newTuple();
+		private boolean tuplePresent = false;
 
 		/**
 		 * Custom constructor.
@@ -49,7 +50,7 @@ public class ChainSplitLayer extends InputLayer {
 
 		@Override
 		public synchronized boolean next() {
-			while (isOpen && tuple == null) {
+			while (isOpen && ! tuplePresent) {
 				try {
 					wait();
 				} catch (InterruptedException e) {
@@ -62,7 +63,7 @@ public class ChainSplitLayer extends InputLayer {
 		@Override
 		public synchronized void getTuple(Tuple tuple) {
 			this.tuple.copyTo(tuple);
-			this.tuple = null;
+			tuplePresent = false;
 			notify();
 		}
 
@@ -73,7 +74,11 @@ public class ChainSplitLayer extends InputLayer {
 
 		@Override
 		public synchronized void output(Tuple tuple) {
-			this.tuple = tuple;
+			// this.tuple = tuple;
+			// No, not correct. We don't own the parameter. It can be changed by the
+			// caller. We need to copy it, otherwise sometimes crashes. --Ceriel
+			tuple.copyTo(this.tuple);
+			tuplePresent = true;
 			notify();
 			try {
 				wait();
@@ -98,10 +103,10 @@ public class ChainSplitLayer extends InputLayer {
 			throw new Exception("Not allowed");
 		}
 
-		// FIXME: Very very inefficient. Need to fix it!
 		@Override
 		public synchronized void output(SimpleData... data) {
-			this.tuple = TupleFactory.newTuple(data);
+			this.tuple.set(data);
+			tuplePresent = true;
 			notify();
 			try {
 				wait();
