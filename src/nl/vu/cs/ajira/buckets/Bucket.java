@@ -2,8 +2,6 @@ package nl.vu.cs.ajira.buckets;
 
 import ibis.util.ThreadPool;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -15,6 +13,10 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.Inflater;
+import java.util.zip.InflaterInputStream;
 
 import nl.vu.cs.ajira.chains.ChainNotifier;
 import nl.vu.cs.ajira.data.types.SimpleData;
@@ -30,8 +32,6 @@ import nl.vu.cs.ajira.utils.Consts;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xerial.snappy.SnappyInputStream;
-import org.xerial.snappy.SnappyOutputStream;
 
 /**
  * This class represents the data structure used to store tuples in the main
@@ -40,6 +40,12 @@ import org.xerial.snappy.SnappyOutputStream;
  * were used to spill tuples on the disk.
  */
 public class Bucket {
+	
+	/** 
+	 * Compression level for content stored on the disk. Number between 1 and 9.
+	 * Higher means more compression, but slower. 
+	 */
+	static final int COMPRESSION = 1;
 
 	/**
 	 * Keeps information about the content (tuples) cached/stored on the disk,
@@ -53,6 +59,15 @@ public class Bucket {
 		long nElements;
 		long remainingSize;
 		FDataInput stream;
+		
+		public void finished() {
+			try {
+				stream.close();
+			} catch (IOException e) {
+				// ignore
+			}
+			new File(filename).delete();
+		}
 	}
 
 	/**
@@ -376,9 +391,8 @@ public class Bucket {
 					File cacheFile = File.createTempFile("cache", "tmp");
 					cacheFile.deleteOnExit();
 
-					OutputStream fout = new SnappyOutputStream(
-							new BufferedOutputStream(new FileOutputStream(
-									cacheFile), 65536));
+					OutputStream fout = new DeflaterOutputStream(new FileOutputStream(cacheFile),
+							new Deflater(COMPRESSION), 65536);
 
 					FDataOutput cacheOutputStream = new FDataOutput(fout);
 
@@ -397,9 +411,8 @@ public class Bucket {
 					cacheOutputStream.close();
 
 					// Register file in the list of cachedBuffers
-					FDataInput is = new FDataInput(new SnappyInputStream(
-							new BufferedInputStream(new FileInputStream(
-									cacheFile), 65536)));
+					FDataInput is = new FDataInput(new InflaterInputStream(
+							new FileInputStream(cacheFile), new Inflater(), 65536));
 					synchronized (Bucket.this) {
 						if (!sort) {
 							cacheFiles.add(is);
@@ -543,8 +556,7 @@ public class Bucket {
 			if (tmpBuffer.addAll(meta.stream, meta.lastElement, meta.nElements,
 					meta.remainingSize)) {
 				elementsInCache -= meta.nElements;
-				meta.stream.close();
-				new File(meta.filename).delete();
+				meta.finished();
 				sortedCacheFiles.remove(minimum);
 
 				return true;
@@ -734,12 +746,7 @@ public class Bucket {
 		releaseExBuffer();
 		// Also remove files.
 		for (FileMetaData f : sortedCacheFiles.values()) {
-			try {
-				f.stream.close();
-			} catch (IOException e) {
-				// O well, we tried.
-			}
-			new File(f.filename).delete();
+			f.finished();
 		}
 	}
 
@@ -914,14 +921,13 @@ public class Bucket {
 												sortedCacheFiles.put(rawValue,
 														meta);
 											} else { // File is finished.
-												meta.stream.close();
-												new File(meta.filename).delete();
+												meta.finished();
 											}
 										}
 									} catch (Exception e) {
 										log.warn("Here it should never come!");
 										sortedCacheFiles.remove(minimum);
-										meta.stream.close();
+										meta.finished();
 									}
 								} else { // It came from the in-memory
 											// container.
