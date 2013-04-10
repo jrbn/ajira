@@ -69,4 +69,8 @@ public abstract class InputLayer {
 
 	public abstract ChainLocation getLocations(Tuple tuple,
 			ActionContext context);
+	
+	public void close() {
+		// Default implementation is empty.
+	}
 }
