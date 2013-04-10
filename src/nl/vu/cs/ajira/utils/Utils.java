@@ -149,7 +149,7 @@ public class Utils {
 
 	public static long decodePackedLong(byte[] value, int[] position) {
 		int start = position[0];
-		int nbytes = ((value[start] & 255) >> 5 + 1);
+		int nbytes = ((value[start] & 255) >> 5) + 1;
 		long retval = (value[start] & 31);
 		for (int i = 1; i < nbytes; i++) {
 			retval <<= 8;
