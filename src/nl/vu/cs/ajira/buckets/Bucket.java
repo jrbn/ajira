@@ -15,10 +15,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-//import java.util.zip.Deflater;
-//import java.util.zip.DeflaterOutputStream;
-//import java.util.zip.Inflater;
-//import java.util.zip.InflaterInputStream;
 
 import nl.vu.cs.ajira.chains.ChainNotifier;
 import nl.vu.cs.ajira.data.types.SimpleData;
@@ -46,12 +42,6 @@ import org.iq80.snappy.SnappyOutputStream;
  * were used to spill tuples on the disk.
  */
 public class Bucket {
-	
-	/** 
-	 * Compression level for content stored on the disk. Number between 1 and 9.
-	 * Higher means more compression, but slower. 
-	 */
-	static final int COMPRESSION = 1;
 
 	/**
 	 * Keeps information about the content (tuples) cached/stored on the disk,
@@ -124,7 +114,7 @@ public class Bucket {
 	static final Logger log = LoggerFactory.getLogger(Bucket.class);
 
 	// Used for unsorted streams.
-	private final List<FDataInput> cacheFiles = new ArrayList<FDataInput>();
+	private final List<File> cacheFiles = new ArrayList<File>();
 	private final Map<Long, Integer> children = new HashMap<Long, Integer>();
 
 	// Used for sorting
@@ -397,8 +387,6 @@ public class Bucket {
 					File cacheFile = File.createTempFile("cache", "tmp");
 					cacheFile.deleteOnExit();
 
-					// OutputStream fout = new DeflaterOutputStream(new FileOutputStream(cacheFile),
-					//		new Deflater(COMPRESSION), 65536);
 					OutputStream fout = new SnappyOutputStream(new BufferedOutputStream(
 							new FileOutputStream(cacheFile), 65536));
 
@@ -419,14 +407,12 @@ public class Bucket {
 					cacheOutputStream.close();
 
 					// Register file in the list of cachedBuffers
-					// FDataInput is = new FDataInput(new InflaterInputStream(
-					// 		new FileInputStream(cacheFile), new Inflater(), 65536));
-					FDataInput is = new FDataInput(new SnappyInputStream(
-							new BufferedInputStream(new FileInputStream(cacheFile), 65536)));
 					synchronized (Bucket.this) {
 						if (!sort) {
-							cacheFiles.add(is);
+							cacheFiles.add(cacheFile);
 						} else {
+							FDataInput is = new FDataInput(new SnappyInputStream(
+									new BufferedInputStream(new FileInputStream(cacheFile), 65536)));
 							// Read the first element and put it into the map
 							try {
 								int length = is.readInt();
@@ -541,9 +527,7 @@ public class Bucket {
 	 * This method is used to copy an entire file from the disk, which contains
 	 * cached sorted tuples, to a buffer, if the minimum element from the file
 	 * is less then the minimum element from the sorted list.
-	 * 
-	 * @see #cacheFiles
-	 * 
+
 	 * @param meta
 	 *            The meta information about the file that is checked if can
 	 *            copied into the buffer
@@ -823,7 +807,9 @@ public class Bucket {
 				if (elementsInCache > 0) {
 					if (!sort) { // No sorting applied
 						long time = System.currentTimeMillis();
-						FDataInput di = cacheFiles.remove(0);
+						File fi = cacheFiles.remove(0);
+						FDataInput di = new FDataInput(new SnappyInputStream(
+								new BufferedInputStream(new FileInputStream(fi), 65536)));
 						tmpBuffer.readFrom(di); // Read the oldest file
 						stats.addCounter(
 								submissionNode,
@@ -835,6 +821,7 @@ public class Bucket {
 								tmpBuffer.getRawSize());
 						elementsInCache -= tmpBuffer.getNElements();
 						di.close();
+						fi.delete();
 					} else { // Need to sort
 
 						tmpBuffer.setFieldsDelimiter(true);
