@@ -216,6 +216,10 @@ public class Context {
 	public InputLayer getInputLayer(int idInputLayer) {
 		return input.getInputLayer(idInputLayer);
 	}
+	
+	public InputLayerRegistry getInputLayerRegistry() {
+		return input;
+	}
 
 	public Configuration getConfiguration() {
 		return conf;

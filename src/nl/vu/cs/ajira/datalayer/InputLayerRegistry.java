@@ -53,4 +53,15 @@ public class InputLayerRegistry {
 		}
 	}
 
+	/**
+	 * Closes each InputLayer found in the registry.
+	 */
+	public void close() {
+		for (InputLayer i : registry) {
+			if (i != null) {
+				i.close();
+			}
+		}
+	}
+
 }

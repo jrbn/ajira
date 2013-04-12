@@ -115,6 +115,7 @@ public class Ajira {
 	 */
 	public void shutdown() {
 		log.info("Framework is shutting down ...");
+		globalContext.getInputLayerRegistry().close();
 		if (!localMode) {
 			try {
 				// Send message to everyone that should stop
