@@ -10,7 +10,7 @@ public class Consts {
 	public static final int MAX_N_ACTIONS = 128;
 	public static final int CHAIN_SIZE = 10 * 1024;
 
-	public static final int MAXM = (int) (Runtime.getRuntime().maxMemory() / (32 * 1024 * 1024));
+	public static final int MAXM = (int) (Runtime.getRuntime().maxMemory() / (64 * 1024 * 1024));
 	
 	public static final int TUPLES_CONTAINER_MAX_BUFFER_SIZE = (MAXM > 512 ? 512 : MAXM > 256 ? 256 : MAXM > 128 ? 128 : MAXM > 64 ? 64 : 32) * 1024 * 1024;
 	public static final int SIZE_BUFFERS_CHAIN_SEND = 4 * 1024 * 1024;
