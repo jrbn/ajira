@@ -14,6 +14,7 @@ import nl.vu.cs.ajira.buckets.Buckets;
 import nl.vu.cs.ajira.chains.Chain;
 import nl.vu.cs.ajira.chains.ChainExecutor;
 import nl.vu.cs.ajira.data.types.DataProvider;
+import nl.vu.cs.ajira.datalayer.InputLayer;
 import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.net.NetworkLayer;
 import nl.vu.cs.ajira.storage.Container;
@@ -176,7 +177,7 @@ public class SubmissionRegistry {
 
 			Chain chain = new Chain();
 			chain.setParentChainId(-1);
-			chain.setInputLayer(Consts.DEFAULT_INPUT_LAYER_ID);
+			chain.setInputLayer(InputLayer.DEFAULT_LAYER);
 			int resultBucket = chain.setActions(new ChainExecutor(null,
 					context, chain), actions);
 

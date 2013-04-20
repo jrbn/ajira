@@ -4,7 +4,7 @@ import nl.vu.cs.ajira.actions.support.Query;
 import nl.vu.cs.ajira.data.types.TInt;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.datalayer.InputQuery;
-import nl.vu.cs.ajira.utils.Consts;
+import nl.vu.cs.ajira.datalayer.buckets.BucketsLayer;
 
 /**
  * The <code>ReadFromBucket</code> action obtains input tuples from a specified
@@ -37,7 +37,7 @@ public class ReadFromBucket extends Action {
 				params[I_NODE_ID] = -1;
 			}
 
-			query.setInputLayer(Consts.BUCKET_INPUT_LAYER_ID);
+			query.setInputLayer(BucketsLayer.class);
 			query.setQuery(new Query(new TInt((Integer) params[I_BUCKET_ID]),
 					new TInt((Integer) params[I_NODE_ID])));
 

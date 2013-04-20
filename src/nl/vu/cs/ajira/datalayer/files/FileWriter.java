@@ -9,7 +9,7 @@ public interface FileWriter {
 
 	public void init(File file);
 
-	public void write(Tuple inputTuple) throws IOException;
+	public void write(Tuple tuple) throws IOException;
 
 	public void close() throws IOException;
 }

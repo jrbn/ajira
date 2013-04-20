@@ -1,42 +1,35 @@
 package nl.vu.cs.ajira.datalayer;
 
-import java.io.IOException;
-
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.chains.ChainLocation;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.datalayer.files.FileLayer;
 import nl.vu.cs.ajira.utils.Configuration;
-import nl.vu.cs.ajira.utils.Consts;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class InputLayer {
 
-	static final Logger log = LoggerFactory.getLogger(InputLayer.class);
+	private static final Logger log = LoggerFactory.getLogger(InputLayer.class);
+	private static final String INPUT_LAYER_CLASS = "inputlayer.default";
 
-	static InputLayer storage;
+	public static final Class<? extends InputLayer> DEFAULT_LAYER = InputLayer.class;
 
-	static public InputLayer getImplementation(Configuration configuration)
-			throws IOException, ClassNotFoundException, InstantiationException,
-			IllegalAccessException {
-
-		if (storage == null) {
-			String className = configuration.get(Consts.STORAGE_IMPL, null);
-			if (className == null) {
-				log.info("Input Layer not specified. Use FileLayer ...");
-				className = FileLayer.class.getName();
-			}
-
-			Class<? extends InputLayer> cStorage = ClassLoader
-					.getSystemClassLoader().loadClass(className)
-					.asSubclass(InputLayer.class);
-			storage = cStorage.newInstance();
+	static public Class<? extends InputLayer> getDefaultInputLayerClass(
+			Configuration configuration) throws Exception {
+		String className = configuration.get(INPUT_LAYER_CLASS, null);
+		if (className == null) {
+			log.debug("Input Layer not specified. Use FileLayer ...");
+			className = FileLayer.class.getName();
 		}
+		return Class.forName(className).asSubclass(InputLayer.class);
+	}
 
-		return storage;
+	static public void setDefaultInputLayerClass(
+			Class<? extends InputLayer> clazz, Configuration configuration) {
+		configuration.set(INPUT_LAYER_CLASS, clazz.getName());
 	}
 
 	/**
@@ -69,7 +62,7 @@ public abstract class InputLayer {
 
 	public abstract ChainLocation getLocations(Tuple tuple,
 			ActionContext context);
-	
+
 	public void close() {
 		// Default implementation is empty.
 	}

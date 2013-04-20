@@ -12,10 +12,10 @@ import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.datalayer.InputLayer;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
+import nl.vu.cs.ajira.datalayer.buckets.BucketsLayer;
 import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.net.NetworkLayer;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
-import nl.vu.cs.ajira.utils.Consts;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +41,7 @@ public class ChainHandler implements Runnable {
 	public boolean singleChain = false;
 	private final Query query = new Query();
 	private final Tuple tuple = TupleFactory.newTuple();
-	private ChainExecutor actions;
+	private final ChainExecutor actions;
 
 	ChainHandler(Context context) {
 		this.context = context;
@@ -70,8 +70,8 @@ public class ChainHandler implements Runnable {
 
 			// Read the input tuple from the knowledge base
 			currentChain.getQuery(query);
-			int il = currentChain.getInputLayer();
-			InputLayer input = context.getInputLayer(il);
+			Class<? extends InputLayer> clazz = currentChain.getInputLayer();
+			InputLayer input = context.getInputLayer(clazz);
 			TupleIterator itr = input.getIterator(query.getTuple(), actions);
 			if (!itr.isReady()) {
 				context.getChainNotifier().addWaiter(itr, currentChain);
@@ -79,7 +79,7 @@ public class ChainHandler implements Runnable {
 				return;
 			}
 
-			if (il == Consts.BUCKET_INPUT_LAYER_ID) {
+			if (clazz == BucketsLayer.class) {
 				// Check whether there are some counters that should be added to
 				// the ChainExecutor
 				BucketIterator bi = (BucketIterator) itr;
@@ -152,7 +152,7 @@ public class ChainHandler implements Runnable {
 			status = STATUS_ACTIVE;
 			try {
 				processChain();
-			} catch(Throwable e) {
+			} catch (Throwable e) {
 				// Broadcast all the nodes that a chain part of a job has
 				// failed.
 				log.error("chain failed, cancelling the job ...", e);
