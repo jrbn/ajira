@@ -77,6 +77,9 @@ public class ChainSplitLayer extends InputLayer {
 			// this.tuple = tuple;
 			// No, not correct. We don't own the parameter. It can be changed by the
 			// caller. We need to copy it, otherwise sometimes crashes. --Ceriel
+			if (log.isDebugEnabled() && tuplePresent) {
+				log.debug("Oops: tuplePresent is true!");
+			}
 			tuple.copyTo(this.tuple);
 			tuplePresent = true;
 			notify();
@@ -105,6 +108,9 @@ public class ChainSplitLayer extends InputLayer {
 
 		@Override
 		public synchronized void output(SimpleData... data) {
+			if (log.isDebugEnabled() && tuplePresent) {
+				log.debug("Oops: tuplePresent is true!");
+			}
 			this.tuple.set(data);
 			tuplePresent = true;
 			notify();

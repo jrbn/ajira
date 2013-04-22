@@ -11,7 +11,6 @@ import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.datalayer.InputQuery;
 import nl.vu.cs.ajira.datalayer.files.FileCollection;
 import nl.vu.cs.ajira.datalayer.files.FileLayer;
-import nl.vu.cs.ajira.utils.Consts;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,8 +39,8 @@ public class ReadFromFiles extends Action {
 	/**
 	 * The <code>S_CUSTOM_READER</code> parameter, of type <code>String</code>,
 	 * is not required, and, if provided, should contain the class name of a
-	 * subclass of {@link nl.vu.cs.ajira.datalayer.files.DefaultFileParser}.
-	 * This subclass should have a public constructor with a single
+	 * subclass of {@link nl.vu.cs.ajira.datalayer.files.FileReader}. This
+	 * subclass should have a public constructor with a single
 	 * {@link java.io.File} parameter.
 	 */
 	public static final int S_CUSTOM_READER = 1;
@@ -66,7 +65,7 @@ public class ReadFromFiles extends Action {
 		public void setupAction(InputQuery query, Object[] params,
 				ActionController controller, ActionContext context) {
 			if (params[S_PATH] != null) {
-				query.setInputLayer(Consts.DEFAULT_INPUT_LAYER_ID);
+				query.setInputLayer(FileLayer.class);
 				query.setQuery(new Query(new TInt(FileLayer.OP_LS),
 						new TString((String) params[S_PATH]), new TString(
 								(String) params[S_FILE_FILTER])));

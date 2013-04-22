@@ -51,9 +51,7 @@ import org.slf4j.LoggerFactory;
  * <p>
  * Note: for now, there are some serious limitations when using Ajira as a
  * cluster: all classes used must be on Ajira's classpath, jobs can interfere
- * with other jobs (by crashing, for instance). TODO: spawn JVMs for each job,
- * allow for jobs to send jars as well, make Ajira load classes through a
- * special classloader that considers user-supplied jars as well.
+ * with other jobs (by crashing, for instance).
  */
 public class Ajira {
 
@@ -213,13 +211,13 @@ public class Ajira {
 					cache, conf);
 
 			/**** INIT INPUT LAYERS ****/
-			InputLayer input = InputLayer.getImplementation(conf);
 			InputLayerRegistry inputRegistry = new InputLayerRegistry();
-			inputRegistry.add(Consts.DEFAULT_INPUT_LAYER_ID, input);
-			inputRegistry.add(Consts.BUCKET_INPUT_LAYER_ID, new BucketsLayer());
-			inputRegistry.add(Consts.DUMMY_INPUT_LAYER_ID, new DummyLayer());
-			inputRegistry.add(Consts.SPLITS_INPUT_LAYER,
-					ChainSplitLayer.getInstance());
+			inputRegistry.registerLayer(new BucketsLayer(), false);
+			inputRegistry.registerLayer(new DummyLayer(), false);
+			inputRegistry.registerLayer(ChainSplitLayer.getInstance(), false);
+			Class<? extends InputLayer> input = InputLayer
+					.getDefaultInputLayerClass(conf);
+			inputRegistry.registerLayer(input.newInstance(), true);
 
 			/**** INIT CONTEXT ****/
 			globalContext = new Context();

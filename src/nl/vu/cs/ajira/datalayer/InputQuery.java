@@ -8,7 +8,7 @@ public interface InputQuery {
 
 	public void getQuery(Query tuple);
 
-	public void setInputLayer(int inputLayerID);
+	public void setInputLayer(Class<? extends InputLayer> clazz);
 
-	public int getInputLayer();
+	public Class<? extends InputLayer> getInputLayer();
 }

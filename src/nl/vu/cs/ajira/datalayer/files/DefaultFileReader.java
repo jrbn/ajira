@@ -16,12 +16,11 @@ import org.slf4j.LoggerFactory;
 /**
  * 
  * This class it is used to parse the content of a file.
- *
+ * 
  */
-public class DefaultFileParser {
+public class DefaultFileReader implements FileReader {
 
-	static final Logger log = LoggerFactory
-			.getLogger(DefaultFileParser.class);
+	static final Logger log = LoggerFactory.getLogger(DefaultFileReader.class);
 	protected BufferedReader reader = null;
 	TString currentLine = new TString();
 
@@ -29,9 +28,10 @@ public class DefaultFileParser {
 	 * Custom constructor.
 	 * 
 	 * @param file
-	 * 		The file that will be used for reading.
+	 *            The file that will be used for reading.
 	 */
-	public DefaultFileParser(File file) {
+	@Override
+	public void init(File file) {
 		try {
 			if (log.isDebugEnabled()) {
 				log.debug("Reading file " + file.getPath());
@@ -49,9 +49,9 @@ public class DefaultFileParser {
 	/**
 	 * Reads one line from the input file.
 	 * 
-	 * @return
-	 * 		True if it was possible to read a line, false otherwise.
+	 * @return True if it was possible to read a line, false otherwise.
 	 */
+	@Override
 	public boolean next() {
 		try {
 			String s = reader.readLine();
@@ -71,12 +71,23 @@ public class DefaultFileParser {
 	 * Updates the field of the tuple with last line read.
 	 * 
 	 * @param tuple
-	 * 		The tuple that will be updated with the 
-	 * 		current line read.
-	 * 		
+	 *            The tuple that will be updated with the current line read.
+	 * 
 	 * @throws Exception
 	 */
+	@Override
 	public void getTuple(Tuple tuple) throws Exception {
 		tuple.set(currentLine);
+	}
+
+	@Override
+	public void close() {
+		try {
+			if (reader != null) {
+				reader.close();
+			}
+		} catch (Exception e) {
+			log.error("Error", e);
+		}
 	}
 }

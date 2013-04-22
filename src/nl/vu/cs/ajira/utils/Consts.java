@@ -11,8 +11,9 @@ public class Consts {
 	public static final int CHAIN_SIZE = 10 * 1024;
 
 	public static final int MAXM = (int) (Runtime.getRuntime().maxMemory() / (128 * 1024 * 1024));
-	
-	public static final int TUPLES_CONTAINER_MAX_BUFFER_SIZE = (MAXM > 512 ? 512 : MAXM > 256 ? 256 : MAXM > 128 ? 128 : MAXM > 64 ? 64 : 32) * 1024 * 1024;
+
+	public static final int TUPLES_CONTAINER_MAX_BUFFER_SIZE = (MAXM > 512 ? 512
+			: MAXM > 256 ? 256 : MAXM > 128 ? 128 : MAXM > 64 ? 64 : 32) * 1024 * 1024;
 	public static final int SIZE_BUFFERS_CHAIN_SEND = 4 * 1024 * 1024;
 	public static final int SIZE_BUFFERS_CHAINS_PROCESS = (MAXM > 64 ? 64 : 32) * 1024 * 1024;
 
@@ -20,7 +21,8 @@ public class Consts {
 	public static final int STARTING_SIZE_FACTORY = 0;
 	public static final int N_ELEMENTS_FACTORY = 10000;
 
-	public static final int MIN_SIZE_TO_SEND = Math.min(64 * 1024 * 1024, TUPLES_CONTAINER_MAX_BUFFER_SIZE);
+	public static final int MIN_SIZE_TO_SEND = Math.min(64 * 1024 * 1024,
+			TUPLES_CONTAINER_MAX_BUFFER_SIZE);
 	public static final int MAX_SEGMENTS_RECEIVED = 2048;
 
 	public static final int MAX_TUPLE_SENDERS = 8;
@@ -44,14 +46,7 @@ public class Consts {
 	public static final String STATE_FAILED = "FAILED";
 	public static final String STATE_INIT_FAILED = "INIT_FAILED";
 
-	public static final int DEFAULT_INPUT_LAYER_ID = 0;
-	public static final int BUCKET_INPUT_LAYER_ID = 1;
-	public static final int DUMMY_INPUT_LAYER_ID = 2;
-	public static final int SPLITS_INPUT_LAYER = 3;
-	public static final int MAX_N_INPUT_LAYERS = 4;
-
 	/********** DEFAULT CONFIGURATION OPTIONS **********/
-	public static final String STORAGE_IMPL = "storage.impl";
 	public static final String N_PROC_THREADS = "threads.processing";
 	public static final String N_MERGE_THREADS = "threads.merge";
 	public static final String START_IBIS = "ibis.startserver";

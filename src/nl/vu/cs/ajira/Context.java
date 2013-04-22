@@ -26,75 +26,88 @@ import nl.vu.cs.ajira.utils.Consts;
 import nl.vu.cs.ajira.utils.UniqueCounter;
 
 /**
- *         This class contains all the variables, objects, constants that might
- *         be useful to the different components of the cluster. In general,
- *         this context is visible within the architecture, but should not
- *         visible to the user, who has access to the ActionContext instead.
+ * This class contains all the variables, objects, constants that might be
+ * useful to the different components of the cluster. In general, this context
+ * is visible within the architecture, but should not visible to the user, who
+ * has access to the ActionContext instead.
  */
 public class Context {
 
 	private static final long BUCKET_INIT = 100;
 	private static final long CHAIN_INIT = 1;
-	
+
 	/**
-	 * Private class for a set of crashed submissions. An entry remains in this set
-	 * for one hour. That should be long enough for all activity for that submission to
-	 * die out.
+	 * Private class for a set of crashed submissions. An entry remains in this
+	 * set for one hour. That should be long enough for all activity for that
+	 * submission to die out.
 	 */
 	private static class CrashedSubmissions implements Runnable {
-	    
-	    /** Time to keep a crashed submission. Currently set to 1 hour. */
-	    private static final int TIME_TO_KEEP = 1000 * 60 * 60;
-	    
-	    /** How often do we purge the crashed submission set? Currently set to 5 minutes. */
-	    private static final int INTERVAL = 5 * 1000 * 60;
-	    
-	    /** Maps crashed submissions to the time we were notified that it crashed. */
-	    private Map<Integer, Long> crashedSubmissions = new HashMap<Integer, Long>();
-	    
-	    /**
-	     * Adds the specified submission to the crashed submissions.
-	     * @param submissionId a submission that crashed.
-	     * @return whether the submission was actually added.
-	     */
-	    public synchronized boolean addCrashedSubmission(int submissionId) {
-		if (! crashedSubmissions.containsKey(submissionId)) {
-		    crashedSubmissions.put(submissionId, System.currentTimeMillis());
-		    return true;
-		}
-		return false;
-	    }
-	    
-	    /**
-	     * Returns true if the specified submission crashed.
-	     * @param submissionId the submission to examine.
-	     * @return whether the specified submission crashed.
-	     */
-	    public synchronized boolean hasCrashed(int submissionId) {
-		return crashedSubmissions.containsKey(submissionId);
-	    }
-	    
-	    /**
-	     * Purges the crashed-submission set each INTERVAL.
-	     */
-	    public void run() {
-		for (;;) {
-		    synchronized(this) {
-			Set<Entry<Integer, Long>> entries = new HashSet<Entry<Integer, Long>>(crashedSubmissions.entrySet());
-			long t = System.currentTimeMillis();
-			for (Entry<Integer, Long> e : entries) {
-			    if (t - e.getValue() > TIME_TO_KEEP) {
-				crashedSubmissions.remove(e.getKey());
-			    }
+
+		/** Time to keep a crashed submission. Currently set to 1 hour. */
+		private static final int TIME_TO_KEEP = 1000 * 60 * 60;
+
+		/**
+		 * How often do we purge the crashed submission set? Currently set to 5
+		 * minutes.
+		 */
+		private static final int INTERVAL = 5 * 1000 * 60;
+
+		/**
+		 * Maps crashed submissions to the time we were notified that it
+		 * crashed.
+		 */
+		private final Map<Integer, Long> crashedSubmissions = new HashMap<Integer, Long>();
+
+		/**
+		 * Adds the specified submission to the crashed submissions.
+		 * 
+		 * @param submissionId
+		 *            a submission that crashed.
+		 * @return whether the submission was actually added.
+		 */
+		public synchronized boolean addCrashedSubmission(int submissionId) {
+			if (!crashedSubmissions.containsKey(submissionId)) {
+				crashedSubmissions
+						.put(submissionId, System.currentTimeMillis());
+				return true;
 			}
-		    }
-		    try {
-			Thread.sleep(INTERVAL);
-		    } catch (InterruptedException e) {
-			// ignore
-		    }
+			return false;
 		}
-	    }
+
+		/**
+		 * Returns true if the specified submission crashed.
+		 * 
+		 * @param submissionId
+		 *            the submission to examine.
+		 * @return whether the specified submission crashed.
+		 */
+		public synchronized boolean hasCrashed(int submissionId) {
+			return crashedSubmissions.containsKey(submissionId);
+		}
+
+		/**
+		 * Purges the crashed-submission set each INTERVAL.
+		 */
+		@Override
+		public void run() {
+			for (;;) {
+				synchronized (this) {
+					Set<Entry<Integer, Long>> entries = new HashSet<Entry<Integer, Long>>(
+							crashedSubmissions.entrySet());
+					long t = System.currentTimeMillis();
+					for (Entry<Integer, Long> e : entries) {
+						if (t - e.getValue() > TIME_TO_KEEP) {
+							crashedSubmissions.remove(e.getKey());
+						}
+					}
+				}
+				try {
+					Thread.sleep(INTERVAL);
+				} catch (InterruptedException e) {
+					// ignore
+				}
+			}
+		}
 	}
 
 	private boolean localMode;
@@ -162,35 +175,42 @@ public class Context {
 		crashedSubmissions = new CrashedSubmissions();
 		ThreadPool.createNew(crashedSubmissions, "Died-submissions-purger");
 	}
-	
+
 	/**
 	 * Returns whether the specified submission has crashed.
-	 * @param submissionId the submission
+	 * 
+	 * @param submissionId
+	 *            the submission
 	 * @return whether the specified submission has crashed
 	 */
 	public boolean hasCrashed(int submissionId) {
 		return crashedSubmissions.hasCrashed(submissionId);
 	}
-	
+
 	/**
 	 * Remove all left-overs of a failed submission.
-	 * @param submissionNode the node that submitted the job
-	 * @param submissionId the failed submission
-	 * @param e the exception that caused the submission to crash.
+	 * 
+	 * @param submissionNode
+	 *            the node that submitted the job
+	 * @param submissionId
+	 *            the failed submission
+	 * @param e
+	 *            the exception that caused the submission to crash.
 	 */
-	public void cleanupSubmission(int submissionNode, int submissionId, Throwable e) {
-	    
-	    if (! crashedSubmissions.addCrashedSubmission(submissionId)) {
-	    	return;
-	    }
-	    	
-	    manager.submissionFailed(submissionId);
+	public void cleanupSubmission(int submissionNode, int submissionId,
+			Throwable e) {
 
-	    cache.clearAll(submissionId);
+		if (!crashedSubmissions.addCrashedSubmission(submissionId)) {
+			return;
+		}
 
-	    if (net.getMyPartition() == submissionNode) {
-	    	registry.killSubmission(submissionId, e);
-	    }
+		manager.submissionFailed(submissionId);
+
+		cache.clearAll(submissionId);
+
+		if (net.getMyPartition() == submissionNode) {
+			registry.killSubmission(submissionId, e);
+		}
 	}
 
 	public CachedFilesMerger getMergeSortThreadsInfo() {
@@ -213,10 +233,10 @@ public class Context {
 		return net;
 	}
 
-	public InputLayer getInputLayer(int idInputLayer) {
-		return input.getInputLayer(idInputLayer);
+	public InputLayer getInputLayer(Class<? extends InputLayer> inputLayer) {
+		return input.getLayer(inputLayer);
 	}
-	
+
 	public InputLayerRegistry getInputLayerRegistry() {
 		return input;
 	}
@@ -252,7 +272,8 @@ public class Context {
 	/**
 	 * Returns an unique counter.
 	 * 
-	 * @param name the name of the counter
+	 * @param name
+	 *            the name of the counter
 	 * @return Returns a globally unique ID for the counter specified in input.
 	 *         It can be used for various purposes.
 	 */
