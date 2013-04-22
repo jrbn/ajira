@@ -88,6 +88,8 @@ public class ReadFromFiles extends Action {
 		}
 
 		ActionConf c = ActionFactory.getActionConf(QueryInputLayer.class);
+		c.setParamString(QueryInputLayer.S_INPUTLAYER,
+				FileLayer.class.getName());
 		c.setParamWritable(QueryInputLayer.W_QUERY, new Query(tuple));
 		c.setParamStringArray(QueryInputLayer.SA_SIGNATURE_QUERY,
 				tuple.getSignature());

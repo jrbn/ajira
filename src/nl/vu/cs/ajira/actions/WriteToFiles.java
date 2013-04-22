@@ -97,6 +97,7 @@ public class WriteToFiles extends Action {
 			openFile(context);
 		}
 		file.write(inputTuple);
+		output.output(inputTuple);
 	}
 
 	@Override
