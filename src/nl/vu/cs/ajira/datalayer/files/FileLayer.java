@@ -17,23 +17,22 @@ import org.slf4j.LoggerFactory;
 
 /**
  * 
- * This class provides an iterator for different
- * types of files, it a layer over the files.
- *
+ * This class provides an iterator for different types of files, it a layer over
+ * the files.
+ * 
  */
 public class FileLayer extends InputLayer {
 
 	public final static int OP_LS = 0;
 	public final static int OP_READ = 1;
-	private final static Class<? extends DefaultFileParser> DEFAULT_FILE_PARSER = DefaultFileParser.class;
+	private final static Class<? extends DefaultFileReader> DEFAULT_FILE_PARSER = DefaultFileReader.class;
 
 	static final Logger log = LoggerFactory.getLogger(FileLayer.class);
 
 	int numberNodes;
 
 	/**
-	 * Sets the number of nodes that are used 
-	 * by the current context.
+	 * Sets the number of nodes that are used by the current context.
 	 */
 	@Override
 	protected void load(Context context) throws IOException {
@@ -41,9 +40,8 @@ public class FileLayer extends InputLayer {
 	}
 
 	/**
-	 * Returns a Iterator. Depending on the operation given 
-	 * through the tuple parameter it can be a ListFilesIterator
-	 * or a FilesIterator.
+	 * Returns a Iterator. Depending on the operation given through the tuple
+	 * parameter it can be a ListFilesIterator or a FilesIterator.
 	 */
 	@Override
 	public TupleIterator getIterator(Tuple tuple, ActionContext context) {
@@ -81,10 +79,9 @@ public class FileLayer extends InputLayer {
 					String clazz = ((TString) tuple.get(3)).getValue();
 
 					// Test whether it is a good class
-					Class<? extends DefaultFileParser> c = null;
+					Class<? extends FileReader> c = null;
 					try {
-						c = Class.forName(clazz).asSubclass(
-								DefaultFileParser.class);
+						c = Class.forName(clazz).asSubclass(FileReader.class);
 					} catch (Exception e) {
 						log.warn("Customized file parser " + clazz
 								+ " is not valid.");
@@ -110,10 +107,9 @@ public class FileLayer extends InputLayer {
 	}
 
 	/**
-	 * Depending on the first value of the tuple it returns
-	 * the ChainLocation of this node or a new ChainLocation
-	 * whose id is formed from a substring of the second value
-	 * of the tuple. 
+	 * Depending on the first value of the tuple it returns the ChainLocation of
+	 * this node or a new ChainLocation whose id is formed from a substring of
+	 * the second value of the tuple.
 	 */
 	@Override
 	public ChainLocation getLocations(Tuple tuple, ActionContext context) {

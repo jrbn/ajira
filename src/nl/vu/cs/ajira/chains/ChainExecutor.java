@@ -19,6 +19,7 @@ import nl.vu.cs.ajira.data.types.TInt;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
+import nl.vu.cs.ajira.datalayer.buckets.BucketsLayer;
 import nl.vu.cs.ajira.datalayer.chainsplits.ChainSplitLayer;
 import nl.vu.cs.ajira.datalayer.chainsplits.ChainSplitLayer.SplitIterator;
 import nl.vu.cs.ajira.mgmt.StatisticsCollector;
@@ -238,7 +239,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			chain.setRawSize(rawSizes[nActions - 1]);
 			chain.copyTo(supportChain);
 			supportChain.setTotalChainChildren(childrenToTransfer);
-			supportChain.setInputLayer(Consts.BUCKET_INPUT_LAYER_ID);
+			supportChain.setInputLayer(BucketsLayer.class);
 			supportQuery.setElements(new TInt(transferBucketId), new TInt(
 					transferNodeId));
 			supportChain.setQuery(supportQuery);
@@ -320,7 +321,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		if (actions != null)
 			supportChain.setActions(this, actions);
 		SplitIterator itr = ChainSplitLayer.getInstance().registerNewSplit();
-		supportChain.setInputLayer(Consts.SPLITS_INPUT_LAYER);
+		supportChain.setInputLayer(ChainSplitLayer.class);
 		supportQuery.setElements(new TInt(itr.getId()));
 		supportChain.setQuery(supportQuery);
 

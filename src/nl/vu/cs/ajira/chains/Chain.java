@@ -20,7 +20,11 @@ import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.data.types.bytearray.BDataInput;
 import nl.vu.cs.ajira.data.types.bytearray.BDataOutput;
+import nl.vu.cs.ajira.datalayer.InputLayer;
 import nl.vu.cs.ajira.datalayer.InputQuery;
+import nl.vu.cs.ajira.datalayer.buckets.BucketsLayer;
+import nl.vu.cs.ajira.datalayer.chainsplits.ChainSplitLayer;
+import nl.vu.cs.ajira.datalayer.dummy.DummyLayer;
 import nl.vu.cs.ajira.storage.Writable;
 import nl.vu.cs.ajira.utils.Consts;
 import nl.vu.cs.ajira.utils.Utils;
@@ -69,7 +73,9 @@ public class Chain implements Writable, InputQuery {
 
 	private int bufferSize = CHAIN_RESERVED_SPACE;
 	private final byte[] buffer = new byte[Consts.CHAIN_SIZE];
+
 	private final Tuple tuple = TupleFactory.newTuple();
+	private String inputLayer = null;
 
 	private final BDataOutput cos = new BDataOutput(buffer);
 	private final BDataInput cis = new BDataInput(buffer);
@@ -78,6 +84,15 @@ public class Chain implements Writable, InputQuery {
 	public void readFrom(DataInput input) throws IOException {
 		bufferSize = input.readInt();
 		input.readFully(buffer, 0, bufferSize);
+
+		if (buffer[32] == -1) {
+			int len = input.readByte();
+			byte[] bytes = new byte[len];
+			input.readFully(bytes);
+			inputLayer = new String(bytes);
+		} else {
+			inputLayer = null;
+		}
 
 		if (input.readBoolean()) {
 			// Read the number of elements and their types
@@ -97,6 +112,12 @@ public class Chain implements Writable, InputQuery {
 	public void writeTo(DataOutput output) throws IOException {
 		output.writeInt(bufferSize);
 		output.write(buffer, 0, bufferSize);
+
+		if (inputLayer != null) {
+			byte[] bytes = inputLayer.getBytes();
+			output.writeByte(bytes.length);
+			output.write(bytes);
+		}
 
 		if (tuple.getNElements() > 0) {
 			output.writeBoolean(true);
@@ -151,13 +172,42 @@ public class Chain implements Writable, InputQuery {
 	}
 
 	@Override
-	public void setInputLayer(int id) {
-		buffer[32] = (byte) id;
+	public void setInputLayer(Class<? extends InputLayer> clazz) {
+		inputLayer = null;
+		if (clazz == InputLayer.DEFAULT_LAYER) {
+			buffer[32] = 0;
+		} else if (clazz == BucketsLayer.class) {
+			buffer[32] = 1;
+		} else if (clazz == DummyLayer.class) {
+			buffer[32] = 2;
+		} else if (clazz == ChainSplitLayer.class) {
+			buffer[32] = 3;
+		} else {
+			buffer[32] = -1;
+			inputLayer = clazz.getName();
+		}
+
 	}
 
 	@Override
-	public int getInputLayer() {
-		return buffer[32];
+	public Class<? extends InputLayer> getInputLayer() {
+		switch (buffer[32]) {
+		case 0:
+			return InputLayer.DEFAULT_LAYER;
+		case 1:
+			return BucketsLayer.class;
+		case 2:
+			return DummyLayer.class;
+		case 3:
+			return ChainSplitLayer.class;
+		default:
+			try {
+				return Class.forName(inputLayer).asSubclass(InputLayer.class);
+			} catch (Exception e) {
+				log.error("Error", e);
+				return null;
+			}
+		}
 	}
 
 	void setCustomFlag(byte value) {
@@ -279,6 +329,7 @@ public class Chain implements Writable, InputQuery {
 		newChain.bufferSize = bufferSize;
 		System.arraycopy(buffer, 0, newChain.buffer, 0, bufferSize);
 		tuple.copyTo(newChain.tuple);
+		newChain.inputLayer = inputLayer;
 	}
 
 	public void branch(Chain newChain, long newChainId, int skippingActions) {
