@@ -57,7 +57,7 @@ public class ChainSplitLayer extends InputLayer {
 					// ignore
 				}
 			}
-			return isOpen;
+			return tuplePresent;
 		}
 
 		@Override
@@ -77,19 +77,24 @@ public class ChainSplitLayer extends InputLayer {
 			// this.tuple = tuple;
 			// No, not correct. We don't own the parameter. It can be changed by the
 			// caller. We need to copy it, otherwise sometimes crashes. --Ceriel
+			if (log.isDebugEnabled() && tuplePresent) {
+				log.debug("Oops: tuplePresent is true 1!", new Throwable());
+			}
 			tuple.copyTo(this.tuple);
 			tuplePresent = true;
 			notify();
-			try {
-				wait();
-			} catch (InterruptedException e) {
-				// ignore
-			}
+                        while (tuplePresent) {
+				try {
+					wait();
+				} catch (InterruptedException e) {
+					// ignore
+				}
+                        }
 		}
 
 		public synchronized void close() {
 			isOpen = false;
-			this.notify();
+			notify();
 		}
 
 		@Override
@@ -105,14 +110,19 @@ public class ChainSplitLayer extends InputLayer {
 
 		@Override
 		public synchronized void output(SimpleData... data) {
+			if (log.isDebugEnabled() && tuplePresent) {
+				log.debug("Oops: tuplePresent is true 2!", new Throwable());
+			}
 			this.tuple.set(data);
 			tuplePresent = true;
 			notify();
-			try {
-				wait();
-			} catch (InterruptedException e) {
-				// ignore
-			}
+                        while (tuplePresent) {
+				try {
+					wait();
+				} catch (InterruptedException e) {
+					// ignore
+				}
+                        }
 		}
 	}
 
