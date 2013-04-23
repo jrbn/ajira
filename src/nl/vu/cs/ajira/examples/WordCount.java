@@ -101,7 +101,7 @@ public class WordCount {
 
 		// Write the results on files
 		action = ActionFactory.getActionConf(WriteToFiles.class);
-		action.setParamString(WriteToFiles.S_OUTPUT_DIR, outDir);
+		action.setParamString(WriteToFiles.S_PATH, outDir);
 		actions.add(action);
 
 		job.setActions(actions);

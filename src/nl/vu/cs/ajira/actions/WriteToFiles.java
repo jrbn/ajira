@@ -36,11 +36,11 @@ public class WriteToFiles extends Action {
 	public static final int S_CUSTOM_WRITER = 0;
 
 	/**
-	 * The <code>S_OUTPUT_DIR</code> parameter, of type <code>String</code>, is
+	 * The <code>S_PATH</code> parameter, of type <code>String</code>, is
 	 * required, and specifies the directory where the output file(s) are
 	 * stored. It should either be a directory, or not exist yet.
 	 */
-	public static final int S_OUTPUT_DIR = 1;
+	public static final int S_PATH = 1;
 
 	/**
 	 * This parameter can be used to set a custom prefix of the file names that
@@ -57,14 +57,14 @@ public class WriteToFiles extends Action {
 	@Override
 	public void registerActionParameters(ActionConf conf) {
 		conf.registerParameter(S_CUSTOM_WRITER, "S_CUSTOM_WRITER", null, false);
-		conf.registerParameter(S_OUTPUT_DIR, "S_OUTPUT_DIR", null, true);
+		conf.registerParameter(S_PATH, "S_OUTPUT_DIR", null, true);
 		conf.registerParameter(S_PREFIX_FILE, "Prefix of the file", "part",
 				false);
 	}
 
 	@Override
 	public void startProcess(ActionContext context) throws Exception {
-		outputDirectory = getParamString(S_OUTPUT_DIR);
+		outputDirectory = getParamString(S_PATH);
 		customWriter = getParamString(S_CUSTOM_WRITER);
 		prefixFile = getParamString(S_PREFIX_FILE);
 		file = null;

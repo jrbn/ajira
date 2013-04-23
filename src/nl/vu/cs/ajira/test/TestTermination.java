@@ -138,7 +138,7 @@ public class TestTermination {
 
 		// Write the results on files
 		c = ActionFactory.getActionConf(WriteToFiles.class);
-		c.setParamString(WriteToFiles.S_OUTPUT_DIR, outDir);
+		c.setParamString(WriteToFiles.S_PATH, outDir);
 		actions.add(c);
 
 		job.setActions(actions);
