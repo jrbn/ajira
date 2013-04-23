@@ -17,6 +17,10 @@ import org.slf4j.LoggerFactory;
  * functionality is to write to a file, possibly compressed. The file itself is
  * placed in a user-specified output directory.
  */
+/**
+ * @author jacopo
+ * 
+ */
 public class WriteToFiles extends Action {
 
 	final static Logger log = LoggerFactory.getLogger(WriteToFiles.class);
@@ -38,21 +42,31 @@ public class WriteToFiles extends Action {
 	 */
 	public static final int S_OUTPUT_DIR = 1;
 
+	/**
+	 * This parameter can be used to set a custom prefix of the file names that
+	 * are being created.
+	 */
+	public static final int S_PREFIX_FILE = 2;
+
 	private FileWriter file = null;
 	private String outputDirectory = null;
 	private String customWriter = null;
 	private long count;
+	private String prefixFile = null;
 
 	@Override
 	public void registerActionParameters(ActionConf conf) {
 		conf.registerParameter(S_CUSTOM_WRITER, "S_CUSTOM_WRITER", null, false);
 		conf.registerParameter(S_OUTPUT_DIR, "S_OUTPUT_DIR", null, true);
+		conf.registerParameter(S_PREFIX_FILE, "Prefix of the file", "part",
+				false);
 	}
 
 	@Override
 	public void startProcess(ActionContext context) throws Exception {
 		outputDirectory = getParamString(S_OUTPUT_DIR);
 		customWriter = getParamString(S_CUSTOM_WRITER);
+		prefixFile = getParamString(S_PREFIX_FILE);
 		file = null;
 		count = 0;
 	}
@@ -69,8 +83,9 @@ public class WriteToFiles extends Action {
 			f.mkdirs();
 		}
 
-		String filename = "part-" + nf.format(context.getCounter("OutputFile"))
-				+ "_" + nf.format(0);
+		String filename = prefixFile + "-"
+				+ nf.format(context.getCounter("OutputFile")) + "_"
+				+ nf.format(0);
 		f = new File(f, filename);
 
 		if (customWriter != null) {
