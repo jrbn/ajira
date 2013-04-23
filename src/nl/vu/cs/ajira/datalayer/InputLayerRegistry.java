@@ -23,11 +23,9 @@ public class InputLayerRegistry {
 
 	/**
 	 * 
-	 * @param idInputLayer
-	 *            The id of the InputLayer that is looked.
-	 * @return The InputLayer with the id idInputLayer.
-	 * @throws IllegalAccessException
-	 * @throws InstantiationException
+	 * @param clazz
+	 *            The input layer class.
+	 * @return the InputLayer
 	 */
 	public InputLayer getLayer(Class<? extends InputLayer> clazz) {
 		if (clazz == InputLayer.DEFAULT_LAYER) {
