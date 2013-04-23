@@ -28,8 +28,8 @@ public class WriteToFiles extends Action {
 	/**
 	 * The <code>S_CUSTOM_WRITER</code> parameter, of type <code>String</code>,
 	 * is not required, and defaults to the class name of
-	 * {@link StandardFileWriter}. When supplied, it should indicate a class
-	 * name of a class that must extend {@link StandardFileWriter}, and must
+	 * {@link DefaultFileWriter}. When supplied, it should indicate a class
+	 * name of a class that must extend {@link DefaultFileWriter}, and must
 	 * have a public constructor with two parameters: an {@link ActionContext},
 	 * and a {@link File}.
 	 */
