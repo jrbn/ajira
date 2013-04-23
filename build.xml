@@ -20,6 +20,9 @@
 
 	<target name="clean">
 		<delete dir="${BUILD_PATH}" />
+		<delete file="${AJIRA_JAR_LOCATION}" />
+		<delete file="${AJIRA_FAT_JAR_LOCATION}" />
+		<delete file="${JAR_WEBAPPS_LOCATION}" />
 	</target>
 
 	<target name="init">
