@@ -174,14 +174,14 @@ public class ActionConf implements Writable {
 	 *      used to indicate <code>id</code>.
 	 * @param defaultValue
 	 * 		the default value
-	 * @param isRequired
+	 * @param cannotBeNull
 	 * 		whether the parameter is required
 	 * @throws IllegalArgumentException
 	 * 		when something is wrong in the parameter specification, an
 	 * 		{@link IllegalArgumentException} is thrown.
 	 */
 	public void registerParameter(int id, String nameParam,
-			Object defaultValue, boolean isRequired) {
+			Object defaultValue, boolean cannotBeNull) {
 		if (nameParam == null) {
 			throw new IllegalArgumentException(
 					"registerParameter: parameter should have a name");
@@ -202,7 +202,7 @@ public class ActionConf implements Writable {
 
 		ParamItem item = new ParamItem();
 		item.name = nameParam;
-		item.required = isRequired;
+		item.required = cannotBeNull;
 		item.defaultValue = defaultValue;
 		allowedParameters.add(id, item);
 	}
