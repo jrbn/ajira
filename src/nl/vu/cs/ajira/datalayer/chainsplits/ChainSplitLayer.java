@@ -27,7 +27,7 @@ public class ChainSplitLayer extends InputLayer {
 
 		private final int id;
 		private boolean isOpen = true;
-		private Tuple tuple = TupleFactory.newTuple();
+		private final Tuple tuple = TupleFactory.newTuple();
 		private boolean tuplePresent = false;
 
 		/**
@@ -50,7 +50,7 @@ public class ChainSplitLayer extends InputLayer {
 
 		@Override
 		public synchronized boolean next() {
-			while (isOpen && ! tuplePresent) {
+			while (isOpen && !tuplePresent) {
 				try {
 					wait();
 				} catch (InterruptedException e) {
@@ -74,22 +74,19 @@ public class ChainSplitLayer extends InputLayer {
 
 		@Override
 		public synchronized void output(Tuple tuple) {
-			// this.tuple = tuple;
-			// No, not correct. We don't own the parameter. It can be changed by the
-			// caller. We need to copy it, otherwise sometimes crashes. --Ceriel
 			if (log.isDebugEnabled() && tuplePresent) {
 				log.debug("Oops: tuplePresent is true 1!", new Throwable());
 			}
 			tuple.copyTo(this.tuple);
 			tuplePresent = true;
 			notify();
-                        while (tuplePresent) {
+			while (tuplePresent) {
 				try {
 					wait();
 				} catch (InterruptedException e) {
 					// ignore
 				}
-                        }
+			}
 		}
 
 		public synchronized void close() {
@@ -116,13 +113,13 @@ public class ChainSplitLayer extends InputLayer {
 			this.tuple.set(data);
 			tuplePresent = true;
 			notify();
-                        while (tuplePresent) {
+			while (tuplePresent) {
 				try {
 					wait();
 				} catch (InterruptedException e) {
 					// ignore
 				}
-                        }
+			}
 		}
 	}
 
