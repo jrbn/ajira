@@ -47,19 +47,28 @@ public class WriteToFiles extends Action {
 	 * are being created.
 	 */
 	public static final int S_PREFIX_FILE = 2;
+	
+	/**
+	 * The <code>B_FILTER</code>, of type <code>Boolean</code>, indicates that the
+	 * process() method should also pass on the input tuple (default <code>true</code>).
+	 * Set to false if this is the last action in your chain.
+	 */
+	public static final int B_FILTER = 3;
 
 	private FileWriter file = null;
 	private String outputDirectory = null;
 	private String customWriter = null;
 	private long count;
 	private String prefixFile = null;
+	private boolean filter = true;
 
 	@Override
 	public void registerActionParameters(ActionConf conf) {
 		conf.registerParameter(S_CUSTOM_WRITER, "S_CUSTOM_WRITER", null, false);
 		conf.registerParameter(S_PATH, "S_OUTPUT_DIR", null, true);
-		conf.registerParameter(S_PREFIX_FILE, "Prefix of the file", "part",
+		conf.registerParameter(S_PREFIX_FILE, "S_PREFIX_FILE", "part",
 				false);
+		conf.registerParameter(B_FILTER, "B_FILTER", true, false);
 	}
 
 	@Override
@@ -67,6 +76,7 @@ public class WriteToFiles extends Action {
 		outputDirectory = getParamString(S_PATH);
 		customWriter = getParamString(S_CUSTOM_WRITER);
 		prefixFile = getParamString(S_PREFIX_FILE);
+		filter = getParamBoolean(B_FILTER);
 		file = null;
 		count = 0;
 	}
@@ -112,7 +122,9 @@ public class WriteToFiles extends Action {
 			openFile(context);
 		}
 		file.write(inputTuple);
-		output.output(inputTuple);
+		if (filter) {
+			output.output(inputTuple);
+		}
 	}
 
 	@Override
