@@ -32,8 +32,8 @@ public class ChainSplitLayer extends InputLayer {
 			data = new Tuple[size];
 			head = tail = 0;
 		}
-
-		public synchronized void push(Tuple v) {
+		
+		private synchronized void getSpot() {
 			while (bufferFull()) {
 				try {
 					wait();
@@ -47,6 +47,10 @@ public class ChainSplitLayer extends InputLayer {
 			if (data[tail] == null) {
 				data[tail] = TupleFactory.newTuple();
 			}
+		}
+
+		public synchronized void push(Tuple v) {
+			getSpot();
 			v.copyTo(data[tail++]);
 			if (tail == data.length) {
 				tail = 0;
@@ -54,19 +58,7 @@ public class ChainSplitLayer extends InputLayer {
 		}
 		
 		public synchronized void push(SimpleData... v) {
-			while (bufferFull()) {
-				try {
-					wait();
-				} catch(InterruptedException e) {
-					// ignore
-				}
-			}
-			if (head == tail) {
-				notify();
-			}
-			if (data[tail] == null) {
-				data[tail] = TupleFactory.newTuple();
-			}
+			getSpot();
 			data[tail++].set(v);
 			if (tail == data.length) {
 				tail = 0;
@@ -116,7 +108,7 @@ public class ChainSplitLayer extends InputLayer {
 			ActionOutput {
 
 		private final int id;
-		private final CircularBuffer tuples = new CircularBuffer(50000);
+		private final CircularBuffer tuples = new CircularBuffer(10000);
 		private Tuple tuple;
 
 		/**
