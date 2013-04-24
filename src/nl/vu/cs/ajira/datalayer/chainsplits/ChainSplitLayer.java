@@ -21,14 +21,103 @@ import org.slf4j.LoggerFactory;
 public class ChainSplitLayer extends InputLayer {
 
 	static final Logger log = LoggerFactory.getLogger(ChainSplitLayer.class);
+	
+	private static class CircularBuffer {
+		private Tuple data[];
+		private int head;
+		private int tail;
+		private boolean closed;
+
+		public CircularBuffer(int size) {
+			data = new Tuple[size];
+			head = tail = 0;
+		}
+
+		public synchronized void push(Tuple v) {
+			while (bufferFull()) {
+				try {
+					wait();
+				} catch(InterruptedException e) {
+					// ignore
+				}
+			}
+			if (head == tail) {
+				notify();
+			}
+			if (data[tail] == null) {
+				data[tail] = TupleFactory.newTuple();
+			}
+			v.copyTo(data[tail++]);
+			if (tail == data.length) {
+				tail = 0;
+			}
+		}
+		
+		public synchronized void push(SimpleData... v) {
+			while (bufferFull()) {
+				try {
+					wait();
+				} catch(InterruptedException e) {
+					// ignore
+				}
+			}
+			if (head == tail) {
+				notify();
+			}
+			if (data[tail] == null) {
+				data[tail] = TupleFactory.newTuple();
+			}
+			data[tail++].set(v);
+			if (tail == data.length) {
+				tail = 0;
+			}
+		}
+
+
+		public synchronized Tuple pop() {
+			while (head == tail && ! closed) {
+				try {
+					wait();
+				} catch(InterruptedException e) {
+					// ignore
+				}
+			}
+			if (head == tail) {
+				data = null;
+				return null;
+			}
+			if (bufferFull()) {
+				notify();
+			}
+			Tuple v = data[head++];
+			if (head == data.length) {
+				head = 0;
+			}
+			return v;
+		}
+		
+		public synchronized void close() {
+			closed = true;
+			notify();
+		}
+
+		private boolean bufferFull() {
+			if (tail + 1 == head) {
+				return true;
+			}
+			if (tail == (data.length - 1) && head == 0) {
+				return true;
+			}
+			return false;
+		}
+	}
 
 	public static class SplitIterator extends TupleIterator implements
 			ActionOutput {
 
 		private final int id;
-		private boolean isOpen = true;
-		private final Tuple tuple = TupleFactory.newTuple();
-		private boolean tuplePresent = false;
+		private final CircularBuffer tuples = new CircularBuffer(50000);
+		private Tuple tuple;
 
 		/**
 		 * Custom constructor.
@@ -49,22 +138,15 @@ public class ChainSplitLayer extends InputLayer {
 		}
 
 		@Override
-		public synchronized boolean next() {
-			while (isOpen && !tuplePresent) {
-				try {
-					wait();
-				} catch (InterruptedException e) {
-					// ignore
-				}
-			}
-			return tuplePresent;
+		public boolean next() {
+			tuple = tuples.pop();
+			return tuple != null;
 		}
 
 		@Override
-		public synchronized void getTuple(Tuple tuple) {
+		public void getTuple(Tuple tuple) {
 			this.tuple.copyTo(tuple);
-			tuplePresent = false;
-			notify();
+
 		}
 
 		@Override
@@ -73,25 +155,12 @@ public class ChainSplitLayer extends InputLayer {
 		}
 
 		@Override
-		public synchronized void output(Tuple tuple) {
-			if (log.isDebugEnabled() && tuplePresent) {
-				log.debug("Oops: tuplePresent is true 1!", new Throwable());
-			}
-			tuple.copyTo(this.tuple);
-			tuplePresent = true;
-			notify();
-			while (tuplePresent) {
-				try {
-					wait();
-				} catch (InterruptedException e) {
-					// ignore
-				}
-			}
+		public void output(Tuple tuple) {
+			tuples.push(tuple);
 		}
 
-		public synchronized void close() {
-			isOpen = false;
-			notify();
+		public void close() {
+			tuples.close();
 		}
 
 		@Override
@@ -107,19 +176,7 @@ public class ChainSplitLayer extends InputLayer {
 
 		@Override
 		public synchronized void output(SimpleData... data) {
-			if (log.isDebugEnabled() && tuplePresent) {
-				log.debug("Oops: tuplePresent is true 2!", new Throwable());
-			}
-			this.tuple.set(data);
-			tuplePresent = true;
-			notify();
-			while (tuplePresent) {
-				try {
-					wait();
-				} catch (InterruptedException e) {
-					// ignore
-				}
-			}
+			tuples.push(data);
 		}
 	}
 
