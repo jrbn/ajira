@@ -134,7 +134,7 @@ public class GroupBy extends Action {
 			byte[] fieldsToSort = (byte[]) params[IA_FIELDS_TO_GROUP];
 			partition.setParamByteArray(PartitionToNodes.IA_SORTING_FIELDS,
 					fieldsToSort);
-			partition.setParamByteArray(PartitionToNodes.IA_PARTITION_FIELDS,
+			partition.setParamByteArray(PartitionToNodes.BA_PARTITION_FIELDS,
 					fieldsToSort);
 			partition.setParamStringArray(PartitionToNodes.SA_TUPLE_FIELDS,
 					(TStringArray) params[SA_TUPLE_FIELDS]);

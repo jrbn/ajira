@@ -77,7 +77,7 @@ public class PartitionToNodes extends Action {
 	 * fields of the tuples are going to be considered when partitioning (see
 	 * {@link Partitioner#init(ActionContext, int, byte[])}.
 	 */
-	public static final int IA_PARTITION_FIELDS = 6;
+	public static final int BA_PARTITION_FIELDS = 6;
 
 	static final Logger log = LoggerFactory.getLogger(PartitionToNodes.class);
 
@@ -131,7 +131,7 @@ public class PartitionToNodes extends Action {
 			}
 
 			params[IA_SORTING_FIELDS] = convertToBytes(params[IA_SORTING_FIELDS]);
-			params[IA_PARTITION_FIELDS] = convertToBytes(params[IA_PARTITION_FIELDS]);
+			params[BA_PARTITION_FIELDS] = convertToBytes(params[BA_PARTITION_FIELDS]);
 
 			controller.continueComputationOn(-1,
 					((TIntArray) params[IA_BUCKET_IDS]).getArray()[0]);
@@ -149,7 +149,7 @@ public class PartitionToNodes extends Action {
 		conf.registerParameter(IA_SORTING_FIELDS, "IA_SORTING_FIELDS", null,
 				false);
 		conf.registerParameter(SA_TUPLE_FIELDS, "SA_TUPLE_FIELDS", null, true);
-		conf.registerParameter(IA_PARTITION_FIELDS, "IA_PARTITION_FIELDS",
+		conf.registerParameter(BA_PARTITION_FIELDS, "IA_PARTITION_FIELDS",
 				null, false);
 
 		conf.registerCustomConfigurator(new ParametersProcessor());
@@ -162,7 +162,7 @@ public class PartitionToNodes extends Action {
 
 		sPartitioner = getParamString(S_PARTITIONER);
 		nPartitionsPerNode = getParamInt(I_NPARTITIONS_PER_NODE);
-		partitionFields = getParamByteArray(IA_PARTITION_FIELDS);
+		partitionFields = getParamByteArray(BA_PARTITION_FIELDS);
 
 		bucketIds = getParamIntArray(IA_BUCKET_IDS);
 		nPartitions = nPartitionsPerNode * context.getNumberNodes();
