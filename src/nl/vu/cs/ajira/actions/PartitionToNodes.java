@@ -72,8 +72,8 @@ public class PartitionToNodes extends Action {
 	public static final int SA_TUPLE_FIELDS = 5;
 
 	/**
-	 * The <code>IA_PARTITION_FIELDS</code> parameter is of type
-	 * <code>int[]</code>, and is not required. This field determines which
+	 * The <code>BA_PARTITION_FIELDS</code> parameter is of type
+	 * <code>byte[]</code>, and is not required. This field determines which
 	 * fields of the tuples are going to be considered when partitioning (see
 	 * {@link Partitioner#init(ActionContext, int, byte[])}.
 	 */
@@ -149,7 +149,7 @@ public class PartitionToNodes extends Action {
 		conf.registerParameter(IA_SORTING_FIELDS, "IA_SORTING_FIELDS", null,
 				false);
 		conf.registerParameter(SA_TUPLE_FIELDS, "SA_TUPLE_FIELDS", null, true);
-		conf.registerParameter(BA_PARTITION_FIELDS, "IA_PARTITION_FIELDS",
+		conf.registerParameter(BA_PARTITION_FIELDS, "BA_PARTITION_FIELDS",
 				null, false);
 
 		conf.registerCustomConfigurator(new ParametersProcessor());
