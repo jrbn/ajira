@@ -4,7 +4,8 @@ import java.io.File;
 import java.io.FilenameFilter;
 
 /**
- * A simple filter for hidden filenames.
+ * A simple filter for hidden filenames. Only filenames that don't start with
+ * a '.' or a '_' are accepted.
  */
 public class FilterHiddenFiles implements FilenameFilter {
 

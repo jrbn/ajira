@@ -3,8 +3,10 @@ package nl.vu.cs.ajira.datalayer.files;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.NoSuchElementException;
 import java.util.zip.GZIPInputStream;
 
 import nl.vu.cs.ajira.data.types.TString;
@@ -28,55 +30,59 @@ public class DefaultFileReader implements FileReader {
 	 * Custom constructor.
 	 * 
 	 * @param file
-	 *            The file that will be used for reading.
+	 *          the file that will be used for reading.
+	 * @throws IOException
+	 * 			in case of trouble.
 	 */
 	@Override
-	public void init(File file) {
-		try {
-			if (log.isDebugEnabled()) {
-				log.debug("Reading file " + file.getPath());
-			}
-			InputStream input = new FileInputStream(file);
-			if (file.getName().endsWith(".gz")) {
-				input = new GZIPInputStream(input);
-			}
-			reader = new BufferedReader(new InputStreamReader(input));
-		} catch (Exception e) {
-			log.error("Failed reading file " + file);
+	public void init(File file) throws IOException {
+		if (log.isDebugEnabled()) {
+			log.debug("Reading file " + file.getPath());
 		}
+		InputStream input = new FileInputStream(file);
+		if (file.getName().endsWith(".gz")) {
+			input = new GZIPInputStream(input);
+		}
+		reader = new BufferedReader(new InputStreamReader(input));
 	}
 
 	/**
-	 * Reads one line from the input file.
+	 * Tries to read one line from the input file, and returns whether
+	 * it can be obtained by {@link #getTuple(Tuple)}.
 	 * 
-	 * @return True if it was possible to read a line, false otherwise.
+	 * @throws IOException
+	 * 			in case of trouble.
+	 * @return
+	 *			<code>true</code> if it was possible to read a line, <code>false</code> otherwise.
 	 */
 	@Override
-	public boolean next() {
-		try {
-			String s = reader.readLine();
-			if (s == null) {
+	public boolean next() throws IOException {
+		String s = reader.readLine();
+		if (s == null) {
+			try {
 				reader.close();
-				return false;
+			} catch(Throwable e) {
+				log.info("Got exception while closing reader (ignored)", e);
 			}
-			currentLine.setValue(s);
-			return true;
-		} catch (Exception e) {
-			log.error("Error reading record", e);
+			reader = null;
+			currentLine = null;
+			return false;
 		}
-		return false;
+		currentLine.setValue(s);
+		return true;
 	}
 
 	/**
 	 * Updates the field of the tuple with last line read.
 	 * 
 	 * @param tuple
-	 *            The tuple that will be updated with the current line read.
-	 * 
-	 * @throws Exception
+	 *          the tuple that will be updated with the line.
 	 */
 	@Override
-	public void getTuple(Tuple tuple) throws Exception {
+	public void getTuple(Tuple tuple) {
+		if (currentLine == null) {
+			throw new NoSuchElementException("No tuple available");
+		}
 		tuple.set(currentLine);
 	}
 
@@ -86,8 +92,9 @@ public class DefaultFileReader implements FileReader {
 			if (reader != null) {
 				reader.close();
 			}
-		} catch (Exception e) {
-			log.error("Error", e);
+		} catch (Throwable e) {
+			log.info("Got exception while closing reader (ignored)", e);
+			// ignore
 		}
 	}
 }

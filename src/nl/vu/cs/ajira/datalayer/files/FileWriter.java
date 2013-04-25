@@ -7,7 +7,7 @@ import nl.vu.cs.ajira.data.types.Tuple;
 
 public interface FileWriter {
 
-	public void init(File file);
+	public void init(File file) throws IOException;
 
 	public void write(Tuple tuple) throws IOException;
 

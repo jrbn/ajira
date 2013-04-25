@@ -17,7 +17,7 @@ public abstract class Partitioner {
 	protected byte[] partition_fields;
 	
 	/**
-	 * This method initializes the partitioner.
+	 * Initializes the partitioner.
 	 * @param context
 	 * 		the action context in which this partitioner runs
 	 * @param npartitions

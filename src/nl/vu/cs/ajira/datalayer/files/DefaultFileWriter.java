@@ -18,17 +18,13 @@ public class DefaultFileWriter implements FileWriter {
 	protected BufferedOutputStream writer = null;
 
 	@Override
-	public void init(File file) {
-		try {
-			boolean compressGZip = file.getParent().endsWith(".gz");
-			if (compressGZip) {
-				writer = new BufferedOutputStream(new GZIPOutputStream(
-						new FileOutputStream(file)));
-			} else {
-				writer = new BufferedOutputStream(new FileOutputStream(file));
-			}
-		} catch (Exception e) {
-			log.error("Error", e);
+	public void init(File file) throws IOException {
+		boolean compressGZip = file.getParent().endsWith(".gz");
+		if (compressGZip) {
+			writer = new BufferedOutputStream(new GZIPOutputStream(
+					new FileOutputStream(file)));
+		} else {
+			writer = new BufferedOutputStream(new FileOutputStream(file));
 		}
 	}
 

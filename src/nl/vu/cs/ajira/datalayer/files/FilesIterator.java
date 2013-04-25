@@ -46,9 +46,8 @@ public class FilesIterator extends TupleIterator {
 	}
 
 	/**
-	 * Returns true if exists a new line in the current file or it exists a next
-	 * file. It returns false otherwise. In case it is updated the current file
-	 * with the next file for the collection the method it is called again.
+	 * Returns true if a new line in the current file exists, or a next
+	 * file with lines exists. Otherwise, it returns false.
 	 */
 	@Override
 	public boolean next() throws Exception {
