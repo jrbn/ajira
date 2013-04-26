@@ -109,7 +109,7 @@ public class GroupBy extends Action {
 		}
 	}
 
-	public static int IA_FIELDS_TO_GROUP = 0;
+	public static int BA_FIELDS_TO_GROUP = 0;
 	public static final int SA_TUPLE_FIELDS = 1;
 	public static final int I_NPARTITIONS_PER_NODE = 2;
 
@@ -128,10 +128,10 @@ public class GroupBy extends Action {
 			ActionConf partition = ActionFactory
 					.getActionConf(PartitionToNodes.class);
 			
-			params[IA_FIELDS_TO_GROUP] = convertToBytes(params[IA_FIELDS_TO_GROUP]);
+			params[BA_FIELDS_TO_GROUP] = convertToBytes(params[BA_FIELDS_TO_GROUP]);
 
 			partition.setParamBoolean(PartitionToNodes.B_SORT, true);
-			byte[] fieldsToSort = (byte[]) params[IA_FIELDS_TO_GROUP];
+			byte[] fieldsToSort = (byte[]) params[BA_FIELDS_TO_GROUP];
 			partition.setParamByteArray(PartitionToNodes.IA_SORTING_FIELDS,
 					fieldsToSort);
 			partition.setParamByteArray(PartitionToNodes.BA_PARTITION_FIELDS,
@@ -148,7 +148,7 @@ public class GroupBy extends Action {
 
 	@Override
 	public void registerActionParameters(ActionConf conf) {
-		conf.registerParameter(IA_FIELDS_TO_GROUP, "FIELDS_TO_GROUP", null, true);
+		conf.registerParameter(BA_FIELDS_TO_GROUP, "FIELDS_TO_GROUP", null, true);
 		conf.registerParameter(SA_TUPLE_FIELDS, "TUPLE_FIELDS", null, true);
 		conf.registerParameter(I_NPARTITIONS_PER_NODE, "NPARTITIONS_PER_NODE", null,
 				false);
@@ -157,7 +157,7 @@ public class GroupBy extends Action {
 
 	@Override
 	public void startProcess(ActionContext context) throws Exception {
-		posFieldsToGroup = getParamByteArray(IA_FIELDS_TO_GROUP);
+		posFieldsToGroup = getParamByteArray(BA_FIELDS_TO_GROUP);
 		outputTuple = new SimpleData[posFieldsToGroup.length + 1];
 		itr = null;
 	}

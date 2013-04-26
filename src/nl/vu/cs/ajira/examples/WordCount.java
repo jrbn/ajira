@@ -93,7 +93,7 @@ public class WordCount {
 		action = ActionFactory.getActionConf(GroupBy.class);
 		action.setParamStringArray(GroupBy.SA_TUPLE_FIELDS,
 				TString.class.getName(), TInt.class.getName());
-		action.setParamByteArray(GroupBy.IA_FIELDS_TO_GROUP, (byte) 0);
+		action.setParamByteArray(GroupBy.BA_FIELDS_TO_GROUP, (byte) 0);
 		actions.add(action);
 
 		// Sum the counts
