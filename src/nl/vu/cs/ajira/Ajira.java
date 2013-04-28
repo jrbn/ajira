@@ -119,6 +119,7 @@ public class Ajira {
 				// Send message to everyone that should stop
 				globalContext.getNetworkLayer().signalTermination();
 				globalContext.getNetworkLayer().stopIbis();
+				System.exit(0);
 			} catch (IOException e) {
 				log.error("Error in shutting down", e);
 				System.exit(1);
