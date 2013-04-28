@@ -252,7 +252,7 @@ public class Ajira {
 			inputRegistry.startup(globalContext);
 
 			/***** LOAD WEB INTERFACE *****/
-			if (conf.getBoolean(WebServer.WEBSERVER_START, true)) {
+			if (conf.getBoolean(WebServer.WEBSERVER_START, true) && serverMode) {
 				WebServer www = new WebServer();
 				www.startWebServer(globalContext);
 				String addr = www.getAddress();
