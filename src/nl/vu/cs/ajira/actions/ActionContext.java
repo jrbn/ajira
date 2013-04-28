@@ -26,8 +26,6 @@ public interface ActionContext {
 
 	public String getSystemParamString(String prop, String defaultValue);
 
-	public Object getSystemParam(String prop, Object defaultValue);
-
 	public Object getObjectFromCache(Object key);
 
 	public void putObjectInCache(Object key, Object value);

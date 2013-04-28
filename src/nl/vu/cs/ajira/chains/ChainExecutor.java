@@ -164,11 +164,6 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		return context.getConfiguration().get(prop, defaultValue);
 	}
 
-	@Override
-	public Object getSystemParam(String prop, Object defaultValue) {
-		return context.getConfiguration().get(prop, defaultValue);
-	}
-
 	void init(Chain chain) {
 		nActions = currentAction = 0;
 		this.chain = chain;
