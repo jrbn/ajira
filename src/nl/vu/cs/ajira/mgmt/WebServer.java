@@ -20,7 +20,7 @@ public class WebServer implements Runnable {
 
 	static final Logger log = LoggerFactory.getLogger(WebServer.class);
 
-	private int serverPort = 80080; // Standard port
+	private int serverPort = 50080; // Standard port
 
 	private Context context;
 
