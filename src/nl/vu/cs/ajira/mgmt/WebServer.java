@@ -20,16 +20,17 @@ public class WebServer implements Runnable {
 
 	static final Logger log = LoggerFactory.getLogger(WebServer.class);
 
-	private int serverPort = 8080; // Standard port
+	private int serverPort = 80080; // Standard port
 
 	private Context context;
-	
+
 	private boolean done = false;
 	private boolean failed = false;
 
 	public void startWebServer(Context context) {
 		this.context = context;
-		serverPort = context.getConfiguration().getInt(WEBSERVER_PORT, serverPort);
+		serverPort = context.getConfiguration().getInt(WEBSERVER_PORT,
+				serverPort);
 		Thread thread = new Thread(this, "WebServer");
 		thread.start();
 	}
@@ -57,7 +58,7 @@ public class WebServer implements Runnable {
 				Server server = new Server(serverPort);
 				server.setHandler(handler);
 				server.start();
-				synchronized(this) {
+				synchronized (this) {
 					done = true;
 					notifyAll();
 				}
@@ -75,7 +76,7 @@ public class WebServer implements Runnable {
 				break;
 			}
 		}
-		synchronized(this) {
+		synchronized (this) {
 			failed = true;
 			notifyAll();
 		}
@@ -83,11 +84,11 @@ public class WebServer implements Runnable {
 	}
 
 	public String getAddress() {
-		synchronized(this) {
-			while (! done && ! failed) {
+		synchronized (this) {
+			while (!done && !failed) {
 				try {
 					wait();
-				} catch(InterruptedException e) {
+				} catch (InterruptedException e) {
 					// ignore
 				}
 			}
