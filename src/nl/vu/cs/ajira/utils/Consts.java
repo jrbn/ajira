@@ -47,11 +47,12 @@ public class Consts {
 	public static final String STATE_INIT_FAILED = "INIT_FAILED";
 
 	/********** DEFAULT CONFIGURATION OPTIONS **********/
-	public static final String N_PROC_THREADS = "threads.processing";
-	public static final String N_MERGE_THREADS = "threads.merge";
-	public static final String START_IBIS = "ibis.startserver";
-	public static final String STATS_ENABLED = "stats.enabled";
-	public static final String BUCKETCOUNTER_NAME = "BucketCounter";
-	public static final String CHAINCOUNTER_NAME = "ChainCounter";
+	public static final String N_PROC_THREADS = "ajira.threads.processing";
+	public static final String N_MERGE_THREADS = "ajira.threads.merge";
+	public static final String START_IBIS = "ajira.ibis.startserver";
+	public static final String STATS_ENABLED = "ajira.stats.enabled";
+
+	public static final String BUCKETCOUNTER_NAME = "ajira.BucketCounter";
+	public static final String CHAINCOUNTER_NAME = "ajira.ChainCounter";
 
 }
