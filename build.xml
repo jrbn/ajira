@@ -4,7 +4,7 @@
 
 	<property name="VERSION" value="0.1" />
 	<property name="debuglevel"    value="source,lines,vars" />
-	<property name="BUILD_PATH" value="bin" />
+	<property name="BUILD_PATH" value="build" />
 	<property name="SRC_PATH" value="src" />
 	<property name="LIB_PATH" value="lib" />
 	<property name="CONF_PATH" value="conf" />
