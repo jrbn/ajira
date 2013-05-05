@@ -132,6 +132,13 @@ public class Tuple {
 		}
 		return false;
 	}
+	
+	public boolean equals(Object o) {
+		if (o instanceof Tuple) {
+			return equals((Tuple) o);
+		}
+		return false;
+	}
 
 	/**
 	 * Converts the Tuple to its string representation.
