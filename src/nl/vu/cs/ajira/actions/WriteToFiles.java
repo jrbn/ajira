@@ -109,7 +109,7 @@ public class WriteToFiles extends Action {
 		while (!overwrite && f.exists()) {
 			filename = prefixFile + "-"
 					+ nf.format(context.getCounter("OutputFile")) + "_"
-					+ nf.format(0) + "-" + suffix;
+					+ nf.format(0) + "." + suffix;
 			f = new File(f, filename);
 			suffix++;
 		}
