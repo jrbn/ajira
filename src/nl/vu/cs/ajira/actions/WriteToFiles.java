@@ -93,16 +93,16 @@ public class WriteToFiles extends Action {
 		nf.setGroupingUsed(false);
 
 		// Calculate the filename
-		File f = new File(outputDirectory);
+		File dir = new File(outputDirectory);
 
-		if (!f.exists()) {
-			f.mkdirs();
+		if (!dir.exists()) {
+			dir.mkdirs();
 		}
 
 		String filename = prefixFile + "-"
 				+ nf.format(context.getCounter("OutputFile")) + "_"
 				+ nf.format(0);
-		f = new File(f, filename);
+		File f = new File(dir, filename);
 
 		// Find a file that does not exist
 		int suffix = 0;
@@ -110,7 +110,7 @@ public class WriteToFiles extends Action {
 			filename = prefixFile + "-"
 					+ nf.format(context.getCounter("OutputFile")) + "_"
 					+ nf.format(0) + "." + suffix;
-			f = new File(f, filename);
+			f = new File(dir, filename);
 			suffix++;
 		}
 
