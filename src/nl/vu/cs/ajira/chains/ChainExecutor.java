@@ -494,4 +494,9 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			chain.setTotalChainChildren(new_children);
 		}
 	}
+
+	@Override
+	public Context getContext() {
+		return context;
+	}
 }
