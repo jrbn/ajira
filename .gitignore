@@ -1,7 +1,7 @@
 .project
 .classpath
 ajira-*.jar
-bin
+build
 tmp-eclipse
 .settings
 .externalToolBuilders
