@@ -17,10 +17,6 @@ import org.slf4j.LoggerFactory;
  * functionality is to write to a file, possibly compressed. The file itself is
  * placed in a user-specified output directory.
  */
-/**
- * @author jacopo
- * 
- */
 public class WriteToFiles extends Action {
 
 	final static Logger log = LoggerFactory.getLogger(WriteToFiles.class);
@@ -28,10 +24,10 @@ public class WriteToFiles extends Action {
 	/**
 	 * The <code>S_CUSTOM_WRITER</code> parameter, of type <code>String</code>,
 	 * is not required, and defaults to the class name of
-	 * {@link DefaultFileWriter}. When supplied, it should indicate a class
-	 * name of a class that must extend {@link DefaultFileWriter}, and must
-	 * have a public constructor with two parameters: an {@link ActionContext},
-	 * and a {@link File}.
+	 * {@link DefaultFileWriter}. When supplied, it should indicate a class name
+	 * of a class that must extend {@link DefaultFileWriter}, and must have a
+	 * public constructor with two parameters: an {@link ActionContext}, and a
+	 * {@link File}.
 	 */
 	public static final int S_CUSTOM_WRITER = 0;
 
@@ -47,13 +43,20 @@ public class WriteToFiles extends Action {
 	 * are being created.
 	 */
 	public static final int S_PREFIX_FILE = 2;
-	
+
 	/**
-	 * The <code>B_FILTER</code>, of type <code>Boolean</code>, indicates that the
-	 * process() method should also pass on the input tuple (default <code>true</code>).
-	 * Set to false if this is the last action in your chain.
+	 * The <code>B_FILTER</code>, of type <code>Boolean</code>, indicates that
+	 * the process() method should also pass on the input tuple (default
+	 * <code>true</code>). Set to false if this is the last action in your
+	 * chain.
 	 */
 	public static final int B_FILTER = 3;
+
+	/**
+	 * This parameter determines whether existing files should be replaced or
+	 * not. The default value is true.
+	 */
+	public static final int B_OVERWRITE_FILES = 4;
 
 	private FileWriter file = null;
 	private String outputDirectory = null;
@@ -61,14 +64,16 @@ public class WriteToFiles extends Action {
 	private long count;
 	private String prefixFile = null;
 	private boolean filter = true;
+	private boolean overwrite;
 
 	@Override
 	public void registerActionParameters(ActionConf conf) {
 		conf.registerParameter(S_CUSTOM_WRITER, "S_CUSTOM_WRITER", null, false);
 		conf.registerParameter(S_PATH, "S_OUTPUT_DIR", null, true);
-		conf.registerParameter(S_PREFIX_FILE, "S_PREFIX_FILE", "part",
-				false);
+		conf.registerParameter(S_PREFIX_FILE, "S_PREFIX_FILE", "part", false);
 		conf.registerParameter(B_FILTER, "B_FILTER", true, false);
+		conf.registerParameter(B_OVERWRITE_FILES, "B_OVERWRITE_FILES", true,
+				false);
 	}
 
 	@Override
@@ -77,6 +82,7 @@ public class WriteToFiles extends Action {
 		customWriter = getParamString(S_CUSTOM_WRITER);
 		prefixFile = getParamString(S_PREFIX_FILE);
 		filter = getParamBoolean(B_FILTER);
+		overwrite = getParamBoolean(B_OVERWRITE_FILES);
 		file = null;
 		count = 0;
 	}
@@ -87,16 +93,26 @@ public class WriteToFiles extends Action {
 		nf.setGroupingUsed(false);
 
 		// Calculate the filename
-		File f = new File(outputDirectory);
+		File dir = new File(outputDirectory);
 
-		if (!f.exists()) {
-			f.mkdirs();
+		if (!dir.exists()) {
+			dir.mkdirs();
 		}
 
 		String filename = prefixFile + "-"
 				+ nf.format(context.getCounter("OutputFile")) + "_"
 				+ nf.format(0);
-		f = new File(f, filename);
+		File f = new File(dir, filename);
+
+		// Find a file that does not exist
+		int suffix = 0;
+		while (!overwrite && f.exists()) {
+			filename = prefixFile + "-"
+					+ nf.format(context.getCounter("OutputFile")) + "_"
+					+ nf.format(0) + "." + suffix;
+			f = new File(dir, filename);
+			suffix++;
+		}
 
 		if (customWriter != null) {
 			try {

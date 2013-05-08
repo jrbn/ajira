@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 public abstract class InputLayer {
 
 	private static final Logger log = LoggerFactory.getLogger(InputLayer.class);
-	private static final String INPUT_LAYER_CLASS = "inputlayer.default";
+	public static final String INPUT_LAYER_CLASS = "inputlayer.default";
 
 	public static final Class<? extends InputLayer> DEFAULT_LAYER = InputLayer.class;
 

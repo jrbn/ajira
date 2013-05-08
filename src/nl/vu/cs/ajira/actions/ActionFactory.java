@@ -46,7 +46,7 @@ public class ActionFactory {
 				actionParameters.put(className, info);
 			} catch (Exception e) {
 				log.error("Failed in retrieving the parameter list for class"
-						+ className);
+						+ className, e);
 			}
 		}
 
