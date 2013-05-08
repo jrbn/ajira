@@ -8,5 +8,6 @@ tmp-eclipse
 *~
 .*~
 .DS_Store
+bin/
 /TODO
 /build.xml
