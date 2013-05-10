@@ -55,9 +55,11 @@ public class ReadFromFiles extends Action {
 
 	static final Logger log = LoggerFactory.getLogger(ReadFromFiles.class);
 
+	private static int splitCounter = 0;	// Added to create unique strings for the context cache. --Ceriel
 	private int minimumFileSplitSize;
 	private FileCollection currentFileSplit;
 	private int splitId;
+	private String baseSplit = null;
 	private String customReader = null;
 
 	private static class ParametersProcessor extends ActionConf.Configurator {
@@ -75,7 +77,12 @@ public class ReadFromFiles extends Action {
 
 	private void processSplit(ActionContext context, ActionOutput output)
 			throws Exception {
-		String key = "split-" + splitId++;
+		if (baseSplit == null) {
+			synchronized(this.getClass()) {
+				baseSplit = "split" + splitCounter++ + "-";  
+			}
+		}
+		String key = baseSplit + splitId++;
 		context.putObjectInCache(key, currentFileSplit);
 
 		Tuple tuple = TupleFactory.newTuple();
@@ -124,7 +131,7 @@ public class ReadFromFiles extends Action {
 		File file = new File(((TString) inputTuple.get(0)).getValue());
 
 		long sizeFile = file.length();
-		if ((currentFileSplit.getSize() + sizeFile) >= minimumFileSplitSize) {
+		if (currentFileSplit.getNFiles() > 0 && (currentFileSplit.getSize() + sizeFile) >= minimumFileSplitSize) {
 			processSplit(context, output);
 		}
 		currentFileSplit.addFile(file);
