@@ -53,11 +53,19 @@
 		</java>
 	</target>
 
-	<target name="jar" depends="compile">
+	<target name="src.zip">
+	    <zip destfile="src.zip">
+		<zipfileset dir="src" includes="**/*" prefix="Ajira" />
+		<zipfileset dir="." includes="LICENSE.txt" prefix="Ajira" />
+	    </zip>
+	</target>
+
+	<target name="jar" depends="compile, src.zip">
 		<!--Complete JAR -->
 		<jar destfile="${AJIRA_JAR_LOCATION}">
 			<fileset dir="${BUILD_PATH}" includes="**/*.class"/>
 			<fileset dir="." includes ="jsp/**/*.jsp"/>
+			<fileset dir="." includes ="src.zip"/>
 			<manifest>
 				<attribute name="Main-Class" value="nl.vu.cs.ajira.Ajira" />
 			</manifest>
