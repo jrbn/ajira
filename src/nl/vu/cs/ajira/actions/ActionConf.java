@@ -141,7 +141,7 @@ public class ActionConf implements Writable {
 				valuesParameters[i] = b;
 				break;
 			case 5:
-				SimpleData data = DataProvider.getInstance().get(
+				SimpleData data = DataProvider.get().get(
 						input.readByte());
 				data.readFrom(input);
 				valuesParameters[i] = data;

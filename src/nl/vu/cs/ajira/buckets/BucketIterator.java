@@ -48,7 +48,7 @@ public class BucketIterator extends TupleIterator {
 		this.isUsed = false;
 		this.signature = new SimpleData[signature.length];
 		for (int i = 0; i < signature.length; ++i) {
-			this.signature[i] = DataProvider.getInstance().get(signature[i]);
+			this.signature[i] = DataProvider.get().get(signature[i]);
 		}
 		serializer = bucket.getTupleSerializer();
 	}
