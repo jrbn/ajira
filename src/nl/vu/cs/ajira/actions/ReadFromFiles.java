@@ -130,8 +130,7 @@ public class ReadFromFiles extends Action {
 		// In input I receive a list of files
 		File file = new File(((TString) inputTuple.get(0)).getValue());
 
-		long sizeFile = file.length();
-		if (currentFileSplit.getNFiles() > 0 && (currentFileSplit.getSize() + sizeFile) >= minimumFileSplitSize) {
+		if (currentFileSplit.getSize() >= minimumFileSplitSize) {
 			processSplit(context, output);
 		}
 		currentFileSplit.addFile(file);
