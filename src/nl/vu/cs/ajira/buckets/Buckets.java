@@ -491,8 +491,7 @@ public class Buckets {
 
 			// If decreaseCounter is not set, there has not been a corresponding
 			// startTransfer call, so alertTransfer has not been called yet for
-			// this
-			// transfer.
+			// this transfer.
 			if (info == null || !info.alerted || !decreaseCounter) {
 				alertTransfer(submissionNode, submission, node, bucketID,
 						chainId, parentChainId, nchildren, responsible, sort,

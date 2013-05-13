@@ -256,11 +256,15 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	public boolean isPrincipalBranch() {
 		return roots[currentAction];
 	}
+	
+	private long getChainCounter() {
+		return context.getChainCounter(submissionId);
+	}
 
 	@Override
 	public void branch(ActionSequence actions) throws Exception {
 		chain.setRawSize(rawSizes[currentAction]);
-		chain.branch(supportChain, getCounter(Consts.CHAINCOUNTER_NAME), 0);
+		chain.branch(supportChain, getChainCounter(), 0);
 		supportChain.setActions(this, actions);
 		if (!stopProcess && currentAction > 0) {
 			cRuntimeBranching[currentAction]++;
@@ -301,7 +305,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		chain.setRawSize(rawSizes[currentAction]);
 
 		if (transferComputation && reconnectAt < (nActions - currentAction - 1)) {
-			chain.branch(supportChain, getCounter(Consts.CHAINCOUNTER_NAME),
+			chain.branch(supportChain, getChainCounter(),
 					reconnectAt);
 		} else {
 			long parentChain = 0;
@@ -309,7 +313,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 				parentChain = responsibleChains[currentAction];
 			}
 			chain.customBranch(supportChain, parentChain,
-					getCounter(Consts.CHAINCOUNTER_NAME), reconnectAt);
+					getChainCounter(), reconnectAt);
 			incrementChildren(parentChain, reconnectAt + 1);
 		}
 
