@@ -41,7 +41,7 @@ public class GroupBy extends Action {
 			// The values are a copy of the current tuple
 			this.sValues = new SimpleData[inputTuple.getNElements() - sizeKey];
 			for (int i = 0; i < sValues.length; ++i) {
-				sValues[i] = DataProvider.getInstance().get(
+				sValues[i] = DataProvider.get().get(
 						inputTuple.get(sizeKey + i).getIdDatatype());
 			}
 			this.outputTuple = TupleFactory.newTuple(sValues);
@@ -49,7 +49,7 @@ public class GroupBy extends Action {
 			this.moreGroups = true;
 
 			for (int i = 0; i < sizeKey; ++i) {
-				key[i] = DataProvider.getInstance().get(
+				key[i] = DataProvider.get().get(
 						inputTuple.get(i).getIdDatatype());
 			}
 		}

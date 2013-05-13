@@ -78,10 +78,10 @@ public class Tuple {
 		}
 
 		if (signature[pos] == null) {
-			signature[pos] = DataProvider.getInstance().get(el.getIdDatatype());
+			signature[pos] = DataProvider.get().get(el.getIdDatatype());
 		} else if (signature[pos].getIdDatatype() != el.getIdDatatype()) {
-			DataProvider.getInstance().release(signature[pos]);
-			signature[pos] = DataProvider.getInstance().get(el.getIdDatatype());
+			DataProvider.get().release(signature[pos]);
+			signature[pos] = DataProvider.get().get(el.getIdDatatype());
 		}
 
 		el.copyTo(signature[pos]);

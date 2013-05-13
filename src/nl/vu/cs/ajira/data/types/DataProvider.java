@@ -10,6 +10,7 @@ public class DataProvider {
 
 	static private DataProvider defaultInstance = null;
 
+	private static int counter = 15;
 	@SuppressWarnings("unchecked")
 	private final Factory<SimpleData>[] list = new Factory[256];
 	private static Map<Integer, Class<? extends SimpleData>> registeredTypes = new HashMap<Integer, Class<? extends SimpleData>>();
@@ -23,10 +24,9 @@ public class DataProvider {
 	 *            is the class whose informations are added at the fields of the
 	 *            DataProvider
 	 */
-	static synchronized public void addType(int type,
-			Class<? extends SimpleData> clazz) {
-		registeredTypes.put(type, clazz);
-		retrieveIds.put(clazz.getName(), type);
+	static synchronized public void addType(Class<? extends SimpleData> clazz) {
+		registeredTypes.put(counter, clazz);
+		retrieveIds.put(clazz.getName(), counter++);
 	}
 
 	/**
@@ -84,7 +84,7 @@ public class DataProvider {
 	 * @return the defaultInstance. If the defaultInstance is null it creates a
 	 *         new DataProvider.
 	 */
-	public static DataProvider getInstance() {
+	public static DataProvider get() {
 		if (defaultInstance == null) {
 			defaultInstance = new DataProvider();
 		}

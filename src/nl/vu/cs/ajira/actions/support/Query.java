@@ -79,7 +79,7 @@ public class Query implements Writable {
 		int nElements = input.readByte();
 		SimpleData[] data = new SimpleData[nElements];
 		for (int i = 0; i < nElements; ++i) {
-			SimpleData el = DataProvider.getInstance().get(input.readByte());
+			SimpleData el = DataProvider.get().get(input.readByte());
 			el.readFrom(input);
 			data[i] = el;
 		}

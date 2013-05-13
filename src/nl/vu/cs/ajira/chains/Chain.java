@@ -99,7 +99,7 @@ public class Chain implements Writable, InputQuery {
 			int n = input.readByte();
 			SimpleData[] signature = new SimpleData[n];
 			for (int i = 0; i < n; ++i) {
-				signature[i] = DataProvider.getInstance().get(input.readByte());
+				signature[i] = DataProvider.get().get(input.readByte());
 			}
 			tuple.set(signature);
 			new WritableTuple(tuple).readFrom(input);
