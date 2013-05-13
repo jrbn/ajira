@@ -40,6 +40,8 @@ public class Consts {
 	public static final int DATATYPE_TSTRINGARRAY = 8;
 	public static final int DATATYPE_TLONGARRAY = 9;
 	public static final int DATATYPE_TBOOLEANARRAY = 10;
+	public static final int DATATYPE_TDOUBLEARRAY = 11;
+	public static final int DATATYPE_TDOUBLE = 12;
 
 	public static final String STATE_OPEN = "ACTIVE";
 	public static final String STATE_FINISHED = "FINISHED";

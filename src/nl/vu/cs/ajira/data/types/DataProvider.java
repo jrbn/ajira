@@ -11,14 +11,17 @@ public class DataProvider {
 	static private DataProvider defaultInstance = null;
 
 	@SuppressWarnings("unchecked")
-	private Factory<SimpleData>[] list = new Factory[256];
+	private final Factory<SimpleData>[] list = new Factory[256];
 	private static Map<Integer, Class<? extends SimpleData>> registeredTypes = new HashMap<Integer, Class<? extends SimpleData>>();
 	private static Map<String, Integer> retrieveIds = new HashMap<String, Integer>();
 
 	/**
-	 *  
-	 * @param type is the id of the clazz
-	 * @param clazz is the class whose informations are added at the fields of the DataProvider 
+	 * 
+	 * @param type
+	 *            is the id of the clazz
+	 * @param clazz
+	 *            is the class whose informations are added at the fields of the
+	 *            DataProvider
 	 */
 	static synchronized public void addType(int type,
 			Class<? extends SimpleData> clazz) {
@@ -27,10 +30,10 @@ public class DataProvider {
 	}
 
 	/**
-	 * Constructs a new DataProvider and adds in the list the classes 
-	 * that extend SimpleData and the elements from the map registeredTypes. 
-	 * It also sets the informations from the retriveIds. It adds the name 
-	 * and the id of the class.
+	 * Constructs a new DataProvider and adds in the list the classes that
+	 * extend SimpleData and the elements from the map registeredTypes. It also
+	 * sets the informations from the retriveIds. It adds the name and the id of
+	 * the class.
 	 */
 	public DataProvider() {
 		list[Consts.DATATYPE_TLONG] = new Factory<SimpleData>(TLong.class);
@@ -49,6 +52,9 @@ public class DataProvider {
 				TLongArray.class);
 		list[Consts.DATATYPE_TBOOLEANARRAY] = new Factory<SimpleData>(
 				TBooleanArray.class);
+		list[Consts.DATATYPE_TDOUBLE] = new Factory<SimpleData>(TDouble.class);
+		list[Consts.DATATYPE_TDOUBLEARRAY] = new Factory<SimpleData>(
+				TDoubleArray.class);
 
 		retrieveIds.put(TLong.class.getName(), Consts.DATATYPE_TLONG);
 		retrieveIds.put(TInt.class.getName(), Consts.DATATYPE_TINT);
@@ -63,6 +69,9 @@ public class DataProvider {
 		retrieveIds.put(TLongArray.class.getName(), Consts.DATATYPE_TLONGARRAY);
 		retrieveIds.put(TBooleanArray.class.getName(),
 				Consts.DATATYPE_TBOOLEANARRAY);
+		retrieveIds.put(TDouble.class.getName(), Consts.DATATYPE_TDOUBLE);
+		retrieveIds.put(TDoubleArray.class.getName(),
+				Consts.DATATYPE_TDOUBLEARRAY);
 
 		for (Map.Entry<Integer, Class<? extends SimpleData>> entry : registeredTypes
 				.entrySet()) {
@@ -72,8 +81,8 @@ public class DataProvider {
 
 	/**
 	 * 
-	 * @return the defaultInstance. If the defaultInstance is null 
-	 * it creates a new DataProvider.
+	 * @return the defaultInstance. If the defaultInstance is null it creates a
+	 *         new DataProvider.
 	 */
 	public static DataProvider getInstance() {
 		if (defaultInstance == null) {
@@ -84,7 +93,8 @@ public class DataProvider {
 
 	/**
 	 * 
-	 * @param className is the name of the class
+	 * @param className
+	 *            is the name of the class
 	 * @return the id of the class with the name className
 	 */
 	public static int getId(String className) {
@@ -93,7 +103,8 @@ public class DataProvider {
 
 	/**
 	 * 
-	 * @param type is the id of the object's class that is looked
+	 * @param type
+	 *            is the id of the object's class that is looked
 	 * @return the object that is found at the index type in the list
 	 */
 	public SimpleData get(int type) {
@@ -101,9 +112,11 @@ public class DataProvider {
 	}
 
 	/**
-	 * Releases in the Factory's buffer the object which is found in the list 
-	 * at the data's id position.
-	 * @param data is the object that will be released in the Factory's buffer
+	 * Releases in the Factory's buffer the object which is found in the list at
+	 * the data's id position.
+	 * 
+	 * @param data
+	 *            is the object that will be released in the Factory's buffer
 	 */
 	public void release(SimpleData data) {
 		list[data.getIdDatatype()].release(data);
