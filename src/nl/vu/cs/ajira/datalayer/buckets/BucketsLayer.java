@@ -6,7 +6,7 @@ import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.buckets.BucketIterator;
 import nl.vu.cs.ajira.buckets.Buckets;
-import nl.vu.cs.ajira.chains.ChainLocation;
+import nl.vu.cs.ajira.chains.Location;
 import nl.vu.cs.ajira.data.types.TInt;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.datalayer.InputLayer;
@@ -51,14 +51,14 @@ public class BucketsLayer extends InputLayer {
 	 * it constructs a new ChainLocation.
 	 */
 	@Override
-	public ChainLocation getLocations(Tuple tuple, ActionContext context) {
+	public Location getLocations(Tuple tuple, ActionContext context) {
 		try {
 			int location = ((TInt) tuple.get(tuple.getNElements() - 1))
 					.getValue();
 			if (location == -1 || location == -2) {
-				return ChainLocation.ALL_NODES;
+				return Location.ALL_NODES;
 			} else {
-				return new ChainLocation(location);
+				return new Location(location);
 			}
 		} catch (Exception e) {
 			log.error("Error parsing tuple", e);

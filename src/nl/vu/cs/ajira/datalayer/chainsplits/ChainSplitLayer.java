@@ -7,7 +7,7 @@ import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.actions.ActionOutput;
 import nl.vu.cs.ajira.actions.ActionSequence;
-import nl.vu.cs.ajira.chains.ChainLocation;
+import nl.vu.cs.ajira.chains.Location;
 import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.TInt;
 import nl.vu.cs.ajira.data.types.Tuple;
@@ -213,7 +213,7 @@ public class ChainSplitLayer extends InputLayer {
 	}
 
 	@Override
-	public ChainLocation getLocations(Tuple tuple, ActionContext context) {
-		return new ChainLocation(context.getMyNodeId());
+	public Location getLocations(Tuple tuple, ActionContext context) {
+		return new Location(context.getMyNodeId());
 	}
 }

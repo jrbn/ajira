@@ -6,7 +6,7 @@ import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.actions.support.Query;
 import nl.vu.cs.ajira.chains.Chain;
 import nl.vu.cs.ajira.chains.ChainExecutor;
-import nl.vu.cs.ajira.chains.ChainLocation;
+import nl.vu.cs.ajira.chains.Location;
 import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Container;
 
@@ -56,7 +56,7 @@ class ChainSender implements Runnable {
 				ChainExecutor ac = new ChainExecutor(null, context, chain);
 
 				chain.getQuery(query);
-				ChainLocation loc = context
+				Location loc = context
 						.getInputLayer(chain.getInputLayer()).getLocations(
 								query.getTuple(), ac);
 

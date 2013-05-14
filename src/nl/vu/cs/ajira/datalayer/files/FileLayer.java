@@ -5,7 +5,7 @@ import java.util.List;
 
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.actions.ActionContext;
-import nl.vu.cs.ajira.chains.ChainLocation;
+import nl.vu.cs.ajira.chains.Location;
 import nl.vu.cs.ajira.data.types.TInt;
 import nl.vu.cs.ajira.data.types.TString;
 import nl.vu.cs.ajira.data.types.Tuple;
@@ -112,14 +112,14 @@ public class FileLayer extends InputLayer {
 	 * the second value of the tuple.
 	 */
 	@Override
-	public ChainLocation getLocations(Tuple tuple, ActionContext context) {
+	public Location getLocations(Tuple tuple, ActionContext context) {
 		try {
 			if (((TInt) tuple.get(0)).getValue() == OP_LS) {
-				return ChainLocation.THIS_NODE;
+				return Location.THIS_NODE;
 			} else {
 				String s = ((TString) tuple.get(1)).getValue();
 				int index = Integer.valueOf(s.substring(s.indexOf('-') + 1));
-				return new ChainLocation(index % numberNodes);
+				return new Location(index % numberNodes);
 			}
 
 		} catch (Exception e) {

@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.actions.ActionContext;
-import nl.vu.cs.ajira.chains.ChainLocation;
+import nl.vu.cs.ajira.chains.Location;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.datalayer.InputLayer;
@@ -82,8 +82,8 @@ public class DummyLayer extends InputLayer {
 	}
 
 	@Override
-	public ChainLocation getLocations(Tuple tuple, ActionContext context) {
-		return ChainLocation.THIS_NODE;
+	public Location getLocations(Tuple tuple, ActionContext context) {
+		return Location.THIS_NODE;
 	}
 
 	@Override

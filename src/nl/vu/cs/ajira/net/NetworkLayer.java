@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.buckets.WritableTuple;
 import nl.vu.cs.ajira.chains.Chain;
-import nl.vu.cs.ajira.chains.ChainLocation;
+import nl.vu.cs.ajira.chains.Location;
 import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Container;
 import nl.vu.cs.ajira.storage.Factory;
@@ -500,10 +500,10 @@ public class NetworkLayer {
 	 * 
 	 * @return All or some of the IbisIdentifiers depending on the parameter.
 	 */
-	public IbisIdentifier[] getPeersLocation(ChainLocation loc) {
-		if (loc.getValue() == ChainLocation.V_ALL_NODES) {
+	public IbisIdentifier[] getPeersLocation(Location loc) {
+		if (loc.getValue() == Location.V_ALL_NODES) {
 			return assignedPartitions;
-		} else if (loc.getValue() == ChainLocation.V_THIS_NODE) {
+		} else if (loc.getValue() == Location.V_THIS_NODE) {
 			return Arrays.copyOfRange(assignedPartitions, partitionId,
 					partitionId + 1);
 		} else {

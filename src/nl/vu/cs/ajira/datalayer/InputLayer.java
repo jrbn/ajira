@@ -2,7 +2,7 @@ package nl.vu.cs.ajira.datalayer;
 
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.actions.ActionContext;
-import nl.vu.cs.ajira.chains.ChainLocation;
+import nl.vu.cs.ajira.chains.Location;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.datalayer.files.FileLayer;
 import nl.vu.cs.ajira.utils.Configuration;
@@ -60,7 +60,7 @@ public abstract class InputLayer {
 	public abstract void releaseIterator(TupleIterator itr,
 			ActionContext context);
 
-	public abstract ChainLocation getLocations(Tuple tuple,
+	public abstract Location getLocations(Tuple tuple,
 			ActionContext context);
 
 	public void close() {

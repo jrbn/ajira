@@ -1,6 +1,6 @@
 package nl.vu.cs.ajira.chains;
 
-public class ChainLocation {
+public class Location {
 
 	public static final int V_ALL_NODES = -1;
 	public static final int V_THIS_NODE = -2;
@@ -12,12 +12,12 @@ public class ChainLocation {
 	 * @param nodeId
 	 * 		The new value of the nodeId.
 	 */
-	public ChainLocation(int nodeId) {
+	public Location(int nodeId) {
 		this.nodeId = nodeId;
 	}
 
-	public static final ChainLocation THIS_NODE = new ChainLocation(V_THIS_NODE);
-	public static final ChainLocation ALL_NODES = new ChainLocation(V_ALL_NODES);
+	public static final Location THIS_NODE = new Location(V_THIS_NODE);
+	public static final Location ALL_NODES = new Location(V_ALL_NODES);
 
 	/**
 	 * 
