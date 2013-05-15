@@ -1018,8 +1018,10 @@ public class Bucket {
 			// being cached.
 			if (tmpBuffer.getNElements() == 0) {
 				synchronized (lockInBuffer) {
-					if (tmpBuffer.addAll(inBuffer)) {
-						inBuffer.clear();
+					if (inBuffer != null) {
+						if (tmpBuffer.addAll(inBuffer)) {
+							inBuffer.clear();
+						}
 					}
 				}
 			}
@@ -1027,8 +1029,10 @@ public class Bucket {
 			// Ok, now we try also exBuffer...
 			if (tmpBuffer.getNElements() == 0) {
 				synchronized (lockExBuffer) {
-					if (tmpBuffer.addAll(exBuffer)) {
-						exBuffer.clear();
+					if (exBuffer != null) {
+						if (tmpBuffer.addAll(exBuffer)) {
+							exBuffer.clear();
+						}
 					}
 				}
 			}
