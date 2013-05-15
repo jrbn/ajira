@@ -9,16 +9,15 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 import nl.vu.cs.ajira.buckets.Bucket.FileMetaData;
 import nl.vu.cs.ajira.data.types.bytearray.FDataInput;
 import nl.vu.cs.ajira.data.types.bytearray.FDataOutput;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.iq80.snappy.SnappyInputStream;
 import org.iq80.snappy.SnappyOutputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class represents the implementation of the cache merger. When the number
@@ -32,7 +31,8 @@ public class CachedFilesMerger implements Runnable {
 	List<Bucket> requests = new ArrayList<Bucket>();
 	public int threads = 0;
 	public int activeThreads = 0;
-	private Random random = new Random();
+
+	// private final Random random = new Random();
 
 	/**
 	 * This method is used to add/register a new request to merge cached files
@@ -103,7 +103,7 @@ public class CachedFilesMerger implements Runnable {
 					long sz = Long.MAX_VALUE;
 					int listsz = bucket.minimumSortedList.size();
 					int index1 = -1, index2 = -1;
-					
+
 					for (int i = 0; i < listsz; i++) {
 						byte[] b = bucket.minimumSortedList.get(i);
 						FileMetaData f = bucket.sortedCacheFiles.get(b);
@@ -119,10 +119,10 @@ public class CachedFilesMerger implements Runnable {
 
 					bucket.minimumSortedList.remove(index1);
 					stream1 = bucket.sortedCacheFiles.remove(min1);
-					
+
 					sz = Long.MAX_VALUE;
 					listsz = bucket.minimumSortedList.size();
-					
+
 					for (int i = 0; i < listsz; i++) {
 						byte[] b = bucket.minimumSortedList.get(i);
 						FileMetaData f = bucket.sortedCacheFiles.get(b);
@@ -163,7 +163,7 @@ public class CachedFilesMerger implements Runnable {
 				long totalSize = 0;
 				long totalelements = 0;
 				byte[] tmpbuffer = new byte[1024 * 1024];
-				
+
 				try {
 					// Compute the new number of elements (total merged
 					// elements)
@@ -173,8 +173,9 @@ public class CachedFilesMerger implements Runnable {
 					cacheFile = File.createTempFile("merged_files", "tmp");
 					cacheFile.deleteOnExit();
 
-					OutputStream fout = new SnappyOutputStream(new BufferedOutputStream(
-							new FileOutputStream(cacheFile), 65536));
+					OutputStream fout = new SnappyOutputStream(
+							new BufferedOutputStream(new FileOutputStream(
+									cacheFile), 65536));
 					// Open an output stream to write into the temporary file
 					cacheOutputStream = new FDataOutput(fout);
 
@@ -271,7 +272,8 @@ public class CachedFilesMerger implements Runnable {
 					// This new stream (file descriptor) will replace the
 					// older ones that were merged.
 					FDataInput is = new FDataInput(new SnappyInputStream(
-							new BufferedInputStream(new FileInputStream(cacheFile), 65536)));
+							new BufferedInputStream(new FileInputStream(
+									cacheFile), 65536)));
 					int length = is.readInt();
 					byte[] rawValue = new byte[length];
 					is.readFully(rawValue);
@@ -306,16 +308,16 @@ public class CachedFilesMerger implements Runnable {
 		}
 	}
 
-	/**
-	 * Gives a random integer number.
-	 * 
-	 * @param size
-	 *            Maximum size for the generated random number
-	 * @return The generated random integer number
-	 */
-	private synchronized int nextInt(int size) {
-		return random.nextInt(size);
-	}
+	// /**
+	// * Gives a random integer number.
+	// *
+	// * @param size
+	// * Maximum size for the generated random number
+	// * @return The generated random integer number
+	// */
+	// private synchronized int nextInt(int size) {
+	// return random.nextInt(size);
+	// }
 
 	/**
 	 * Reads a chunk from an input stream, puts it into a temporary buffer and

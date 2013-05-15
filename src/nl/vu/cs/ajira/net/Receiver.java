@@ -275,14 +275,14 @@ class Receiver implements MessageUpcall {
 			net.broadcastStartMonitoring();
 
 			Submission submission = context.getSubmissionsRegistry()
-						.waitForCompletion(context, job);
+					.waitForCompletion(context, job);
 
 			net.stopMonitorCounters();
 			net.broadcastStopMonitoring();
 
-			reply = net.getMessageToSend(message.origin()
-					.ibisIdentifier(), NetworkLayer.queryReceiverPort);
-			
+			reply = net.getMessageToSend(message.origin().ibisIdentifier(),
+					NetworkLayer.queryReceiverPort);
+
 			if (submission.getState().equals(Consts.STATE_FINISHED)) {
 				int bid = submission.getAssignedBucket();
 
@@ -366,8 +366,8 @@ class Receiver implements MessageUpcall {
 			tmpBuffer.clear();
 			boolean isFinished = bucket.removeChunk(tmpBuffer);
 
-			reply = net.getMessageToSend(message.origin()
-					.ibisIdentifier(), NetworkLayer.queryReceiverPort);
+			reply = net.getMessageToSend(message.origin().ibisIdentifier(),
+					NetworkLayer.queryReceiverPort);
 			tmpBuffer.writeTo(new WriteMessageWrapper(reply));
 			reply.writeBoolean(isFinished);
 			reply.finish();

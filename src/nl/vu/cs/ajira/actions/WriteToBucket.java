@@ -10,22 +10,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The <code>WriteToBucket</code> action stores its input tuples in a specific bucket,
- * as well as passing them on to the specified {@link ActionOutput}.
+ * The <code>WriteToBucket</code> action stores its input tuples in a specific
+ * bucket, as well as passing them on to the specified {@link ActionOutput}.
  */
 public class WriteToBucket extends Action {
 
 	static final Logger log = LoggerFactory.getLogger(WriteToBucket.class);
-	
+
 	/**
-	 * The <code>I_BUCKET_ID</code> parameter is of type <code>int</code>, is required, and
-	 * specifies the bucket number of the destination bucket.
+	 * The <code>I_BUCKET_ID</code> parameter is of type <code>int</code>, is
+	 * required, and specifies the bucket number of the destination bucket.
 	 */
 	public static final int I_BUCKET_ID = 0;
-	
+
 	/**
-	 * The <code>SA_TUPLE_FIELDS</code> parameter is of type <code>String[]</code>, is required, and
-	 * specifies the class name of the type of each field in the tuple (see {@link nl.vu.cs.ajira.data.types}).
+	 * The <code>SA_TUPLE_FIELDS</code> parameter is of type
+	 * <code>String[]</code>, is required, and specifies the class name of the
+	 * type of each field in the tuple (see {@link nl.vu.cs.ajira.data.types}).
 	 */
 	public static final int SA_TUPLE_FIELDS = 1;
 
@@ -72,6 +73,6 @@ public class WriteToBucket extends Action {
 	@Override
 	public void stopProcess(ActionContext context, ActionOutput output)
 			throws Exception {
-		bucket.setFinished(true);
+		bucket.setFinished();
 	}
 }

@@ -19,30 +19,30 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This class is used to process the incoming requests for 
- * a tuple transfer and to answer them by sending chunks
- * from the assigned/specified remote-bucket.
+ * This class is used to process the incoming requests for a tuple transfer and
+ * to answer them by sending chunks from the assigned/specified remote-bucket.
  */
 class TupleSender {
-	private static final Logger log = LoggerFactory.getLogger(TupleSender.class);
+	private static final Logger log = LoggerFactory
+			.getLogger(TupleSender.class);
 
 	private final Context context;
 	private final Buckets buckets;
-	
+
 	private final List<TupleInfo> checkList = new LinkedList<TupleInfo>();
 	private final List<TupleInfo> sendList = new LinkedList<TupleInfo>();
 	private int checkerTime = 1;
 
-	private Factory<WritableContainer<WritableTuple>> bufferFactory;
+	private final Factory<WritableContainer<WritableTuple>> bufferFactory;
 
 	/**
 	 * Custom constructor.
 	 * 
 	 * @param context
-	 * 			  Current context
+	 *            Current context
 	 * @param bufferFactory
-	 * 			  Factory for generating/allocating buffers
-	 * 			  (buffers' memory allocation management)
+	 *            Factory for generating/allocating buffers (buffers' memory
+	 *            allocation management)
 	 */
 	public TupleSender(Context context,
 			Factory<WritableContainer<WritableTuple>> bufferFactory) {
@@ -66,29 +66,26 @@ class TupleSender {
 	}
 
 	/**
-	 * Handles new incoming request for data fetch (tuples
-	 * transfer from the specified remote-bucket)
+	 * Handles new incoming request for data fetch (tuples transfer from the
+	 * specified remote-bucket)
 	 * 
-	 * INFO: This method should be called from a thread 
-	 * that may block.
+	 * INFO: This method should be called from a thread that may block.
 	 * 
 	 * @param localBufferKey
-	 * 			  Local buffer's key (the responsible
-	 * 			  remote bucket's id)
+	 *            Local buffer's key (the responsible remote bucket's id)
 	 * @param remoteNodeId
-	 * 			  Remote node's id -- the one that 
-	 * 			  requested the transfer
+	 *            Remote node's id -- the one that requested the transfer
 	 * @param idSubmission
-	 * 			  Submission id
+	 *            Submission id
 	 * @param idBucket
-	 * 			  Bucket id (remote-bucket's id)
+	 *            Bucket id (remote-bucket's id)
 	 * @param ticket
-	 * 			  The request's ticket number / id
+	 *            The request's ticket number / id
 	 * @param sequence
-	 * 			  Sequence number (~ chunk number)
+	 *            Sequence number (~ chunk number)
 	 * @param nrequest
-	 * 			  Requests number (how many requests
-	 * 			  were sent inside this message)
+	 *            Requests number (how many requests were sent inside this
+	 *            message)
 	 */
 	public void handleNewRequest(long localBufferKey, int remoteNodeId,
 			int idSubmission, int idBucket, long ticket, int sequence,
@@ -128,9 +125,8 @@ class TupleSender {
 	}
 
 	/**
-	 * Checks each request to see if it can be answered to.
-	 * The condition is that the bucket should have available
-	 * data for transfer. 
+	 * Checks each request to see if it can be answered to. The condition is
+	 * that the bucket should have available data for transfer.
 	 */
 	private void checkTuples() {
 		for (;;) {
@@ -211,17 +207,16 @@ class TupleSender {
 	}
 
 	/**
-	 * Sends a chunk of tuples as a response to the 
-	 * request for data fetch. 
-	 * We consider the provided information attached to 
-	 * the request for filling up the response's message.
-	 *  
+	 * Sends a chunk of tuples as a response to the request for data fetch. We
+	 * consider the provided information attached to the request for filling up
+	 * the response's message.
+	 * 
 	 * @param info
-	 * 			  Information about the request
+	 *            Information about the request
 	 * @throws IOException
 	 */
 	private void sendTuple(TupleInfo info) throws IOException {
-		
+
 		if (context.hasCrashed(info.submissionId)) {
 			return;
 		}

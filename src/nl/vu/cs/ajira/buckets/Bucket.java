@@ -28,12 +28,12 @@ import nl.vu.cs.ajira.storage.RawComparator;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.utils.Consts;
 
+import org.iq80.snappy.SnappyInputStream;
+import org.iq80.snappy.SnappyOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 // import org.xerial.snappy.SnappyInputStream;
 // import org.xerial.snappy.SnappyOutputStream;
-import org.iq80.snappy.SnappyInputStream;
-import org.iq80.snappy.SnappyOutputStream;
 
 /**
  * This class represents the data structure used to store tuples in the main
@@ -55,7 +55,7 @@ public class Bucket {
 		long nElements;
 		long remainingSize;
 		FDataInput stream;
-		
+
 		public void finished() {
 			try {
 				stream.close();
@@ -179,9 +179,8 @@ public class Bucket {
 			.newInstance(WritableContainer.class, N_WBUFFS);
 	private int currWBuffIndex = 0;
 	private final boolean removeWChunkDone[] = new boolean[N_WBUFFS];
-
-	private final Object removeWChunk = new Object(),
-			lockWriteBuffer[] = new Object[N_WBUFFS];
+	private final Object lockWriteBuffer[] = new Object[N_WBUFFS];
+	private boolean isFillingThreadStarted;
 
 	/**
 	 * This method is used to add a tuple to the in-memory buffer. If the
@@ -221,6 +220,10 @@ public class Bucket {
 					throw new Exception(
 							"The buffer is too small! Must increase the buffer size.");
 				}
+			}
+
+			if (!sort && !isFillingThreadStarted) {
+				prepareRemoveWChunk();
 			}
 
 			return response;
@@ -316,6 +319,10 @@ public class Bucket {
 				}
 			}
 
+			if (!sort && !isFillingThreadStarted) {
+				prepareRemoveWChunk();
+			}
+
 			stats.addCounter(submissionNode, submissionId,
 					"Bucket:addAll: overall time (ms)",
 					System.currentTimeMillis() - time);
@@ -387,8 +394,9 @@ public class Bucket {
 					File cacheFile = File.createTempFile("cache", "tmp");
 					cacheFile.deleteOnExit();
 
-					OutputStream fout = new SnappyOutputStream(new BufferedOutputStream(
-							new FileOutputStream(cacheFile), 65536));
+					OutputStream fout = new SnappyOutputStream(
+							new BufferedOutputStream(new FileOutputStream(
+									cacheFile), 65536));
 
 					FDataOutput cacheOutputStream = new FDataOutput(fout);
 
@@ -411,8 +419,11 @@ public class Bucket {
 						if (!sort) {
 							cacheFiles.add(cacheFile);
 						} else {
-							FDataInput is = new FDataInput(new SnappyInputStream(
-									new BufferedInputStream(new FileInputStream(cacheFile), 65536)));
+							FDataInput is = new FDataInput(
+									new SnappyInputStream(
+											new BufferedInputStream(
+													new FileInputStream(
+															cacheFile), 65536)));
 							// Read the first element and put it into the map
 							try {
 								int length = is.readInt();
@@ -503,7 +514,7 @@ public class Bucket {
 			if (log.isDebugEnabled()) {
 				log.debug("Calling setFinished on bucket " + this.key);
 			}
-			setFinished(true);
+			setFinished();
 		}
 	}
 
@@ -527,7 +538,7 @@ public class Bucket {
 	 * This method is used to copy an entire file from the disk, which contains
 	 * cached sorted tuples, to a buffer, if the minimum element from the file
 	 * is less then the minimum element from the sorted list.
-
+	 * 
 	 * @param meta
 	 *            The meta information about the file that is checked if can
 	 *            copied into the buffer
@@ -628,6 +639,7 @@ public class Bucket {
 		this.submissionNode = submissionNode;
 		this.submissionId = submissionId;
 
+		isFillingThreadStarted = false;
 		isInBufferSorted = true;
 		this.sort = sort;
 		this.signature = signature;
@@ -735,7 +747,7 @@ public class Bucket {
 	 * Release the buffer -- GC.
 	 */
 	synchronized void releaseBuffers() {
-		waitForCachers();
+		waitForCachersToFinish();
 		releaseInBuffer();
 		releaseExBuffer();
 		// Also remove files.
@@ -779,15 +791,14 @@ public class Bucket {
 	 * @return True/false, depending on whether the bucket still contains tuples
 	 *         to remove (buffer + files) or not
 	 */
-	public boolean removeChunk(
-			WritableContainer<WritableTuple> tmpBuffer) {
+	public boolean removeChunk(WritableContainer<WritableTuple> tmpBuffer) {
 		return removeChunk(tmpBuffer, true);
 	}
-	
-	private synchronized boolean removeChunk(WritableContainer<WritableTuple> tmpBuffer, boolean logTime) {
-		
+
+	private synchronized boolean removeChunkSorted(
+			WritableContainer<WritableTuple> tmpBuffer, boolean logTime) {
 		// If some threads still have to finish writing
-		waitForCachers();
+		waitForCachersToFinish();
 
 		synchronized (lockInBuffer) {
 			if (log.isDebugEnabled()) {
@@ -799,155 +810,133 @@ public class Bucket {
 			gettingData = true;
 
 			try {
-				if (sort && !isInBufferSorted) {
+				if (!isInBufferSorted) {
 					inBuffer.sort(comparator, fb);
 					isInBufferSorted = true;
 				}
 
 				if (elementsInCache > 0) {
-					if (!sort) { // No sorting applied
-						long time = System.currentTimeMillis();
-						File fi = cacheFiles.remove(0);
-						FDataInput di = new FDataInput(new SnappyInputStream(
-								new BufferedInputStream(new FileInputStream(fi), 65536)));
-						tmpBuffer.readFrom(di); // Read the oldest file
-						stats.addCounter(
-								submissionNode,
-								submissionId,
-								"Bucket:removeChunk: time reading from cache (ms)",
-								System.currentTimeMillis() - time);
-						stats.addCounter(submissionNode, submissionId,
-								"Bucket:removeChunk: Bytes read from cache",
-								tmpBuffer.getRawSize());
-						elementsInCache -= tmpBuffer.getNElements();
-						di.close();
-						fi.delete();
-					} else { // Need to sort
+					tmpBuffer.setFieldsDelimiter(true);
 
-						tmpBuffer.setFieldsDelimiter(true);
+					if (log.isDebugEnabled()) {
+						log.debug("Try add the first triple from the in-memory ds to the pool => "
+								+ "inBuffer.getNElements() = "
+								+ inBuffer.getNElements()
+								+ ", "
+								+ "minmumSortedlist.size() = "
+								+ minimumSortedList.size());
+					}
+
+					// Add the first triple from the in-memory ds to the
+					// pool
+					if (inBuffer.getNElements() > 0
+							&& minimumSortedList.size() == sortedCacheFiles
+									.size()) {
+						byte[] key = inBuffer.removeRaw(null);
+						minimumSortedList.add(key);
 
 						if (log.isDebugEnabled()) {
-							log.debug("Try add the first triple from the in-memory ds to the pool => "
-									+ "inBuffer.getNElements() = "
-									+ inBuffer.getNElements()
-									+ ", "
-									+ "minmumSortedlist.size() = "
-									+ minimumSortedList.size());
+							log.debug("First triple from the in-memory ds was added to the pool.");
 						}
+					} else {
+						if (log.isDebugEnabled()) {
+							log.debug("First triple from the in-memory ds was NOT added to the pool.");
+						}
+					}
 
-						// Add the first triple from the in-memory ds to the
-						// pool
-						if (inBuffer.getNElements() > 0
-								&& minimumSortedList.size() == sortedCacheFiles
-										.size()) {
-							byte[] key = inBuffer.removeRaw(null);
-							minimumSortedList.add(key);
+					if (log.isDebugEnabled()) {
+						log.debug("Sorting bucket: number of streams is "
+								+ sortedCacheFiles.size());
+					}
 
-							if (log.isDebugEnabled()) {
-								log.debug("First triple from the in-memory ds was added to the pool.");
+					boolean insertResponse = false;
+					int tuplesFromBuffer = 0;
+					int tuplesFromStream = 0;
+					long time = System.currentTimeMillis();
+					do {
+						// Remove the minimum of the tuples and try to add
+						// it to
+						// the buffer.
+						byte[] minimum = minimumSortedList.removeLastElement();
+
+						insertResponse = tmpBuffer.addRaw(minimum);
+
+						if (insertResponse) {
+							if (sortedCacheFiles.containsKey(minimum)) {
+								tuplesFromStream++;
+								elementsInCache--;
+								// The minimum came from a file. Check if
+								// the
+								// file can be copied completely.
+								FileMetaData meta = sortedCacheFiles
+										.get(minimum);
+
+								if (copyFullFile(meta, tmpBuffer, minimum)) {
+									tuplesFromStream += meta.nElements;
+									continue;
+								}
+
+								// No, it could not. Now try to stay with
+								// this
+								// file as long as we can.
+								try {
+									int length;
+									while ((length = meta.stream.readInt()) == minimum.length) {
+										// Reuse minimum
+										readFrom(meta, minimum);
+										if (compareWithSortedList(minimum)
+												&& (insertResponse = tmpBuffer
+														.addRaw(minimum))) {
+											tuplesFromStream++;
+											elementsInCache--;
+										} else {
+											minimumSortedList.add(minimum);
+											break;
+										}
+									}
+									// We get here if the length is
+									// different
+									// (in which case we still have to read
+									// the tuple, in a new buffer), or when
+									// the
+									// order was wrong.
+									if (length != minimum.length) {
+										sortedCacheFiles.remove(minimum);
+										if (length > 0) {
+											byte[] rawValue = new byte[length];
+											readFrom(meta, rawValue);
+											minimumSortedList.add(rawValue);
+											sortedCacheFiles
+													.put(rawValue, meta);
+										} else { // File is finished.
+											meta.finished();
+										}
+									}
+								} catch (Exception e) {
+									log.warn("Here it should never come!");
+									sortedCacheFiles.remove(minimum);
+									meta.finished();
+								}
+							} else { // It came from the in-memory
+										// container.
+								if (inBuffer.getNElements() > 0
+										&& elementsInCache > 0) {
+									byte[] key = inBuffer.removeRaw(minimum);
+									minimumSortedList.add(key);
+								}
+								tuplesFromBuffer++;
 							}
 						} else {
-							if (log.isDebugEnabled()) {
-								log.debug("First triple from the in-memory ds was NOT added to the pool.");
-							}
+							// Put it back
+							minimumSortedList.add(minimum);
 						}
+					} while (insertResponse && elementsInCache > 0);
 
-						if (log.isDebugEnabled()) {
-							log.debug("Sorting bucket: number of streams is "
-									+ sortedCacheFiles.size());
-						}
-
-						boolean insertResponse = false;
-						int tuplesFromBuffer = 0;
-						int tuplesFromStream = 0;
-						long time = System.currentTimeMillis();
-						do {
-							// Remove the minimum of the tuples and try to add
-							// it to
-							// the buffer.
-							byte[] minimum = minimumSortedList
-									.removeLastElement();
-
-							insertResponse = tmpBuffer.addRaw(minimum);
-
-							if (insertResponse) {
-								if (sortedCacheFiles.containsKey(minimum)) {
-									tuplesFromStream++;
-									elementsInCache--;
-									// The minimum came from a file. Check if
-									// the
-									// file can be copied completely.
-									FileMetaData meta = sortedCacheFiles
-											.get(minimum);
-
-									if (copyFullFile(meta, tmpBuffer, minimum)) {
-										tuplesFromStream += meta.nElements;
-										continue;
-									}
-
-									// No, it could not. Now try to stay with
-									// this
-									// file as long as we can.
-									try {
-										int length;
-										while ((length = meta.stream.readInt()) == minimum.length) {
-											// Reuse minimum
-											readFrom(meta, minimum);
-											if (compareWithSortedList(minimum)
-													&& (insertResponse = tmpBuffer
-															.addRaw(minimum))) {
-												tuplesFromStream++;
-												elementsInCache--;
-											} else {
-												minimumSortedList.add(minimum);
-												break;
-											}
-										}
-										// We get here if the length is
-										// different
-										// (in which case we still have to read
-										// the tuple, in a new buffer), or when
-										// the
-										// order was wrong.
-										if (length != minimum.length) {
-											sortedCacheFiles.remove(minimum);
-											if (length > 0) {
-												byte[] rawValue = new byte[length];
-												readFrom(meta, rawValue);
-												minimumSortedList.add(rawValue);
-												sortedCacheFiles.put(rawValue,
-														meta);
-											} else { // File is finished.
-												meta.finished();
-											}
-										}
-									} catch (Exception e) {
-										log.warn("Here it should never come!");
-										sortedCacheFiles.remove(minimum);
-										meta.finished();
-									}
-								} else { // It came from the in-memory
-											// container.
-									if (inBuffer.getNElements() > 0
-											&& elementsInCache > 0) {
-										byte[] key = inBuffer
-												.removeRaw(minimum);
-										minimumSortedList.add(key);
-									}
-									tuplesFromBuffer++;
-								}
-							} else {
-								// Put it back
-								minimumSortedList.add(minimum);
-							}
-						} while (insertResponse && elementsInCache > 0);
-
-						if (log.isDebugEnabled()) {
-							log.debug("Tuples from buffer:" + tuplesFromBuffer
-									+ " from stream: " + tuplesFromStream
-									+ " time: "
-									+ (System.currentTimeMillis() - time));
-						}
+					if (log.isDebugEnabled()) {
+						log.debug("Tuples from buffer:" + tuplesFromBuffer
+								+ " from stream: " + tuplesFromStream
+								+ " time: "
+								+ (System.currentTimeMillis() - time));
 					}
 				}
 
@@ -978,14 +967,109 @@ public class Bucket {
 			}
 			if (logTime) {
 				stats.addCounter(submissionNode, submissionId,
-						"Bucket:removeChunk: overall time (ms)",
-						tm);
+						"Bucket:removeChunk: overall time (ms)", tm);
 			}
 
 			return isFinished
 					&& elementsInCache == 0
 					&& (inBuffer == null || inBuffer.getNElements() == 0)
 					&& (sortedCacheFiles == null || minimumSortedList.size() == 0);
+		}
+	}
+
+	private boolean removeChunkUnsorted(
+			WritableContainer<WritableTuple> tmpBuffer, boolean logTime) {
+
+		boolean isBucketFinished = this.isFinished;
+		long totTime = System.currentTimeMillis();
+
+		try {
+			if (elementsInCache > 0) {
+				long time = System.currentTimeMillis();
+				File fi = null;
+
+				synchronized (this) {
+					if (cacheFiles.size() > 0) {
+						fi = cacheFiles.remove(0);
+					}
+				}
+
+				if (fi != null) {
+					FDataInput di = new FDataInput(new SnappyInputStream(
+							new BufferedInputStream(new FileInputStream(fi),
+									65536)));
+					tmpBuffer.readFrom(di); // Read the oldest file
+					stats.addCounter(submissionNode, submissionId,
+							"Bucket:removeChunk: time reading from cache (ms)",
+							System.currentTimeMillis() - time);
+					stats.addCounter(submissionNode, submissionId,
+							"Bucket:removeChunk: Bytes read from cache",
+							tmpBuffer.getRawSize());
+					synchronized (this) {
+						elementsInCache -= tmpBuffer.getNElements();
+					}
+					di.close();
+					fi.delete();
+				}
+			}
+
+			// Let's see if we can also get the data either from the
+			// inBuffer, or exBuffer, but then we must be sure they are not
+			// being cached.
+			if (tmpBuffer.getNElements() == 0) {
+				synchronized (lockInBuffer) {
+					if (tmpBuffer.addAll(inBuffer)) {
+						inBuffer.clear();
+					}
+				}
+			}
+
+			// Ok, now we try also exBuffer...
+			if (tmpBuffer.getNElements() == 0) {
+				synchronized (lockExBuffer) {
+					if (tmpBuffer.addAll(exBuffer)) {
+						exBuffer.clear();
+					}
+				}
+			}
+
+			// There was nothing available. Now we do not have any choice than
+			// wait.
+			if (tmpBuffer.getNElements() == 0 && !isBucketFinished) {
+				synchronized (this) {
+					if (!isFinished) {
+						this.wait();
+					}
+				}
+				// It became finished while I was executing the previous
+				// code. Let's try again.
+				return removeChunkUnsorted(tmpBuffer, logTime);
+			}
+		} catch (Exception e) {
+			log.error("Error in retrieving the results", e);
+		}
+
+		long tm = System.currentTimeMillis() - totTime;
+		if (log.isDebugEnabled()) {
+			log.debug("removeChunk: time = " + tm + " ms.");
+		}
+		if (logTime) {
+			stats.addCounter(submissionNode, submissionId,
+					"Bucket:removeChunk: overall time (ms)", tm);
+		}
+
+		return isFinished && elementsInCache == 0
+				&& (inBuffer == null || inBuffer.getNElements() == 0)
+				&& (exBuffer == null || exBuffer.getNElements() == 0);
+
+	}
+
+	private boolean removeChunk(WritableContainer<WritableTuple> tmpBuffer,
+			boolean logTime) {
+		if (sort) {
+			return removeChunkSorted(tmpBuffer, logTime);
+		} else {
+			return removeChunkUnsorted(tmpBuffer, logTime);
 		}
 	}
 
@@ -1073,7 +1157,11 @@ public class Bucket {
 		}
 	}
 
-	private void prepareRemoveWChunk() {
+	private synchronized void prepareRemoveWChunk() {
+		if (isFillingThreadStarted) {
+			return;
+		}
+
 		// LOG-DEBUG
 		if (log.isDebugEnabled()) {
 			log.debug("prepareRemoveWChunk: init variables...");
@@ -1084,6 +1172,7 @@ public class Bucket {
 			lockWriteBuffer[i] = new Object();
 		}
 
+		isFillingThreadStarted = true;
 		ThreadPool.createNew(new Runnable() {
 			@Override
 			public void run() {
@@ -1121,9 +1210,10 @@ public class Bucket {
 							+ "], " + "call removeChunk");
 				}
 
-				// Don't log time of this removeChunk call, time is measured in removeWChunk.
+				// Don't log time of this removeChunk call, time is measured in
+				// removeWChunk.
 				removeChunk(writeBuffer[wBuffIndex], false);
-				
+
 				if (writeBuffer[wBuffIndex].getNElements() == 0) {
 					// LOG-DEBUG
 					if (log.isDebugEnabled()) {
@@ -1144,74 +1234,71 @@ public class Bucket {
 
 	public void removeWChunk(WritableContainer<WritableTuple> tmpBuffer)
 			throws Exception {
-		// Synchronize
-		synchronized (removeWChunk) {
-			boolean done = false;
-			long timeStart = System.currentTimeMillis();
 
-			synchronized (lockWriteBuffer[currWBuffIndex]) {
-				if (writeBuffer[currWBuffIndex] == null) {
-					writeBuffer[currWBuffIndex] = fb.get();
-					writeBuffer[currWBuffIndex].clear();
-				}
+		boolean done = false;
+		long timeStart = System.currentTimeMillis();
 
-				// LOG-DEBUG
-				if (log.isDebugEnabled()) {
-					log.debug("removeWChunk: attempt removing write chunks from writeBuffers");
-				}
+		synchronized (lockWriteBuffer[currWBuffIndex]) {
+			if (writeBuffer[currWBuffIndex] == null) {
+				writeBuffer[currWBuffIndex] = fb.get();
+				writeBuffer[currWBuffIndex].clear();
+			}
 
-				while (writeBuffer[currWBuffIndex].getNElements() == 0
-						&& !removeWChunkDone[currWBuffIndex]) {
-					try {
-						lockWriteBuffer[currWBuffIndex].wait();
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
+			// LOG-DEBUG
+			if (log.isDebugEnabled()) {
+				log.debug("removeWChunk: attempt removing write chunks from writeBuffers");
+			}
 
+			while (writeBuffer[currWBuffIndex].getNElements() == 0
+					&& !removeWChunkDone[currWBuffIndex]) {
 				try {
-					done = removeWChunkDone[currWBuffIndex];
-
-					if (done) {
-						// LOG-DEBUG
-						if (log.isDebugEnabled()) {
-							log.debug("removeWChunk: done, no more chunks to remove");
-						}
-
-						tmpBuffer.clear();
-
-						stats.addCounter(submissionNode, submissionId,
-								"Bucket:removeWChunk: overall time (ms)",
-								System.currentTimeMillis() - timeStart);
-
-						return;
-					}
-
-					if (!tmpBuffer.addAll(writeBuffer[currWBuffIndex])) {
-						log.error("OOPS: something wrong!");
-					}
-					writeBuffer[currWBuffIndex].clear();
-
-					// LOG-DEBUG
-					if (log.isDebugEnabled()) {
-						log.debug("removeWChunk: added "
-								+ tmpBuffer.getNElements()
-								+ " tuples to tmpBuffer from" + " writeBuffer["
-								+ currWBuffIndex + "]");
-					}
-
-					lockWriteBuffer[currWBuffIndex].notifyAll();
-					currWBuffIndex = (currWBuffIndex + 1) % N_WBUFFS;
-				} catch (Exception e) {
-					log.error("Generic error", e);
-					throw e;
+					lockWriteBuffer[currWBuffIndex].wait();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
 				}
 			}
 
-			stats.addCounter(submissionNode, submissionId,
-					"Bucket:removeWChunk: overall time (ms)",
-					System.currentTimeMillis() - timeStart);
+			try {
+				done = removeWChunkDone[currWBuffIndex];
+
+				if (done) {
+					// LOG-DEBUG
+					if (log.isDebugEnabled()) {
+						log.debug("removeWChunk: done, no more chunks to remove");
+					}
+
+					tmpBuffer.clear();
+
+					stats.addCounter(submissionNode, submissionId,
+							"Bucket:removeWChunk: overall time (ms)",
+							System.currentTimeMillis() - timeStart);
+
+					return;
+				}
+
+				if (!tmpBuffer.addAll(writeBuffer[currWBuffIndex])) {
+					log.error("OOPS: something wrong!");
+				}
+				writeBuffer[currWBuffIndex].clear();
+
+				// LOG-DEBUG
+				if (log.isDebugEnabled()) {
+					log.debug("removeWChunk: added " + tmpBuffer.getNElements()
+							+ " tuples to tmpBuffer from" + " writeBuffer["
+							+ currWBuffIndex + "]");
+				}
+
+				lockWriteBuffer[currWBuffIndex].notifyAll();
+				currWBuffIndex = (currWBuffIndex + 1) % N_WBUFFS;
+			} catch (Exception e) {
+				log.error("Generic error", e);
+				throw e;
+			}
 		}
+
+		stats.addCounter(submissionNode, submissionId,
+				"Bucket:removeWChunk: overall time (ms)",
+				System.currentTimeMillis() - timeStart);
 	}
 
 	/**
@@ -1221,8 +1308,8 @@ public class Bucket {
 	 *            Boolean value for setting the flag with
 	 * @throws IOException
 	 */
-	public synchronized void setFinished(boolean value) throws IOException {
-		isFinished = value;
+	public synchronized void setFinished() throws IOException {
+		isFinished = true;
 		// Combine internal + external buffers before finish
 		try {
 			combineInExBuffers();
@@ -1235,7 +1322,9 @@ public class Bucket {
 			iter = null;
 		}
 		notifyAll();
-		prepareRemoveWChunk();
+
+		if (!isFillingThreadStarted)
+			prepareRemoveWChunk();
 	}
 
 	/**
@@ -1337,7 +1426,7 @@ public class Bucket {
 	 * caches into files the content of a buffer) have finished spilling to disk
 	 * -- calling notify.
 	 */
-	private synchronized void waitForCachers() {
+	private synchronized void waitForCachersToFinish() {
 		numWaitingForCachers++;
 
 		while (numCachers > 0) {
@@ -1435,5 +1524,9 @@ public class Bucket {
 
 	public Map<Long, List<Integer>> getAdditionalChildrenCounts() {
 		return additionalChildrenCounts;
+	}
+
+	public boolean isSorted() {
+		return sort;
 	}
 }
