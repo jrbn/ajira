@@ -81,19 +81,6 @@ public class ChainHandler implements Runnable {
 				return;
 			}
 
-			if (clazz == BucketsLayer.class) {
-				// Check whether there are some counters that should be added to
-				// the ChainExecutor
-				BucketIterator bi = (BucketIterator) itr;
-				Bucket b = bi.getBucket();
-				Map<Long, List<Integer>> counters = b
-						.getAdditionalChildrenCounts();
-				if (counters != null && counters.size() > 0) {
-					// Add them to the ChainExecutor
-					actions.addAndUpdateCounters(counters);
-				}
-			}
-
 			if (log.isDebugEnabled()) {
 				log.debug("Starting chain " + currentChain.getChainId());
 			}
@@ -111,9 +98,10 @@ public class ChainHandler implements Runnable {
 				do {
 					boolean waiting = false;
 					// Allow for an iterator to become "not-ready" again.
-					if (! itr.isReady()) {
+					if (!itr.isReady()) {
 						waiting = true;
-						// In this case, the next nextTuple call will become blocking.
+						// In this case, the next nextTuple call will become
+						// blocking.
 						setStatus(STATUS_WAIT);
 					}
 					eof = !itr.nextTuple();
@@ -125,6 +113,21 @@ public class ChainHandler implements Runnable {
 						itr.getTuple(tuple);
 						actions.output(tuple);
 					} else { // EOF Case
+
+						if (clazz == BucketsLayer.class) {
+							// Check whether there are some counters that should
+							// be added to
+							// the ChainExecutor
+							BucketIterator bi = (BucketIterator) itr;
+							Bucket b = bi.getBucket();
+							Map<Long, List<Integer>> counters = b
+									.getAdditionalChildrenCounts();
+							if (counters != null && counters.size() > 0) {
+								// Add them to the ChainExecutor
+								actions.addAndUpdateCounters(counters);
+							}
+						}
+
 						actions.stopProcess();
 					}
 				} while (!eof && !getSubmissionFailed());
@@ -154,11 +157,11 @@ public class ChainHandler implements Runnable {
 			submissionFailed = true;
 		}
 	}
-	
+
 	public synchronized void stop() {
 		shouldStop = true;
 	}
-	
+
 	@Override
 	public void run() {
 
@@ -187,7 +190,7 @@ public class ChainHandler implements Runnable {
 		}
 
 		while (true) {
-			synchronized(this) {
+			synchronized (this) {
 				if (shouldStop) {
 					setStatus(STATUS_FINISHED);
 					return;

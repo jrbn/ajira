@@ -70,7 +70,6 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	private int transferNodeId;
 	private int transferBucketId;
 	private final boolean localMode;
-	private int childrenToTransfer;
 
 	private static final Logger log = LoggerFactory
 			.getLogger(ChainExecutor.class);
@@ -169,7 +168,6 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		this.chain = chain;
 		this.submissionNode = chain.getSubmissionNode();
 		this.submissionId = chain.getSubmissionId();
-		this.childrenToTransfer = 0;
 
 		this.smallestRuntimeAction = -1;
 		this.stopProcess = false;
@@ -198,6 +196,21 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			actions[currentAction++].startProcess(this);
 		}
 		currentAction = -1;
+
+		if (transferComputation && roots[nActions - 1]) {
+			chain.setRawSize(rawSizes[nActions - 1]);
+			chain.copyTo(supportChain);
+			// supportChain.setTotalChainChildren(childrenToTransfer);
+			supportChain.setTotalChainChildren(0);
+			supportChain.setInputLayer(BucketsLayer.class);
+			supportQuery.setElements(new TInt(transferBucketId), new TInt(
+					transferNodeId));
+			supportChain.setQuery(supportQuery);
+			if (localMode)
+				chainsBuffer.add(supportChain);
+			else
+				net.sendChain(supportChain);
+		}
 	}
 
 	@Override
@@ -230,19 +243,19 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			}
 		}
 
-		if (transferComputation && roots[nActions - 1]) {
-			chain.setRawSize(rawSizes[nActions - 1]);
-			chain.copyTo(supportChain);
-			supportChain.setTotalChainChildren(childrenToTransfer);
-			supportChain.setInputLayer(BucketsLayer.class);
-			supportQuery.setElements(new TInt(transferBucketId), new TInt(
-					transferNodeId));
-			supportChain.setQuery(supportQuery);
-			if (localMode)
-				chainsBuffer.add(supportChain);
-			else
-				net.sendChain(supportChain);
-		}
+		// if (transferComputation && roots[nActions - 1]) {
+		// chain.setRawSize(rawSizes[nActions - 1]);
+		// chain.copyTo(supportChain);
+		// supportChain.setTotalChainChildren(childrenToTransfer);
+		// supportChain.setInputLayer(BucketsLayer.class);
+		// supportQuery.setElements(new TInt(transferBucketId), new TInt(
+		// transferNodeId));
+		// supportChain.setQuery(supportQuery);
+		// if (localMode)
+		// chainsBuffer.add(supportChain);
+		// else
+		// net.sendChain(supportChain);
+		// }
 
 		// Send the termination signal to the node responsible of
 		// the submission
@@ -256,7 +269,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	public boolean isPrincipalBranch() {
 		return roots[currentAction];
 	}
-	
+
 	private long getChainCounter() {
 		return context.getChainCounter(submissionId);
 	}
@@ -274,7 +287,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		}
 
 		if (transferComputation && currentAction == nActions - 1) {
-			childrenToTransfer++;
+			incrementChildren(responsibleChains[currentAction], 0);
 		}
 
 		if (localMode)
@@ -305,15 +318,14 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		chain.setRawSize(rawSizes[currentAction]);
 
 		if (transferComputation && reconnectAt < (nActions - currentAction - 1)) {
-			chain.branch(supportChain, getChainCounter(),
-					reconnectAt);
+			chain.branch(supportChain, getChainCounter(), reconnectAt);
 		} else {
 			long parentChain = 0;
 			if (reconnectAt != -1) {
 				parentChain = responsibleChains[currentAction];
 			}
-			chain.customBranch(supportChain, parentChain,
-					getChainCounter(), reconnectAt);
+			chain.customBranch(supportChain, parentChain, getChainCounter(),
+					reconnectAt);
 			incrementChildren(parentChain, reconnectAt + 1);
 		}
 

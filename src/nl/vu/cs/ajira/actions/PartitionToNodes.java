@@ -94,6 +94,7 @@ public class PartitionToNodes extends Action {
 	private int nPartitions;
 	private int[] bucketIds;
 	private boolean partition;
+	private boolean sentChain;
 
 	private static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
@@ -177,11 +178,26 @@ public class PartitionToNodes extends Action {
 		// Init variables
 		bucketsCache = new Bucket[nPartitions];
 		partitioner = null;
+		sentChain = false;
 	}
 
 	@Override
 	public void process(Tuple inputTuple, ActionContext context,
 			ActionOutput output) throws Exception {
+
+		if (!sentChain) {
+			if (context.isPrincipalBranch()) {
+				for (int i = 1; i < nPartitionsPerNode; i++) {
+					ActionConf c = ActionFactory
+							.getActionConf(ReadFromBucket.class);
+					c.setParamInt(ReadFromBucket.I_BUCKET_ID, bucketIds[i]);
+					c.setParamInt(ReadFromBucket.I_NODE_ID, -1);
+					output.branch(new ActionSequence(c));
+				}
+			}
+			sentChain = true;
+		}
+
 		Bucket b = null;
 		if (partition) {
 			// First partition the data
@@ -217,23 +233,25 @@ public class PartitionToNodes extends Action {
 	public void stopProcess(ActionContext context, ActionOutput output)
 			throws Exception {
 
+		// Send the chains to process the buckets to all the nodes that
+		// will host the buckets
+		if (!sentChain) {
+			if (context.isPrincipalBranch()) {
+				for (int i = 1; i < nPartitionsPerNode; i++) {
+					ActionConf c = ActionFactory
+							.getActionConf(ReadFromBucket.class);
+					c.setParamInt(ReadFromBucket.I_BUCKET_ID, bucketIds[i]);
+					c.setParamInt(ReadFromBucket.I_NODE_ID, -1);
+					output.branch(new ActionSequence(c));
+				}
+			}
+		}
+
 		for (int i = 0; i < nPartitions; ++i) {
 			int nodeNo = i / nPartitionsPerNode;
 			int bucketNo = bucketIds[i % nPartitionsPerNode];
 			context.finishTransfer(nodeNo, bucketNo, shouldSort, sortingFields,
 					bucketsCache[i] != null, tupleFields);
-		}
-
-		// Send the chains to process the buckets to all the nodes that
-		// will host the buckets
-		if (context.isPrincipalBranch()) {
-			for (int i = 1; i < nPartitionsPerNode; i++) {
-				ActionConf c = ActionFactory
-						.getActionConf(ReadFromBucket.class);
-				c.setParamInt(ReadFromBucket.I_BUCKET_ID, bucketIds[i]);
-				c.setParamInt(ReadFromBucket.I_NODE_ID, -1);
-				output.branch(new ActionSequence(c));
-			}
 		}
 
 		bucketsCache = null;

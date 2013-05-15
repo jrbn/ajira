@@ -115,8 +115,7 @@ public class BucketIterator extends TupleIterator {
 	 */
 	@Override
 	public boolean isReady() {
-		return bucket.isFinished()
-				|| (!bucket.isSorted() && tuples.getNElements() > 0);
+		return bucket.isFinished() || (!bucket.isSorted() && bucket.hasData());
 	}
 
 	/**

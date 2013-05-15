@@ -181,6 +181,10 @@ public class Bucket {
 	private final boolean removeWChunkDone[] = new boolean[N_WBUFFS];
 	private final Object lockWriteBuffer[] = new Object[N_WBUFFS];
 	private boolean isFillingThreadStarted;
+	private int waitersForAdditions;
+
+	private boolean hasData;
+	private final Object lockHasData = new Object();
 
 	/**
 	 * This method is used to add a tuple to the in-memory buffer. If the
@@ -222,8 +226,26 @@ public class Bucket {
 				}
 			}
 
-			if (!sort && !isFillingThreadStarted) {
-				prepareRemoveWChunk();
+			if (!sort) {
+				if (!isFillingThreadStarted) {
+					prepareRemoveWChunk();
+				}
+
+				if (waitersForAdditions > 0) {
+					synchronized (this) {
+						notifyAll();
+					}
+				}
+
+				if (notifier != null) {
+					synchronized (this) {
+						if (notifier != null) {
+							notifier.markReady(iter);
+							notifier = null;
+							iter = null;
+						}
+					}
+				}
 			}
 
 			return response;
@@ -319,8 +341,26 @@ public class Bucket {
 				}
 			}
 
-			if (!sort && !isFillingThreadStarted) {
-				prepareRemoveWChunk();
+			if (!sort) {
+				if (!isFillingThreadStarted) {
+					prepareRemoveWChunk();
+				}
+
+				if (waitersForAdditions > 0) {
+					synchronized (this) {
+						notifyAll();
+					}
+				}
+
+				if (notifier != null) {
+					synchronized (this) {
+						if (notifier != null) {
+							notifier.markReady(iter);
+							notifier = null;
+							iter = null;
+						}
+					}
+				}
 			}
 
 			stats.addCounter(submissionNode, submissionId,
@@ -622,6 +662,8 @@ public class Bucket {
 		nBucketReceived = 0;
 		highestSequence = -1;
 		gettingData = false;
+		waitersForAdditions = 0;
+		hasData = false;
 
 		notifier = null;
 		iter = null;
@@ -1042,7 +1084,9 @@ public class Bucket {
 			if (tmpBuffer.getNElements() == 0 && !isBucketFinished) {
 				synchronized (this) {
 					if (!isFinished) {
+						waitersForAdditions++;
 						this.wait();
+						waitersForAdditions--;
 					}
 				}
 				// It became finished while I was executing the previous
@@ -1218,6 +1262,12 @@ public class Bucket {
 				// removeWChunk.
 				removeChunk(writeBuffer[wBuffIndex], false);
 
+				if (!isFinished) {
+					synchronized (lockHasData) {
+						hasData = true;
+					}
+				}
+
 				if (writeBuffer[wBuffIndex].getNElements() == 0) {
 					// LOG-DEBUG
 					if (log.isDebugEnabled()) {
@@ -1294,6 +1344,15 @@ public class Bucket {
 
 				lockWriteBuffer[currWBuffIndex].notifyAll();
 				currWBuffIndex = (currWBuffIndex + 1) % N_WBUFFS;
+
+				if (!isFinished) {
+					synchronized (lockHasData) {
+						if (writeBuffer[currWBuffIndex] == null
+								|| (writeBuffer[currWBuffIndex].getNElements() == 0 && !removeWChunkDone[currWBuffIndex])) {
+							hasData = false;
+						}
+					}
+				}
 			} catch (Exception e) {
 				log.error("Generic error", e);
 				throw e;
@@ -1320,7 +1379,7 @@ public class Bucket {
 		} catch (Throwable e) {
 			log.error("got execption", e);
 		}
-		if (isFinished && notifier != null) {
+		if (notifier != null) {
 			notifier.markReady(iter);
 			notifier = null;
 			iter = null;
@@ -1532,5 +1591,12 @@ public class Bucket {
 
 	public boolean isSorted() {
 		return sort;
+	}
+
+	public boolean hasData() {
+		// return (inBuffer != null && inBuffer.getNElements() > 0)
+		// || (exBuffer != null && exBuffer.getNElements() > 0)
+		// || elementsInCache > 0;
+		return hasData;
 	}
 }
