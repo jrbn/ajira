@@ -68,8 +68,8 @@ public class BucketIterator extends TupleIterator {
 		// If the local buffer is finished, get tuples from the bucket
 		if (tuples.getNElements() == 0) {
 			long time = System.currentTimeMillis();
-
 			tuples.clear();
+
 			bucket.removeWChunk(tuples);
 
 			if (log.isDebugEnabled()) {
@@ -115,7 +115,8 @@ public class BucketIterator extends TupleIterator {
 	 */
 	@Override
 	public boolean isReady() {
-		return bucket.isFinished();
+		return bucket.isFinished()
+				|| (!bucket.isSorted() && tuples.getNElements() > 0);
 	}
 
 	/**
