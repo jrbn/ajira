@@ -29,6 +29,8 @@ public class ChainHandlerManager {
 	private int activeHandlers = 0;
 	private int inactiveHandlers = 0;
 	private int waitHandlers = 0;
+	private int nChainHandlers = 0;
+	private int chainCounter = 0;
 
 	public static ChainHandlerManager getInstance() {
 		return manager;
@@ -39,14 +41,16 @@ public class ChainHandlerManager {
 	}
 
 	public void startChainHandlers(int nChainHandlers) {
+		this.nChainHandlers = nChainHandlers;
 		for (int j = 0; j < nChainHandlers; ++j) {
 			log.debug("Starting Chain Handler " + j + " ...");
 			ChainHandler handler = new ChainHandler(context);
 			Thread thread = new Thread(handler);
-			thread.setName("Chain Handler" + j);
+			thread.setName("Chain Handler " + j);
 			thread.start();
 			chainHandlers.add(handler);
 		}
+		chainCounter += nChainHandlers;
 	}
 
 	public void startSeparateChainHandler(Chain chain) {
@@ -75,30 +79,38 @@ public class ChainHandlerManager {
 		activeHandlers = 0;
 		inactiveHandlers = 0;
 		waitHandlers = 0;
+		int singleChains = 0;
+		ChainHandler[] handlers = chainHandlers.toArray(new ChainHandler[chainHandlers.size()]);
+		ChainHandler firstActive = null;
 
-		for (ChainHandler handler : chainHandlers) {
-			if (handler.getStatus() == ChainHandler.STATUS_INACTIVE) {
+		for (ChainHandler handler : handlers) {
+			if (handler.getStatus() == ChainHandler.STATUS_FINISHED) {
+				chainHandlers.remove(handler);
+			} else if (handler.singleChain) {
+				singleChains++;
+			} else if (handler.getStatus() == ChainHandler.STATUS_INACTIVE) {
 				inactiveHandlers++;
 			} else if (handler.getStatus() == ChainHandler.STATUS_ACTIVE) {
+				if (firstActive == null) {
+					firstActive = handler;
+				}
 				activeHandlers++;
 			} else if (handler.getStatus() == ChainHandler.STATUS_WAIT) {
 				waitHandlers++;
-			} else if (handler.getStatus() == ChainHandler.STATUS_FINISHED) {
-				chainHandlers.remove(handler);
 			}
 		}
 
-		// if all threads are waiting and there are elements in the chain there
-		// is a lock to fix. Start a new chain...
-		if (waitHandlers == chainHandlers.size()
+		// Start a new chain if the number of non-blocked handlers is less than
+		// the initial number of chain handlers.
+		if (inactiveHandlers == 0 && activeHandlers < nChainHandlers
 				&& chainsToProcess.getNElements() > 0) {
 			ChainHandler handler = new ChainHandler(context);
-			Thread thread = new Thread(handler);
-			thread.setName("Chain Handler");
-			thread.start();
+			ThreadPool.createNew(handler, "Chain Handler " + chainCounter++);
 			chainHandlers.add(handler);
+		} else if (activeHandlers > nChainHandlers) {
+			// signal one of the active handlers to stop when its chain is finished.
+			firstActive.stop();
 		}
-
 	}
 
 	public void submissionFailed(int submissionId) {

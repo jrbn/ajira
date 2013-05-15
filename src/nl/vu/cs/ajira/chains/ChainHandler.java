@@ -43,6 +43,8 @@ public class ChainHandler implements Runnable {
 	private final Tuple tuple = TupleFactory.newTuple();
 	private final ChainExecutor actions;
 
+	private boolean shouldStop;
+
 	ChainHandler(Context context) {
 		this.context = context;
 		this.net = context.getNetworkLayer();
@@ -107,7 +109,18 @@ public class ChainHandler implements Runnable {
 				// Process the data on the chain
 				boolean eof;
 				do {
+					boolean waiting = false;
+					// Allow for an iterator to become "not-ready" again.
+					if (! itr.isReady()) {
+						waiting = true;
+						// In this case, the next nextTuple call will become blocking.
+						setStatus(STATUS_WAIT);
+					}
 					eof = !itr.nextTuple();
+					if (waiting) {
+						setStatus(STATUS_ACTIVE);
+						waiting = false;
+					}
 					if (!eof) {
 						itr.getTuple(tuple);
 						actions.output(tuple);
@@ -141,7 +154,11 @@ public class ChainHandler implements Runnable {
 			submissionFailed = true;
 		}
 	}
-
+	
+	public synchronized void stop() {
+		shouldStop = true;
+	}
+	
 	@Override
 	public void run() {
 
@@ -170,6 +187,12 @@ public class ChainHandler implements Runnable {
 		}
 
 		while (true) {
+			synchronized(this) {
+				if (shouldStop) {
+					status = STATUS_FINISHED;
+					return;
+				}
+			}
 			// Get a new chain to process
 			chainsToProcess.remove(currentChain);
 			try {
