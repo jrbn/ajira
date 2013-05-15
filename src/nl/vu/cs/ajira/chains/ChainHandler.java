@@ -166,7 +166,7 @@ public class ChainHandler implements Runnable {
 			if (log.isDebugEnabled()) {
 				log.debug("Single chain handler");
 			}
-			status = STATUS_ACTIVE;
+			setStatus(STATUS_ACTIVE);
 			try {
 				processChain();
 			} catch (Throwable e) {
@@ -182,21 +182,21 @@ public class ChainHandler implements Runnable {
 			if (log.isDebugEnabled()) {
 				log.debug("Single chain handler done");
 			}
-			status = STATUS_FINISHED;
+			setStatus(STATUS_FINISHED);
 			return;
 		}
 
 		while (true) {
 			synchronized(this) {
 				if (shouldStop) {
-					status = STATUS_FINISHED;
+					setStatus(STATUS_FINISHED);
 					return;
 				}
 			}
 			// Get a new chain to process
 			chainsToProcess.remove(currentChain);
 			try {
-				status = STATUS_ACTIVE;
+				setStatus(STATUS_ACTIVE);
 				processChain();
 			} catch (Throwable e) {
 				// Broadcast all the nodes that a chain part of a job has
@@ -208,7 +208,7 @@ public class ChainHandler implements Runnable {
 					log.error("Failed in managing to cancel the job.", e);
 				}
 			} finally {
-				status = STATUS_INACTIVE;
+				setStatus(STATUS_INACTIVE);
 			}
 		}
 	}
