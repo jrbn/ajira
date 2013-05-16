@@ -64,7 +64,6 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 	private final Chain supportChain = new Chain();
 	private final Query supportQuery = new Query();
-	private final Tuple supportTuple = TupleFactory.newTuple();
 
 	private boolean transferComputation = false;
 	private int transferNodeId;
@@ -224,8 +223,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 	@Override
 	public void output(SimpleData... data) throws Exception {
-		supportTuple.set(data);
-		output(supportTuple);
+		output(TupleFactory.newTuple(data));
 	}
 
 	void stopProcess() throws Exception {

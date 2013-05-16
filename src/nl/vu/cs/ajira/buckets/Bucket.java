@@ -1594,6 +1594,8 @@ public class Bucket {
 		// return (inBuffer != null && inBuffer.getNElements() > 0)
 		// || (exBuffer != null && exBuffer.getNElements() > 0)
 		// || elementsInCache > 0;
-		return hasData;
+		synchronized(lockHasData) {
+			return hasData;
+		}
 	}
 }
