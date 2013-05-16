@@ -277,17 +277,20 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	@Override
 	public void branch(ActionSequence actions) throws Exception {
 		chain.setRawSize(rawSizes[currentAction]);
-		chain.branch(supportChain, getChainCounter(), 0);
+
+		if (transferComputation && currentAction == nActions - 1) {
+			incrementChildren(responsibleChains[currentAction], 0);
+			chain.branch(supportChain, getChainCounter(), 0, false);
+		} else {
+			chain.branch(supportChain, getChainCounter(), 0, true);
+		}
+
 		supportChain.setActions(this, actions);
 		if (!stopProcess && currentAction > 0) {
 			cRuntimeBranching[currentAction]++;
 			if (currentAction > smallestRuntimeAction) {
 				smallestRuntimeAction = currentAction;
 			}
-		}
-
-		if (transferComputation && currentAction == nActions - 1) {
-			incrementChildren(responsibleChains[currentAction], 0);
 		}
 
 		if (localMode)

@@ -81,7 +81,79 @@ public class TestTermination {
 		}
 	}
 
-	public static Job createJob(String inDir, String outDir)
+	public static Job createSimpleJob(String inDir, String outDir)
+			throws ActionNotConfiguredException {
+		Job job = new Job();
+		ActionSequence actions = new ActionSequence();
+
+		ActionConf c = ActionFactory.getActionConf(ReadFromFiles.class);
+		c.setParamString(ReadFromFiles.S_PATH, inDir);
+		actions.add(c);
+
+		// A
+		actions.add(ActionFactory.getActionConf(A.class));
+
+		// Partition
+		c = ActionFactory.getActionConf(PartitionToNodes.class);
+		c.setParamStringArray(PartitionToNodes.SA_TUPLE_FIELDS,
+				TString.class.getName());
+		c.setParamInt(PartitionToNodes.I_NPARTITIONS_PER_NODE, 2);
+		actions.add(c);
+
+		// C
+		actions.add(ActionFactory.getActionConf(C.class));
+
+		// Write the results on files
+		c = ActionFactory.getActionConf(WriteToFiles.class);
+		c.setParamString(WriteToFiles.S_PATH, outDir);
+		actions.add(c);
+
+		job.setActions(actions);
+		return job;
+	}
+
+	public static Job createBranchJob(String inDir, String outDir)
+			throws ActionNotConfiguredException {
+		Job job = new Job();
+		ActionSequence actions = new ActionSequence();
+
+		ActionConf c = ActionFactory.getActionConf(ReadFromFiles.class);
+		c.setParamString(ReadFromFiles.S_PATH, inDir);
+		actions.add(c);
+
+		// A
+		actions.add(ActionFactory.getActionConf(A.class));
+
+		// Partition
+		c = ActionFactory.getActionConf(PartitionToNodes.class);
+		c.setParamStringArray(PartitionToNodes.SA_TUPLE_FIELDS,
+				TString.class.getName());
+		c.setParamInt(PartitionToNodes.I_NPARTITIONS_PER_NODE, 2);
+		actions.add(c);
+
+		// C
+		actions.add(ActionFactory.getActionConf(C.class));
+
+		// Partition
+		c = ActionFactory.getActionConf(PartitionToNodes.class);
+		c.setParamStringArray(PartitionToNodes.SA_TUPLE_FIELDS,
+				TString.class.getName());
+		c.setParamInt(PartitionToNodes.I_NPARTITIONS_PER_NODE, 2);
+		actions.add(c);
+
+		// D
+		actions.add(ActionFactory.getActionConf(D.class));
+
+		// Write the results on files
+		c = ActionFactory.getActionConf(WriteToFiles.class);
+		c.setParamString(WriteToFiles.S_PATH, outDir);
+		actions.add(c);
+
+		job.setActions(actions);
+		return job;
+	}
+
+	public static Job createBranchSplitJob(String inDir, String outDir)
 			throws ActionNotConfiguredException {
 		Job job = new Job();
 		ActionSequence actions = new ActionSequence();
@@ -155,16 +227,15 @@ public class TestTermination {
 		// With this command we ensure that we submit the job only once
 		if (ajira.amItheServer()) {
 
-			// Configure the job
 			try {
-				Job job = createJob(args[0], args[1]);
-
-				// Launch it!
-				Submission sub;
-
-				sub = ajira.waitForCompletion(job);
-				// Print output
+				Job job = createSimpleJob(args[0], args[1]);
+				Submission sub = ajira.waitForCompletion(job);
 				sub.printStatistics();
+
+				Job job1 = createBranchJob(args[0], args[1]);
+				Submission sub1 = ajira.waitForCompletion(job1);
+				sub1.printStatistics();
+
 			} catch (Exception e) {
 				System.err.println("Job failed: " + e);
 				e.printStackTrace(System.err);

@@ -77,7 +77,11 @@ public class Utils {
 		return dir.mkdir();
 	}
 
-	public static class BytesComparator implements Comparator<byte[]>, java.io.Serializable {
+	public static class BytesComparator implements Comparator<byte[]>,
+			java.io.Serializable {
+
+		private static final long serialVersionUID = 9027577269342303908L;
+
 		@Override
 		public int compare(byte[] o1, byte[] o2) {
 			for (int i = 0; i < o1.length && i < o2.length; i++) {
@@ -120,7 +124,7 @@ public class Utils {
 		value[start++] = (byte) (number >> 8);
 		value[start] = (byte) (number);
 	}
-	
+
 	private static int numBytesPackedLong(long number) {
 		long max = 32;
 		if (number < 0) {
@@ -134,16 +138,16 @@ public class Utils {
 		}
 		throw new Error("number too large for encodeLong2(): " + number);
 	}
-	
+
 	// Order preserving packed encoding of long values.
 	public static int encodePackedLong(byte[] value, int start, long number) {
 		int nbytes = numBytesPackedLong(number);
-		for (int i = nbytes-1; i > 0; i--) {
-			value[start+i] = (byte) ((int)number & 255);
+		for (int i = nbytes - 1; i > 0; i--) {
+			value[start + i] = (byte) ((int) number & 255);
 			number >>= 8;
 		}
-		
-		value[start] = (byte) (((nbytes-1) << 5) + ((int) number & 31));
+
+		value[start] = (byte) (((nbytes - 1) << 5) + ((int) number & 31));
 		return start + nbytes;
 	}
 
@@ -153,12 +157,12 @@ public class Utils {
 		long retval = (value[start] & 31);
 		for (int i = 1; i < nbytes; i++) {
 			retval <<= 8;
-			retval += (value[start+i] & 255);
+			retval += (value[start + i] & 255);
 		}
 		position[0] = start + nbytes;
 		return retval;
 	}
-	
+
 	public static int decodeInt(byte[] value, int start) {
 		return ((value[start] & 0xFF) << 24)
 				+ ((value[start + 1] & 0xFF) << 16)

@@ -333,6 +333,11 @@ public class Chain implements Writable, InputQuery {
 	}
 
 	public void branch(Chain newChain, long newChainId, int skippingActions) {
+		branch(newChain, newChainId, skippingActions, true);
+	}
+
+	public void branch(Chain newChain, long newChainId, int skippingActions,
+			boolean incrementChild) {
 		if (skippingActions > 0) {
 			int originalSize = bufferSize;
 			// Remove the first n actions
@@ -357,7 +362,8 @@ public class Chain implements Writable, InputQuery {
 		newChain.setTotalChainChildren(0);
 
 		// Update counters of the new chain
-		setTotalChainChildren(getTotalChainChildren() + 1);
+		if (incrementChild)
+			setTotalChainChildren(getTotalChainChildren() + 1);
 	}
 
 	void customBranch(Chain newChain, long parentChainId, long newChainId,
