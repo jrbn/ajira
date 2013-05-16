@@ -3,7 +3,6 @@ package nl.vu.cs.ajira.chains;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -321,12 +320,8 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		if (transferComputation && reconnectAt < (nActions - currentAction - 1)) {
 			chain.branch(supportChain, getChainCounter(), reconnectAt);
 		} else {
-			long parentChain = 0;
-			if (reconnectAt != -1) {
-				parentChain = responsibleChains[currentAction];
-			}
-			chain.customBranch(supportChain, parentChain, getChainCounter(),
-					reconnectAt);
+			long parentChain = chain.customBranch(supportChain,
+					getChainCounter(), reconnectAt);
 			incrementChildren(parentChain, reconnectAt + 1);
 		}
 
@@ -466,39 +461,34 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		long chainId = chain.getChainId();
 		int old_children = chain.getTotalChainChildren();
 		int new_children = old_children;
+		currentAction = 0;
 
 		// Check the old values, just in case...
-		List<Integer> values = newChildren.get(chainId);
-		if (values != null) {
-			Iterator<Integer> itr = values.iterator();
-			while (itr.hasNext()) {
-				int v = itr.next();
-				if (v < 0) {
-					itr.remove();
-					new_children++;
-				}
-			}
-			if (values.size() == 0) {
-				newChildren.remove(chainId);
-			}
-		}
+		// List<Integer> values = newChildren.get(chainId);
+		// if (values != null) {
+		// Iterator<Integer> itr = values.iterator();
+		// while (itr.hasNext()) {
+		// int v = itr.next();
+		// if (v < 0) {
+		// itr.remove();
+		// new_children++;
+		// }
+		// }
+		// if (values.size() == 0) {
+		// newChildren.remove(chainId);
+		// }
+		// }
 
 		for (Map.Entry<Long, List<Integer>> entry : counters.entrySet()) {
 			// Check whether the counter is equivalent to the chainId.
 			for (int i : entry.getValue()) {
 				if (entry.getKey().longValue() == chainId) {
-					if (i < 0) {
-						if (!this.transferComputation) {
-							new_children++;
-						} else {
-							incrementChildren(entry.getKey().longValue(), i);
-						}
+					if (!this.transferComputation) {
+						new_children++;
+					} else if (i >= 0 && i < nActions) {
+						new_children++;
 					} else {
-						if (i - nActions < 0) {
-							new_children++;
-						} else {
-							incrementChildren(entry.getKey().longValue(), i);
-						}
+						incrementChildren(entry.getKey().longValue(), i);
 					}
 				} else {
 					incrementChildren(entry.getKey().longValue(), i);

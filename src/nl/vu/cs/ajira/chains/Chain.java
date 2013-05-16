@@ -366,9 +366,9 @@ public class Chain implements Writable, InputQuery {
 			setTotalChainChildren(getTotalChainChildren() + 1);
 	}
 
-	void customBranch(Chain newChain, long parentChainId, long newChainId,
-			int startFromAction) {
+	long customBranch(Chain newChain, long newChainId, int startFromAction) {
 		int sizeToCopy = CHAIN_RESERVED_SPACE;
+		long parentChainId = 0;
 		if (startFromAction != -1) {
 			sizeToCopy = bufferSize;
 			// Remove the first n actions
@@ -381,6 +381,13 @@ public class Chain implements Writable, InputQuery {
 					sizeToCopy -= 8;
 				}
 			}
+			// Get parentChainId
+			if (sizeToCopy > CHAIN_RESERVED_SPACE) {
+				int tmpSize = sizeToCopy - 4;
+				int tNameAction = Utils.decodeInt(buffer, tmpSize);
+				parentChainId = Utils.decodeLong(buffer, sizeToCopy - 12
+						- tNameAction);
+			}
 		}
 
 		newChain.bufferSize = sizeToCopy;
@@ -390,6 +397,7 @@ public class Chain implements Writable, InputQuery {
 		newChain.setParentChainId(parentChainId);
 		newChain.setChainId(newChainId);
 		newChain.setTotalChainChildren(0);
+		return parentChainId;
 	}
 
 	void getActions(ChainExecutor actions, ActionFactory ap) throws IOException {

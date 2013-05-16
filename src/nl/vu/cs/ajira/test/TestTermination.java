@@ -62,6 +62,7 @@ public class TestTermination {
 		@Override
 		public void process(Tuple tuple, ActionContext context,
 				ActionOutput actionOutput) throws Exception {
+			actionOutput.output(tuple);
 		}
 	}
 
@@ -128,7 +129,7 @@ public class TestTermination {
 		c = ActionFactory.getActionConf(PartitionToNodes.class);
 		c.setParamStringArray(PartitionToNodes.SA_TUPLE_FIELDS,
 				TString.class.getName());
-		c.setParamInt(PartitionToNodes.I_NPARTITIONS_PER_NODE, 4);
+		c.setParamInt(PartitionToNodes.I_NPARTITIONS_PER_NODE, 10);
 		actions.add(c);
 
 		// C
@@ -138,7 +139,7 @@ public class TestTermination {
 		c = ActionFactory.getActionConf(PartitionToNodes.class);
 		c.setParamStringArray(PartitionToNodes.SA_TUPLE_FIELDS,
 				TString.class.getName());
-		c.setParamInt(PartitionToNodes.I_NPARTITIONS_PER_NODE, 2);
+		c.setParamInt(PartitionToNodes.I_NPARTITIONS_PER_NODE, 1);
 		actions.add(c);
 
 		// D
@@ -228,13 +229,13 @@ public class TestTermination {
 		if (ajira.amItheServer()) {
 
 			try {
-				Job job = createDoublePartitioningJob(args[0], args[1]);
+				Job job = createBranchSplitJob(args[0], args[1]);
 				Submission sub = ajira.waitForCompletion(job);
 				sub.printStatistics();
 
-				Job job1 = createDoublePartitioningJob(args[0], args[1]);
-				Submission sub1 = ajira.waitForCompletion(job1);
-				sub1.printStatistics();
+				// Job job1 = createBranchSplitJob(args[0], args[1]);
+				// Submission sub1 = ajira.waitForCompletion(job1);
+				// sub1.printStatistics();
 
 			} catch (Exception e) {
 				System.err.println("Job failed: " + e);
