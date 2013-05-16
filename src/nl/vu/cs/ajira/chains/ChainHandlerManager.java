@@ -21,11 +21,11 @@ public class ChainHandlerManager {
 	private static ChainHandlerManager manager = new ChainHandlerManager();
 
 	private Context context;
-	private WritableContainer<Chain> chainsToProcess = new CheckedConcurrentWritableContainer<Chain>(
+	private final WritableContainer<Chain> chainsToProcess = new CheckedConcurrentWritableContainer<Chain>(
 			Consts.SIZE_BUFFERS_CHAINS_PROCESS);
 
 	// Statistics
-	private Set<ChainHandler> chainHandlers = new ConcurrentHashSet<ChainHandler>();
+	private final Set<ChainHandler> chainHandlers = new ConcurrentHashSet<ChainHandler>();
 	private int activeHandlers = 0;
 	private int inactiveHandlers = 0;
 	private int waitHandlers = 0;
@@ -80,7 +80,8 @@ public class ChainHandlerManager {
 		inactiveHandlers = 0;
 		waitHandlers = 0;
 		int singleChains = 0;
-		ChainHandler[] handlers = chainHandlers.toArray(new ChainHandler[chainHandlers.size()]);
+		ChainHandler[] handlers = chainHandlers
+				.toArray(new ChainHandler[chainHandlers.size()]);
 		ChainHandler firstActive = null;
 
 		for (ChainHandler handler : handlers) {
@@ -108,29 +109,31 @@ public class ChainHandlerManager {
 			ThreadPool.createNew(handler, "Chain Handler " + chainCounter++);
 			chainHandlers.add(handler);
 		} else if (activeHandlers > nChainHandlers) {
-			// signal one of the active handlers to stop when its chain is finished.
+			// signal one of the active handlers to stop when its chain is
+			// finished.
 			firstActive.stop();
 		}
 	}
 
 	public void submissionFailed(int submissionId) {
-	    // Grab a lock on chainsToProcess, so that chain handlers can no longer
-	    // obtain chains.
-	    synchronized(chainsToProcess) {
-	    	// Kill all chains that are waiting for a tuple iterator to become ready.
-	    	context.getChainNotifier().removeWaiters(submissionId);
+		// Grab a lock on chainsToProcess, so that chain handlers can no longer
+		// obtain chains.
+		synchronized (chainsToProcess) {
+			// Kill all chains that are waiting for a tuple iterator to become
+			// ready.
+			context.getChainNotifier().removeWaiters(submissionId);
 
-	    	int nChains = chainsToProcess.getNElements();
-	    	for (int i = 0; i < nChains; i++) {
-	    		Chain ch = new Chain();
-	    		chainsToProcess.remove(ch);
-	    		if (ch.getSubmissionId() != submissionId) {
-	    			chainsToProcess.add(ch);
-	    		}
-	    	}
-	    	for (ChainHandler ch : chainHandlers) {
-	    		ch.submissionFailed(submissionId);
-	    	}
-	    }
+			int nChains = chainsToProcess.getNElements();
+			for (int i = 0; i < nChains; i++) {
+				Chain ch = new Chain();
+				chainsToProcess.remove(ch);
+				if (ch.getSubmissionId() != submissionId) {
+					chainsToProcess.add(ch);
+				}
+			}
+			for (ChainHandler ch : chainHandlers) {
+				ch.submissionFailed(submissionId);
+			}
+		}
 	}
 }

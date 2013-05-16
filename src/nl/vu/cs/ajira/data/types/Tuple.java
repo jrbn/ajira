@@ -132,7 +132,8 @@ public class Tuple {
 		}
 		return false;
 	}
-	
+
+	@Override
 	public boolean equals(Object o) {
 		if (o instanceof Tuple) {
 			return equals((Tuple) o);

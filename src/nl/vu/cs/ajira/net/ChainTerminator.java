@@ -95,28 +95,6 @@ class ChainTerminator implements Runnable {
 				this.exception = null;
 			}
 		}
-
-		/**
-		 * Custom constructor.
-		 * 
-		 * @param nodeId
-		 *            The id of the node.
-		 * @param submissionId
-		 *            The submission id.
-		 * @param generatedRootChains
-		 *            The number of generated root chains.
-		 */
-		public ChainInfo(int nodeId, int submissionId, int generatedRootChains) {
-			this.nodeId = nodeId;
-			this.submissionId = submissionId;
-			this.chainId = -1;
-			this.parentChainId = -2;
-			this.failed = false;
-			this.exception = null;
-			this.nchildren = 0;
-			this.additionalChainCounters = null;
-			this.additionalChainValues = null;
-		}
 	}
 
 	static final Logger log = LoggerFactory.getLogger(ChainTerminator.class);
