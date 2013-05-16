@@ -246,8 +246,12 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 	@Override
 	public boolean remove(K element) {
 
-		if (start == end)
+		if (start == end) {
+			if (log.isDebugEnabled() && nElements > 0) {
+				log.error("Something very wrong: buffer is empty but nElements = " + nElements);
+			}
 			return false;
+		}
 
 		if (enableFieldDelimitors) // Skip the length of the just read
 			// element

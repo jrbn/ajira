@@ -10,6 +10,9 @@ import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.data.types.bytearray.BDataOutput;
 import nl.vu.cs.ajira.storage.Writable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * This class serializes the tuple along with the new information regarding on
  * how it can be sorted (sort order, which fields, etc) --- if are given by
@@ -23,6 +26,8 @@ public class WritableTuple implements Writable {
 	private int nFields;
 	private Tuple tuple;
 	private int[] lengths;
+	
+	private static final Logger log = LoggerFactory.getLogger(WritableTuple.class);
 
 	/**
 	 * Custom constructor.
@@ -80,6 +85,14 @@ public class WritableTuple implements Writable {
 	}
 
 	public void setTuple(Tuple tuple) {
+		if (nFields == 0) {
+			nFields = tuple.getNElements();
+		}
+		/*
+		if (log.isDebugEnabled() && nFields != tuple.getNElements() && nFields != 0) {
+			log.debug("Setting tuple to different number of elements!", new Throwable());
+		}
+		*/
 		this.tuple = tuple;
 	}
 
@@ -110,6 +123,11 @@ public class WritableTuple implements Writable {
 		}
 
 		for (int i = 0; i < tuple.getNElements(); ++i) {
+			/*
+			if (log.isDebugEnabled()) {
+				log.debug("readFrom, tuple.getNElements = " + tuple.getNElements() + ", i = " + i);
+			}
+			*/
 			tuple.get(i).readFrom(input);
 		}
 	}

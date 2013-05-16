@@ -99,6 +99,7 @@ public class ChainHandler implements Runnable {
 					boolean waiting = false;
 					// Allow for an iterator to become "not-ready" again.
 					if (!itr.isReady()) {
+						// log.debug("Start waiting");
 						waiting = true;
 						// In this case, the next nextTuple call will become
 						// blocking.
@@ -106,6 +107,7 @@ public class ChainHandler implements Runnable {
 					}
 					eof = !itr.nextTuple();
 					if (waiting) {
+						// log.debug("Stopped waiting, eof = " + eof);
 						setStatus(STATUS_ACTIVE);
 						waiting = false;
 					}
