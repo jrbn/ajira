@@ -277,7 +277,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		chain.setRawSize(rawSizes[currentAction]);
 
 		if (transferComputation && currentAction == nActions - 1) {
-			incrementChildren(responsibleChains[currentAction], 0);
+			incrementChildren(responsibleChains[currentAction], 1);
 			chain.branch(supportChain, getChainCounter(), 0, false);
 		} else {
 			chain.branch(supportChain, getChainCounter(), 0, true);

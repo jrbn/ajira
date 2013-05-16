@@ -97,7 +97,7 @@ public class TestTermination {
 		c = ActionFactory.getActionConf(PartitionToNodes.class);
 		c.setParamStringArray(PartitionToNodes.SA_TUPLE_FIELDS,
 				TString.class.getName());
-		c.setParamInt(PartitionToNodes.I_NPARTITIONS_PER_NODE, 1);
+		c.setParamInt(PartitionToNodes.I_NPARTITIONS_PER_NODE, 2);
 		actions.add(c);
 
 		// C
@@ -112,7 +112,7 @@ public class TestTermination {
 		return job;
 	}
 
-	public static Job createBranchJob(String inDir, String outDir)
+	public static Job createDoublePartitioningJob(String inDir, String outDir)
 			throws ActionNotConfiguredException {
 		Job job = new Job();
 		ActionSequence actions = new ActionSequence();
@@ -128,7 +128,7 @@ public class TestTermination {
 		c = ActionFactory.getActionConf(PartitionToNodes.class);
 		c.setParamStringArray(PartitionToNodes.SA_TUPLE_FIELDS,
 				TString.class.getName());
-		c.setParamInt(PartitionToNodes.I_NPARTITIONS_PER_NODE, 2);
+		c.setParamInt(PartitionToNodes.I_NPARTITIONS_PER_NODE, 4);
 		actions.add(c);
 
 		// C
@@ -228,11 +228,11 @@ public class TestTermination {
 		if (ajira.amItheServer()) {
 
 			try {
-				Job job = createSimpleJob(args[0], args[1]);
+				Job job = createDoublePartitioningJob(args[0], args[1]);
 				Submission sub = ajira.waitForCompletion(job);
 				sub.printStatistics();
 
-				Job job1 = createSimpleJob(args[0], args[1]);
+				Job job1 = createDoublePartitioningJob(args[0], args[1]);
 				Submission sub1 = ajira.waitForCompletion(job1);
 				sub1.printStatistics();
 
