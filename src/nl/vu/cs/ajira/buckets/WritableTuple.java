@@ -28,6 +28,20 @@ public class WritableTuple implements Writable {
 	private int[] lengths;
 	
 	private static final Logger log = LoggerFactory.getLogger(WritableTuple.class);
+	
+	/**
+	 * Copying constructor.
+	 */
+	public WritableTuple(WritableTuple w) {
+		shouldSort = w.shouldSort;
+		fieldsToSort = w.fieldsToSort;
+		otherFields = w.otherFields;
+		nFields = w.nFields;
+		tuple = TupleFactory.newTuple();
+		if (w.lengths != null) {
+			lengths = new int[w.lengths.length];
+		}
+	}
 
 	/**
 	 * Custom constructor.

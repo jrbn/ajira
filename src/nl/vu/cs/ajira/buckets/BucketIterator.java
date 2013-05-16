@@ -27,7 +27,7 @@ public class BucketIterator extends TupleIterator {
 	Bucket bucket;
 	boolean isUsed;
 	private SimpleData[] signature;
-	private final WritableTuple serializer = new WritableTuple();
+	private WritableTuple serializer = new WritableTuple();
 
 	/**
 	 * Initialization function.
@@ -47,6 +47,9 @@ public class BucketIterator extends TupleIterator {
 		super.init(c, "Buckets");
 		tuples.clear();
 		this.bucket = bucket;
+		serializer = bucket.getSerializer();
+		// Copy serializer of bucket, as it may contain sorting info which affects
+		// serialization.
 		this.isUsed = false;
 		this.signature = new SimpleData[signature.length];
 		if (log.isDebugEnabled()) {
@@ -121,7 +124,7 @@ public class BucketIterator extends TupleIterator {
 		*/
 		} catch(Exception e) {
 			log.error("Bucket = " + bucket.getKey() + ", tuple.nElements = " + tuple.getNElements() + ", signature.length = " + signature.length
-					+ ", tuple = " + Arrays.toString(tuple.getSignature()));
+					+ ", tuple = " + Arrays.toString(tuple.getSignature()), e);
 			throw e;
 		}
 	}
