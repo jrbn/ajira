@@ -97,7 +97,7 @@ public class TestTermination {
 		c = ActionFactory.getActionConf(PartitionToNodes.class);
 		c.setParamStringArray(PartitionToNodes.SA_TUPLE_FIELDS,
 				TString.class.getName());
-		c.setParamInt(PartitionToNodes.I_NPARTITIONS_PER_NODE, 2);
+		c.setParamInt(PartitionToNodes.I_NPARTITIONS_PER_NODE, 1);
 		actions.add(c);
 
 		// C
@@ -232,7 +232,7 @@ public class TestTermination {
 				Submission sub = ajira.waitForCompletion(job);
 				sub.printStatistics();
 
-				Job job1 = createBranchJob(args[0], args[1]);
+				Job job1 = createSimpleJob(args[0], args[1]);
 				Submission sub1 = ajira.waitForCompletion(job1);
 				sub1.printStatistics();
 

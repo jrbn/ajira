@@ -184,7 +184,6 @@ public class PartitionToNodes extends Action {
 	@Override
 	public void process(Tuple inputTuple, ActionContext context,
 			ActionOutput output) throws Exception {
-
 		if (!sentChain) {
 			if (context.isPrincipalBranch()) {
 				for (int i = 1; i < nPartitionsPerNode; i++) {

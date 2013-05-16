@@ -25,7 +25,7 @@ public class BucketIterator extends TupleIterator {
 	Bucket bucket;
 	boolean isUsed;
 	private SimpleData[] signature;
-	private WritableTuple serializer;
+	private final WritableTuple serializer = new WritableTuple();
 
 	/**
 	 * Initialization function.
@@ -50,7 +50,6 @@ public class BucketIterator extends TupleIterator {
 		for (int i = 0; i < signature.length; ++i) {
 			this.signature[i] = DataProvider.get().get(signature[i]);
 		}
-		serializer = bucket.getTupleSerializer();
 	}
 
 	/**

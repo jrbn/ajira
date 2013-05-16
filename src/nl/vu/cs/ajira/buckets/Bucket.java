@@ -1255,7 +1255,8 @@ public class Bucket {
 				// LOG-DEBUG
 				if (log.isDebugEnabled()) {
 					log.debug("fillWriteBufers: fill writeBuffer[" + wBuffIndex
-							+ "], " + "call removeChunk");
+							+ "], of " + writeBuffer[wBuffIndex].getNElements()
+							+ " call removeChunk");
 				}
 
 				// Don't log time of this removeChunk call, time is measured in
@@ -1536,10 +1537,6 @@ public class Bucket {
 
 	public byte[] getSignature() {
 		return signature;
-	}
-
-	public WritableTuple getTupleSerializer() {
-		return serializer;
 	}
 
 	public TupleComparator getComparator() {
