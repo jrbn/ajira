@@ -122,7 +122,7 @@ public class Bucket {
 	private byte[] sortingFields = null;
 	private final TupleComparator comparator = new TupleComparator();
 	private byte[] signature;
-	private WritableTuple serializer = new WritableTuple();
+	private WritableTuple serializer;
 
 	private long elementsInCache = 0;
 
@@ -803,6 +803,7 @@ public class Bucket {
 		// Sync with exBuffer
 		synchronized (lockExBuffer) {
 			if (exBuffer != null) {
+				exBuffer.clear();
 				fb.release(exBuffer);
 				exBuffer = null;
 			}
@@ -814,6 +815,7 @@ public class Bucket {
 		// Sync with InBuffer
 		synchronized (lockInBuffer) {
 			if (inBuffer != null) {
+				inBuffer.clear();
 				fb.release(inBuffer);
 				inBuffer = null;
 			}
@@ -1327,6 +1329,13 @@ public class Bucket {
 					stats.addCounter(submissionNode, submissionId,
 							"Bucket:removeWChunk: overall time (ms)",
 							System.currentTimeMillis() - timeStart);
+					for (int i = 0; i < writeBuffer.length; i++) {
+						if (writeBuffer[i] != null) {
+							writeBuffer[i].clear();
+							fb.release(writeBuffer[i]);
+							writeBuffer[i] = null;
+						}
+					}
 
 					return;
 				}
