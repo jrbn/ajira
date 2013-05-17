@@ -1598,4 +1598,8 @@ public class Bucket {
 			return hasData;
 		}
 	}
+	
+	public WritableTuple getSerializer() {
+		return new WritableTuple(serializer);
+	}
 }
