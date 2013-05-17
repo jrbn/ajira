@@ -50,7 +50,8 @@ public class BucketIterator extends TupleIterator {
 		this.isUsed = false;
 		this.signature = new SimpleData[signature.length];
 		if (log.isDebugEnabled()) {
-			log.debug("initializing iterator for bucket " + bucket.getKey() + ", signature.length = " + signature.length);
+			log.debug("initializing iterator for bucket " + bucket.getKey()
+					+ ", signature.length = " + signature.length);
 		}
 		for (int i = 0; i < signature.length; ++i) {
 			this.signature[i] = DataProvider.get().get(signature[i]);
@@ -108,20 +109,21 @@ public class BucketIterator extends TupleIterator {
 	@Override
 	public void getTuple(Tuple tuple) throws Exception {
 		try {
-		tuple.set(signature);
-		serializer.setTuple(tuple);
-		if (! tuples.remove(serializer)) {
-			log.error("Remove returns false!");
-			throw new Exception("Internal error");
-		}
-		/*
-		if (log.isDebugEnabled()) {
-			log.debug("Tuple is " + tuple.toString());
-		}
-		*/
-		} catch(Exception e) {
-			log.error("Bucket = " + bucket.getKey() + ", tuple.nElements = " + tuple.getNElements() + ", signature.length = " + signature.length
-					+ ", tuple = " + Arrays.toString(tuple.getSignature()));
+			tuple.set(signature);
+			serializer.setTuple(tuple);
+			if (!tuples.remove(serializer)) {
+				log.error("Remove returns false!");
+				throw new Exception("Internal error");
+			}
+			/*
+			 * if (log.isDebugEnabled()) { log.debug("Tuple is " +
+			 * tuple.toString()); }
+			 */
+		} catch (Exception e) {
+			log.error("Bucket = " + bucket.getKey() + ", tuple.nElements = "
+					+ tuple.getNElements() + ", signature.length = "
+					+ signature.length + ", tuple = "
+					+ Arrays.toString(tuple.getSignature()));
 			throw e;
 		}
 	}
