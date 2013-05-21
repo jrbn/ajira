@@ -63,6 +63,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 	private final Chain supportChain = new Chain();
 	private final Query supportQuery = new Query();
+	private final Tuple[] supportTuples = new Tuple[Consts.MAX_N_ACTIONS];
 
 	private boolean transferComputation = false;
 	private int transferNodeId;
@@ -80,6 +81,9 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		this.net = context.getNetworkLayer();
 		this.stats = context.getStatisticsCollector();
 		this.handler = handler;
+		for (int i = 0; i < Consts.MAX_N_ACTIONS; i++) {
+			supportTuples[i] = TupleFactory.newTuple();
+		}
 	}
 
 	public ChainExecutor(ChainHandler handler, Context context, Chain chain) {
@@ -221,7 +225,11 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 	@Override
 	public void output(SimpleData... data) throws Exception {
-		output(TupleFactory.newTuple(data));
+		if (currentAction < nActions - 1) {
+			Tuple t = supportTuples[currentAction];
+			t.set(data);
+			output(t);
+		}
 	}
 
 	void stopProcess() throws Exception {
