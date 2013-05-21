@@ -198,7 +198,6 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		if (transferComputation && roots[nActions - 1]) {
 			chain.setRawSize(rawSizes[nActions - 1]);
 			chain.copyTo(supportChain);
-			// supportChain.setTotalChainChildren(childrenToTransfer);
 			supportChain.setTotalChainChildren(0);
 			supportChain.setInputLayer(BucketsLayer.class);
 			supportQuery.setElements(new TInt(transferBucketId), new TInt(
@@ -317,7 +316,8 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			throws Exception {
 		chain.setRawSize(rawSizes[currentAction]);
 
-		if (transferComputation && reconnectAt < (nActions - currentAction - 1)) {
+		if (transferComputation && reconnectAt != -1
+				&& reconnectAt < (nActions - currentAction - 1)) {
 			chain.branch(supportChain, getChainCounter(), reconnectAt);
 		} else {
 			long parentChain = chain.customBranch(supportChain,

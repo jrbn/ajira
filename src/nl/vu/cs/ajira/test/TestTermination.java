@@ -113,6 +113,50 @@ public class TestTermination {
 		return job;
 	}
 
+	public static Job testSplit(String inDir, String outDir)
+			throws ActionNotConfiguredException {
+		Job job = new Job();
+		ActionSequence actions = new ActionSequence();
+
+		ActionConf c = ActionFactory.getActionConf(ReadFromFiles.class);
+		c.setParamString(ReadFromFiles.S_PATH, inDir);
+		actions.add(c);
+
+		// Split
+		c = ActionFactory.getActionConf(Split.class);
+		ActionSequence l = new ActionSequence();
+		l.add(ActionFactory.getActionConf(E.class));
+		c.setParamWritable(Split.W_SPLIT, l);
+		// c.setParamInt(Split.I_RECONNECT_AFTER_ACTIONS, 2);
+		actions.add(c);
+
+		// A
+		actions.add(ActionFactory.getActionConf(A.class));
+
+		// Partition
+		c = ActionFactory.getActionConf(PartitionToNodes.class);
+		c.setParamStringArray(PartitionToNodes.SA_TUPLE_FIELDS,
+				TString.class.getName());
+		c.setParamInt(PartitionToNodes.I_NPARTITIONS_PER_NODE, 2);
+		actions.add(c);
+
+		actions.add(ActionFactory.getActionConf(C.class));
+
+		c = ActionFactory.getActionConf(PartitionToNodes.class);
+		c.setParamStringArray(PartitionToNodes.SA_TUPLE_FIELDS,
+				TString.class.getName());
+		c.setParamInt(PartitionToNodes.I_NPARTITIONS_PER_NODE, 4);
+		actions.add(c);
+
+		// Write the results on files
+		c = ActionFactory.getActionConf(WriteToFiles.class);
+		c.setParamString(WriteToFiles.S_PATH, outDir);
+		actions.add(c);
+
+		job.setActions(actions);
+		return job;
+	}
+
 	public static Job createDoublePartitioningJob(String inDir, String outDir)
 			throws ActionNotConfiguredException {
 		Job job = new Job();
@@ -229,13 +273,9 @@ public class TestTermination {
 		if (ajira.amItheServer()) {
 
 			try {
-				Job job = createBranchSplitJob(args[0], args[1]);
+				Job job = testSplit(args[0], args[1]);
 				Submission sub = ajira.waitForCompletion(job);
 				sub.printStatistics();
-
-				// Job job1 = createBranchSplitJob(args[0], args[1]);
-				// Submission sub1 = ajira.waitForCompletion(job1);
-				// sub1.printStatistics();
 
 			} catch (Exception e) {
 				System.err.println("Job failed: " + e);
