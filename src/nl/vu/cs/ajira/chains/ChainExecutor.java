@@ -358,10 +358,10 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 	@Override
 	public Bucket startTransfer(int nodeId, int bucketId, boolean sort,
-			byte[] sortingFields, byte[] signature) throws IOException {
+			byte[] sortingFields, byte[] signature, boolean streaming) throws IOException {
 		Bucket temp = context.getBuckets().startTransfer(submissionNode,
 				submissionId, nodeId, bucketId, sort, sortingFields, signature,
-				this);
+				this, streaming);
 
 		try {
 			int children = chain.getTotalChainChildren();

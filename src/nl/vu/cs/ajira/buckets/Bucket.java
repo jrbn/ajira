@@ -379,6 +379,18 @@ public class Bucket {
 		return elementsInCache > 0
 				|| (inBuffer != null && inBuffer.getRawSize() > Consts.MIN_SIZE_TO_SEND);
 	}
+	
+
+	/**
+	 * Method that checks if there are tuples available to be transferred in streaming mode.
+	 * 
+	 * @return true/false whether the bucket has enough bytes to transfer or
+	 *         there are some cached files and we prefer to empty the buffer
+	 */
+	public synchronized boolean availableToTransmitWhileStreaming() {
+		return elementsInCache > 0
+				|| (inBuffer != null && inBuffer.getRawSize() > 0);
+	}
 
 	/**
 	 * Method that is used to cache the content of a buffer into files on disk
@@ -1376,9 +1388,7 @@ public class Bucket {
 
 	/**
 	 * Method to set the bucket's 'finished' flag.
-	 * 
-	 * @param value
-	 *            Boolean value for setting the flag with
+
 	 * @throws IOException
 	 */
 	public synchronized void setFinished() throws IOException {

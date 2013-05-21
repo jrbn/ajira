@@ -21,6 +21,7 @@ public class TupleInfo implements Writable {
 	public long expected;
 	public int nrequests;
 	public long ticket;
+	public boolean streaming;
 
 	/**
 	 * Read the information from an input source.
@@ -35,6 +36,7 @@ public class TupleInfo implements Writable {
 		expected = input.readLong();
 		nrequests = input.readInt();
 		ticket = input.readLong();
+		streaming = input.readBoolean();
 	}
 
 	/**
@@ -50,5 +52,6 @@ public class TupleInfo implements Writable {
 		output.writeLong(expected);
 		output.writeInt(nrequests);
 		output.writeLong(ticket);
+		output.writeBoolean(streaming);
 	}
 }

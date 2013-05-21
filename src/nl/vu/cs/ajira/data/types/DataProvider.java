@@ -17,9 +17,6 @@ public class DataProvider {
 	private static Map<String, Integer> retrieveIds = new HashMap<String, Integer>();
 
 	/**
-	 * 
-	 * @param type
-	 *            is the id of the clazz
 	 * @param clazz
 	 *            is the class whose informations are added at the fields of the
 	 *            DataProvider

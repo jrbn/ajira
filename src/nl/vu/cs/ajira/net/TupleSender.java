@@ -86,10 +86,11 @@ class TupleSender {
 	 * @param nrequest
 	 *            Requests number (how many requests were sent inside this
 	 *            message)
+	 * @param streaming 
 	 */
 	public void handleNewRequest(long localBufferKey, int remoteNodeId,
 			int idSubmission, int idBucket, long ticket, int sequence,
-			int nrequest) {
+			int nrequest, boolean streaming) {
 		final TupleInfo tu = new TupleInfo();
 
 		tu.bucketKey = localBufferKey;
@@ -100,11 +101,13 @@ class TupleSender {
 		tu.sequence = sequence;
 		tu.nrequests = nrequest;
 		tu.expected = -1;
+		tu.streaming = streaming;
 
 		Bucket bucket = buckets.getExistingBucket(tu.bucketKey, false);
 
 		if (bucket != null) {
-			boolean enoughData = bucket.availableToTransmit()
+			boolean enoughData = (streaming && bucket.availableToTransmitWhileStreaming())
+					|| bucket.availableToTransmit()
 					|| !buckets.isActiveTransfer(tu.submissionId,
 							tu.remoteNodeId, tu.bucketId);
 			if (enoughData) {
@@ -153,7 +156,8 @@ class TupleSender {
 					Bucket bucket = buckets.getExistingBucket(info.bucketKey,
 							false);
 					if (bucket != null) {
-						boolean enoughData = bucket.availableToTransmit()
+						boolean enoughData = (info.streaming && bucket.availableToTransmitWhileStreaming())
+								|| bucket.availableToTransmit()
 								|| !buckets.isActiveTransfer(info.submissionId,
 										info.remoteNodeId, info.bucketId);
 

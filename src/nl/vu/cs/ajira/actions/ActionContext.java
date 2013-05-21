@@ -52,7 +52,7 @@ public interface ActionContext {
 			byte[] signature);
 
 	Bucket startTransfer(int nodeId, int bucketId, boolean sort,
-			byte[] sortingFields, byte[] signature) throws IOException;
+			byte[] sortingFields, byte[] signature, boolean streaming) throws IOException;
 
 	void finishTransfer(int nodeId, int bucketId, boolean sort,
 			byte[] sortingFields, boolean decreaseCounter, byte[] signature)

@@ -58,8 +58,9 @@ class TupleRequester {
 	 * 			  Requests number (how many requests
 	 * 			  are sent inside this message)
 	 */
+
 	public void handleNewRequest(int idSubmission, int idBucket,
-			int remoteNodeId, long bufferKey, int sequence, int nrequest) {
+			int remoteNodeId, long bufferKey, int sequence, int nrequest, boolean streaming) {
 		final TupleInfo tu = tuFactory.get();
 		tu.submissionId = idSubmission;
 		tu.bucketId = idBucket;
@@ -67,9 +68,14 @@ class TupleRequester {
 		tu.bucketKey = bufferKey;
 		tu.sequence = sequence;
 		tu.nrequests = nrequest;
+		tu.streaming = streaming;
 
 		// Calculate the expected time
-		tu.expected = System.currentTimeMillis() + Math.min(1000, 2 * nrequest);
+		if (! streaming) {
+			tu.expected = System.currentTimeMillis() + Math.min(1000, 2 * nrequest);
+		} else {
+			tu.expected = System.currentTimeMillis();
+		}
 
 		if (log.isDebugEnabled()) {
 			log.debug("TupleRequester insert, node = " + remoteNodeId
@@ -81,6 +87,11 @@ class TupleRequester {
 		} catch (Throwable e) {
 			log.error("Got exception", e);
 		}
+	}
+	
+	public void handleNewRequest(int idSubmission, int idBucket,
+			int remoteNodeId, long bufferKey, int sequence, int nrequest) {
+		handleNewRequest(idSubmission, idBucket, remoteNodeId, bufferKey, sequence, nrequest, false);
 	}
 
 	/**
@@ -130,6 +141,7 @@ class TupleRequester {
 					msg.writeLong(ticket);
 					msg.writeInt(info.sequence);
 					msg.writeInt(info.nrequests);
+					msg.writeBoolean(info.streaming);
 					net.finishMessage(msg, info.submissionId);
 
 					if (log.isDebugEnabled()) {

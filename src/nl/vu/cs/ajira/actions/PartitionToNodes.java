@@ -78,6 +78,13 @@ public class PartitionToNodes extends Action {
 	 * {@link Partitioner#init(ActionContext, int, byte[])}.
 	 */
 	public static final int BA_PARTITION_FIELDS = 6;
+	
+	/**
+	 * The <code>B_STREAMING</code> parameter is of type <code>boolean</code>, is not
+	 * required, and defaults to <code>false</code>. When set, an effort will be made
+	 * to allow for more speedy data transfers.
+	 */
+	public static final int B_STREAMING = 7;
 
 	static final Logger log = LoggerFactory.getLogger(PartitionToNodes.class);
 
@@ -95,6 +102,7 @@ public class PartitionToNodes extends Action {
 	private int[] bucketIds;
 	private boolean partition;
 	private boolean sentChain;
+	private boolean streaming;
 
 	private static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
@@ -131,6 +139,10 @@ public class PartitionToNodes extends Action {
 				params[B_SORT] = new Boolean(false);
 			}
 
+			if (params[B_STREAMING] == null) {
+				params[B_STREAMING] = new Boolean(false);
+			}
+
 			params[IA_SORTING_FIELDS] = convertToBytes(params[IA_SORTING_FIELDS]);
 			params[BA_PARTITION_FIELDS] = convertToBytes(params[BA_PARTITION_FIELDS]);
 
@@ -152,6 +164,7 @@ public class PartitionToNodes extends Action {
 		conf.registerParameter(SA_TUPLE_FIELDS, "SA_TUPLE_FIELDS", null, true);
 		conf.registerParameter(BA_PARTITION_FIELDS, "BA_PARTITION_FIELDS",
 				null, false);
+		conf.registerParameter(B_STREAMING, "B_STREAMING", false, false);
 
 		conf.registerCustomConfigurator(new ParametersProcessor());
 	}
@@ -159,6 +172,7 @@ public class PartitionToNodes extends Action {
 	@Override
 	public void startProcess(ActionContext context) throws Exception {
 		shouldSort = getParamBoolean(B_SORT);
+		streaming = getParamBoolean(B_STREAMING);
 		sortingFields = getParamByteArray(IA_SORTING_FIELDS);
 
 		sPartitioner = getParamString(S_PARTITIONER);
@@ -213,14 +227,14 @@ public class PartitionToNodes extends Action {
 				int nodeNo = partition / nPartitionsPerNode;
 				int bucketNo = bucketIds[partition % nPartitionsPerNode];
 				b = context.startTransfer(nodeNo, bucketNo, shouldSort,
-						sortingFields, tupleFields);
+						sortingFields, tupleFields, streaming);
 				bucketsCache[partition] = b;
 			}
 		} else {
 			b = bucketsCache[0];
 			if (b == null) {
 				b = context.startTransfer(0, bucketIds[0], shouldSort,
-						sortingFields, tupleFields);
+						sortingFields, tupleFields, streaming);
 				bucketsCache[0] = b;
 			}
 		}

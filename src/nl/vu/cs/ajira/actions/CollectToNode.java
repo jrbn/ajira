@@ -77,7 +77,7 @@ public class CollectToNode extends Action {
 		try {
 			if (bucket == null) {
 				bucket = context.startTransfer(nodeId, bucketId, sort,
-						sortingFields, fields);
+						sortingFields, fields, false);
 			}
 			bucket.add(inputTuple);
 		} catch (Exception e) {

@@ -286,6 +286,7 @@ public class Buckets {
 		int count = 1;
 		Bucket bucket;
 		boolean alerted = false;
+		boolean streaming = false;
 	}
 
 	/**
@@ -316,7 +317,7 @@ public class Buckets {
 	 */
 	public Bucket startTransfer(int submissionNode, int submission, int node,
 			int bucketID, boolean sort, byte[] sortingFields, byte[] signature,
-			ActionContext context) {
+			ActionContext context, boolean streaming) {
 
 		if (node == myPartition || net.getNumberNodes() == 1) {
 			return getOrCreateBucket(submissionNode, submission, bucketID,
@@ -337,6 +338,7 @@ public class Buckets {
 				info.bucket = getOrCreateBucket(submissionNode, submission,
 						context.getNewBucketID(), false, sort, sortingFields,
 						signature);
+				info.streaming = streaming;
 				map.put(key, info);
 			} else {
 				info.count++;
@@ -393,11 +395,13 @@ public class Buckets {
 				// There was no triple in the bucket OR
 				// the remote node has already been alerted
 				message.writeLong(-1); // Flag
+				message.writeBoolean(false);
 			} else {
 				// There will be something in the bucket, alert
 				// the node responsible with this remote-data.
 				info.alerted = true;
 				message.writeLong(info.bucket.getKey()); // Local bucket key
+				message.writeBoolean(info.streaming);
 			}
 		}
 

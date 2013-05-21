@@ -179,10 +179,10 @@ public class NetworkLayer {
 	}
 
 	public void signalsBucketToFetch(int idSubmission, int idBucket,
-			int remoteNodeId, long bufferKey) {
+			int remoteNodeId, long bufferKey, boolean streaming) {
 		// called from upcall thread, so no new thread needed.
 		tupleRequester.handleNewRequest(idSubmission, idBucket, remoteNodeId,
-				bufferKey, 0, 0);
+				bufferKey, 0, 0, streaming);
 	}
 
 	public void signalsBucketToFetch(int idSubmission, int idBucket,
@@ -193,9 +193,9 @@ public class NetworkLayer {
 
 	public void addRequestToSendTuples(long bucketKey, int remoteNodeId,
 			int submissionId, int bucketId, long ticket, int sequence,
-			int nrequest) {
+			int nrequest, boolean streaming) {
 		tupleSender.handleNewRequest(bucketKey, remoteNodeId, submissionId,
-				bucketId, ticket, sequence, nrequest);
+				bucketId, ticket, sequence, nrequest, streaming);
 	}
 
 	/**

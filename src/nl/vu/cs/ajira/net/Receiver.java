@@ -115,6 +115,7 @@ class Receiver implements MessageUpcall {
 				}
 			}
 			long bufferKey = message.readLong();
+			boolean streaming = message.readBoolean();
 			int lSignature = message.readByte();
 			byte[] signature = new byte[lSignature];
 			message.readArray(signature);
@@ -145,7 +146,7 @@ class Receiver implements MessageUpcall {
 				int idRemoteNode = net.getPeerId(message.origin()
 						.ibisIdentifier());
 				net.signalsBucketToFetch(idSubmission, idBucket, idRemoteNode,
-						bufferKey);
+						bufferKey, streaming);
 			} else {
 				endMessage(message, time, idSubmission);
 				bucket.updateCounters(0, true);
@@ -196,10 +197,11 @@ class Receiver implements MessageUpcall {
 			long ticket = message.readLong();
 			int sequence = message.readInt();
 			int nrequest = message.readInt();
+			boolean stream = message.readBoolean();
 			endMessage(message, time, submissionId);
 			net.addRequestToSendTuples(bucketKey,
 					net.getPeerId(message.origin().ibisIdentifier()),
-					submissionId, bucketId, ticket, sequence, nrequest);
+					submissionId, bucketId, ticket, sequence, nrequest, stream);
 			break;
 		case 5: // A bucket to copy to local
 			ticket = message.readLong();
