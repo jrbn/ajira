@@ -194,7 +194,7 @@ public class Tuple {
 	public int hashCode(byte[] fields) {
 		int hashcode = signature[fields[0]].hashCode();
 		for (int i = 1; i < fields.length; ++i) {
-			hashcode += signature[fields[1]].hashCode();
+			hashcode += signature[fields[i]].hashCode();
 		}
 		return hashcode;
 	}
