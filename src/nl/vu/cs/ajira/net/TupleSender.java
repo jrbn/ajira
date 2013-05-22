@@ -60,7 +60,7 @@ class TupleSender {
 				public void run() {
 					sendTuples();
 				}
-			}, "TupleSender");
+			}, "TupleSender " + i);
 		}
 	}
 
@@ -228,6 +228,10 @@ class TupleSender {
 		WritableContainer<WritableTuple> tmpBuffer = bufferFactory.get();
 		tmpBuffer.clear();
 		Bucket bucket = buckets.getExistingBucket(info.bucketKey, false);
+		if (log.isDebugEnabled()) {
+			log.debug("Getting chunk for " + net.getPeerLocation(info.remoteNodeId)
+					+ ", bucket = " + info.bucketKey + ", remote bucket = " + info.bucketId);
+		}
 		bucket.removeWChunk(tmpBuffer);
 		WriteMessage msg = net.getMessageToSend(net
 				.getPeerLocation(info.remoteNodeId));
