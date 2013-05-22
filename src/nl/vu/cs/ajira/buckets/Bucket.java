@@ -1282,24 +1282,28 @@ public class Bucket {
 						// ignore
 					}
 				}
+				
+				removeWChunkDone[wBuffIndex] = false;
+			}
 
-				// LOG-DEBUG
-				if (log.isDebugEnabled()) {
-					log.debug("fillWriteBufers: fill writeBuffer[" + wBuffIndex
-							+ "], of " + writeBuffer[wBuffIndex].getNElements()
-							+ " call removeChunk");
+			// LOG-DEBUG
+			if (log.isDebugEnabled()) {
+				log.debug("fillWriteBufers: fill writeBuffer[" + wBuffIndex
+						+ "], of " + writeBuffer[wBuffIndex].getNElements()
+						+ " call removeChunk");
+			}
+
+			// Don't log time of this removeChunk call, time is measured in
+			// removeWChunk.
+			removeChunkReturned[wBuffIndex] = removeChunk(writeBuffer[wBuffIndex], false);
+
+			if (!isFinished) {
+				synchronized (lockHasData) {
+					hasData = true;
 				}
+			}
 
-				// Don't log time of this removeChunk call, time is measured in
-				// removeWChunk.
-				removeChunkReturned[wBuffIndex] = removeChunk(writeBuffer[wBuffIndex], false);
-
-				if (!isFinished) {
-					synchronized (lockHasData) {
-						hasData = true;
-					}
-				}
-
+			synchronized (lockWriteBuffer[wBuffIndex]) {
 				if (writeBuffer[wBuffIndex].getNElements() == 0) {
 					// LOG-DEBUG
 					if (log.isDebugEnabled()) {
