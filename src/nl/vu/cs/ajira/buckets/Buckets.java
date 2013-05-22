@@ -362,33 +362,34 @@ public class Buckets {
 		long key = getKey(submission, bucketID);
 		TransferInfo info = null;
 
-		// Alert the node that there is an active transfer
-		WriteMessage message = net.getMessageToSend(net.getPeerLocation(node),
-				NetworkLayer.nameMgmtReceiverPort);
-		message.writeByte((byte) 1); // Mark to indicate there are tuples
-		message.writeInt(submissionNode);
-		message.writeInt(submission);
-		message.writeInt(bucketID); // Remote bucket ID
-		message.writeLong(chainId);
-		message.writeLong(parentChainId);
-		message.writeInt(nchildren);
-		message.writeBoolean(responsible);
+		// Alert the node that there is an active transfer.
+		// First grab a lock on the map. Otherwise, possible deadlocks. --Ceriel
+		synchronized(map) {
+			WriteMessage message = net.getMessageToSend(net.getPeerLocation(node),
+					NetworkLayer.nameMgmtReceiverPort);
+			message.writeByte((byte) 1); // Mark to indicate there are tuples
+			message.writeInt(submissionNode);
+			message.writeInt(submission);
+			message.writeInt(bucketID); // Remote bucket ID
+			message.writeLong(chainId);
+			message.writeLong(parentChainId);
+			message.writeInt(nchildren);
+			message.writeBoolean(responsible);
 
-		// Though the remote bucket is not sorted we do send the sortingFunction
-		// along with its params because the recipient might not have created
-		// its local bucket in time, so, instead, this message creates the local
-		// bucket for it -- if necessary
-		message.writeBoolean(sort);
-		if (sort) {
-			if (sortingParams != null && sortingParams.length > 0) {
-				message.writeInt(sortingParams.length);
-				message.writeArray(sortingParams);
-			} else {
-				message.writeInt(0);
+			// Though the remote bucket is not sorted we do send the sortingFunction
+			// along with its params because the recipient might not have created
+			// its local bucket in time, so, instead, this message creates the local
+			// bucket for it -- if necessary
+			message.writeBoolean(sort);
+			if (sort) {
+				if (sortingParams != null && sortingParams.length > 0) {
+					message.writeInt(sortingParams.length);
+					message.writeArray(sortingParams);
+				} else {
+					message.writeInt(0);
+				}
 			}
-		}
 
-		synchronized (map) {
 			info = map.get(key);
 
 			if (info == null || info.alerted) {
@@ -403,31 +404,31 @@ public class Buckets {
 				message.writeLong(info.bucket.getKey()); // Local bucket key
 				message.writeBoolean(info.streaming);
 			}
-		}
 
-		message.writeByte((byte) signature.length);
-		message.writeArray(signature);
+			message.writeByte((byte) signature.length);
+			message.writeArray(signature);
 
-		if (additionalChildren != null && additionalChildren.size() > 0) {
-			int size = additionalChildren.size();
-			if (size > 127) {
-				throw new IOException("Not supported");
-			}
-			message.writeByte((byte) size);
-			for (Map.Entry<Long, List<Integer>> entry : additionalChildren
-					.entrySet()) {
-				message.writeLong(entry.getKey());
-				List<Integer> list = entry.getValue();
-				message.writeInt(list.size());
-				for (int v : list) {
-					message.writeByte((byte) v);
+			if (additionalChildren != null && additionalChildren.size() > 0) {
+				int size = additionalChildren.size();
+				if (size > 127) {
+					throw new IOException("Not supported");
 				}
+				message.writeByte((byte) size);
+				for (Map.Entry<Long, List<Integer>> entry : additionalChildren
+						.entrySet()) {
+					message.writeLong(entry.getKey());
+					List<Integer> list = entry.getValue();
+					message.writeInt(list.size());
+					for (int v : list) {
+						message.writeByte((byte) v);
+					}
+				}
+			} else {
+				message.writeByte((byte) 0);
 			}
-		} else {
-			message.writeByte((byte) 0);
-		}
 
-		net.finishMessage(message, submission);
+			net.finishMessage(message, submission);
+		}
 	}
 
 	/**
