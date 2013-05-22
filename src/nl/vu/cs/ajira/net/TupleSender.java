@@ -3,7 +3,6 @@ package nl.vu.cs.ajira.net;
 import ibis.ipl.WriteMessage;
 import ibis.util.ThreadPool;
 
-import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -204,8 +203,8 @@ class TupleSender {
 			}
 			try {
 				sendTuple(info);
-			} catch (IOException e) {
-				log.warn("Got IOException in tuple sender", e);
+			} catch (Exception e) {
+				log.warn("Got Exception in tuple sender", e);
 			}
 		}
 	}
@@ -217,9 +216,9 @@ class TupleSender {
 	 * 
 	 * @param info
 	 *            Information about the request
-	 * @throws IOException
+	 * @throws Exception
 	 */
-	private void sendTuple(TupleInfo info) throws IOException {
+	private void sendTuple(TupleInfo info) throws Exception {
 
 		if (context.hasCrashed(info.submissionId)) {
 			return;
@@ -229,7 +228,7 @@ class TupleSender {
 		WritableContainer<WritableTuple> tmpBuffer = bufferFactory.get();
 		tmpBuffer.clear();
 		Bucket bucket = buckets.getExistingBucket(info.bucketKey, false);
-		bucket.removeChunk(tmpBuffer);
+		bucket.removeWChunk(tmpBuffer);
 		WriteMessage msg = net.getMessageToSend(net
 				.getPeerLocation(info.remoteNodeId));
 		msg.writeByte((byte) 5);

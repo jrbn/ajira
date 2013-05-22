@@ -11,10 +11,14 @@ public class RemoveDuplicates extends Action {
 
 	private final Tuple tuple = TupleFactory.newTuple();
 	private boolean first = true;
+	private long removed;
+	private long different;
 
 	@Override
 	public void startProcess(ActionContext context) {
 		first = true;
+		removed = 0;
+		different = 0;
 	}
 
 	@Override
@@ -34,9 +38,19 @@ public class RemoveDuplicates extends Action {
 			inputTuple.copyTo(tuple);
 			output.output(inputTuple);
 			first = false;
+			different++;
 		} else if (!inputTuple.equals(tuple)) {
 			inputTuple.copyTo(tuple);
 			output.output(inputTuple);
+			different++;
+		} else {
+			removed++;
 		}
+	}
+	
+	@Override
+	public void stopProcess(ActionContext context, ActionOutput actionOutput) {
+		context.incrCounter("Removed duplicates", removed);
+		context.incrCounter("Different tuples", different);
 	}
 }

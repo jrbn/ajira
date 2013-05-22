@@ -103,6 +103,7 @@ public class PartitionToNodes extends Action {
 	private boolean partition;
 	private boolean sentChain;
 	private boolean streaming;
+	// private long[] partitionCounts;
 
 	private static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
@@ -193,6 +194,7 @@ public class PartitionToNodes extends Action {
 		bucketsCache = new Bucket[nPartitions];
 		partitioner = null;
 		sentChain = false;
+		// partitionCounts = new long[nPartitions];
 	}
 
 	@Override
@@ -230,6 +232,7 @@ public class PartitionToNodes extends Action {
 						sortingFields, tupleFields, streaming);
 				bucketsCache[partition] = b;
 			}
+			// partitionCounts[partition]++;
 		} else {
 			b = bucketsCache[0];
 			if (b == null) {
@@ -265,6 +268,7 @@ public class PartitionToNodes extends Action {
 			int bucketNo = bucketIds[i % nPartitionsPerNode];
 			context.finishTransfer(nodeNo, bucketNo, shouldSort, sortingFields,
 					bucketsCache[i] != null, tupleFields);
+			// context.incrCounter("Partition-" + i, partitionCounts[i]);
 		}
 
 		bucketsCache = null;

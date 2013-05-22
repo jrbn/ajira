@@ -305,7 +305,7 @@ class Receiver implements MessageUpcall {
 							submission.getSubmissionId(),
 							submission.getAssignedBucket());
 
-					isFinished = bucket.removeChunk(tmpBuffer);
+					isFinished = bucket.removeWChunk(tmpBuffer);
 				}
 				// Write a reply to the origin containing the results of this
 				// submission
@@ -366,7 +366,7 @@ class Receiver implements MessageUpcall {
 			bucket = buckets.getExistingBucket(bucketKey, true);
 			WritableContainer<WritableTuple> tmpBuffer = bufferFactory.get();
 			tmpBuffer.clear();
-			boolean isFinished = bucket.removeChunk(tmpBuffer);
+			boolean isFinished = bucket.removeWChunk(tmpBuffer);
 
 			reply = net.getMessageToSend(message.origin().ibisIdentifier(),
 					NetworkLayer.queryReceiverPort);

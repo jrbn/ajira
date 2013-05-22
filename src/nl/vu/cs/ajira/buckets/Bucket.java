@@ -177,6 +177,7 @@ public class Bucket {
 	@SuppressWarnings("unchecked")
 	private final WritableContainer<WritableTuple>[] writeBuffer = (WritableContainer<WritableTuple>[]) java.lang.reflect.Array
 			.newInstance(WritableContainer.class, N_WBUFFS);
+	private final boolean[] removeChunkReturned = new boolean[N_WBUFFS];
 	private int currWBuffIndex = 0;
 	private final boolean removeWChunkDone[] = new boolean[N_WBUFFS];
 	private final Object lockWriteBuffer[] = new Object[N_WBUFFS];
@@ -185,6 +186,8 @@ public class Bucket {
 
 	private boolean hasData;
 	private final Object lockHasData = new Object();
+
+	private long totalNumberOfElements = 0;
 
 	/**
 	 * This method is used to add a tuple to the in-memory buffer. If the
@@ -207,6 +210,7 @@ public class Bucket {
 				inBuffer = fb.get();
 				inBuffer.clear();
 			}
+			totalNumberOfElements++;
 
 			serializer.setTuple(tuple);
 			boolean response = inBuffer.add(serializer);
@@ -271,6 +275,9 @@ public class Bucket {
 	public void addAll(WritableContainer<WritableTuple> newTuplesContainer,
 			boolean isSorted, Factory<WritableContainer<WritableTuple>> factory)
 			throws Exception {
+		synchronized(lockInBuffer) {
+			totalNumberOfElements += newTuplesContainer.getNElements();
+		}
 		// Sync with exBuffer -> cacheBuffer() will be sync'd on Bucket.this,
 		// combineInExBuffers() on both objects.
 		synchronized (lockExBuffer) {
@@ -750,12 +757,10 @@ public class Bucket {
 	public boolean isEmpty() {
 		// Sync with inBuffer
 		synchronized (lockInBuffer) {
-			// Sync with exBuffer
-			synchronized (lockExBuffer) {
-				return elementsInCache == 0
-						&& ((inBuffer == null || inBuffer.getNElements() == 0) && (exBuffer == null || exBuffer
-								.getNElements() == 0));
+			if (log.isDebugEnabled()) {
+				log.debug("isEmpty(): totalNumberOfElements = " + totalNumberOfElements);
 			}
+			return totalNumberOfElements == 0;
 		}
 	}
 
@@ -846,13 +851,14 @@ public class Bucket {
 	 *            The chunk removed from the bucket (globally sorted)
 	 * @return True/false, depending on whether the bucket still contains tuples
 	 *         to remove (buffer + files) or not
+	 * @throws Exception 
 	 */
-	public boolean removeChunk(WritableContainer<WritableTuple> tmpBuffer) {
-		return removeChunk(tmpBuffer, true);
-	}
+//	public boolean removeChunk(WritableContainer<WritableTuple> tmpBuffer) {
+//		return removeChunk(tmpBuffer, true);
+//	}
 
 	private synchronized boolean removeChunkSorted(
-			WritableContainer<WritableTuple> tmpBuffer, boolean logTime) {
+			WritableContainer<WritableTuple> tmpBuffer, boolean logTime) throws Exception {
 		// If some threads still have to finish writing
 		waitForCachersToFinish();
 
@@ -1015,6 +1021,7 @@ public class Bucket {
 
 			} catch (Exception e) {
 				log.error("Error in retrieving the results", e);
+				throw e;
 			}
 
 			long tm = System.currentTimeMillis() - totTime;
@@ -1034,7 +1041,7 @@ public class Bucket {
 	}
 
 	private boolean removeChunkUnsorted(
-			WritableContainer<WritableTuple> tmpBuffer, boolean logTime) {
+			WritableContainer<WritableTuple> tmpBuffer, boolean logTime) throws Exception {
 
 		boolean isBucketFinished = this.isFinished;
 		long totTime = System.currentTimeMillis();
@@ -1109,6 +1116,7 @@ public class Bucket {
 			}
 		} catch (Exception e) {
 			log.error("Error in retrieving the results", e);
+			throw e;
 		}
 
 		long tm = System.currentTimeMillis() - totTime;
@@ -1127,7 +1135,7 @@ public class Bucket {
 	}
 
 	private boolean removeChunk(WritableContainer<WritableTuple> tmpBuffer,
-			boolean logTime) {
+			boolean logTime) throws Exception {
 		if (sort) {
 			return removeChunkSorted(tmpBuffer, logTime);
 		} else {
@@ -1181,6 +1189,8 @@ public class Bucket {
 						// Cache inBuffer and replace it with exBuffer
 						cacheBuffer(inBuffer, isInBufferSorted);
 						isInBufferSorted = isExBufferSorted;
+					} else {
+						isInBufferSorted = false;
 					}
 
 					// Replace inBuffer with exBuffer
@@ -1205,6 +1215,9 @@ public class Bucket {
 					if (!response) {
 						// Cache exBuffer and reset it afterwards
 						cacheBuffer(exBuffer, isExBufferSorted);
+					} else {
+						// Oops, this was missing! --Ceriel
+						isInBufferSorted = false;
 					}
 				}
 
@@ -1238,12 +1251,16 @@ public class Bucket {
 		ThreadPool.createNew(new Runnable() {
 			@Override
 			public void run() {
-				fillWriteBuffers();
+				try {
+					fillWriteBuffers();
+				} catch(Exception e) {
+					log.error("Got exception in fillWriteBuffers!", e);
+				}
 			}
 		}, "FillWriteBuffers");
 	}
 
-	private void fillWriteBuffers() {
+	private void fillWriteBuffers() throws Exception {
 		int wBuffIndex = currWBuffIndex;
 
 		// LOG-DEBUG
@@ -1275,7 +1292,7 @@ public class Bucket {
 
 				// Don't log time of this removeChunk call, time is measured in
 				// removeWChunk.
-				removeChunk(writeBuffer[wBuffIndex], false);
+				removeChunkReturned[wBuffIndex] = removeChunk(writeBuffer[wBuffIndex], false);
 
 				if (!isFinished) {
 					synchronized (lockHasData) {
@@ -1301,11 +1318,11 @@ public class Bucket {
 		}
 	}
 
-	public void removeWChunk(WritableContainer<WritableTuple> tmpBuffer)
-			throws Exception {
+	public boolean removeWChunk(WritableContainer<WritableTuple> tmpBuffer) {
 
 		boolean done = false;
 		long timeStart = System.currentTimeMillis();
+		boolean retval;
 
 		synchronized (lockWriteBuffer[currWBuffIndex]) {
 			if (writeBuffer[currWBuffIndex] == null) {
@@ -1349,13 +1366,17 @@ public class Bucket {
 						}
 					}
 
-					return;
+					return false;
 				}
 
 				if (!tmpBuffer.addAll(writeBuffer[currWBuffIndex])) {
 					log.error("OOPS: something wrong!");
 				}
+				synchronized(inBuffer) {
+					totalNumberOfElements  -= writeBuffer[currWBuffIndex].getNElements();
+				}
 				writeBuffer[currWBuffIndex].clear();
+				retval = removeChunkReturned[currWBuffIndex];
 
 				// LOG-DEBUG
 				if (log.isDebugEnabled()) {
@@ -1377,13 +1398,15 @@ public class Bucket {
 				}
 			} catch (Exception e) {
 				log.error("Generic error", e);
-				throw e;
+				retval = true;
+				// TODO: throw e;
 			}
 		}
 
 		stats.addCounter(submissionNode, submissionId,
 				"Bucket:removeWChunk: overall time (ms)",
 				System.currentTimeMillis() - timeStart);
+		return retval;
 	}
 
 	/**
