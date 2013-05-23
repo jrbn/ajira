@@ -857,7 +857,7 @@ public class Bucket {
 //	}
 
 	private synchronized boolean removeChunkSorted(
-			WritableContainer<WritableTuple> tmpBuffer, boolean logTime) throws Exception {
+			WritableContainer<WritableTuple> tmpBuffer) throws Exception {
 		// If some threads still have to finish writing
 		waitForCachersToFinish();
 
@@ -1026,10 +1026,6 @@ public class Bucket {
 		if (log.isDebugEnabled()) {
 			log.debug("removeChunk: time = " + tm + " ms.");
 		}
-		if (logTime) {
-			stats.addCounter(submissionNode, submissionId,
-					"Bucket:removeChunk: overall time (ms)", tm);
-		}
 
 		return isFinished
 				&& elementsInCache == 0
@@ -1038,7 +1034,7 @@ public class Bucket {
 	}
 
 	private synchronized boolean removeChunkUnsorted(
-			WritableContainer<WritableTuple> tmpBuffer, boolean logTime) throws Exception {
+			WritableContainer<WritableTuple> tmpBuffer) throws Exception {
 
 		// If some threads still have to finish writing
 		waitForCachersToFinish();
@@ -1102,7 +1098,7 @@ public class Bucket {
 				}
 				// It became finished while I was executing the previous
 				// code. Let's try again.
-				return removeChunkUnsorted(tmpBuffer, logTime);
+				return removeChunkUnsorted(tmpBuffer);
 			}
 		} catch (Exception e) {
 			log.error("Error in retrieving the results", e);
@@ -1113,10 +1109,6 @@ public class Bucket {
 		if (log.isDebugEnabled()) {
 			log.debug("removeChunk: time = " + tm + " ms.");
 		}
-		if (logTime) {
-			stats.addCounter(submissionNode, submissionId,
-					"Bucket:removeChunk: overall time (ms)", tm);
-		}
 
 		return isFinished && elementsInCache == 0
 				&& (inBuffer == null || inBuffer.getNElements() == 0)
@@ -1124,12 +1116,11 @@ public class Bucket {
 
 	}
 
-	private boolean removeChunk(WritableContainer<WritableTuple> tmpBuffer,
-			boolean logTime) throws Exception {
+	private boolean removeChunk(WritableContainer<WritableTuple> tmpBuffer) throws Exception {
 		if (sort) {
-			return removeChunkSorted(tmpBuffer, logTime);
+			return removeChunkSorted(tmpBuffer);
 		} else {
-			return removeChunkUnsorted(tmpBuffer, logTime);
+			return removeChunkUnsorted(tmpBuffer);
 		}
 	}
 
@@ -1276,7 +1267,7 @@ public class Bucket {
 
 				// Don't log time of this removeChunk call, time is measured in
 				// removeWChunk.
-				removeChunkReturned[wBuffIndex] = removeChunk(writeBuffer[wBuffIndex], false);
+				removeChunkReturned[wBuffIndex] = removeChunk(writeBuffer[wBuffIndex]);
 				if (log.isDebugEnabled()) {
 					checkTotalElements();
 				}
