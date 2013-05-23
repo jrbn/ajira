@@ -53,39 +53,34 @@ public class TupleComparator extends RawComparator<WritableTuple> {
 	 */
 	@Override
 	public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
-		try {
-			reader1.setBuffer(b1);
-			reader2.setBuffer(b2);
+		reader1.setBuffer(b1);
+		reader2.setBuffer(b2);
 
-			// Compare all the fields one by one
-			int pos_length1 = s1;
-			int pos_length2 = s2;
+		// Compare all the fields one by one
+		int pos_length1 = s1;
+		int pos_length2 = s2;
 
-			s1 += length_positions;
-			s2 += length_positions;
+		s1 += length_positions;
+		s2 += length_positions;
 
-			for (int i = 0; i < comparators.length; ++i) {
-				reader1.setCurrentPosition(pos_length1);
-				int lField1 = reader1.readShort();
-				reader2.setCurrentPosition(pos_length2);
-				int lField2 = reader2.readShort();
+		for (int i = 0; i < comparators.length; ++i) {
+			reader1.setCurrentPosition(pos_length1);
+			int lField1 = reader1.readShort();
+			reader2.setCurrentPosition(pos_length2);
+			int lField2 = reader2.readShort();
 
-				int res;
-				if ((res = comparators[i].compare(b1, s1, lField1, b2, s2,
-						lField2)) != 0) {
-					return res;
-				}
-
-				pos_length1 += 2;
-				pos_length2 += 2;
-				s1 += lField1;
-				s2 += lField2;
+			int res;
+			if ((res = comparators[i].compare(b1, s1, lField1, b2, s2,
+					lField2)) != 0) {
+				return res;
 			}
 
-			return 0;
-		} catch (Exception e) {
-			log.error("Failed comparison", e);
-			return 0;
+			pos_length1 += 2;
+			pos_length2 += 2;
+			s1 += lField1;
+			s2 += lField2;
 		}
+
+		return 0;
 	}
 }
