@@ -212,7 +212,7 @@ public class Bucket {
 		if (response) {
 			isInBufferSorted = inBuffer.getNElements() < 2;
 		} else {
-			cacheBuffer(inBuffer, isInBufferSorted);
+			cacheBuffer(inBuffer, isInBufferSorted, fb);
 			inBuffer = fb.get();
 			inBuffer.clear();
 			response = inBuffer.add(serializer);
@@ -417,7 +417,7 @@ public class Bucket {
 			final Factory<WritableContainer<WritableTuple>> fb)
 
 	throws IOException {
-
+		final Throwable ex = log.isDebugEnabled() ? new Throwable() : null;
 		if (buffer.getNElements() == 0) {
 			buffer.clear();
 			fb.release(buffer);
@@ -494,8 +494,11 @@ public class Bucket {
 
 								sortedCacheFiles.put(rawValue, meta);
 								minimumSortedList.add(rawValue);
-							} catch (Exception e) {
+							} catch (Throwable e) {
 								log.error("Error", e);
+								if (ex != null) {
+									log.error("Call came from ", ex);
+								}
 							}
 
 							if (sortedCacheFiles.size() > 8) {
@@ -1013,9 +1016,12 @@ public class Bucket {
 				&& (sortedCacheFiles == null || minimumSortedList.size() == 0);
 	}
 
-	private boolean removeChunkUnsorted(
+	private synchronized boolean removeChunkUnsorted(
 			WritableContainer<WritableTuple> tmpBuffer, boolean logTime) throws Exception {
 
+		// If some threads still have to finish writing
+		waitForCachersToFinish();
+		
 		boolean isBucketFinished = this.isFinished;
 		long totTime = System.currentTimeMillis();
 
@@ -1053,18 +1059,16 @@ public class Bucket {
 			// inBuffer, or exBuffer, but then we must be sure they are not
 			// being cached.
 			if (tmpBuffer.getNElements() == 0) {
-				synchronized (this) {
-					if (inBuffer != null) {
-						if (tmpBuffer.addAll(inBuffer)) {
-							inBuffer.clear();
-						}
+				if (inBuffer != null) {
+					if (tmpBuffer.addAll(inBuffer)) {
+						inBuffer.clear();
+					}
 
-						// Ok, now we try also exBuffer...
-						if (tmpBuffer.getNElements() == 0) {
-							if (exBuffer != null) {
-								if (tmpBuffer.addAll(exBuffer)) {
-									exBuffer.clear();
-								}
+					// Ok, now we try also exBuffer...
+					if (tmpBuffer.getNElements() == 0) {
+						if (exBuffer != null) {
+							if (tmpBuffer.addAll(exBuffer)) {
+								exBuffer.clear();
 							}
 						}
 					}
@@ -1074,12 +1078,10 @@ public class Bucket {
 			// There was nothing available. Now we do not have any choice than
 			// wait.
 			if (tmpBuffer.getNElements() == 0 && !isBucketFinished) {
-				synchronized (this) {
-					if (!isFinished) {
-						waitersForAdditions++;
-						this.wait();
-						waitersForAdditions--;
-					}
+				if (!isFinished) {
+					waitersForAdditions++;
+					this.wait();
+					waitersForAdditions--;
 				}
 				// It became finished while I was executing the previous
 				// code. Let's try again.
@@ -1247,28 +1249,25 @@ public class Bucket {
 						// ignore
 					}
 				}
-				
-				removeWChunkDone[wBuffIndex] = false;
-			}
 
-			// LOG-DEBUG
-			if (log.isDebugEnabled()) {
-				log.debug("fillWriteBufers: fill writeBuffer[" + wBuffIndex
-						+ "], of " + writeBuffer[wBuffIndex].getNElements()
-						+ " call removeChunk");
-			}
-
-			// Don't log time of this removeChunk call, time is measured in
-			// removeWChunk.
-			removeChunkReturned[wBuffIndex] = removeChunk(writeBuffer[wBuffIndex], false);
-
-			if (!isFinished) {
-				synchronized (lockHasData) {
-					hasData = true;
+				// LOG-DEBUG
+				if (log.isDebugEnabled()) {
+					log.debug("fillWriteBufers: fill writeBuffer[" + wBuffIndex
+							+ "], of " + writeBuffer[wBuffIndex].getNElements()
+							+ " call removeChunk");
 				}
-			}
 
-			synchronized (lockWriteBuffer[wBuffIndex]) {
+				// Don't log time of this removeChunk call, time is measured in
+				// removeWChunk.
+				removeChunkReturned[wBuffIndex] = removeChunk(writeBuffer[wBuffIndex], false);
+
+				if (!isFinished) {
+					synchronized (lockHasData) {
+						hasData = true;
+					}
+				}
+				
+				lockWriteBuffer[wBuffIndex].notifyAll();
 				if (writeBuffer[wBuffIndex].getNElements() == 0) {
 					// LOG-DEBUG
 					if (log.isDebugEnabled()) {
@@ -1277,11 +1276,9 @@ public class Bucket {
 					}
 
 					removeWChunkDone[wBuffIndex] = true;
-					lockWriteBuffer[wBuffIndex].notifyAll();
 					return;
 				}
 
-				lockWriteBuffer[wBuffIndex].notifyAll();
 				wBuffIndex = (wBuffIndex + 1) % N_WBUFFS;
 			}
 		}
