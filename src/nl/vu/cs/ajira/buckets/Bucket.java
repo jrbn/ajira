@@ -230,22 +230,19 @@ public class Bucket {
 			}
 
 			if (waitersForAdditions > 0) {
-				synchronized (this) {
-					notifyAll();
-				}
+				notifyAll();
 			}
 
 			if (notifier != null) {
-				synchronized (this) {
-					if (notifier != null) {
-						notifier.markReady(iter);
-						notifier = null;
-						iter = null;
-					}
-				}
+				notifier.markReady(iter);
+				notifier = null;
+				iter = null;
 			}
 		}
 
+		if (log.isDebugEnabled()) {
+			checkTotalElements();
+		}
 		return response;
 	}
 
@@ -343,26 +340,23 @@ public class Bucket {
 			}
 
 			if (waitersForAdditions > 0) {
-				synchronized (this) {
-					notifyAll();
-				}
+				notifyAll();
 			}
 
 			if (notifier != null) {
-				synchronized (this) {
-					if (notifier != null) {
-						notifier.markReady(iter);
-						notifier = null;
-						iter = null;
-					}
-				}
+				notifier.markReady(iter);
+				notifier = null;
+				iter = null;
 			}
 		}
-
+		
+		if (log.isDebugEnabled()) {
+			checkTotalElements();
+		}
+		
 		stats.addCounter(submissionNode, submissionId,
 				"Bucket:addAll: overall time (ms)",
 				System.currentTimeMillis() - time);
-
 	}
 
 	/**
@@ -417,12 +411,13 @@ public class Bucket {
 			final Factory<WritableContainer<WritableTuple>> fb)
 
 	throws IOException {
-		final Throwable ex = log.isDebugEnabled() ? new Throwable() : null;
 		if (buffer.getNElements() == 0) {
 			buffer.clear();
 			fb.release(buffer);
 			return;
 		}
+		
+		final Throwable ex = log.isDebugEnabled() ? new Throwable() : null;
 
 		synchronized (this) {
 			elementsInCache += buffer.getNElements();
@@ -482,7 +477,7 @@ public class Bucket {
 								meta.filename = cacheFile.getAbsolutePath();
 								meta.stream = is;
 								meta.nElements = buffer.getNElements() - 1;
-								meta.lastElement = buffer.removeLastElement();
+								meta.lastElement = buffer.getLastElement();
 								if (log.isDebugEnabled()) {
 									log.debug("Size of first element is "
 											+ length
@@ -740,9 +735,35 @@ public class Bucket {
 		}
 	}
 
+	private synchronized void checkTotalElements() {
+		long elts = 0;
+		if (inBuffer != null) {
+			elts += inBuffer.getNElements();
+		}
+		if  (exBuffer != null) {
+			elts += exBuffer.getNElements();
+		}
+		for (int i = 0; i < N_WBUFFS; i++) {
+			if (writeBuffer[i] != null) {
+				elts += writeBuffer[i].getNElements();
+			}
+		}
+		elts += elementsInCache;
+		if (minimumSortedList.size() > sortedCacheFiles.size()) {
+			elts++;
+		}
+		if (elts != totalNumberOfElements) {
+			log.error("Error in totalNumberOfElements = " + totalNumberOfElements + ", should be " + elts, new Throwable());
+		}
+		if (elementsInCache < 0) {
+			log.error("ElementsInCache = " + elementsInCache, new Throwable());
+		}
+	}
+	
 	public synchronized boolean isEmpty() {
 		if (log.isDebugEnabled()) {
-			log.debug("isEmpty(): totalNumberOfElements = " + totalNumberOfElements);
+			log.debug("isEmpty() on bucket " + key + ": totalNumberOfElements = " + totalNumberOfElements);
+			checkTotalElements();
 		}
 		return totalNumberOfElements == 0;
 
@@ -1030,10 +1051,8 @@ public class Bucket {
 				long time = System.currentTimeMillis();
 				File fi = null;
 
-				synchronized (this) {
-					if (cacheFiles.size() > 0) {
-						fi = cacheFiles.remove(0);
-					}
+				if (cacheFiles.size() > 0) {
+					fi = cacheFiles.remove(0);
 				}
 
 				if (fi != null) {
@@ -1047,14 +1066,12 @@ public class Bucket {
 					stats.addCounter(submissionNode, submissionId,
 							"Bucket:removeChunk: Bytes read from cache",
 							tmpBuffer.getRawSize());
-					synchronized (this) {
-						elementsInCache -= tmpBuffer.getNElements();
-					}
+					elementsInCache -= tmpBuffer.getNElements();
 					di.close();
 					fi.delete();
 				}
 			}
-
+			
 			// Let's see if we can also get the data either from the
 			// inBuffer, or exBuffer, but then we must be sure they are not
 			// being cached.
@@ -1260,7 +1277,9 @@ public class Bucket {
 				// Don't log time of this removeChunk call, time is measured in
 				// removeWChunk.
 				removeChunkReturned[wBuffIndex] = removeChunk(writeBuffer[wBuffIndex], false);
-
+				if (log.isDebugEnabled()) {
+					checkTotalElements();
+				}
 				if (!isFinished) {
 					synchronized (lockHasData) {
 						hasData = true;
@@ -1306,7 +1325,7 @@ public class Bucket {
 				try {
 					lockWriteBuffer[currWBuffIndex].wait();
 				} catch (InterruptedException e) {
-					e.printStackTrace();
+					// ignore
 				}
 			}
 
@@ -1338,10 +1357,10 @@ public class Bucket {
 				if (!tmpBuffer.addAll(writeBuffer[currWBuffIndex])) {
 					log.error("OOPS: something wrong!");
 				}
-				synchronized(inBuffer) {
+				synchronized(this) {
 					totalNumberOfElements -= writeBuffer[currWBuffIndex].getNElements();
+					writeBuffer[currWBuffIndex].clear();
 				}
-				writeBuffer[currWBuffIndex].clear();
 				retval = removeChunkReturned[currWBuffIndex];
 
 				// LOG-DEBUG
@@ -1369,6 +1388,10 @@ public class Bucket {
 			}
 		}
 
+		if (log.isDebugEnabled()) {
+			checkTotalElements();
+		}
+		
 		stats.addCounter(submissionNode, submissionId,
 				"Bucket:removeWChunk: overall time (ms)",
 				System.currentTimeMillis() - timeStart);

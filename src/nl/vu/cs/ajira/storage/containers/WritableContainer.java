@@ -291,7 +291,7 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 		return v;
 	}
 
-	public byte[] removeLastElement() {
+	public byte[] getLastElement() {
 		if (pointerLastElement < 0) {
 			// Not available.
 			return null;
