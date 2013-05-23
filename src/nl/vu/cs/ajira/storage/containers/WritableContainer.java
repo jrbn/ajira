@@ -120,7 +120,7 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 
 	/**
 	 * Writes in the output the number of elements, if the delimiters are
-	 * enabled and the elments of the buffer.
+	 * enabled and the elements of the buffer.
 	 */
 	@Override
 	public void writeTo(DataOutput output) throws IOException {
@@ -194,9 +194,7 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 
 	@Override
 	public boolean addAll(WritableContainer<K> buffer) {
-
 		try {
-
 			if (enableFieldDelimitors != buffer.enableFieldDelimitors
 					&& nElements > 0) {
 				throw new UnsupportedOperationException(
