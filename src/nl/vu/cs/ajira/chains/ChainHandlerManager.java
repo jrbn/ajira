@@ -31,6 +31,7 @@ public class ChainHandlerManager {
 	private int waitHandlers = 0;
 	private int nChainHandlers = 0;
 	private int chainCounter = 0;
+	private int singleChains = 0;
 
 	public static ChainHandlerManager getInstance() {
 		return manager;
@@ -74,12 +75,16 @@ public class ChainHandlerManager {
 	public int getWaitChainHandlers() {
 		return waitHandlers;
 	}
+	
+	public int getSingleChains() {
+		return singleChains;
+	}
 
 	public void doHouseKeeping() {
 		activeHandlers = 0;
 		inactiveHandlers = 0;
 		waitHandlers = 0;
-		int singleChains = 0;
+		singleChains = 0;
 		ChainHandler[] handlers = chainHandlers
 				.toArray(new ChainHandler[chainHandlers.size()]);
 		ChainHandler firstActive = null;
