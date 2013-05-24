@@ -1,6 +1,6 @@
 package nl.vu.cs.ajira.data.types.bytearray;
 
-import nl.vu.cs.ajira.mgmt.MemoryManager;
+// import nl.vu.cs.ajira.mgmt.MemoryManager;
 import nl.vu.cs.ajira.storage.RawComparator;
 
 public class ByteArray {
@@ -166,11 +166,16 @@ public class ByteArray {
 			remaining = len - currentSize;
 		}
 		if (len > buffer.length) {
+			/*
+			 * Commented out code below. It breaks the assumption that you can always
+			 * copy a WritableContainer into another empty WritableContainer.
 			int allowedLength = MemoryManager.getInstance().canAllocate(len);
 			if (allowedLength < buffer.length * 1.20) { // ?????? --Ceriel
 				return false;
 			}
 			growBuffer(allowedLength);
+			*/
+			growBuffer(len);
 		}
 		return true;
 	}
