@@ -26,9 +26,10 @@ public class WritableTuple implements Writable {
 	private int nFields;
 	private Tuple tuple;
 	private int[] lengths;
-	
-	private static final Logger log = LoggerFactory.getLogger(WritableTuple.class);
-	
+
+	protected static final Logger log = LoggerFactory
+			.getLogger(WritableTuple.class);
+
 	/**
 	 * Copying constructor.
 	 */
@@ -103,10 +104,11 @@ public class WritableTuple implements Writable {
 			nFields = tuple.getNElements();
 		}
 		/*
-		if (log.isDebugEnabled() && nFields != tuple.getNElements() && nFields != 0) {
-			log.debug("Setting tuple to different number of elements!", new Throwable());
-		}
-		*/
+		 * if (log.isDebugEnabled() && nFields != tuple.getNElements() &&
+		 * nFields != 0) {
+		 * log.debug("Setting tuple to different number of elements!", new
+		 * Throwable()); }
+		 */
 		this.tuple = tuple;
 	}
 
@@ -138,10 +140,10 @@ public class WritableTuple implements Writable {
 
 		for (int i = 0; i < tuple.getNElements(); ++i) {
 			/*
-			if (log.isDebugEnabled()) {
-				log.debug("readFrom, tuple.getNElements = " + tuple.getNElements() + ", i = " + i);
-			}
-			*/
+			 * if (log.isDebugEnabled()) {
+			 * log.debug("readFrom, tuple.getNElements = " +
+			 * tuple.getNElements() + ", i = " + i); }
+			 */
 			tuple.get(i).readFrom(input);
 		}
 	}

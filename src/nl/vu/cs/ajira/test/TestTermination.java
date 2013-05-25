@@ -8,6 +8,7 @@ import nl.vu.cs.ajira.actions.ActionFactory;
 import nl.vu.cs.ajira.actions.ActionOutput;
 import nl.vu.cs.ajira.actions.ActionSequence;
 import nl.vu.cs.ajira.actions.Branch;
+import nl.vu.cs.ajira.actions.CollectToNode;
 import nl.vu.cs.ajira.actions.PartitionToNodes;
 import nl.vu.cs.ajira.actions.ReadFromFiles;
 import nl.vu.cs.ajira.actions.Split;
@@ -80,6 +81,35 @@ public class TestTermination {
 		public void process(Tuple tuple, ActionContext context,
 				ActionOutput actionOutput) throws Exception {
 		}
+	}
+
+	public static Job createCollectToNodeJob(String inDir, String outDir)
+			throws ActionNotConfiguredException {
+		Job job = new Job();
+		ActionSequence actions = new ActionSequence();
+
+		ActionConf c = ActionFactory.getActionConf(ReadFromFiles.class);
+		c.setParamString(ReadFromFiles.S_PATH, inDir);
+		actions.add(c);
+
+		// A
+		actions.add(ActionFactory.getActionConf(A.class));
+
+		c = ActionFactory.getActionConf(CollectToNode.class);
+		c.setParamStringArray(CollectToNode.SA_TUPLE_FIELDS,
+				TString.class.getName());
+		actions.add(c);
+
+		// C
+		actions.add(ActionFactory.getActionConf(C.class));
+
+		// Write the results on files
+		c = ActionFactory.getActionConf(WriteToFiles.class);
+		c.setParamString(WriteToFiles.S_PATH, outDir);
+		actions.add(c);
+
+		job.setActions(actions);
+		return job;
 	}
 
 	public static Job createSimpleJob(String inDir, String outDir)
@@ -273,7 +303,7 @@ public class TestTermination {
 		if (ajira.amItheServer()) {
 
 			try {
-				Job job = testSplit(args[0], args[1]);
+				Job job = createCollectToNodeJob(args[0], args[1]);
 				Submission sub = ajira.waitForCompletion(job);
 				sub.printStatistics();
 

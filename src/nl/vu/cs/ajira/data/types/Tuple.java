@@ -13,8 +13,8 @@ import org.slf4j.LoggerFactory;
  * 
  */
 public class Tuple {
-	
-	private static final Logger log = LoggerFactory.getLogger(Tuple.class);
+
+	protected static final Logger log = LoggerFactory.getLogger(Tuple.class);
 
 	protected SimpleData[] signature;
 	protected int nElements = 0;
@@ -63,10 +63,10 @@ public class Tuple {
 	public void set(SimpleData... elements) {
 		if (elements != null) {
 			/*
-			if (log.isDebugEnabled() && signature != null && elements.length != signature.length) {
-				log.debug("Changing elements of tuple to " + elements.length, new Throwable());
-			}
-			*/
+			 * if (log.isDebugEnabled() && signature != null && elements.length
+			 * != signature.length) { log.debug("Changing elements of tuple to "
+			 * + elements.length, new Throwable()); }
+			 */
 			signature = elements;
 			nElements = elements.length;
 		} else {
@@ -107,10 +107,10 @@ public class Tuple {
 		tuple.nElements = nElements;
 		if (tuple.signature == null || tuple.signature.length != nElements) {
 			/*
-			if (log.isDebugEnabled() && tuple.signature != null) {
-				log.debug("Changing elements of tuple to " + nElements, new Throwable());
-			}
-			*/
+			 * if (log.isDebugEnabled() && tuple.signature != null) {
+			 * log.debug("Changing elements of tuple to " + nElements, new
+			 * Throwable()); }
+			 */
 			tuple.signature = new SimpleData[nElements];
 		}
 		for (int i = 0; i < nElements; ++i) {

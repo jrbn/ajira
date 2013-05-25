@@ -79,7 +79,7 @@ public class ChainHandlerManager {
 		activeHandlers = 0;
 		inactiveHandlers = 0;
 		waitHandlers = 0;
-		int singleChains = 0;
+		// int singleChains = 0;
 		ChainHandler[] handlers = chainHandlers
 				.toArray(new ChainHandler[chainHandlers.size()]);
 		ChainHandler firstActive = null;
@@ -88,7 +88,7 @@ public class ChainHandlerManager {
 			if (handler.getStatus() == ChainHandler.STATUS_FINISHED) {
 				chainHandlers.remove(handler);
 			} else if (handler.singleChain) {
-				singleChains++;
+				// singleChains++;
 			} else if (handler.getStatus() == ChainHandler.STATUS_INACTIVE) {
 				inactiveHandlers++;
 			} else if (handler.getStatus() == ChainHandler.STATUS_ACTIVE) {
