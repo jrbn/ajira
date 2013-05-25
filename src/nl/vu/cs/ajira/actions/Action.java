@@ -26,11 +26,11 @@ import org.slf4j.LoggerFactory;
  * {@link #registerActionParameters(ActionConf)},
  * {@link #startProcess(ActionContext)}, and
  * {@link #stopProcess(ActionContext, ActionOutput)}. There is no default
- * implementation for {@link #process(Tuple, ActionContext, ActionOutput)};
- * An action should do something, after all.
+ * implementation for {@link #process(Tuple, ActionContext, ActionOutput)}; An
+ * action should do something, after all.
  * <p>
- * Ajira provides various actions, but actions can be user-specified as
- * well, see the {@link nl.vu.cs.ajira.examples} package.
+ * Ajira provides various actions, but actions can be user-specified as well,
+ * see the {@link nl.vu.cs.ajira.examples} package.
  */
 public abstract class Action {
 
@@ -44,8 +44,9 @@ public abstract class Action {
 
 	/**
 	 * Stores the parameter specifications in the {@link ActionConf} object, by
-	 * calling the {@link ActionConf#registerParameter(int, String, Object, boolean)}
-	 * method for each configuration parameter. Also, a custom parameter configurator
+	 * calling the
+	 * {@link ActionConf#registerParameter(int, String, Object, boolean)} method
+	 * for each configuration parameter. Also, a custom parameter configurator
 	 * can be installed, by calling
 	 * {@link ActionConf#registerCustomConfigurator(ActionConf.Configurator)}.
 	 * 
@@ -68,8 +69,9 @@ public abstract class Action {
 	}
 
 	/**
-	 * This method is called once for each input tuple (specified by the first parameter).
-	 * Output tuples are passed on to the {@link ActionOutput#output(Tuple)} or the
+	 * This method is called once for each input tuple (specified by the first
+	 * parameter). Output tuples are passed on to the
+	 * {@link ActionOutput#output(Tuple)} or the
 	 * {@link ActionOutput#output(nl.vu.cs.ajira.data.types.SimpleData...)}
 	 * method.
 	 * 

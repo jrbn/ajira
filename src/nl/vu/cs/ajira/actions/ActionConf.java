@@ -20,18 +20,19 @@ import org.slf4j.LoggerFactory;
 
 /**
  * An <code>ActionConf</code> object describes an action and its configuration
- * parameters. Usually, an Ajira {@link nl.vu.cs.ajira.submissions.Job Job} consists
- * of a list of <code>ActionConf</code> objects.
+ * parameters. Usually, an Ajira {@link nl.vu.cs.ajira.submissions.Job Job}
+ * consists of a list of <code>ActionConf</code> objects.
  * <p>
- * An <code>ActionConf</code> object is to be obtained by means of the methods supplied
- * in {@link ActionFactory}. See {@link ActionFactory#getActionConf(String)} and
+ * An <code>ActionConf</code> object is to be obtained by means of the methods
+ * supplied in {@link ActionFactory}. See
+ * {@link ActionFactory#getActionConf(String)} and
  * {@link ActionFactory#getActionConf(Class)}.
  */
 public class ActionConf implements Writable {
 
 	/**
-	 * A <code>Configurator</code> configures the specific configuration parameters
-	 * for an <code>ActionConf</code>. 
+	 * A <code>Configurator</code> configures the specific configuration
+	 * parameters for an <code>ActionConf</code>.
 	 */
 	public static abstract class Configurator {
 
@@ -40,13 +41,14 @@ public class ActionConf implements Writable {
 
 		/**
 		 * Sets up the action configuration parameters.
+		 * 
 		 * @param query
 		 * @param conf
-		 * 		the <code>ActionConf</code> object
+		 *            the <code>ActionConf</code> object
 		 * @param controller
-		 * 		can be used to control the flow
+		 *            can be used to control the flow
 		 * @param context
-		 * 		the context in which the action will be executed
+		 *            the context in which the action will be executed
 		 * @throws Exception
 		 */
 		public void process(InputQuery query, ActionConf conf,
@@ -57,19 +59,20 @@ public class ActionConf implements Writable {
 
 		/**
 		 * Sets up the action configuration parameters.
+		 * 
 		 * @param query
 		 * @param params
-		 * 		the values of the configuration parameters
+		 *            the values of the configuration parameters
 		 * @param controller
-		 * 		can be used to control the flow
+		 *            can be used to control the flow
 		 * @param context
-		 * 		the context in which the action will be executed
+		 *            the context in which the action will be executed
 		 * @throws Exception
 		 */
 		protected abstract void setupAction(InputQuery query, Object[] params,
 				ActionController controller, ActionContext context)
 				throws Exception;
-		
+
 		// Converts an int[] to byte[].
 		protected Object convertToBytes(Object o) {
 			if (o == null) {
@@ -141,8 +144,7 @@ public class ActionConf implements Writable {
 				valuesParameters[i] = b;
 				break;
 			case 5:
-				SimpleData data = DataProvider.get().get(
-						input.readByte());
+				SimpleData data = DataProvider.get().get(input.readByte());
 				data.readFrom(input);
 				valuesParameters[i] = data;
 				break;
@@ -163,22 +165,23 @@ public class ActionConf implements Writable {
 	}
 
 	/**
-	 * Each configuration parameter should be specified using the <code>registerParameter</code>
-	 * method. Using this method, one can specify a position of the parameter in the parameters
-	 * array, a name for the parameter, a default value, and whether it is required or not.
+	 * Each configuration parameter should be specified using the
+	 * <code>registerParameter</code> method. Using this method, one can specify
+	 * a position of the parameter in the parameters array, a name for the
+	 * parameter, a default value, and whether it is required or not.
 	 * 
 	 * @param id
-	 * 		the position of the parameter in the parameters array
+	 *            the position of the parameter in the parameters array
 	 * @param nameParam
-	 * 		the name of the parameter; preferably, this should be the name of the constant
-	 *      used to indicate <code>id</code>.
+	 *            the name of the parameter; preferably, this should be the name
+	 *            of the constant used to indicate <code>id</code>.
 	 * @param defaultValue
-	 * 		the default value
+	 *            the default value
 	 * @param cannotBeNull
-	 * 		whether the parameter is required
+	 *            whether the parameter is required
 	 * @throws IllegalArgumentException
-	 * 		when something is wrong in the parameter specification, an
-	 * 		{@link IllegalArgumentException} is thrown.
+	 *             when something is wrong in the parameter specification, an
+	 *             {@link IllegalArgumentException} is thrown.
 	 */
 	public void registerParameter(int id, String nameParam,
 			Object defaultValue, boolean cannotBeNull) {
@@ -210,7 +213,9 @@ public class ActionConf implements Writable {
 	/**
 	 * This method allows the user to register a custom configurator into this
 	 * <code>ActionConf</code>.
-	 * @param proc the custom configurator
+	 * 
+	 * @param proc
+	 *            the custom configurator
 	 */
 	public void registerCustomConfigurator(Configurator proc) {
 		this.proc = proc;
@@ -283,15 +288,16 @@ public class ActionConf implements Writable {
 	}
 
 	/**
-	 * Specifies a value for the configuration parameter at the specified position.
+	 * Specifies a value for the configuration parameter at the specified
+	 * position.
+	 * 
 	 * @param pos
-	 * 		the position of the parameter to set
+	 *            the position of the parameter to set
 	 * @param value
-	 * 		the value to set the parameter to
-	 * @return
-	 * 		<code>true</code> on success, <code>false</code> on failure (when an illegal
-	 * 		position is specified)
-	 * TODO: should it not just throw an IllegalArgumentException in this case? --Ceriel
+	 *            the value to set the parameter to
+	 * @return <code>true</code> on success, <code>false</code> on failure (when
+	 *         an illegal position is specified) TODO: should it not just throw
+	 *         an IllegalArgumentException in this case? --Ceriel
 	 */
 	public final boolean setParamWritable(int pos, Writable value) {
 		if (!checkPos(pos)) {
@@ -303,15 +309,16 @@ public class ActionConf implements Writable {
 	}
 
 	/**
-	 * Specifies a value for the configuration parameter at the specified position.
+	 * Specifies a value for the configuration parameter at the specified
+	 * position.
+	 * 
 	 * @param pos
-	 * 		the position of the parameter to set
+	 *            the position of the parameter to set
 	 * @param value
-	 * 		the value to set the parameter to
-	 * @return
-	 * 		<code>true</code> on success, <code>false</code> on failure (when an illegal
-	 * 		position is specified)
-	 * TODO: should it not just throw an IllegalArgumentException in this case? --Ceriel
+	 *            the value to set the parameter to
+	 * @return <code>true</code> on success, <code>false</code> on failure (when
+	 *         an illegal position is specified) TODO: should it not just throw
+	 *         an IllegalArgumentException in this case? --Ceriel
 	 */
 	public final boolean setParamByteArray(int pos, byte... value) {
 		if (!checkPos(pos)) {
@@ -322,15 +329,16 @@ public class ActionConf implements Writable {
 	}
 
 	/**
-	 * Specifies a value for the configuration parameter at the specified position.
+	 * Specifies a value for the configuration parameter at the specified
+	 * position.
+	 * 
 	 * @param pos
-	 * 		the position of the parameter to set
+	 *            the position of the parameter to set
 	 * @param value
-	 * 		the value to set the parameter to
-	 * @return
-	 * 		<code>true</code> on success, <code>false</code> on failure (when an illegal
-	 * 		position is specified)
-	 * TODO: should it not just throw an IllegalArgumentException in this case? --Ceriel
+	 *            the value to set the parameter to
+	 * @return <code>true</code> on success, <code>false</code> on failure (when
+	 *         an illegal position is specified) TODO: should it not just throw
+	 *         an IllegalArgumentException in this case? --Ceriel
 	 */
 	public final boolean setParamStringArray(int pos, String... value) {
 		if (!checkPos(pos)) {
@@ -341,15 +349,16 @@ public class ActionConf implements Writable {
 	}
 
 	/**
-	 * Specifies a value for the configuration parameter at the specified position.
+	 * Specifies a value for the configuration parameter at the specified
+	 * position.
+	 * 
 	 * @param pos
-	 * 		the position of the parameter to set
+	 *            the position of the parameter to set
 	 * @param value
-	 * 		the value to set the parameter to
-	 * @return
-	 * 		<code>true</code> on success, <code>false</code> on failure (when an illegal
-	 * 		position is specified)
-	 * TODO: should it not just throw an IllegalArgumentException in this case? --Ceriel
+	 *            the value to set the parameter to
+	 * @return <code>true</code> on success, <code>false</code> on failure (when
+	 *         an illegal position is specified) TODO: should it not just throw
+	 *         an IllegalArgumentException in this case? --Ceriel
 	 */
 	public final boolean setParamStringArray(int pos, TStringArray value) {
 		if (!checkPos(pos)) {
@@ -360,15 +369,16 @@ public class ActionConf implements Writable {
 	}
 
 	/**
-	 * Specifies a value for the configuration parameter at the specified position.
+	 * Specifies a value for the configuration parameter at the specified
+	 * position.
+	 * 
 	 * @param pos
-	 * 		the position of the parameter to set
+	 *            the position of the parameter to set
 	 * @param value
-	 * 		the value to set the parameter to
-	 * @return
-	 * 		<code>true</code> on success, <code>false</code> on failure (when an illegal
-	 * 		position is specified)
-	 * TODO: should it not just throw an IllegalArgumentException in this case? --Ceriel
+	 *            the value to set the parameter to
+	 * @return <code>true</code> on success, <code>false</code> on failure (when
+	 *         an illegal position is specified) TODO: should it not just throw
+	 *         an IllegalArgumentException in this case? --Ceriel
 	 */
 	public final boolean setParamIntArray(int pos, int... value) {
 		if (!checkPos(pos)) {
@@ -379,15 +389,16 @@ public class ActionConf implements Writable {
 	}
 
 	/**
-	 * Specifies a value for the configuration parameter at the specified position.
+	 * Specifies a value for the configuration parameter at the specified
+	 * position.
+	 * 
 	 * @param pos
-	 * 		the position of the parameter to set
+	 *            the position of the parameter to set
 	 * @param value
-	 * 		the value to set the parameter to
-	 * @return
-	 * 		<code>true</code> on success, <code>false</code> on failure (when an illegal
-	 * 		position is specified)
-	 * TODO: should it not just throw an IllegalArgumentException in this case? --Ceriel
+	 *            the value to set the parameter to
+	 * @return <code>true</code> on success, <code>false</code> on failure (when
+	 *         an illegal position is specified) TODO: should it not just throw
+	 *         an IllegalArgumentException in this case? --Ceriel
 	 */
 	public final boolean setParamInt(int pos, int value) {
 		if (!checkPos(pos)) {
@@ -398,15 +409,16 @@ public class ActionConf implements Writable {
 	}
 
 	/**
-	 * Specifies a value for the configuration parameter at the specified position.
+	 * Specifies a value for the configuration parameter at the specified
+	 * position.
+	 * 
 	 * @param pos
-	 * 		the position of the parameter to set
+	 *            the position of the parameter to set
 	 * @param value
-	 * 		the value to set the parameter to
-	 * @return
-	 * 		<code>true</code> on success, <code>false</code> on failure (when an illegal
-	 * 		position is specified)
-	 * TODO: should it not just throw an IllegalArgumentException in this case? --Ceriel
+	 *            the value to set the parameter to
+	 * @return <code>true</code> on success, <code>false</code> on failure (when
+	 *         an illegal position is specified) TODO: should it not just throw
+	 *         an IllegalArgumentException in this case? --Ceriel
 	 */
 	public final boolean setParamBoolean(int pos, boolean value) {
 		if (!checkPos(pos)) {
@@ -417,15 +429,16 @@ public class ActionConf implements Writable {
 	}
 
 	/**
-	 * Specifies a value for the configuration parameter at the specified position.
+	 * Specifies a value for the configuration parameter at the specified
+	 * position.
+	 * 
 	 * @param pos
-	 * 		the position of the parameter to set
+	 *            the position of the parameter to set
 	 * @param value
-	 * 		the value to set the parameter to
-	 * @return
-	 * 		<code>true</code> on success, <code>false</code> on failure (when an illegal
-	 * 		position is specified)
-	 * TODO: should it not just throw an IllegalArgumentException in this case? --Ceriel
+	 *            the value to set the parameter to
+	 * @return <code>true</code> on success, <code>false</code> on failure (when
+	 *         an illegal position is specified) TODO: should it not just throw
+	 *         an IllegalArgumentException in this case? --Ceriel
 	 */
 	public final boolean setParamLong(int pos, long value) {
 		if (!checkPos(pos)) {
@@ -436,15 +449,16 @@ public class ActionConf implements Writable {
 	}
 
 	/**
-	 * Specifies a value for the configuration parameter at the specified position.
+	 * Specifies a value for the configuration parameter at the specified
+	 * position.
+	 * 
 	 * @param pos
-	 * 		the position of the parameter to set
+	 *            the position of the parameter to set
 	 * @param value
-	 * 		the value to set the parameter to
-	 * @return
-	 * 		<code>true</code> on success, <code>false</code> on failure (when an illegal
-	 * 		position is specified)
-	 * TODO: should it not just throw an IllegalArgumentException in this case? --Ceriel
+	 *            the value to set the parameter to
+	 * @return <code>true</code> on success, <code>false</code> on failure (when
+	 *         an illegal position is specified) TODO: should it not just throw
+	 *         an IllegalArgumentException in this case? --Ceriel
 	 */
 	public final boolean setParamString(int pos, String value) {
 		if (!checkPos(pos)) {
@@ -455,9 +469,10 @@ public class ActionConf implements Writable {
 	}
 
 	/**
-	 * Returns the class name of the {@link Action} described by this <code>ActionConf</code>.
-	 * @return
-	 * 		the class name
+	 * Returns the class name of the {@link Action} described by this
+	 * <code>ActionConf</code>.
+	 * 
+	 * @return the class name
 	 */
 	public String getClassName() {
 		return className;
@@ -466,9 +481,9 @@ public class ActionConf implements Writable {
 	/**
 	 * Checks the presence of all required parameters. Also sets unspecified
 	 * parameters to their default value.
-	 * @return
-	 * 		-1 if all required parameters are present, otherwise the index
-	 * 		of the first missing parameter
+	 * 
+	 * @return -1 if all required parameters are present, otherwise the index of
+	 *         the first missing parameter
 	 */
 	public final int validateParameters() {
 		if (allowedParameters != null) {
@@ -488,6 +503,7 @@ public class ActionConf implements Writable {
 
 	/**
 	 * Returns the current configurator for this <code>ActionConf</code>.
+	 * 
 	 * @return the configurator
 	 */
 	public Configurator getConfigurator() {
@@ -497,10 +513,10 @@ public class ActionConf implements Writable {
 	/**
 	 * Returns a suitable string for producing an error message that the
 	 * specified parameter is missing.
+	 * 
 	 * @param paramMissing
-	 * 		index of the missing parameter
-	 * @return
-	 * 		the string
+	 *            index of the missing parameter
+	 * @return the string
 	 */
 	public String getParamName(int paramMissing) {
 		String text = paramMissing + " (";

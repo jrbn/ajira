@@ -247,22 +247,6 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			}
 		}
 
-		// if (transferComputation && roots[nActions - 1]) {
-		// chain.setRawSize(rawSizes[nActions - 1]);
-		// chain.copyTo(supportChain);
-		// supportChain.setTotalChainChildren(childrenToTransfer);
-		// supportChain.setInputLayer(BucketsLayer.class);
-		// supportQuery.setElements(new TInt(transferBucketId), new TInt(
-		// transferNodeId));
-		// supportChain.setQuery(supportQuery);
-		// if (localMode)
-		// chainsBuffer.add(supportChain);
-		// else
-		// net.sendChain(supportChain);
-		// }
-
-		// Send the termination signal to the node responsible of
-		// the submission
 		if (!transferComputation) {
 			net.signalChainTerminated(chain, newChildren);
 		}
@@ -358,7 +342,8 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 	@Override
 	public Bucket startTransfer(int nodeId, int bucketId, boolean sort,
-			byte[] sortingFields, byte[] signature, boolean streaming) throws IOException {
+			byte[] sortingFields, byte[] signature, boolean streaming)
+			throws IOException {
 		Bucket temp = context.getBuckets().startTransfer(submissionNode,
 				submissionId, nodeId, bucketId, sort, sortingFields, signature,
 				this, streaming);
