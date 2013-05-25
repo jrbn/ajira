@@ -10,7 +10,6 @@ import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.buckets.Bucket;
 import nl.vu.cs.ajira.buckets.Buckets;
 import nl.vu.cs.ajira.buckets.WritableTuple;
-import nl.vu.cs.ajira.storage.Factory;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.utils.Consts;
 
@@ -32,22 +31,15 @@ class TupleSender {
 	private final List<TupleInfo> sendList = new LinkedList<TupleInfo>();
 	private int checkerTime = 1;
 
-	private final Factory<WritableContainer<WritableTuple>> bufferFactory;
-
 	/**
 	 * Custom constructor.
 	 * 
 	 * @param context
 	 *            Current context
-	 * @param bufferFactory
-	 *            Factory for generating/allocating buffers (buffers' memory
-	 *            allocation management)
 	 */
-	public TupleSender(Context context,
-			Factory<WritableContainer<WritableTuple>> bufferFactory) {
+	public TupleSender(Context context) {
 		this.context = context;
 		this.buckets = context.getBuckets();
-		this.bufferFactory = bufferFactory;
 		ThreadPool.createNew(new Runnable() {
 			@Override
 			public void run() {
@@ -225,14 +217,13 @@ class TupleSender {
 		}
 		NetworkLayer net = context.getNetworkLayer();
 		// long time = System.currentTimeMillis();
-		WritableContainer<WritableTuple> tmpBuffer = bufferFactory.get();
-		tmpBuffer.clear();
+		WritableContainer<WritableTuple> tmpBuffer;
 		Bucket bucket = buckets.getExistingBucket(info.bucketKey, false);
 		if (log.isDebugEnabled()) {
 			log.debug("Getting chunk for " + net.getPeerLocation(info.remoteNodeId)
 					+ ", bucket = " + info.bucketKey + ", remote bucket = " + info.bucketId);
 		}
-		bucket.removeWChunk(tmpBuffer);
+		tmpBuffer = bucket.removeWChunk(null);
 		WriteMessage msg = net.getMessageToSend(net
 				.getPeerLocation(info.remoteNodeId));
 		msg.writeByte((byte) 5);
@@ -262,7 +253,6 @@ class TupleSender {
 					+ info.bucketKey + " req.=" + info.nrequests
 					+ " isTransfered=" + isTransfered);
 		}
-
-		bufferFactory.release(tmpBuffer);
+		tmpBuffer = null;
 	}
 }

@@ -1294,11 +1294,12 @@ public class Bucket {
 		}
 	}
 
-	public boolean removeWChunk(WritableContainer<WritableTuple> tmpBuffer) {
+	public WritableContainer<WritableTuple> removeWChunk(boolean[] ready) {
 
 		boolean done = false;
 		long timeStart = System.currentTimeMillis();
-		boolean retval;
+		WritableContainer<WritableTuple> retval = null;
+		boolean isf = false;
 
 		synchronized (lockWriteBuffer[currWBuffIndex]) {
 			if (writeBuffer[currWBuffIndex] == null) {
@@ -1329,8 +1330,6 @@ public class Bucket {
 						log.debug("removeWChunk: done, no more chunks to remove");
 					}
 
-					tmpBuffer.clear();
-
 					stats.addCounter(submissionNode, submissionId,
 							"Bucket:removeWChunk: overall time (ms)",
 							System.currentTimeMillis() - timeStart);
@@ -1341,30 +1340,31 @@ public class Bucket {
 							writeBuffer[i] = null;
 						}
 					}
-
-					return false;
+					if (ready != null) {
+						ready[0] = false;
+					}
+					return new WritableContainer<WritableTuple>(1);
 				}
 
-				if (!tmpBuffer.addAll(writeBuffer[currWBuffIndex])) {
-					log.error("OOPS: something wrong!");
-				}
+				retval = writeBuffer[currWBuffIndex];
 				synchronized(this) {
-					totalNumberOfElements -= writeBuffer[currWBuffIndex].getNElements();
+					totalNumberOfElements -= retval.getNElements();
+					writeBuffer[currWBuffIndex] = fb.get();
 					writeBuffer[currWBuffIndex].clear();
 				}
-				retval = removeChunkReturned[currWBuffIndex];
+				isf = removeChunkReturned[currWBuffIndex];
 
 				// LOG-DEBUG
 				if (log.isDebugEnabled()) {
-					log.debug("removeWChunk: added " + tmpBuffer.getNElements()
-							+ " tuples to tmpBuffer from" + " writeBuffer["
+					log.debug("removeWChunk: added " + retval.getNElements()
+							+ " tuples to retval from" + " writeBuffer["
 							+ currWBuffIndex + "]");
 				}
 
 				lockWriteBuffer[currWBuffIndex].notifyAll();
 				currWBuffIndex = (currWBuffIndex + 1) % N_WBUFFS;
 
-				if (!isFinished) {
+				if (!this.isFinished) {
 					synchronized (lockHasData) {
 						if (writeBuffer[currWBuffIndex] == null
 								|| (writeBuffer[currWBuffIndex].getNElements() == 0 && !removeWChunkDone[currWBuffIndex])) {
@@ -1374,7 +1374,7 @@ public class Bucket {
 				}
 			} catch (Exception e) {
 				log.error("Generic error", e);
-				retval = true;
+				isf = true;
 				// TODO: throw e;
 			}
 		}
@@ -1386,6 +1386,9 @@ public class Bucket {
 		stats.addCounter(submissionNode, submissionId,
 				"Bucket:removeWChunk: overall time (ms)",
 				System.currentTimeMillis() - timeStart);
+		if (ready != null) {
+			ready[0] = isf;
+		}
 		return retval;
 	}
 

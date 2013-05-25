@@ -287,16 +287,14 @@ class Receiver implements MessageUpcall {
 
 			if (submission.getState().equals(Consts.STATE_FINISHED)) {
 				int bid = submission.getAssignedBucket();
+				boolean[] retval = new boolean[1];
 
-				WritableContainer<WritableTuple> tmpBuffer = bufferFactory
-						.get();
-				tmpBuffer.clear();
+				WritableContainer<WritableTuple> tmpBuffer;
 
 				reply.writeBoolean(true); // Success
 
 				reply.writeDouble(submission.getExecutionTimeInMs());
 
-				boolean isFinished = true;
 				bucket = null;
 
 				if (bid >= 0) {
@@ -305,21 +303,24 @@ class Receiver implements MessageUpcall {
 							submission.getSubmissionId(),
 							submission.getAssignedBucket());
 
-					isFinished = bucket.removeWChunk(tmpBuffer);
+					tmpBuffer = bucket.removeWChunk(retval);
+				} else {
+					retval[0] = true;
+					tmpBuffer = new WritableContainer<WritableTuple>(1);
 				}
 				// Write a reply to the origin containing the results of this
 				// submission
 
 				tmpBuffer.writeTo(new WriteMessageWrapper(reply));
-				reply.writeBoolean(isFinished);
-				if (!isFinished) {
+				tmpBuffer = null;
+				reply.writeBoolean(retval[0]);
+				if (!retval[0]) {
 					reply.writeLong(bucket.getKey());
 				}
 				reply.finish();
 				context.getSubmissionsRegistry().getStatistics(submission);
 
-				tmpBuffer = null;
-				if (isFinished) {
+				if (retval[0]) {
 					buckets.removeBucketsOfSubmission(submission
 							.getSubmissionId());
 					Runtime.getRuntime().gc();
@@ -363,25 +364,24 @@ class Receiver implements MessageUpcall {
 			bucketKey = message.readLong();
 			message.finish();
 
+			boolean[] retval = new boolean[1];
 			bucket = buckets.getExistingBucket(bucketKey, true);
-			WritableContainer<WritableTuple> tmpBuffer = bufferFactory.get();
-			tmpBuffer.clear();
-			boolean isFinished = bucket.removeWChunk(tmpBuffer);
+			WritableContainer<WritableTuple> tmpBuffer = bucket.removeWChunk(retval);
 
 			reply = net.getMessageToSend(message.origin().ibisIdentifier(),
 					NetworkLayer.queryReceiverPort);
 			tmpBuffer.writeTo(new WriteMessageWrapper(reply));
-			reply.writeBoolean(isFinished);
+			reply.writeBoolean(retval[0]);
 			reply.finish();
 
 			if (log.isDebugEnabled()) {
-				log.debug("Sent reply isFinished=" + isFinished + " tmpBuffer="
+				log.debug("Sent reply isFinished=" + retval[0] + " tmpBuffer="
 						+ tmpBuffer.getNElements());
 			}
 
 			// bufferFactory.release(tmpBuffer);
 			tmpBuffer = null;
-			if (isFinished) {
+			if (retval[0]) {
 				buckets.removeBucketsOfSubmission((int) (bucketKey >> 32));
 				Runtime.getRuntime().gc();
 			}

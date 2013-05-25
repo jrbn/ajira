@@ -333,7 +333,7 @@ public class NetworkLayer {
 			thread.start();
 
 			tupleRequester = new TupleRequester(context);
-			tupleSender = new TupleSender(context, bufferFactory);
+			tupleSender = new TupleSender(context);
 
 			receiver = new Receiver(context, bufferFactory);
 			ReceivePort port = ibis.createReceivePort(requestPortType,

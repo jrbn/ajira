@@ -9,7 +9,6 @@ import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
-import nl.vu.cs.ajira.utils.Consts;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,8 +20,7 @@ import org.slf4j.LoggerFactory;
 public class BucketIterator extends TupleIterator {
 	static final Logger log = LoggerFactory.getLogger(BucketIterator.class);
 
-	WritableContainer<WritableTuple> tuples = new WritableContainer<WritableTuple>(
-			Consts.TUPLES_CONTAINER_MAX_BUFFER_SIZE);
+	WritableContainer<WritableTuple> tuples = null;
 
 	Bucket bucket;
 	boolean isUsed;
@@ -45,7 +43,6 @@ public class BucketIterator extends TupleIterator {
 	 */
 	void init(ActionContext c, Bucket bucket, byte[] signature, Buckets buckets) {
 		super.init(c, "Buckets");
-		tuples.clear();
 		this.bucket = bucket;
 		serializer = bucket.getSerializer();
 		// Copy serializer of bucket, as it may contain sorting info which
@@ -75,11 +72,10 @@ public class BucketIterator extends TupleIterator {
 		isUsed = true;
 
 		// If the local buffer is finished, get tuples from the bucket
-		if (tuples.getNElements() == 0) {
+		if (tuples == null || tuples.getNElements() == 0) {
 			long time = System.currentTimeMillis();
-			tuples.clear();
 
-			bucket.removeWChunk(tuples);
+			tuples = bucket.removeWChunk(null);
 
 			if (log.isDebugEnabled()) {
 				log.debug("Bucket  " + bucket.getKey() + " delivering "
