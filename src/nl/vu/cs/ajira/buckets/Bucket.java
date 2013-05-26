@@ -110,6 +110,20 @@ public class Bucket {
 			return remove(size() - 1);
 		}
 	}
+	
+	public static final int N_WBUFFS = 2;
+	
+	private static class WriteBuffer {
+		WritableContainer<WritableTuple> buffer;
+		boolean removeChunkReturned;
+		WriteBuffer next;
+		public boolean done;
+	}
+	
+	private WriteBuffer freeList;
+	private WriteBuffer availableList;
+	private final Object freeListLock = new Object();
+	private final Object availableListLock = new Object();
 
 	static final Logger log = LoggerFactory.getLogger(Bucket.class);
 
@@ -170,14 +184,6 @@ public class Bucket {
 	private boolean isInBufferSorted = true;
 	private boolean isExBufferSorted = true;
 
-	public static final int N_WBUFFS = 2;
-	@SuppressWarnings("unchecked")
-	private final WritableContainer<WritableTuple>[] writeBuffer = (WritableContainer<WritableTuple>[]) java.lang.reflect.Array
-			.newInstance(WritableContainer.class, N_WBUFFS);
-	private final boolean[] removeChunkReturned = new boolean[N_WBUFFS];
-	private int currWBuffIndex = 0;
-	private final boolean removeWChunkDone[] = new boolean[N_WBUFFS];
-	private final Object lockWriteBuffer[] = new Object[N_WBUFFS];
 	private boolean isFillingThreadStarted;
 	private int waitersForAdditions;
 
@@ -185,6 +191,8 @@ public class Bucket {
 	private final Object lockHasData = new Object();
 
 	private long totalNumberOfElements = 0;
+	
+	boolean sortingBucket;
 
 	/**
 	 * This method is used to add a tuple to the in-memory buffer. If the
@@ -202,7 +210,7 @@ public class Bucket {
 	public synchronized boolean add(Tuple tuple) throws Exception {
 		if (inBuffer == null) {
 			inBuffer = fb.get();
-			inBuffer.clear();
+			inBuffer.init(sortingBucket);
 		}
 		totalNumberOfElements++;
 
@@ -212,9 +220,9 @@ public class Bucket {
 		if (response) {
 			isInBufferSorted = inBuffer.getNElements() < 2;
 		} else {
-			cacheBuffer(inBuffer, isInBufferSorted, fb);
+			cacheBuffer(inBuffer, isInBufferSorted);
 			inBuffer = fb.get();
-			inBuffer.clear();
+			inBuffer.init(sortingBucket);
 			response = inBuffer.add(serializer);
 			isInBufferSorted = true;
 
@@ -239,10 +247,6 @@ public class Bucket {
 				iter = null;
 			}
 		}
-
-		if (log.isDebugEnabled()) {
-			checkTotalElements();
-		}
 		return response;
 	}
 
@@ -251,19 +255,18 @@ public class Bucket {
 	 * into the local one. Instead of doing one add per each new tuple, we copy
 	 * the entire content of the new container into the bucket. Mainly, this
 	 * method is used to add a whole chunk transferred from a remote bucket.
+	 * This method may reuse the newTuplesContainer, so after calling this method,
+	 * you can no longer use the container.
 	 * 
 	 * @param newTuplesContainer
 	 *            New buffer that has to be inserted
 	 * @param isSorted
 	 *            True/false if whether the tuples from inside the container are
 	 *            sorted or not
-	 * @param factory
-	 *            Factory which is used to generate WritableContainer<T> objects
-	 *            -- a pool of unused buffers
 	 * @throws Exception
 	 */
 	public synchronized void addAll(WritableContainer<WritableTuple> newTuplesContainer,
-			boolean isSorted, Factory<WritableContainer<WritableTuple>> factory)
+			boolean isSorted)
 					throws Exception {
 		totalNumberOfElements += newTuplesContainer.getNElements();
 
@@ -271,7 +274,7 @@ public class Bucket {
 
 		if (exBuffer == null) {
 			exBuffer = fb.get();
-			exBuffer.clear();
+			exBuffer.init(sortingBucket);
 			isExBufferSorted = true;
 		}
 
@@ -284,9 +287,6 @@ public class Bucket {
 					+ " elements");
 		}
 
-		// If factory is not null, we get control over the
-		// newTuplesContainer,
-		// which means that we have to remove it
 		boolean isExBufferEmpty = (exBuffer.getNElements() == 0);
 		boolean response = false;
 
@@ -305,6 +305,10 @@ public class Bucket {
 				}
 			} else {
 				response = exBuffer.addAll(newTuplesContainer);
+				if (response) {
+					newTuplesContainer.clear();
+					fb.release(newTuplesContainer);
+				}
 			}
 
 			isExBufferSorted = (response && isSorted && isExBufferEmpty)
@@ -322,15 +326,8 @@ public class Bucket {
 				isExBufferSorted = isSorted;
 			} else {
 				// It's better to store the other buffer
-				if (factory != null) {
-					// We can just use the other container
-					cacheBuffer(newTuplesContainer, isSorted, factory);
-				} else {
-					// Copy the container ...
-					WritableContainer<WritableTuple> box = fb.get();
-					newTuplesContainer.copyTo(box);
-					cacheBuffer(box, isSorted, fb);
-				}
+				// We can just use the other container
+				cacheBuffer(newTuplesContainer, isSorted);
 			}
 		}
 
@@ -348,10 +345,6 @@ public class Bucket {
 				notifier = null;
 				iter = null;
 			}
-		}
-		
-		if (log.isDebugEnabled()) {
-			checkTotalElements();
 		}
 		
 		stats.addCounter(submissionNode, submissionId,
@@ -402,15 +395,11 @@ public class Bucket {
 	 *            Buffer (tuples container) to be cached
 	 * @param sorted
 	 *            True/false if the tuples inside the buffer are sorted or not
-	 * @param fb
-	 *            Factory used for the buffer generation
 	 * @throws IOException
 	 */
 	private void cacheBuffer(final WritableContainer<WritableTuple> buffer,
-			final boolean sorted,
-			final Factory<WritableContainer<WritableTuple>> fb)
-
-	throws IOException {
+			final boolean sorted)
+					throws IOException {
 		if (buffer.getNElements() == 0) {
 			buffer.clear();
 			fb.release(buffer);
@@ -516,20 +505,6 @@ public class Bucket {
 			}
 		}, "Sort-and-cache");
 
-	}
-
-	/**
-	 * Method that calls cacheBuffer() directly over the buffer, with default
-	 * parameters.
-	 * 
-	 * @throws IOException
-	 */
-	private void cacheBuffer(final WritableContainer<WritableTuple> buffer,
-			final boolean isSorted) throws IOException {
-
-		if (buffer.getNElements() > 0) {
-			cacheBuffer(buffer, isSorted, fb);
-		}
 	}
 
 	/**
@@ -657,6 +632,7 @@ public class Bucket {
 			int submissionId, boolean sort, boolean sortRemote,
 			byte[] sortingFields, Factory<WritableContainer<WritableTuple>> fb,
 			CachedFilesMerger merger, byte[] signature) {
+		this.sortingBucket = sort || sortRemote;
 		this.key = key;
 		this.fb = fb;
 		this.inBuffer = null;
@@ -716,6 +692,11 @@ public class Bucket {
 		} else {
 			this.serializer = new WritableTuple();
 		}
+		for (int i = 0; i < N_WBUFFS; i++) {
+			WriteBuffer w = new WriteBuffer();
+			w.next = freeList;
+			freeList = w;
+		}
 	}
 
 	public synchronized long inmemory_size() {
@@ -734,36 +715,10 @@ public class Bucket {
 					.getTotalCapacity());
 		}
 	}
-
-	private synchronized void checkTotalElements() {
-		long elts = 0;
-		if (inBuffer != null) {
-			elts += inBuffer.getNElements();
-		}
-		if  (exBuffer != null) {
-			elts += exBuffer.getNElements();
-		}
-		for (int i = 0; i < N_WBUFFS; i++) {
-			if (writeBuffer[i] != null) {
-				elts += writeBuffer[i].getNElements();
-			}
-		}
-		elts += elementsInCache;
-		if (minimumSortedList.size() > sortedCacheFiles.size()) {
-			elts++;
-		}
-		if (elts != totalNumberOfElements) {
-			log.error("Error in totalNumberOfElements = " + totalNumberOfElements + ", should be " + elts, new Throwable());
-		}
-		if (elementsInCache < 0) {
-			log.error("ElementsInCache = " + elementsInCache, new Throwable());
-		}
-	}
 	
 	public synchronized boolean isEmpty() {
 		if (log.isDebugEnabled()) {
 			log.debug("isEmpty() on bucket " + key + ": totalNumberOfElements = " + totalNumberOfElements);
-			checkTotalElements();
 		}
 		return totalNumberOfElements == 0;
 
@@ -1133,7 +1088,7 @@ public class Bucket {
 
 		if (inBuffer == null) {
 			inBuffer = fb.get();
-			inBuffer.clear();
+			inBuffer.init(sortingBucket);
 			isInBufferSorted = true;
 		}
 
@@ -1200,7 +1155,7 @@ public class Bucket {
 
 		// Reset exBuffer
 		exBuffer = fb.get();
-		exBuffer.clear();
+		exBuffer.init(sortingBucket);
 
 		stats.addCounter(submissionNode, submissionId,
 				"Bucket:combineInExBuffers: overall time (ms)",
@@ -1217,11 +1172,6 @@ public class Bucket {
 			log.debug("prepareRemoveWChunk: init variables...");
 		}
 
-		currWBuffIndex = 0;
-		for (int i = 0; i < N_WBUFFS; i++) {
-			lockWriteBuffer[i] = new Object();
-		}
-
 		isFillingThreadStarted = true;
 		ThreadPool.createNew(new Runnable() {
 			@Override
@@ -1236,153 +1186,145 @@ public class Bucket {
 	}
 
 	private void fillWriteBuffers() throws Exception {
-		int wBuffIndex = currWBuffIndex;
 
 		// LOG-DEBUG
 		if (log.isDebugEnabled()) {
 			log.debug("fillWriteBuffers: start the thread for double-buffering...");
 		}
 
+		WriteBuffer w;
 		for (;;) {
-			synchronized (lockWriteBuffer[wBuffIndex]) {
-				if (writeBuffer[wBuffIndex] == null) {
-					writeBuffer[wBuffIndex] = fb.get();
-					writeBuffer[wBuffIndex].clear();
-				}
-
-				while (writeBuffer[wBuffIndex].getNElements() > 0) {
+			synchronized(freeListLock) {
+				while (freeList == null) {
 					try {
-						lockWriteBuffer[wBuffIndex].wait();
-					} catch (InterruptedException e) {
+						freeListLock.wait();
+					} catch(Throwable e) {
 						// ignore
 					}
 				}
+				w = freeList;
+				freeList = freeList.next;
+			}
+			if (w.buffer == null) {
+				w.buffer = fb.get();
+				w.buffer.init(sortingBucket);
+			}
+			// LOG-DEBUG
+			if (log.isDebugEnabled()) {
+				log.debug("fillWriteBufers: start filling writeBuffer");
+			}
+			w.done = false;
+			w.next = null;
+			w.removeChunkReturned = removeChunk(w.buffer);
 
-				// LOG-DEBUG
-				if (log.isDebugEnabled()) {
-					log.debug("fillWriteBufers: fill writeBuffer[" + wBuffIndex
-							+ "], of " + writeBuffer[wBuffIndex].getNElements()
-							+ " call removeChunk");
+			if (!isFinished) {
+				synchronized (lockHasData) {
+					hasData = true;
 				}
-
-				// Don't log time of this removeChunk call, time is measured in
-				// removeWChunk.
-				removeChunkReturned[wBuffIndex] = removeChunk(writeBuffer[wBuffIndex]);
-				if (log.isDebugEnabled()) {
-					checkTotalElements();
+			}
+			synchronized(availableListLock) {
+				WriteBuffer b = availableList, prev = null;
+				while (b != null) {
+					prev = b;
+					b = b.next;
 				}
-				if (!isFinished) {
-					synchronized (lockHasData) {
-						hasData = true;
-					}
+				if (prev == null) {
+					availableList = w; 
+				} else {
+					prev.next = w;
 				}
-				
-				lockWriteBuffer[wBuffIndex].notifyAll();
-				if (writeBuffer[wBuffIndex].getNElements() == 0) {
+				availableListLock.notifyAll();
+				if (w.buffer.getNElements() == 0) {
 					// LOG-DEBUG
 					if (log.isDebugEnabled()) {
 						log.debug("fillWriteBufers: done, no more chunks to fill with, "
 								+ "stop the thread for double-buffering & notify all...");
 					}
-
-					removeWChunkDone[wBuffIndex] = true;
+					w.done = true;
 					return;
 				}
-
-				wBuffIndex = (wBuffIndex + 1) % N_WBUFFS;
 			}
 		}
 	}
 
 	public WritableContainer<WritableTuple> removeWChunk(boolean[] ready) {
 
-		boolean done = false;
 		long timeStart = System.currentTimeMillis();
 		WritableContainer<WritableTuple> retval = null;
 		boolean isf = false;
+		WriteBuffer w;
 
-		synchronized (lockWriteBuffer[currWBuffIndex]) {
-			if (writeBuffer[currWBuffIndex] == null) {
-				writeBuffer[currWBuffIndex] = fb.get();
-				writeBuffer[currWBuffIndex].clear();
-			}
+		// LOG-DEBUG
+		if (log.isDebugEnabled()) {
+			log.debug("removeWChunk: attempt removing write chunks from writeBuffers");
+		}
 
-			// LOG-DEBUG
-			if (log.isDebugEnabled()) {
-				log.debug("removeWChunk: attempt removing write chunks from writeBuffers");
-			}
-
-			while (writeBuffer[currWBuffIndex].getNElements() == 0
-					&& !removeWChunkDone[currWBuffIndex]) {
+		synchronized(availableListLock) {
+			while (availableList == null) {
 				try {
-					lockWriteBuffer[currWBuffIndex].wait();
-				} catch (InterruptedException e) {
+					availableListLock.wait();
+				} catch(Throwable e) {
 					// ignore
 				}
 			}
+			w = availableList;
+			availableList = w.next;
+		}
 
-			try {
-				done = removeWChunkDone[currWBuffIndex];
+		if (w.done) {
+			// LOG-DEBUG
+			if (log.isDebugEnabled()) {
+				log.debug("removeWChunk: done, no more chunks to remove");
+			}
 
-				if (done) {
-					// LOG-DEBUG
-					if (log.isDebugEnabled()) {
-						log.debug("removeWChunk: done, no more chunks to remove");
-					}
-
-					stats.addCounter(submissionNode, submissionId,
-							"Bucket:removeWChunk: overall time (ms)",
-							System.currentTimeMillis() - timeStart);
-					for (int i = 0; i < writeBuffer.length; i++) {
-						if (writeBuffer[i] != null) {
-							writeBuffer[i].clear();
-							fb.release(writeBuffer[i]);
-							writeBuffer[i] = null;
-						}
-					}
-					if (ready != null) {
-						ready[0] = false;
-					}
-					return new WritableContainer<WritableTuple>(1);
+			stats.addCounter(submissionNode, submissionId,
+					"Bucket:removeWChunk: overall time (ms)",
+					System.currentTimeMillis() - timeStart);
+			if (ready != null) {
+				ready[0] = false;
+			}
+			w.buffer.clear();
+			fb.release(w.buffer);
+			synchronized(freeListLock) {
+				while (freeList != null) {
+					freeList.buffer.clear();
+					fb.release(freeList.buffer);
+					freeList = freeList.next;
 				}
+			}
+			return new WritableContainer<WritableTuple>(1);
+		}
 
-				retval = writeBuffer[currWBuffIndex];
-				synchronized(this) {
-					totalNumberOfElements -= retval.getNElements();
-					writeBuffer[currWBuffIndex] = fb.get();
-					writeBuffer[currWBuffIndex].clear();
-				}
-				isf = removeChunkReturned[currWBuffIndex];
+		retval = w.buffer;
+		synchronized(this) {
+			totalNumberOfElements -= retval.getNElements();
+		}
+		w.buffer = fb.get();
+		w.buffer.init(sortingBucket);
+		isf = w.removeChunkReturned;
 
-				// LOG-DEBUG
-				if (log.isDebugEnabled()) {
-					log.debug("removeWChunk: added " + retval.getNElements()
-							+ " tuples to retval from" + " writeBuffer["
-							+ currWBuffIndex + "]");
-				}
+		// LOG-DEBUG
+		if (log.isDebugEnabled()) {
+			log.debug("removeWChunk: added " + retval.getNElements()
+					+ " tuples to retval");
+		}
+		synchronized(freeListLock) {
+			w.next = freeList;
+			freeList = w;
+			freeListLock.notifyAll();
+		}
 
-				lockWriteBuffer[currWBuffIndex].notifyAll();
-				currWBuffIndex = (currWBuffIndex + 1) % N_WBUFFS;
-
-				if (!this.isFinished) {
-					synchronized (lockHasData) {
-						if (writeBuffer[currWBuffIndex] == null
-								|| (writeBuffer[currWBuffIndex].getNElements() == 0 && !removeWChunkDone[currWBuffIndex])) {
-							hasData = false;
-						}
+		if (!this.isFinished) {
+			synchronized(availableListLock) {
+				synchronized (lockHasData) {
+					if (availableList == null || availableList.buffer == null
+							|| (availableList.buffer.getNElements() == 0 && !availableList.done)) {
+						hasData = false;
 					}
 				}
-			} catch (Exception e) {
-				log.error("Generic error", e);
-				isf = true;
-				// TODO: throw e;
 			}
 		}
 
-		if (log.isDebugEnabled()) {
-			checkTotalElements();
-		}
-		
 		stats.addCounter(submissionNode, submissionId,
 				"Bucket:removeWChunk: overall time (ms)",
 				System.currentTimeMillis() - timeStart);

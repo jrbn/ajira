@@ -153,10 +153,17 @@ public class Ajira {
 			/***** NET *******/
 			NetworkLayer net = NetworkLayer.getInstance();
 			boolean serverMode = true;
+			
+			@SuppressWarnings("unchecked")
+			Class<WritableContainer<WritableTuple>> clazz = (Class<WritableContainer<WritableTuple>>) (Class<?>) WritableContainer.class;
+			Factory<WritableContainer<WritableTuple>> bufferFactory = new Factory<WritableContainer<WritableTuple>>(
+					clazz, Consts.TUPLES_CONTAINER_MAX_BUFFER_SIZE);
+			MemoryManager.getInstance().registerFactory(bufferFactory);
 
 			String ibisPoolSize = System.getProperty("ibis.pool.size");
 			localMode = !clusterMode
 					&& (ibisPoolSize == null || ibisPoolSize.equals("1"));
+			
 			if (!localMode) {
 				log.debug("Starting the network layer ...");
 
@@ -173,11 +180,6 @@ public class Ajira {
 					}
 				}
 
-				@SuppressWarnings("unchecked")
-				Class<WritableContainer<WritableTuple>> clazz = (Class<WritableContainer<WritableTuple>>) (Class<?>) WritableContainer.class;
-				Factory<WritableContainer<WritableTuple>> bufferFactory = new Factory<WritableContainer<WritableTuple>>(
-						clazz, Consts.TUPLES_CONTAINER_MAX_BUFFER_SIZE);
-				MemoryManager.getInstance().registerFactory(bufferFactory);
 				net.setBufferFactory(bufferFactory);
 				net.startIbis();
 				ArrayList<WritableContainer<WritableTuple>> l = new ArrayList<WritableContainer<WritableTuple>>(
@@ -201,7 +203,7 @@ public class Ajira {
 
 			/**** OTHER SHARED DATA STRUCTURES ****/
 			CachedFilesMerger merger = new CachedFilesMerger();
-			Buckets tuplesContainer = new Buckets(stats, merger, net);
+			Buckets tuplesContainer = new Buckets(stats, merger, net, bufferFactory);
 			ActionFactory ap = new ActionFactory();
 			DataProvider dp = new DataProvider();
 			SubmissionCache cache = new SubmissionCache(net);

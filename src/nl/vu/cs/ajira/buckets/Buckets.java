@@ -9,12 +9,10 @@ import java.util.Map;
 
 import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
-import nl.vu.cs.ajira.mgmt.MemoryManager;
 import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.net.NetworkLayer;
 import nl.vu.cs.ajira.storage.Factory;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
-import nl.vu.cs.ajira.utils.Consts;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,8 +31,7 @@ public class Buckets {
 	private final Map<Long, Bucket> buckets = new HashMap<Long, Bucket>();
 
 	// Buffer factories
-	private final Factory<WritableContainer<WritableTuple>> fb_not_sorted;
-	private final Factory<WritableContainer<WritableTuple>> fb_sorted;
+	private final Factory<WritableContainer<WritableTuple>> fb;
 
 	private CachedFilesMerger merger = null;
 	private NetworkLayer net = null;
@@ -57,7 +54,8 @@ public class Buckets {
 	 */
 	@SuppressWarnings("unchecked")
 	public Buckets(StatisticsCollector stats, CachedFilesMerger merger,
-			NetworkLayer net) {
+			NetworkLayer net, Factory<WritableContainer<WritableTuple>> fb) {
+		this.fb = fb;
 		this.stats = stats;
 		this.merger = merger;
 		this.myPartition = net.getMyPartition();
@@ -66,14 +64,6 @@ public class Buckets {
 		for (int i = 0; i < activeTransfers.length; ++i) {
 			activeTransfers[i] = new HashMap<Long, Buckets.TransferInfo>();
 		}
-
-		Class<WritableContainer<WritableTuple>> clazz = (Class<WritableContainer<WritableTuple>>) (Class<?>) WritableContainer.class;
-		fb_not_sorted = new Factory<WritableContainer<WritableTuple>>(clazz,
-				Consts.TUPLES_CONTAINER_MAX_BUFFER_SIZE);
-		fb_sorted = new Factory<WritableContainer<WritableTuple>>(clazz, true,
-				Consts.TUPLES_CONTAINER_MAX_BUFFER_SIZE);
-		MemoryManager.getInstance().registerFactory(fb_not_sorted);
-		MemoryManager.getInstance().registerFactory(fb_sorted);
 	}
 
 	/**
@@ -159,8 +149,7 @@ public class Buckets {
 		if (bucket == null) {
 			bucket = new Bucket();
 			bucket.init(key, stats, submissionNode, idSubmission, sort,
-					sortRemote, sortingFields, sort || sortRemote ? fb_sorted
-							: fb_not_sorted, merger, signature);
+					sortRemote, sortingFields, fb, merger, signature);
 			buckets.put(key, bucket);
 			this.notifyAll();
 		}

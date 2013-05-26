@@ -223,7 +223,7 @@ class Receiver implements MessageUpcall {
 				bucket = buckets.getExistingBucket(submissionId, bucketId);
 
 				try {
-					bucket.addAll(container, isSorted, bufferFactory);
+					bucket.addAll(container, isSorted);
 				} catch (Exception e) {
 					log.error("Failed in adding the elements", e);
 				}

@@ -140,6 +140,11 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 			}
 		}
 	}
+	
+	public void init(boolean fieldMarks) {
+		clear();
+		this.enableFieldDelimitors = fieldMarks;
+	}
 
 	public void clear() {
 		nElements = start = end = 0;
@@ -421,7 +426,7 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 			}
 		} else { // It's too big. Must use another array
 			WritableContainer<K> newArray = fb.get();
-			newArray.clear();
+			newArray.init(enableFieldDelimitors);
 			if (newArray.grow((int) size)) {
 				for (int index : indexes) {
 					try {
