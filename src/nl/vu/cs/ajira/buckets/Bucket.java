@@ -724,8 +724,10 @@ public class Bucket {
 
 	}
 
-	synchronized boolean isFinished() {
-		return isFinished;
+	boolean isFinished() {
+		synchronized(lockHasData) {
+			return isFinished;
+		}
 	}
 
 	/**
@@ -807,9 +809,6 @@ public class Bucket {
 	 *         to remove (buffer + files) or not
 	 * @throws Exception 
 	 */
-//	public boolean removeChunk(WritableContainer<WritableTuple> tmpBuffer) {
-//		return removeChunk(tmpBuffer, true);
-//	}
 
 	private synchronized boolean removeChunkSorted(
 			WritableContainer<WritableTuple> tmpBuffer) throws Exception {
@@ -982,8 +981,7 @@ public class Bucket {
 			log.debug("removeChunk: time = " + tm + " ms.");
 		}
 
-		return isFinished
-				&& elementsInCache == 0
+		return elementsInCache == 0
 				&& (inBuffer == null || inBuffer.getNElements() == 0)
 				&& (sortedCacheFiles == null || minimumSortedList.size() == 0);
 	}
@@ -993,8 +991,7 @@ public class Bucket {
 
 		// If some threads still have to finish writing
 		waitForCachersToFinish();
-		
-		boolean isBucketFinished = this.isFinished;
+
 		long totTime = System.currentTimeMillis();
 
 		try {
@@ -1045,8 +1042,13 @@ public class Bucket {
 
 			// There was nothing available. Now we do not have any choice than
 			// wait.
-			if (tmpBuffer.getNElements() == 0 && !isBucketFinished) {
-				if (!isFinished) {
+			
+			if (tmpBuffer.getNElements() == 0) {
+				boolean isBucketFinished;
+				synchronized(lockHasData) {
+					isBucketFinished = isFinished;
+				}
+				if (! isBucketFinished) {
 					waitersForAdditions++;
 					this.wait();
 					waitersForAdditions--;
@@ -1065,10 +1067,11 @@ public class Bucket {
 			log.debug("removeChunk: time = " + tm + " ms.");
 		}
 
-		return isFinished && elementsInCache == 0
+		synchronized(lockHasData) {
+			return isFinished && elementsInCache == 0
 				&& (inBuffer == null || inBuffer.getNElements() == 0)
 				&& (exBuffer == null || exBuffer.getNElements() == 0);
-
+		}
 	}
 
 	private boolean removeChunk(WritableContainer<WritableTuple> tmpBuffer) throws Exception {
@@ -1090,11 +1093,6 @@ public class Bucket {
 			inBuffer = fb.get();
 			inBuffer.init(sortingBucket);
 			isInBufferSorted = true;
-		}
-
-		if (!isFinished()) {
-			throw new Exception(
-					"combineInExBuffers: bucket is not yet finished!!");
 		}
 
 		boolean response = false;
@@ -1217,11 +1215,12 @@ public class Bucket {
 			w.next = null;
 			w.removeChunkReturned = removeChunk(w.buffer);
 
-			if (!isFinished) {
-				synchronized (lockHasData) {
+			synchronized(lockHasData) {
+				if (!isFinished) {
 					hasData = true;
 				}
 			}
+			
 			synchronized(availableListLock) {
 				WriteBuffer b = availableList, prev = null;
 				while (b != null) {
@@ -1314,10 +1313,10 @@ public class Bucket {
 			freeListLock.notifyAll();
 		}
 
-		if (!this.isFinished) {
-			synchronized(availableListLock) {
-				synchronized (lockHasData) {
-					if (availableList == null || availableList.buffer == null
+		synchronized(lockHasData) {
+			if (!this.isFinished) {
+				synchronized(availableListLock) {
+					if (availableList == null
 							|| (availableList.buffer.getNElements() == 0 && !availableList.done)) {
 						hasData = false;
 					}
@@ -1340,7 +1339,6 @@ public class Bucket {
 	 * @throws IOException
 	 */
 	public synchronized void setFinished() throws IOException {
-		isFinished = true;
 		// Combine internal + external buffers before finish
 		try {
 			combineInExBuffers();
@@ -1352,7 +1350,10 @@ public class Bucket {
 			notifier = null;
 			iter = null;
 		}
-		notifyAll();
+		synchronized(lockHasData) {
+			isFinished = true;
+			lockHasData.notifyAll();
+		}
 
 		if (!isFillingThreadStarted)
 			prepareRemoveWChunk();
@@ -1483,20 +1484,22 @@ public class Bucket {
 	 * @return True, when the bucket is finished otherwise we enter into wait()
 	 *         mode
 	 */
-	public synchronized boolean waitUntilFinished() {
-		try {
+	public boolean waitUntilFinished() {
+		synchronized(lockHasData) {
 			while (!isFinished) {
 				if (log.isDebugEnabled()) {
 					log.debug("waitUntilFinished on bucket " + this.key);
 				}
-				wait();
+				try {
+					lockHasData.wait();
+				} catch(Throwable e) {
+					// ignore
+				}
 				if (log.isDebugEnabled()) {
 					log.debug("waitUntilFinished on bucket " + this.key
 							+ " done");
 				}
 			}
-		} catch (Throwable e) {
-			// ignore
 		}
 
 		return true;

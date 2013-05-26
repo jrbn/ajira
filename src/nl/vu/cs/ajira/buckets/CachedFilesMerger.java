@@ -83,10 +83,6 @@ public class CachedFilesMerger implements Runnable {
 				}
 
 				bucket = requests.remove(0);
-
-				if (bucket.gettingData) {
-					continue;
-				}
 			}
 
 			boolean merge = false;
@@ -98,6 +94,9 @@ public class CachedFilesMerger implements Runnable {
 
 			// Check if bucket is eligible for merging
 			synchronized (bucket) {
+				if (bucket.gettingData) {
+					continue;
+				}
 				if (bucket.sortedCacheFiles.size() > 3) {
 					// Take two streams with the smallest remaining size.
 					long sz = Long.MAX_VALUE;
