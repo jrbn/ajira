@@ -188,6 +188,9 @@ public class Tuple {
 	 * Returns the hash code of the array signature.
 	 */
 	public int hashCode() {
+		if (signature.length == 1) {
+			return signature[0].hashCode();
+		}
 		return Arrays.hashCode(signature);
 	}
 

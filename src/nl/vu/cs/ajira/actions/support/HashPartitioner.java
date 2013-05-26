@@ -17,11 +17,8 @@ public class HashPartitioner extends Partitioner {
 	 */
 	@Override
 	public int partition(Tuple tuple) {
-		if (partition_fields == null) {
-			return (tuple.hashCode() & Integer.MAX_VALUE) % npartitions;
-		} else {
-			return (tuple.hashCode(partition_fields) & Integer.MAX_VALUE)
-					% npartitions;
-		}
+		int hash = partition_fields == null ? tuple.hashCode() : tuple.hashCode(partition_fields);
+		hash ^= (hash >> 5);	// This kills the sign bit.
+		return hash % npartitions;
 	}
 }
