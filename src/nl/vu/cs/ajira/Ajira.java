@@ -308,6 +308,17 @@ public class Ajira {
 		else
 			return globalContext.getNetworkLayer().getMyPartition();
 	}
+	
+	/**
+	 * This method returns the number of nodes in the Ajira cluster.
+	 * @return the number of nodes.
+	 */
+	public int getNumberNodes() {
+		if (localMode) {
+			return 1;
+		}
+		return globalContext.getNetworkLayer().getNumberNodes();
+	}
 
 	/**
 	 * @return The global context used by the framework.
