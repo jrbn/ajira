@@ -1286,8 +1286,11 @@ public class Bucket {
 			fb.release(w.buffer);
 			synchronized(freeListLock) {
 				while (freeList != null) {
-					freeList.buffer.clear();
-					fb.release(freeList.buffer);
+					if (freeList.buffer != null) {
+						freeList.buffer.clear();
+						fb.release(freeList.buffer);
+						freeList.buffer = null;
+					}
 					freeList = freeList.next;
 				}
 			}

@@ -102,7 +102,9 @@ public final class TString extends SimpleData {
 	 * Returns the hash value of the object.
 	 */
 	public int hashCode() {
+
 		return value.hashCode();
+
 	}
 
 	@Override
