@@ -519,7 +519,7 @@ public class Bucket {
 			log.debug("checkFinished " + this.key + ": nChainsReceived = " + nChainsReceived
 					+ ", nBucketReceived = " + nBucketReceived
 					+ ", highestSequence = " + highestSequence
-					+ ", children.size() = " + children.size()
+					+ ", children = " + children.toString()
 					+ ", receivedMainChain = " + receivedMainChain);
 		}
 		if (nChainsReceived == nBucketReceived && highestSequence != -1
