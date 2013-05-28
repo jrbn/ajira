@@ -1355,6 +1355,9 @@ public class Bucket {
 			lockHasData.notifyAll();
 		}
 
+                // Notify possible waiters.
+                notifyAll();
+
 		if (!isFillingThreadStarted)
 			prepareRemoveWChunk();
 	}
