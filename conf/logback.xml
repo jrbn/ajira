@@ -15,4 +15,12 @@
 <level value="info" />
 </logger>
 
+<!-- <logger name="nl.vu.cs.ajira.buckets.Bucket">
+<level value="debug" />
+</logger>
+
+<logger name="nl.vu.cs.ajira.submissions.SubmissionRegistry">
+<level value="debug" />
+</logger> -->
+
 </configuration>

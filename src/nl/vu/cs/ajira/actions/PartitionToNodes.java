@@ -78,11 +78,11 @@ public class PartitionToNodes extends Action {
 	 * {@link Partitioner#init(ActionContext, int, byte[])}.
 	 */
 	public static final int BA_PARTITION_FIELDS = 6;
-	
+
 	/**
-	 * The <code>B_STREAMING</code> parameter is of type <code>boolean</code>, is not
-	 * required, and defaults to <code>false</code>. When set, an effort will be made
-	 * to allow for more speedy data transfers.
+	 * The <code>B_STREAMING</code> parameter is of type <code>boolean</code>,
+	 * is not required, and defaults to <code>false</code>. When set, an effort
+	 * will be made to allow for more speedy data transfers.
 	 */
 	public static final int B_STREAMING = 7;
 
@@ -103,6 +103,7 @@ public class PartitionToNodes extends Action {
 	private boolean partition;
 	private boolean sentChain;
 	private boolean streaming;
+
 	// private long[] partitionCounts;
 
 	private static class ParametersProcessor extends ActionConf.Configurator {
@@ -232,7 +233,6 @@ public class PartitionToNodes extends Action {
 						sortingFields, tupleFields, streaming);
 				bucketsCache[partition] = b;
 			}
-			// partitionCounts[partition]++;
 		} else {
 			b = bucketsCache[0];
 			if (b == null) {

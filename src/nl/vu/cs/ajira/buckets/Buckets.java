@@ -274,7 +274,7 @@ public class Buckets {
 	private static class TransferInfo {
 		int count = 1;
 		Bucket bucket;
-		boolean alerted = false;
+		long chainThatHasAlertedDestination = -1;
 		boolean streaming = false;
 	}
 
@@ -337,11 +337,11 @@ public class Buckets {
 		return info.bucket;
 	}
 
-	public void alertTransfer(int submissionNode, int submission, int node,
-			int bucketID, long chainId, long parentChainId, int nchildren,
-			boolean responsible, boolean sort, byte[] sortingParams,
-			byte[] signature, Map<Long, List<Integer>> additionalChildren)
-			throws IOException {
+	public void alertTransfer(boolean updateCounters, int submissionNode,
+			int submission, int node, int bucketID, long chainId,
+			long parentChainId, int nchildren, boolean responsible,
+			boolean sort, byte[] sortingParams, byte[] signature,
+			Map<Long, List<Integer>> additionalChildren) throws IOException {
 
 		if (node == myPartition || net.getNumberNodes() == 1) {
 			return;
@@ -349,75 +349,113 @@ public class Buckets {
 
 		Map<Long, TransferInfo> map = activeTransfers[node];
 		long key = getKey(submission, bucketID);
-		TransferInfo info = null;
 
-		// Alert the node that there is an active transfer.
-		// First grab a lock on the map. Otherwise, possible deadlocks. --Ceriel
-		synchronized(map) {
-			WriteMessage message = net.getMessageToSend(net.getPeerLocation(node),
-					NetworkLayer.nameMgmtReceiverPort);
-			message.writeByte((byte) 1); // Mark to indicate there are tuples
-			message.writeInt(submissionNode);
-			message.writeInt(submission);
-			message.writeInt(bucketID); // Remote bucket ID
+		int stateBuffer = 0;
+
+		TransferInfo info = null;
+		synchronized (map) {
+			info = map.get(key);
+			if (info == null) {
+				// Send empty if update == true
+				if (updateCounters) {
+					stateBuffer = 1; // Send empty
+				}
+			} else { // info is not null
+				if (updateCounters) {
+					if (info.chainThatHasAlertedDestination != chainId) {
+						stateBuffer = 1; // Send empty
+					} else {
+						stateBuffer = 2; // Send message but not update counters
+											// (they will be updated in another
+											// way)
+					}
+				} else if (info.chainThatHasAlertedDestination != -1) {
+					stateBuffer = -1; // Do not send anything!
+				} else {
+					stateBuffer = 3; // Need to send alert to fetch the data
+					info.chainThatHasAlertedDestination = chainId;
+				}
+			}
+		}
+
+		assert (stateBuffer != 0);
+
+		if (stateBuffer == -1) {
+			return;
+		}
+
+		WriteMessage message = net.getMessageToSend(net.getPeerLocation(node),
+				NetworkLayer.nameMgmtReceiverPort);
+		message.writeByte((byte) 1); // Mark to indicate there are tuples
+		message.writeInt(submissionNode);
+		message.writeInt(submission);
+		message.writeInt(bucketID); // Remote bucket ID
+
+		// Optional
+		if (updateCounters) {
+			message.writeBoolean(true);
 			message.writeLong(chainId);
 			message.writeLong(parentChainId);
 			message.writeInt(nchildren);
 			message.writeBoolean(responsible);
-
-			// Though the remote bucket is not sorted we do send the sortingFunction
-			// along with its params because the recipient might not have created
-			// its local bucket in time, so, instead, this message creates the local
-			// bucket for it -- if necessary
-			message.writeBoolean(sort);
-			if (sort) {
-				if (sortingParams != null && sortingParams.length > 0) {
-					message.writeInt(sortingParams.length);
-					message.writeArray(sortingParams);
-				} else {
-					message.writeInt(0);
-				}
-			}
-
-			info = map.get(key);
-
-			if (info == null || info.alerted) {
-				// There was no triple in the bucket OR
-				// the remote node has already been alerted
-				message.writeLong(-1); // Flag
-				message.writeBoolean(false);
-			} else {
-				// There will be something in the bucket, alert
-				// the node responsible with this remote-data.
-				info.alerted = true;
-				message.writeLong(info.bucket.getKey()); // Local bucket key
-				message.writeBoolean(info.streaming);
-			}
-
-			message.writeByte((byte) signature.length);
-			message.writeArray(signature);
-
-			if (additionalChildren != null && additionalChildren.size() > 0) {
-				int size = additionalChildren.size();
-				if (size > 127) {
-					throw new IOException("Not supported");
-				}
-				message.writeByte((byte) size);
-				for (Map.Entry<Long, List<Integer>> entry : additionalChildren
-						.entrySet()) {
-					message.writeLong(entry.getKey());
-					List<Integer> list = entry.getValue();
-					message.writeInt(list.size());
-					for (int v : list) {
-						message.writeByte((byte) v);
-					}
-				}
-			} else {
-				message.writeByte((byte) 0);
-			}
-
-			net.finishMessage(message, submission);
+		} else {
+			message.writeBoolean(false);
 		}
+
+		// Though the remote bucket is not sorted we do send the
+		// sortingFunction
+		// along with its params because the recipient might not have
+		// created
+		// its local bucket in time, so, instead, this message creates the
+		// local
+		// bucket for it -- if necessary
+		message.writeBoolean(sort);
+		if (sort) {
+			if (sortingParams != null && sortingParams.length > 0) {
+				message.writeInt(sortingParams.length);
+				message.writeArray(sortingParams);
+			} else {
+				message.writeInt(0);
+			}
+		}
+
+		if (stateBuffer == 3) {
+			// There will be something in the bucket, alert
+			// the node responsible with this remote-data.
+			message.writeLong(info.bucket.getKey()); // Local bucket key
+			message.writeBoolean(info.streaming);
+		} else if (stateBuffer == 1) { // empty bucket
+			message.writeLong(-1); // Flag
+			message.writeBoolean(false);
+		} else {
+			message.writeLong(-2); // Already sent update.
+			message.writeBoolean(false);
+		}
+
+		message.writeByte((byte) signature.length);
+		message.writeArray(signature);
+
+		if (additionalChildren != null && additionalChildren.size() > 0) {
+			int size = additionalChildren.size();
+			if (size > 127) {
+				throw new IOException("Not supported");
+			}
+			message.writeByte((byte) size);
+			for (Map.Entry<Long, List<Integer>> entry : additionalChildren
+					.entrySet()) {
+				message.writeLong(entry.getKey());
+				List<Integer> list = entry.getValue();
+				message.writeInt(list.size());
+				for (int v : list) {
+					message.writeByte((byte) v);
+				}
+			}
+
+		} else {
+			message.writeByte((byte) 0);
+		}
+
+		net.finishMessage(message, submission);
 	}
 
 	/**
@@ -475,25 +513,18 @@ public class Buckets {
 			return;
 		}
 
-		Map<Long, TransferInfo> map = activeTransfers[node];
-
 		long key = getKey(submission, bucketID);
-		TransferInfo info = null;
+		alertTransfer(true, submissionNode, submission, node, bucketID,
+				chainId, parentChainId, nchildren, responsible, sort,
+				sortingFields, signature, additionalChildren);
 
-		synchronized (map) {
-			info = map.get(key);
-
-			// If decreaseCounter is not set, there has not been a corresponding
-			// startTransfer call, so alertTransfer has not been called yet for
-			// this transfer.
-			if (info == null || !info.alerted || !decreaseCounter) {
-				alertTransfer(submissionNode, submission, node, bucketID,
-						chainId, parentChainId, nchildren, responsible, sort,
-						sortingFields, signature, additionalChildren);
-			}
-
-			if (info != null && decreaseCounter) {
-				info.count--;
+		if (decreaseCounter) {
+			Map<Long, TransferInfo> map = activeTransfers[node];
+			synchronized (map) {
+				TransferInfo info = map.get(key);
+				if (info != null) {
+					info.count--;
+				}
 			}
 		}
 	}
