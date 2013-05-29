@@ -101,6 +101,9 @@ class TupleSender {
 					|| bucket.availableToTransmit()
 					|| !buckets.isActiveTransfer(tu.submissionId,
 							tu.remoteNodeId, tu.bucketId);
+                        if (log.isDebugEnabled()) {
+                            log.debug("Checking bucket " + tu.bucketKey + ", enoughData = " + enoughData);
+                        }
 			if (enoughData) {
 				synchronized (sendList) {
 					sendList.add(tu);

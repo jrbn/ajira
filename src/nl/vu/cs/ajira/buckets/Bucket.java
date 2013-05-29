@@ -514,10 +514,10 @@ public class Bucket {
 	private void checkFinished() throws IOException {
 
 		if (log.isDebugEnabled()) {
-			log.debug("checkFinished: nChainsReceived = " + nChainsReceived
-					+ ", nBucketReceived = " + nBucketReceived
-					+ ", highestSequence = " + highestSequence
-					+ ", children.size() = " + children.size()
+			log.debug("checkFinished " + this.key + ": nChainsReceived = "
+					+ nChainsReceived + ", nBucketReceived = "
+					+ nBucketReceived + ", highestSequence = "
+					+ highestSequence + ", children = " + children.toString()
 					+ ", receivedMainChain = " + receivedMainChain);
 		}
 		if (nChainsReceived == nBucketReceived && highestSequence != -1
@@ -1274,6 +1274,7 @@ public class Bucket {
 					if (freeList.buffer != null) {
 						freeList.buffer.clear();
 						fb.release(freeList.buffer);
+						freeList.buffer = null;
 					}
 					freeList = freeList.next;
 				}

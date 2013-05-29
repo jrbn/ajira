@@ -347,6 +347,11 @@ public class Buckets {
 			return;
 		}
 
+                if (log.isDebugEnabled()) {
+                    log.debug("AlertTransfer for bucket " + bucketID + ", ci = " + chainId
+                            + ", p = " + parentChainId + ", nc = " + nchildren + ", resp = " + responsible);
+                }
+
 		Map<Long, TransferInfo> map = activeTransfers[node];
 		long key = getKey(submission, bucketID);
 
