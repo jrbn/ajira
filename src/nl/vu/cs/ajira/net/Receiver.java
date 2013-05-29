@@ -7,7 +7,6 @@ import ibis.ipl.WriteMessage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.util.Arrays;
 
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.buckets.Bucket;

@@ -117,7 +117,6 @@ public class Bucket {
 		WritableContainer<WritableTuple> buffer;
 		boolean removeChunkReturned;
 		WriteBuffer next;
-		public boolean done;
 	}
 
 	private WriteBuffer freeList;
@@ -140,7 +139,7 @@ public class Bucket {
 
 	private long elementsInCache = 0;
 
-	private Factory<WritableContainer<WritableTuple>> fb = null;
+	Factory<WritableContainer<WritableTuple>> fb = null;
 	boolean gettingData;
 	private int highestSequence;
 
@@ -193,6 +192,7 @@ public class Bucket {
 	private long totalNumberOfElements = 0;
 
 	boolean sortingBucket;
+	private boolean done;
 
 	/**
 	 * This method is used to add a tuple to the in-memory buffer. If the
@@ -654,6 +654,8 @@ public class Bucket {
 		minimumSortedList.clear();
 		cacheFiles.clear();
 		children.clear();
+		
+		done = false;
 
 		additionalChildrenCounts = null;
 
@@ -1202,7 +1204,7 @@ public class Bucket {
 			if (log.isDebugEnabled()) {
 				log.debug("fillWriteBufers: start filling writeBuffer");
 			}
-			w.done = false;
+			
 			w.next = null;
 			w.removeChunkReturned = removeChunk(w.buffer);
 
@@ -1224,13 +1226,13 @@ public class Bucket {
 					prev.next = w;
 				}
 				availableListLock.notifyAll();
-				if (w.buffer.getNElements() == 0) {
+				if (w.removeChunkReturned) {
 					// LOG-DEBUG
 					if (log.isDebugEnabled()) {
 						log.debug("fillWriteBufers: done, no more chunks to fill with, "
 								+ "stop the thread for double-buffering & notify all...");
 					}
-					w.done = true;
+					done = true;
 					return;
 				}
 			}
@@ -1251,6 +1253,12 @@ public class Bucket {
 
 		synchronized (availableListLock) {
 			while (availableList == null) {
+				if (done) {
+					if (ready != null) {
+						ready[0] = true;
+					}
+					return fb.get();
+				}
 				try {
 					availableListLock.wait();
 				} catch (Throwable e) {
@@ -1260,8 +1268,13 @@ public class Bucket {
 			w = availableList;
 			availableList = w.next;
 		}
+		
+		retval = w.buffer;
+		synchronized (this) {
+			totalNumberOfElements -= retval.getNElements();
+		}
 
-		if (w.done) {
+		if (w.removeChunkReturned) {
 			// LOG-DEBUG
 			if (log.isDebugEnabled()) {
 				log.debug("removeWChunk: done, no more chunks to remove");
@@ -1271,10 +1284,8 @@ public class Bucket {
 					"Bucket:removeWChunk: overall time (ms)",
 					System.currentTimeMillis() - timeStart);
 			if (ready != null) {
-				ready[0] = false;
+				ready[0] = true;
 			}
-			w.buffer.clear();
-			fb.release(w.buffer);
 			synchronized (freeListLock) {
 				while (freeList != null) {
 					if (freeList.buffer != null) {
@@ -1285,12 +1296,8 @@ public class Bucket {
 					freeList = freeList.next;
 				}
 			}
-			return new WritableContainer<WritableTuple>(1);
-		}
-
-		retval = w.buffer;
-		synchronized (this) {
-			totalNumberOfElements -= retval.getNElements();
+			w.buffer = null;
+			return retval;
 		}
 		w.buffer = fb.get();
 		w.buffer.init(sortingBucket);
@@ -1311,7 +1318,7 @@ public class Bucket {
 			if (!this.isFinished) {
 				synchronized (availableListLock) {
 					if (availableList == null
-							|| (availableList.buffer.getNElements() == 0 && !availableList.done)) {
+							|| (availableList.buffer.getNElements() == 0 && !availableList.removeChunkReturned)) {
 						hasData = false;
 					}
 				}

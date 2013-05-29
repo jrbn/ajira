@@ -26,6 +26,7 @@ public class BucketIterator extends TupleIterator {
 	boolean isUsed;
 	private SimpleData[] signature;
 	private WritableTuple serializer = new WritableTuple();
+	private boolean done = false;
 
 	/**
 	 * Initialization function.
@@ -49,6 +50,7 @@ public class BucketIterator extends TupleIterator {
 		// affects
 		// serialization.
 		this.isUsed = false;
+		this.done = false;
 		this.signature = new SimpleData[signature.length];
 		if (log.isDebugEnabled()) {
 			log.debug("initializing iterator for bucket " + bucket.getKey()
@@ -73,6 +75,9 @@ public class BucketIterator extends TupleIterator {
 
 		// If the local buffer is finished, get tuples from the bucket
 		if (tuples == null || tuples.getNElements() == 0) {
+			if (tuples != null) {
+				bucket.fb.release(tuples);
+			}
 			long time = System.currentTimeMillis();
 
 			tuples = bucket.removeWChunk(null);
@@ -82,9 +87,16 @@ public class BucketIterator extends TupleIterator {
 						+ tuples.getNElements() + " entries, time merging: "
 						+ (System.currentTimeMillis() - time));
 			}
+			
+			if (tuples.getNElements() == 0) {
+				bucket.fb.release(tuples);
+				tuples = null;
+				done = true;
+				return false;
+			}
 		}
 
-		return tuples.getNElements() > 0;
+		return true;
 	}
 
 	/**
@@ -108,6 +120,9 @@ public class BucketIterator extends TupleIterator {
 	 */
 	@Override
 	public void getTuple(Tuple tuple) throws Exception {
+		if (done) {
+			throw new Exception("getTuple() called while next() returned false");
+		}
 		try {
 			tuple.set(signature);
 			serializer.setTuple(tuple);

@@ -210,6 +210,7 @@ public class Buckets {
 		// availability.
 		// So, don't kill the bucket!
 		if (itr.isUsed && itr.bucket.isFinished() && itr.bucket.isEmpty()) {
+			releaseBucket(itr.bucket);
 			itr.bucket = null;
 		}
 	}
