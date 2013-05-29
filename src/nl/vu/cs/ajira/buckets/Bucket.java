@@ -767,6 +767,10 @@ public class Bucket {
 	 */
 	synchronized void releaseBuffers() {
 		waitForCachersToFinish();
+		synchronized(lockHasData) {
+			isFinished = true;
+		}
+		notifyAll();
 		releaseInBuffer();
 		releaseExBuffer();
 		// Also remove files.
@@ -1046,7 +1050,6 @@ public class Bucket {
 						waitersForAdditions++;
 						this.wait();
 						waitersForAdditions--;
-
 						// It became finished while I was executing the previous
 						// code. Let's try again.
 						continue;
