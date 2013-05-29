@@ -989,88 +989,91 @@ public class Bucket {
 	private synchronized boolean removeChunkUnsorted(
 			WritableContainer<WritableTuple> tmpBuffer) throws Exception {
 
-		// If some threads still have to finish writing
-		waitForCachersToFinish();
-
 		long totTime = System.currentTimeMillis();
 
-		try {
-			if (elementsInCache > 0) {
-				long time = System.currentTimeMillis();
-				File fi = null;
+		for (;;) {
+			// If some threads still have to finish writing
+			waitForCachersToFinish();
+			try {
+				if (elementsInCache > 0) {
+					long time = System.currentTimeMillis();
+					File fi = null;
 
-				if (cacheFiles.size() > 0) {
-					fi = cacheFiles.remove(0);
-				}
-
-				if (fi != null) {
-					FDataInput di = new FDataInput(new SnappyInputStream(
-							new BufferedInputStream(new FileInputStream(fi),
-									65536)));
-					tmpBuffer.readFrom(di); // Read the oldest file
-					stats.addCounter(submissionNode, submissionId,
-							"Bucket:removeChunk: time reading from cache (ms)",
-							System.currentTimeMillis() - time);
-					stats.addCounter(submissionNode, submissionId,
-							"Bucket:removeChunk: Bytes read from cache",
-							tmpBuffer.getRawSize());
-					elementsInCache -= tmpBuffer.getNElements();
-					di.close();
-					fi.delete();
-				}
-			}
-			
-			// Let's see if we can also get the data either from the
-			// inBuffer, or exBuffer, but then we must be sure they are not
-			// being cached.
-			if (tmpBuffer.getNElements() == 0) {
-				if (inBuffer != null) {
-					if (tmpBuffer.addAll(inBuffer)) {
-						inBuffer.clear();
+					if (cacheFiles.size() > 0) {
+						fi = cacheFiles.remove(0);
 					}
 
-					// Ok, now we try also exBuffer...
-					if (tmpBuffer.getNElements() == 0) {
-						if (exBuffer != null) {
-							if (tmpBuffer.addAll(exBuffer)) {
-								exBuffer.clear();
+					if (fi != null) {
+						FDataInput di = new FDataInput(new SnappyInputStream(
+								new BufferedInputStream(new FileInputStream(fi),
+										65536)));
+						tmpBuffer.readFrom(di); // Read the oldest file
+						stats.addCounter(submissionNode, submissionId,
+								"Bucket:removeChunk: time reading from cache (ms)",
+								System.currentTimeMillis() - time);
+						stats.addCounter(submissionNode, submissionId,
+								"Bucket:removeChunk: Bytes read from cache",
+								tmpBuffer.getRawSize());
+						elementsInCache -= tmpBuffer.getNElements();
+						di.close();
+						fi.delete();
+					}
+				}
+
+				// Let's see if we can also get the data either from the
+				// inBuffer, or exBuffer, but then we must be sure they are not
+				// being cached.
+				if (tmpBuffer.getNElements() == 0) {
+					if (inBuffer != null) {
+						if (tmpBuffer.addAll(inBuffer)) {
+							inBuffer.clear();
+						}
+
+						// Ok, now we try also exBuffer...
+						if (tmpBuffer.getNElements() == 0) {
+							if (exBuffer != null) {
+								if (tmpBuffer.addAll(exBuffer)) {
+									exBuffer.clear();
+								}
 							}
 						}
 					}
 				}
+
+				// There was nothing available. Now we do not have any choice than
+				// wait.
+
+				if (tmpBuffer.getNElements() == 0) {
+					boolean isBucketFinished;
+					synchronized(lockHasData) {
+						isBucketFinished = isFinished;
+					}
+					if (! isBucketFinished) {
+						waitersForAdditions++;
+						this.wait();
+						waitersForAdditions--;
+
+						// It became finished while I was executing the previous
+						// code. Let's try again.
+						continue;
+					}
+					return true;
+				}
+			} catch (Exception e) {
+				log.error("Error in retrieving the results", e);
+				throw e;
 			}
 
-			// There was nothing available. Now we do not have any choice than
-			// wait.
-			
-			if (tmpBuffer.getNElements() == 0) {
-				boolean isBucketFinished;
-				synchronized(lockHasData) {
-					isBucketFinished = isFinished;
-				}
-				if (! isBucketFinished) {
-					waitersForAdditions++;
-					this.wait();
-					waitersForAdditions--;
-				}
-				// It became finished while I was executing the previous
-				// code. Let's try again.
-				return removeChunkUnsorted(tmpBuffer);
+			long tm = System.currentTimeMillis() - totTime;
+			if (log.isDebugEnabled()) {
+				log.debug("removeChunk: time = " + tm + " ms.");
 			}
-		} catch (Exception e) {
-			log.error("Error in retrieving the results", e);
-			throw e;
-		}
 
-		long tm = System.currentTimeMillis() - totTime;
-		if (log.isDebugEnabled()) {
-			log.debug("removeChunk: time = " + tm + " ms.");
-		}
-
-		synchronized(lockHasData) {
-			return isFinished && elementsInCache == 0
-				&& (inBuffer == null || inBuffer.getNElements() == 0)
-				&& (exBuffer == null || exBuffer.getNElements() == 0);
+			synchronized(lockHasData) {
+				return isFinished && elementsInCache == 0
+						&& (inBuffer == null || inBuffer.getNElements() == 0)
+						&& (exBuffer == null || exBuffer.getNElements() == 0);
+			}
 		}
 	}
 
