@@ -7,6 +7,7 @@ import ibis.ipl.WriteMessage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.util.Arrays;
 
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.buckets.Bucket;
@@ -101,10 +102,20 @@ class Receiver implements MessageUpcall {
 			int submissionNode = message.readInt();
 			int idSubmission = message.readInt();
 			int idBucket = message.readInt();
-			long idChain = message.readLong();
-			long idParentChain = message.readLong();
-			int children = message.readInt();
-			boolean isResponsible = message.readBoolean();
+
+			boolean updateCounters = message.readBoolean();
+
+			long idChain = 0,
+			idParentChain = 0;
+			int children = 0;
+			boolean isResponsible = false;
+			if (updateCounters) {
+				idChain = message.readLong();
+				idParentChain = message.readLong();
+				children = message.readInt();
+				isResponsible = message.readBoolean();
+			}
+
 			boolean isSorted = message.readBoolean();
 			byte[] cfParams = null;
 			if (isSorted) {
@@ -123,8 +134,10 @@ class Receiver implements MessageUpcall {
 			Bucket bucket = buckets.getOrCreateBucket(submissionNode,
 					idSubmission, idBucket, isSorted, isSorted, cfParams,
 					signature);
-			bucket.updateCounters(idChain, idParentChain, children,
-					isResponsible);
+			if (updateCounters) {
+				bucket.updateCounters(idChain, idParentChain, children,
+						isResponsible);
+			}
 
 			int additionalCounters = message.readByte();
 			if (additionalCounters > 0) {
@@ -141,7 +154,7 @@ class Receiver implements MessageUpcall {
 				bucket.setAdditionalCounters(chains, values);
 			}
 
-			if (bufferKey != -1) {
+			if (bufferKey > -1) {
 				finishMessage(message, time, idSubmission);
 				int idRemoteNode = net.getPeerId(message.origin()
 						.ibisIdentifier());
@@ -149,7 +162,8 @@ class Receiver implements MessageUpcall {
 						bufferKey, streaming);
 			} else {
 				endMessage(message, time, idSubmission);
-				bucket.updateCounters(0, true);
+				if (bufferKey == -1)
+					bucket.updateCounters(0, true);
 			}
 
 			break;
@@ -366,7 +380,8 @@ class Receiver implements MessageUpcall {
 
 			boolean[] retval = new boolean[1];
 			bucket = buckets.getExistingBucket(bucketKey, true);
-			WritableContainer<WritableTuple> tmpBuffer = bucket.removeWChunk(retval);
+			WritableContainer<WritableTuple> tmpBuffer = bucket
+					.removeWChunk(retval);
 
 			reply = net.getMessageToSend(message.origin().ibisIdentifier(),
 					NetworkLayer.queryReceiverPort);

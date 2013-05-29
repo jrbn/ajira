@@ -2,6 +2,7 @@ package nl.vu.cs.ajira.submissions;
 
 import ibis.ipl.WriteMessage;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -66,7 +67,11 @@ public class SubmissionRegistry {
 		if (log.isDebugEnabled()) {
 			log.debug("updateCounters: submissionId = " + submissionId
 					+ ", chainId = " + chainId + ", parentChainId = "
-					+ parentChainId + ", nchildren = " + nchildren);
+					+ parentChainId + ", nchildren = " + nchildren
+					+ ", additionalChainCounters="
+					+ Arrays.toString(additionalChainCounters)
+					+ ", additionalChainValues="
+					+ Arrays.toString(additionalChainValues));
 		}
 		synchronized (sub) {
 			if (nchildren > 0) { // Set the expected children in the
@@ -123,7 +128,8 @@ public class SubmissionRegistry {
 			if (log.isDebugEnabled()) {
 				log.debug("rootChainsReceived = " + sub.rootChainsReceived
 						+ ", mainRootReceived = " + sub.mainRootReceived
-						+ ", monitors.size() = " + sub.monitors.size());
+						+ ", monitors.size() = " + sub.monitors.size()
+						+ " monitor content=" + sub.monitors);
 			}
 			if (sub.rootChainsReceived == 0 && sub.mainRootReceived
 					&& sub.monitors.size() == 0) {

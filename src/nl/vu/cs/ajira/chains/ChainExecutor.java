@@ -291,7 +291,6 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	}
 
 	private void incrementChildren(long chain, int v) {
-
 		int remainingActions = nActions - currentAction;
 		v -= remainingActions;
 
@@ -361,10 +360,13 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 				}
 			}
 
-			context.getBuckets().alertTransfer(submissionNode, submissionId,
-					nodeId, bucketId, chain.getChainId(),
-					chain.getParentChainId(), children, roots[currentAction],
-					sort, sortingFields, signature, newChildren);
+			// We cannot update the counters now. Only alert the remote data
+			// that there is available data, unless this was already done (the
+			// method will check this)
+			context.getBuckets().alertTransfer(false, submissionNode,
+					submissionId, nodeId, bucketId, chain.getChainId(), -1, 0,
+					false, sort, sortingFields, signature, null);
+
 		} catch (IOException e) {
 			log.error(e.getMessage(), e);
 			throw e;
@@ -455,22 +457,6 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		int old_children = chain.getTotalChainChildren();
 		int new_children = old_children;
 		currentAction = 0;
-
-		// Check the old values, just in case...
-		// List<Integer> values = newChildren.get(chainId);
-		// if (values != null) {
-		// Iterator<Integer> itr = values.iterator();
-		// while (itr.hasNext()) {
-		// int v = itr.next();
-		// if (v < 0) {
-		// itr.remove();
-		// new_children++;
-		// }
-		// }
-		// if (values.size() == 0) {
-		// newChildren.remove(chainId);
-		// }
-		// }
 
 		for (Map.Entry<Long, List<Integer>> entry : counters.entrySet()) {
 			// Check whether the counter is equivalent to the chainId.
