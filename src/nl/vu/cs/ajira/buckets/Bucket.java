@@ -928,7 +928,7 @@ public class Bucket {
 									}
 								}
 							} catch (Exception e) {
-								log.warn("Here it should never come!");
+								log.warn("Here it should never come!", e);
 								sortedCacheFiles.remove(minimum);
 								meta.finished();
 							}
