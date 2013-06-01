@@ -1,0 +1,14 @@
+.project
+.classpath
+ajira-*.jar
+src.zip
+build
+tmp-eclipse
+.settings
+.externalToolBuilders
+*~
+.*~
+.DS_Store
+bin/
+/TODO
+/build.xml
