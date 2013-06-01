@@ -1,0 +1,813 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Ajira-Project</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">      
+      <header>
+        
+        <div style="float: left"><h1><a href="index.html" style="color: black; font-weight: bold">Ajira</a></h1></div>
+
+        <div style="width: 100%; left: 70px; position: relative; margin-top: 11px;">
+        	<div style=" float: right; border-top : 7px solid
+        	transparent; border-bottom : 7px solid transparent;
+        	border-left : 7px solid black; width:0;
+        	height:0;"></div>
+        	<div style="width: 99%; height: 7px; border-bottom:
+        	1px solid"></div>
+        	
+        </div>
+
+                
+      <div style="clear: both"><a href="doc.html">Documentation</a>
+      	<ul class="docul">
+      		<li><a href="#getting_started">Getting Started</a></li>
+      		<li><a href="#tutorial">Tutorial</a></li>
+      		<li><a href="#architecture">System Architecture</a></li>
+      		<li><a href="#reference">Reference Guide</a></li>
+      		<li><a href="">Javadoc</a></li>
+      		<li><a href="other.html">more...</a></li>
+      	</ul>
+      </div>
+
+        <div style="clear:
+        both"><p class="view"><a href="https://github.com/jrbn/ajira">View
+        the Project on GitHub</a></p></div>
+
+
+        <ul class="gitul">
+          <li class="gitli"><a href="https://github.com/jrbn/ajira/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li class="gitli"><a href="https://github.com/jrbn/ajira/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li class="gitli"><a href="https://github.com/jrbn/ajira">View On <strong>GitHub</strong></a></li>
+        </ul>            
+      </header>
+
+      <section>         
+      	<h1>Documentation</h1>
+      	
+	<p>If you just want to start using Ajira then you should first
+	read our <a href="#getting_started">getting started</a> guide,
+	which should teach you to set up the environment and start to
+	use the framework.</p>
+
+	<p>The next step would be to read
+	our <a href="#tutorial">tutorial</a>, where we illustrate a
+	small example application step-by-step. This should explain
+	you the main ideas behind Ajira.</p>
+
+	<p>Finally, if you are interested on what happens behind the
+	curtains, then you should read our description of
+	the <a href="">architecture</a> of Ajira, and
+	the <a href="">philosophy</a> that drives its development.</p>
+
+<div id="getting_started" class="doc_section">
+	<h1>Getting started</h1>
+
+        <div class="menu">
+	  <ul>
+	    <li><a href="#gs_download">Download and compile the code</a></li>
+	    <li><a href="#gs_single">Launch on a single node</a></li>
+	    <li><a href="#gs_multiple">Launch on multiple nodes</a></li>
+	  </ul>
+	</div>
+
+<h3 id="gs_download">Download and compile the code</h3>
+
+<p>A simple clone with:</p>
+
+<pre>git clone https://github.com/jrbn/ajira.git</pre>
+
+<p>should do the job. After this, you must compile the codebase using
+the ant file in the main directory. Just type:</p>
+
+<pre>ant</pre>
+
+<p>and the script will create the jars with all the program. These
+files should be labeled with <code>ajira-XXX.jar</code>
+and <code>ajira-webapps-XXX.jar</code>. The first jar contains the
+actual program, while the second contains the .jsp files for the web
+interface. Normally you need both, but if you decide not to use the
+web interface than you can skip the second one.</p>
+
+<p>As almost all java programs, Ajira depens on external
+libraries. These are contained in the <i>lib/</i> directory. If you
+want to use the program, remember to include also all the jars in this
+directory in your classpath, otherwise you will have a problem. For
+convienency, we added a script to copy all these jars in a "fat"
+jar. If you want it, just type:</p>
+
+<pre>ant fat-jar</pre>
+
+<p>and the program will create a <code>ajira-fat-XXX.jar</code> jar
+file.</p>
+
+<h3 id="gs_single">Launch on a single node</h3>
+
+<p>For a quick launch, you can try the <i>WordCount</i> example that
+we added in the <i>nl.vu.cs.ajira.examples</i> package (in the
+tutorial we will use this example to explain how the program
+works). This program accepts in input a directory with a number of
+text files with some generic text (the files can be either compressed
+or not) and returns in output a list of words with the number of
+occurrences that they appear on the text.</p>
+
+<p>To launch the program, just type:</p>
+
+<pre>java -cp ajira-fat-XXX.jar:conf/
+nl.vu.cs.ajira.examples.WordCount &lt;inputdir&gt; &lt;outputdir&gt;</pre>
+
+<p>where <i>inputdir</i> is the directory in input
+ and <i>outputdir</i> the directory which will contain the results of
+ the program (note that in this example the directory <i>conf/</i> is
+ added to set a default logging level to info, otherwise all logging
+ messages would be printed in output).</p>
+
+<h3 id="gs_multiple">Launch on multiple nodes</h3>
+
+<p>TODO</p>
+
+</div>
+
+<div id="tutorial" class="doc_section">
+<h1>Tutorial</h1>
+
+<div class="menu">
+  <ul>
+    <li><a href="#t_overview">Overview</a></li>
+    <li><a href="#t_example">Example: WordCount</a></li>
+  </ul>
+</div>
+
+<h3 id="t_overview">Overview</h3>
+
+<p><u>An Ajira program consists of a list of <i>actions</i> to be
+executed in a sequence.</u></p>
+
+<p>Each of these <b>actions</b> receives some data in <b>input</b> and produces
+some data in <b>output</b>. The data in output will become the input of
+the action until the sequence is finished. At this point the program
+is terminated.</p>
+
+<p>A user who wants that wants to write a program in Ajira only needs
+to define such sequence of actions, and to implement the actions that
+are not already provided by the framework. Once this is done, Ajira
+will take care of execution of the program in the most efficient way,
+parallelizing and distributing it across the nodes.</p>
+
+<p>In Ajira, <b>data</b> is always expressed as a number
+of <b>tuples</b>, of variable length and type. The elements of the
+tuples can be numbers (byte, int, or long), strings, booleans or
+similar simple types. Because of this, actions are essentially
+computational units that transforms tuples in other tuples.</p>
+
+<p>For example, suppose that we want to sample a number of records
+from a set of files, group them by a given criteria and write the
+results on a number of files. To achieve this simple task, four
+actions are necessary: 1) Read the data from the files; 2) sample the
+input; 3) group it; 4) write the results on disk.Such program can be
+written with Ajira with just a few lines.</p>
+
+<p>As you can see, there are quite a number of similarities
+between <b>Ajira</b> and <b>MapReduce</b>, but there is also an
+important difference. In MapReduce, only two types of actions are
+possible: a map and reduce. <u>In Ajira, you are not bound by a
+two-phases computation, but you can construct a chain of computation
+as complex as you like.</u></p>
+
+<p>This allows the programmer a much greater flexibility in
+implementing complex programs. For example, let's slightly change our
+previous example, adding the operation of removing possible duplicates
+in the input before executing the sampling. Performing this new task
+in a single MapReduce job would be rather tricky, since we are
+required to perform multiple sortings (one to clean the duplicates and
+one to group the sample).</p>
+
+<p>However, this is not the case of Ajira, where multiple sorting
+phases can be stacked up in the same sequence of actions. To better
+show this, we draw in Figure 1 a sketch of how a MapReduce program
+would look like, and how the same operations would be written in
+Ajira.</p>
+
+<div style="text-align: center"><img src="img/mapreduce-ajira.png"
+/><p><b>Figure 1:</b> Execution of a sample program using MapReduce
+and Ajira.</p></div>
+
+<p>The execution of an Ajira program is sequential, since the actions
+are executed one after the other. However, in reality the framework
+tries to parallelize the execution and even to distribute it across
+several peers in a (semi)transparent way. For example, consider the
+standard action <i>ReadFromFiles</i>, which is provided by the
+framework and which task is to read the content on some files and feed
+it to the next actions in the list. Here, the user only specifies at
+what point this action should be executed in the sequence (e.g.
+ReadFromFiles->Sample->WriteToFiles), but nothing more.</p>
+
+<p>When Ajira will physically execute this action, it will first
+create a number of concurrent "chains" depending on the input
+size. For example, if there are two files, <i>fileA.txt</i>
+and <i>fileB.txt</i>, Ajira create two concurrent chains of actions
+where one will process the content of <i>fileA.txt</i> while the other
+will process the content of <i>fileB.txt</i>.</p>
+
+<p>If the user needs that the flow of tuples in one sequence must be
+converged to one or multiple processors (for example to apply some
+aggregating operations), then Ajira provides a number of special
+actions, like <i>CollectToNode</i> or <i>PartitionToNodes</i> to make
+sure that all the tuples that are processed in parallel are collected
+in one single point.</p>
+
+<p>We will now take the classical MapReduce WordCount example, and
+show how we can rewrite it in Ajira.</p>
+
+<h3 id="t_example">Example: WordCount</h3>
+
+<p>The scope of this tutorial is to understand how a simple program
+that written using the Ajira framework works. To this end, let's take
+example
+program <a href="https://github.com/jrbn/ajira/blob/master/src/nl/vu/cs/ajira/examples/WordCount.java"><i>WordCount.java</i></a>
+and start reading the code, to understand how it works.</p>
+
+<p>The purpose of this program is to count the occurrences of words in
+a text files. After MapReduce, became a sort of <i>Hello World</i> for
+data intensive applications. The program receives in input a set of
+files and returns in output a number of pairs where the first element
+is a word that occurred at least once in the input collection and the
+second element the number of times that it occurred.</p>
+
+<p>The program can be divided in two parts. The first, which is
+between
+lines <a href="https://github.com/jrbn/ajira/blob/master/src/nl/vu/cs/ajira/examples/WordCount.java#L118">118</a>
+and <a href="https://github.com/jrbn/ajira/blob/master/src/nl/vu/cs/ajira/examples/WordCount.java#L133">133</a>,
+takes care of initializing the framework. In this phase, the framework
+can be customized by setting some parameters (in the example,
+N_PROC_THREADS indicates the number of concurrent threads that can
+perform the actual computation).</p>
+
+<p>After the initialization is completed, the framework can be started
+with the command <i><a href="https://github.com/jrbn/ajira/blob/master/src/nl/vu/cs/ajira/examples/WordCount.java#L130">Ajira.startup()</a></i>. Note that this code must be
+executed on all nodes that participate in the computation. After this
+function is executed, Ajira is running and waiting to receive a
+submission.</p>
+
+<p>The function <i><a href="https://github.com/jrbn/ajira/blob/master/src/nl/vu/cs/ajira/examples/WordCount.java#L133">Ajira.amITheServer()</a></i> is used to make sure that
+some code is executed only once and not on every instance of the
+program. In fact, this function will return <i>true</i> only on one
+node (actually the first that joins the computation). This means that
+the <i>if</i> in lines <a href="https://github.com/jrbn/ajira/blob/master/src/nl/vu/cs/ajira/examples/WordCount.java#L116">116</a>-<a href="https://github.com/jrbn/ajira/blob/master/src/nl/vu/cs/ajira/examples/WordCount.java#L150">150</a> will be executed only on one node and
+skipped on all the other instances.</p>
+
+<p>Inside this <i>if</i> we set up the computation that will execute
+the WordCount program. This is done in the
+function <i><a href="https://github.com/jrbn/ajira/blob/master/src/nl/vu/cs/ajira/examples/WordCount.java#L79">createJob()</a></i>. We report the content of the function below:</p>
+
+<pre>
+public static Job createJob(String inDir, String outDir)
+			throws ActionNotConfiguredException {
+
+Job job = new Job();
+ActionSequence actions = new ActionSequence();
+
+// Read the input files
+ActionConf action = ActionFactory.getActionConf(ReadFromFiles.class);
+action.setParamString(ReadFromFiles.S_PATH, inDir);
+actions.add(action);
+
+// Count the words
+actions.add(ActionFactory.getActionConf(CountWords.class));
+
+// Groups the pairs
+action = ActionFactory.getActionConf(GroupBy.class);
+action.setParamStringArray(GroupBy.SA_TUPLE_FIELDS,
+		TString.class.getName(), TInt.class.getName());
+action.setParamByteArray(GroupBy.IA_FIELDS_TO_GROUP, (byte) 0);
+actions.add(action);
+
+// Sum the counts
+actions.add(ActionFactory.getActionConf(SumCounts.class));
+
+// Write the results on files
+action = ActionFactory.getActionConf(WriteToFiles.class);
+action.setParamString(WriteToFiles.S_OUTPUT_DIR, outDir);
+actions.add(action);
+
+job.setActions(actions);
+return job;
+
+}</pre>
+
+<p>Here we define a list of actions that need to be executed in a
+sequence in order to implement the operations required by the
+program. The first action is called <i>ReadFromFiles</i> and is a
+standard action provided by the framework. Its task is to read the
+files in input and return their contents to the following actions. The
+content is returned as a number of tuples, where each tuple contains a
+line of the text files (in case, it is possible to set a custom reader
+that returns tuples with different structure or content).</p>
+
+The operation is done with the instruction <br/><br/> <pre>ActionConf
+action = ActionFactory.getActionConf(ReadFromFiles.class);</pre> which
+is used to retrieve an object that contains the configuration of the
+action. Depending on the action, such object will accept certain
+parameters instead of others. The second
+line, <code>action.setParamString(ReadFromFiles.S_PATH, inDir)</code>,
+simply sets as the action parameter the directory to be read in
+input.</p>
+
+<p>The second action that needs to be executed is
+called <i>CountWords</i> and must be defined by the user. In the code
+it is defined in
+lines <a href="https://github.com/jrbn/ajira/blob/master/src/nl/vu/cs/ajira/examples/WordCount.java#L38">38</a>-<a href="https://github.com/jrbn/ajira/blob/master/src/nl/vu/cs/ajira/examples/WordCount.java#L54">54</a>. For
+clarity we report it below.</p>
+
+<pre>
+public static class CountWords extends Action {
+
+@Override
+public void process(Tuple tuple, ActionContext context,
+                    ActionOutput actionOutput) throws Exception {
+	TString iText = (TString) tuple.get(0);
+	String sText = iText.getValue();
+	if (sText != null && sText.length() > 0) {
+		String[] words = sText.split("\\s+");
+		for (String word : words) {
+			if (word.length() > 0) {
+				TString oWord = new TString(word);
+				actionOutput.output(oWord, new TInt(1));
+			}
+		}
+	}
+}
+}
+</pre>
+
+<p>The only method that the abstract action <i>Action</i> requires to
+implement is the method <i>process(...)</i>. This method receives as
+input one tuple and produces in output one of more
+tuples. Note that here an <i>action</i> resembles very much the task of
+a <i>Map</i> in the MapReduce model since also here one tuple can
+generate zero or more other tuples (however, note that in our case an
+action can do much more than a <i>map</i>).</p>
+
+<p>In fact, here the action <i>CountWords</i> does exactly the same
+task as the <i>Map phase</i> in the MapReduce version of this example:
+Split the input text in words, and for each of them output a new
+pair <i>("word", 1)</i>. This operation is done in the process(...)
+method of this action.</p>
+
+<p>The third action is called <i>GroupBy</i> and is a standard action
+provided by the framework. The <i>process</i> method of this action
+will receive in input the output of the <i>CountWords</i> action and
+it will group it other tuples that will be passed to the following
+action. Once again, this action is needed to simulate exactly the
+computation that occurs in MapReduce: In fact, also there the output
+of the <i>Map</i> need to be grouped by the framework so that on each group a
+<i>Reduce</i> action could be applied.</p>
+
+<p>This action needs some parameters. First we need to tell it exactly
+which type of tuples the action will receive in input. This is
+necessary for the sorting. In the example, each tuple is composed by a
+string (TString) and an integer (TInt). The second parameter
+(<i>IA_FIELDS_TO_GROUP</i>) is needed to indicate which fields of the
+tuple we should use to group the entire tuple. In our case we want the
+tuples being grouped by the word and therefore we set this parameter
+to the value 0.</p>
+
+<p>The third action is the "reduce" of the MapReduce counterpart program. In our example this action is called <i>SumCounts</i> and is defined in lines <a href="https://github.com/jrbn/ajira/blob/master/src/nl/vu/cs/ajira/examples/WordCount.java#L64">64</a>-<a href="https://github.com/jrbn/ajira/blob/master/src/nl/vu/cs/ajira/examples/WordCount.java#L76">76</a>.</p>
+
+<pre>
+public static class SumCounts extends Action {
+
+@Override
+public void process(Tuple tuple, ActionContext context,
+         	ActionOutput actionOutput) throws Exception {
+	TString word = (TString) tuple.get(0);
+	TBag values = (TBag) tuple.get(1);
+
+	long sum = 0;
+	for (Tuple t : values) {
+		sum += ((TInt) t.get(0)).getValue();
+	}
+	actionOutput.output(word, new TLong(sum));
+}
+}
+</pre>
+
+<p>This action receives in input a tuple that contains first all the
+fields that were used as a key by the <i>GroupBy</i> action and as
+last field an instance of the class <i>TBag</i> that contains a
+collection of the tuples in each group. Exactly as it happens in
+MapReduce, this class sums the number 1 produces by the
+action <i>CountWords</i> and return these values in the output.</p>
+
+<p>The last action in the chain is called <i>WriteToFiles</i> and is a
+standard action provided by the framework. The task of this action is
+to write the tuples in input on files. The output directory is
+indicated with the parameter <i>S_OUTPUT_DIR</i>.</p>
+
+<p>Once the job is defined, the user can execute it launching the
+command <a href="https://github.com/jrbn/ajira/blob/master/src/nl/vu/cs/ajira/examples/WordCount.java#L138">Ajira.waitForCompletion()</a>. Once
+the job is executed, it is possible to print out some statistics about
+the execution with the
+command <a href="https://github.com/jrbn/ajira/blob/master/src/nl/vu/cs/ajira/examples/WordCount.java#L139">Submission.printStatistics()</a>.</p>
+
+<p><b>Great!</b> Was everything clear? Once again, the scope of this
+tutorial was to simply make you familiar with the framework. As you
+could read from it, we only had to define the flow of actions
+necessary to perform our task. In this example, these actions mimic
+exactly the behaviour of MapReduce, since the two actions that are
+defined by the user can be mapped directly in the "map" and "reduce"
+functions of MapReduce.</p>
+
+<p>In others, more advanced documents that you can find on this
+website, we will describe the framework in more detail, focusing on
+how the computation is physically carried on and on all actions that
+is possible to execute. We encourage you to read them, but first try
+out this example on your machine so that you can get a concrete
+feeling on how the framework works in practice.</p>
+
+</div>
+
+<div id="architecture" class="doc_section">
+<h1>System Architecture</h1>
+
+        <div class="menu">
+	  <ul>
+	    <li><a href="#a_iolayer">I/O Layer</a></li>
+	    <li><a href="#a_tuples">Tuples and Datatypes</a></li>
+	    <li><a href="#a_actions">Actions</a></li>
+	    <li><a href="#a_buckets">Buckets</a></li>
+	  </ul>
+	</div>
+
+<p></p>
+
+<p>An Ajira cluster is made by one or more Ajira instances that
+communicate to each others through the network. In Figure 2, we show a
+typical example of Ajira cluster. In the Figure, each Ajira instance
+consists of a single Java program that runs on the same or different
+machines. The IBIS registry is an additional program that runs on one
+machine. Its purpose is to simply register the location of each
+machine and broadcast this information to the other instances, so that
+each one is aware of everybody else.</p>
+
+<div style="text-align: center"><img src="img/overview.png"
+/><p><b>Figure 2:</b> Overview of an Ajira Cluster.</p></div>
+
+<p>An user submits an Ajira program to one node of this network, which will
+initiliaze the computation and makes sure the result is returned to
+the user.</p>
+
+<p>There are several components within each Ajira instance that are
+quite important. The first is called <i>I/O Layer</i> and it is the
+layer that handles the communication between the framework and the
+physical data source from where the data is retrieved. More in
+particular, it exchanges <i>tuples</i> of data, which are the way data
+is represented in the framework. We discuss respectivily the I/O Layer and the
+tuples <a href="#a_iolayer">here</a> and <a href="#a_tuples">here</a>.</p>
+
+<p>Once the data is retrieved by the I/O layer, the framework starts
+feeding it the Ajira program, which consists on a sequence of actions
+that process the tuples in input. The execution of these actions
+happens in parallel, since the framework starts a number of concurrent
+threads to process the actions on multiple portions of the data. We
+will discuss the structure of actions, and the execution of such
+sequences <a href="#a_actions">here</a>.</p>
+
+<p>Finally, other important components of every Ajira instances are
+the <i>buckets</i>, which are responsible for temporary storing the
+data and send them through the network. We discuss them
+extensivily <a href="#a_buckets">here</a>.</p>
+
+<h3 id="a_iolayer">I/O Layer</h3>
+
+<p>The I/O layer is responsible of returning an iterator tuples that
+should serve as input to the sequence of actions. This iterator is
+dependent to a query that the framework requests to the
+layer. Therefore, we can see the input layer as a sort of database,
+which returns a set of results (in the form of a sequential
+iterator) given a specific query in input.</p>
+
+<p>For example, the
+standard <a href="https://github.com/jrbn/ajira/blob/master/src/nl/vu/cs/ajira/datalayer/files/FileLayer.java">FileLayer</a>
+represents the layer if the Ajira program wants to read the input from
+files. In this case, an example of query that the framework could
+launch to the input layer could be the tuple <i>(1,xxx)</i>, which is
+interpreted by the input layer as "Returns me the content of file xxx
+(this is the code for the operation '1') using the standard
+iterator."</p>
+
+<p>Once it has receives this query query, the input layer returns an
+appropriate iterator of
+type <a href="https://github.com/jrbn/ajira/blob/master/src/nl/vu/cs/ajira/datalayer/TupleIterator.java">TupleIterator</a>,
+that contains the tuple that satify the query. Then, the framework
+reads each elements returned by the iterator, feeds these tuples to
+the first action of the sequence, and once the iterator is finished it
+releases it by returning it to the input layer.</p>
+
+<p>The actions in one ajira action can read the tuples from an
+arbitrary number of iterators. For example, some actions could read
+the content of some files, while others could read data from a stream
+of data. Before the Ajira framework is started, we can set a default
+input layer, which will be used in case no input layer is
+specified. This operation is done using the code:</p>
+
+<pre>Ajira ajira = new Ajira();
+Configuration conf = ajira.getConfiguration();
+InputLayer.setDefaultInputLayerClass("inputLayerClass", conf);</pre>
+
+<p>The only difference between the default input layer and all the
+others is that for such input layer the framework calls an
+initialization method when it is loaded. This gives the possibility to
+the user to set up the I/O system before the computation can take
+place (this could become particular handy if our input layer was, for
+example, the interface to a relational database).</p>
+
+<p>Now, let's discuss the APIs offered by the input layer. Basically,
+every input layer must be defined as a subclass of the abstract
+class <a href="https://github.com/jrbn/ajira/blob/master/src/nl/vu/cs/ajira/datalayer/InputLayer.java">InputLayer</a>.</p>
+
+<p>Each subclass must implement four methods:</p>
+
+<ul>
+<li><i>load()</i>: This method is invoked once by the framework when
+the cluster is started. The frameworks calls it only for the default
+input layer.</li>
+<li><i>getIterator(Tuple tuple, ActionContext context)</i>: This
+method returns a tuple iterator given an input query (which is
+contained in a generic tuple). The structure and content of the query
+depends on the I/O layer. For example, a query for the FileLayer
+could be <i>(1,"/file1.txt")</i> while for another layer could have a
+completely different structure.</li>
+<li><i>releaseIterator(TupleIterator itr, ActionContext action)</i>:
+Once the tuple iterator is used, the framework releases it to the I/O
+layer, which can possibly reuse it or perform additional computation
+to clean up the itertor state.</li>
+<li><i>getLocations(Tuple tuple, ActionContext context)</i>: This
+method is invoked by the framework to know in which node the given
+query could be answered. In fact, some queries might be answered only
+on a specific node of the cluster. If this is the case, then the
+framework will first transfer the list of action to this node, and
+there request a tuple iterator. Note, that this method returns an
+object of
+type <a href="https://github.com/jrbn/ajira/blob/master/src/nl/vu/cs/ajira/chains/Location.java">Location</a>,
+which is used to indicate a location in the cluster. This object can
+return: (i) the ID of one node in the cluster (in the range from 0 to
+n, where n is the number of Ajira instances); (ii) -1, if this query
+should be executed on all the nodes; (iii) -2, if the query can be
+answered only on the local node.</li>
+</ul>
+
+<p>This last method can be used to redirect the computation to some
+specific nodes. For this moment, it is possible to redirect either to
+another single node, or to replicate it on all the nodes. In both
+cases, the framework will take care of distributing the list of
+actions over the network and make sure that the program correctly
+terminates.</p>
+
+<p>The iterator must be a subclass
+of <a href="https://github.com/jrbn/ajira/blob/master/src/nl/vu/cs/ajira/datalayer/TupleIterator.java">TupleIterator</a>. This
+abstract class requires the implementation of three methods:
+(i) <i>isReady()</i>, which returns true if the iterator can start
+returning tuples; (ii) <i>next()</i>, which returns whether there is a
+new tuple to be read; (iii) <i>getTuple(Tuple tuple)</i>, to retrieve
+the content of the current tuple.</i>
+
+<h3 id="a_tuples">Tuples and Datatypes</h3>
+
+<p>In traditional MapReduce applications, data is expressed as a set
+of <i>key/value</i> pairs. In Ajira, we relax this constraint, and
+define the data as a set of generic <b>tuples</b>, of arbitrary type
+and length. For example, one tuple could contain three, or four
+elements, and the type of this elements can be changed at
+runtime. This allows us to represent the underlying data in a much
+more intuitive way, without using expensive and complex mechanisms to
+serialize complex data structures on <i>key/value</i> pairs.</p>
+
+<p>More in particular, we simply require that each element of the
+tuple is an instance of the abstract
+class <a href="https://github.com/jrbn/ajira/blob/master/src/nl/vu/cs/ajira/data/types/SimpleData.java">SimpleData</a>. The framework already provides the
+implementation for many standard types, such as strings, integers, longs,
+boolean, etc. We report all the supported types in the table below:
+
+<table>
+<th>Type</th><th>Description</th>
+<tr>
+  <td><i>TInt</i></td>
+  <td>An Integer number.</td>
+</tr>
+<tr>
+  <td><i>TString</i></td>
+  <td>A String number.</td>
+</tr>
+<tr>
+  <td><i>TBoolean</i></td>
+  <td>A Boolean number.</td>
+</tr>
+<tr>
+  <td><i>TLong</i></td>
+  <td>A Long number.</td>
+</tr>
+<tr>
+  <td><i>TByte</i></td>
+  <td>A Byte number.</td>
+</tr>
+<tr>
+  <td><i>TDouble</i></td>
+  <td>A Double number.</td>
+</tr>
+<tr>
+  <td><i>TBag</i></td>
+  <td>A collection of tuples (used in the <i>GroupBy</i> action).</td>
+</tr>
+<tr>
+  <td><i>TIntArray</i></td>
+  <td>An array of integers.</td>
+</tr>
+<tr>
+  <td><i>TByteArray</i></td>
+  <td>An array of bytes.</td>
+</tr>
+<tr>
+  <td><i>TStringArray</i></td>
+  <td>An array of strings.</td>
+</tr>
+<tr>
+  <td><i>TLongArray</i></td>
+  <td>An array of longs.</td>
+</tr>
+<tr>
+  <td><i>TDoubleArray</i></td>
+  <td>An array of doubles.</td>
+</tr>
+</table>
+
+<p>Notice that if your application needs to use a special type, then you
+can define it by creating as a subclass of <i>SimpleData</i>. However,
+in this case you need to register your data type before you start your
+architecture. This can be done by calling the static
+method <a href="https://github.com/jrbn/ajira/blob/master/src/nl/vu/cs/ajira/data/types/DataProvider.java">DataProvider.get().addType("Your
+Typle".class)</a>.</p>
+
+<h3 id="a_actions">Actions</h3>
+
+<p>The kernel of computation in an Ajira cluster is represented by the
+actions. As we described in the tutorial, an Ajira program is in its
+essence nothing but a sequence of actions.</p>
+
+<p>In Ajira, each action must inherit the abstract
+class <a href="https://github.com/jrbn/ajira/blob/master/src/nl/vu/cs/ajira/actions/Action.java">Action</a>. The
+only method that you must implement is <i>process()</i>, which
+receives one tuple in input and produces zero or more tuples in
+output. This can be done using the method <i>output()</i> provided by
+the <a href="https://github.com/jrbn/ajira/blob/master/src/nl/vu/cs/ajira/actions/ActionOutput.java">ActionOutput</a>
+object.</p>
+
+<p>When an action is added to a sequence, the framework gives us the
+possibility to customize the execution by adding some
+parameters. These parameters can be set by using the
+method <i>setParam*</i> of the
+class <a href="https://github.com/jrbn/ajira/blob/master/src/nl/vu/cs/ajira/actions/ActionConf.java">ActionConf</a>. This
+method requests that we specify an parameter id next to the value to
+assign. The list of parameters IDs can be set overriding the
+method <i>registerActionParameter()</i> of <i>Action</i>. This method
+allows us to specify which parameters are allowed by invoking the
+method <i>registerParameter()</i> of <i>ActionConf</i>.</p>
+
+<p>For example, consider the following code:</p>
+
+<pre>public final int PARAM1 = 0;
+public final int PARAM2 = 1;
+
+registerActionParameters(ActionConf conf) {
+ conf.registerParameter(PARAM1, "desc. param 1", null, true);
+ conf.registerParameter(PARAM2, "desc. param 2", 10, false);
+}</pre>
+
+<p>With this code, we allow two parameters for our
+action, <i>PARAM1</i> and <i>PARAM2</i>. The first has ID=0, while the
+second has ID=1. We require that the first parameter is always set
+(cannotBeNull=true), while the second assumes
+the default value of 10, unless it is specified.</p>
+
+<p>Within the action, the actual value of the parameters can be
+retrieved using the methods <i>getParam*(PARAM_ID)</i>. Normally these
+parameters are useful when the process starts or closes. To allow the
+user to customize the computation in these two phases, the framework
+invokes two methods of Action that can be overriden by the user. These
+are:</p>
+
+<ul>
+<li><i>startProcess()</i>: This method is invoked once before the
+action starts to receive tuples in input through the <i>process()</i>
+method. You can use it to initialize your data structures.</li>
+
+<li><i>stopProcess()</i>: Similarly, this method is invoked once after
+the action has received all the tuples in input. Notice that in this
+method you can still output some tuples. This can be useful in case
+you need to alert the following actions that the flow is
+finished.</li>
+</ul>
+
+<p>You must keep in mind a very important principle when you are
+writing the code of your action: <u>There is only one way to ensure a
+single global flow in the system, and we will describe it later when
+we discuss the buckets. In all the other cases, the same action can be
+concurrently executed multiple times on different parts of the
+input. Therefore, never make the assumption that there is only one
+process flow.</u> The only assumption that you can make is that before
+and after any <i>process()</i> call there will be
+one <i>startProcess()</i>, and one <i>stopProcess()</i> call.</p>
+
+<p>In fact, some actions can create multiple processing flows which
+execute the same sequence of actions on different data. This is done
+concurrently, since in each Ajira instance there are normally
+multiplw <i>action processors</i> that initialize the sequences of
+actions and coordinate the passing of tuples between the list of
+actions.</p>
+
+<p>Furthermore, there can be cases where a static computational flow
+is not enough and new sequences must be created at runtime. In this
+case, the object <i>ActionOutput</i> in <i>process()</i>
+and <i>stopProcess()</i> allows the user to perform two useful
+operations: <i>branching</i> and <i>splitting</i>.</p>
+
+<p>We first describe the branch operation. As an example, suppose we
+have a simple list of actions from A to E, as shown in the Figure
+below.</p>
+
+<div style="text-align: center"><img src="img/branch.png"
+/><p><b>Figure 3:</b> <i>Branch</i> operation.</p></div>
+
+<p>During the action C, we might want to send more tuples to the
+following actions that come from a different computation than the
+current flow. In this case, action C can create a <i>branch</i>
+composed by the actions F, and G, and the tuples outputed by this new
+sequence will be send directly to the action D.</p>
+
+<p>This operation can be particularly useful if we need to implement
+explorative operations, which are operations which complexity depends
+on the data that is being processed. Some examples could be the
+execution of data joins (i.e. we need to read both sides of the join
+only if there is data that satifies one of them), or the execution of
+rules in logic programming.</p>
+
+<p>Branching can be implemented by the user in a very simple way:
+simply call the method <i>branch(ActionSequence sequence)</i>
+indicating which actions should be executed in the branch and the
+framework will take care to create the new sequence, assign its
+execution to a local or remote thread, and ensure that the flow is
+correctly handled.</p>
+
+<p>However, notice one important aspect: branching cannot be used to
+change the destiny to the tuples produced by the current action. It
+can only be used to add more tuples that come from a different source
+(this is translated in one addition query to the input layer, and the
+usage of one more action processor to process the new actions).</p>
+
+<p>If, during the execution of one action, we want that the tuples
+that are being produced are processed in a different way, then we can
+use the <i>split</i> operation. Once again, suppose as example that we
+have a simple sequence of actions from A to E as reported in the
+figure below. </p>
+
+<div style="text-align: center"><img src="img/split.png"
+/><p><b>Figure 4:</b> <i>Split</i> operation.</p></div>
+
+<p>Here, the action C can create a split with the new actions F and G,
+and send the tuples that it produces through this channel rather than
+the default one. When the action creates a split, it can specify after
+how many actions the split can be reconnected to the main flow. This
+is useful if we want that only a limited number of operations is
+skipped, and the output of G is send as input to one action between D
+and E.</p>
+
+<h3 id="a_buckets">Buckets</h3>
+
+TODO
+
+</div>
+
+
+
+      </section>
+      
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/jrbn">jrbn</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme modified from <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+
+   </div>
+<script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
