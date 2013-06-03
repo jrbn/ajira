@@ -223,6 +223,7 @@ class Receiver implements MessageUpcall {
 			sequence = message.readInt();
 			bucketKey = message.readLong();
 			nrequest = message.readInt();
+			boolean isSortingBucket = message.readBoolean();
 			isSorted = message.readBoolean();
 			boolean data = message.readBoolean();
 			if (data) {
@@ -230,6 +231,7 @@ class Receiver implements MessageUpcall {
 
 				WritableContainer<WritableTuple> container = bufferFactory
 						.get();
+				container.init(isSortingBucket);
 				container.readFrom(new ReadMessageWrapper(message));
 				boolean isFinished = message.readBoolean();
 

@@ -358,6 +358,11 @@ public class Bucket {
 	 *         there are some cached files and we prefer to empty the buffer
 	 */
 	public synchronized boolean availableToTransmit() {
+		synchronized(availableListLock) {
+			if (availableList != null) {
+				return true;
+			}
+		}
 		return elementsInCache > 0
 				|| (inBuffer != null && inBuffer.getRawSize() > Consts.MIN_SIZE_TO_SEND);
 	}
@@ -370,6 +375,11 @@ public class Bucket {
 	 *         there are some cached files and we prefer to empty the buffer
 	 */
 	public synchronized boolean availableToTransmitWhileStreaming() {
+		synchronized(availableListLock) {
+			if (availableList != null) {
+				return true;
+			}
+		}
 		return elementsInCache > 0
 				|| (inBuffer != null && inBuffer.getRawSize() > 0);
 	}
@@ -591,10 +601,6 @@ public class Bucket {
 
 	public long getKey() {
 		return key;
-	}
-
-	public boolean shouldSort() {
-		return sort;
 	}
 
 	public byte[] getSortingFields() {
@@ -1257,7 +1263,9 @@ public class Bucket {
 					if (ready != null) {
 						ready[0] = true;
 					}
-					return fb.get();
+					retval = fb.get();
+					retval.init(sortingBucket);
+					return retval;
 				}
 				try {
 					availableListLock.wait();
@@ -1577,5 +1585,9 @@ public class Bucket {
 
 	public WritableTuple getSerializer() {
 		return new WritableTuple(serializer);
+	}
+
+	public boolean isSortingBucket() {
+		return sortingBucket;
 	}
 }

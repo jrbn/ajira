@@ -236,11 +236,8 @@ class TupleSender {
 		msg.writeInt(info.sequence);
 		msg.writeLong(info.bucketKey);
 		msg.writeInt(info.nrequests);
-		if (bucket.shouldSort()) {
-			msg.writeBoolean(true);
-		} else {
-			msg.writeBoolean(false);
-		}
+		msg.writeBoolean(bucket.isSortingBucket());
+		msg.writeBoolean(bucket.isSorted());
 		msg.writeBoolean(true);
 		tmpBuffer.writeTo(new WriteMessageWrapper(msg));
 
