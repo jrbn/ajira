@@ -1,1 +1,3 @@
-Snappy version used: git://github.com/dain/snappy.git. This is a pure-java version which seems to be quite fast, and is released under the Apache 2.0 license.
+The Ajira project was supported by the Dutch national program COMMIT. 
+
+Ajira uses the Snappy compression library from git://github.com/dain/snappy.git. This is a pure-java version which seems to be quite fast, and is released under the Apache 2.0 license.
