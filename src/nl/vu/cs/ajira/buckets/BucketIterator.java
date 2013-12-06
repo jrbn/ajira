@@ -1,7 +1,5 @@
 package nl.vu.cs.ajira.buckets;
 
-import java.util.Arrays;
-
 import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.chains.ChainNotifier;
 import nl.vu.cs.ajira.data.types.DataProvider;
@@ -22,11 +20,13 @@ public class BucketIterator extends TupleIterator {
 
 	WritableContainer<WritableTuple> tuples = null;
 
+	long key;
 	Bucket bucket;
 	boolean isUsed;
 	private SimpleData[] signature;
 	private WritableTuple serializer = new WritableTuple();
 	private boolean done = false;
+	private Buckets buckets;
 
 	/**
 	 * Initialization function.
@@ -35,29 +35,35 @@ public class BucketIterator extends TupleIterator {
 	 *            Current action context
 	 * @param bucket
 	 *            Bucket to iterate on.
-	 * @param signature
-	 *            The signature used for defining the sort order between the
-	 *            fields
 	 * @param buckets
 	 *            (not used) Bucket's wrapper class
 	 * @see Buckets
 	 */
-	void init(ActionContext c, Bucket bucket, byte[] signature, Buckets buckets) {
+	void init(ActionContext c, int idBucket, Buckets buckets) {
 		super.init(c, "Buckets");
-		this.bucket = bucket;
-		serializer = bucket.getSerializer();
+		this.buckets = buckets;
+		key = Buckets.getKey(c.getSubmissionId(), idBucket);
+		bucket = buckets.getExistingBucket(key, false);
+		if (bucket != null) {
+			initWithBucket();
+		}
 		// Copy serializer of bucket, as it may contain sorting info which
 		// affects
 		// serialization.
 		this.isUsed = false;
 		this.done = false;
-		this.signature = new SimpleData[signature.length];
+	}
+
+	private void initWithBucket() {
+		serializer = bucket.getSerializer();
+		byte[] sig = bucket.getSignature();
+		this.signature = new SimpleData[sig.length];
 		if (log.isDebugEnabled()) {
 			log.debug("initializing iterator for bucket " + bucket.getKey()
-					+ ", signature.length = " + signature.length);
+					+ ", signature.length - " + sig.length);
 		}
 		for (int i = 0; i < signature.length; ++i) {
-			this.signature[i] = DataProvider.get().get(signature[i]);
+			this.signature[i] = DataProvider.get().get(sig[i]);
 		}
 	}
 
@@ -76,7 +82,7 @@ public class BucketIterator extends TupleIterator {
 		// If the local buffer is finished, get tuples from the bucket
 		if (tuples == null || tuples.getNElements() == 0) {
 			if (tuples != null) {
-				bucket.fb.release(tuples);
+				bucket.releaseContainer(tuples);
 			}
 			long time = System.currentTimeMillis();
 
@@ -87,9 +93,9 @@ public class BucketIterator extends TupleIterator {
 						+ tuples.getNElements() + " entries, time merging: "
 						+ (System.currentTimeMillis() - time));
 			}
-			
+
 			if (tuples.getNElements() == 0) {
-				bucket.fb.release(tuples);
+				bucket.releaseContainer(tuples);
 				tuples = null;
 				done = true;
 				return false;
@@ -109,7 +115,7 @@ public class BucketIterator extends TupleIterator {
 	 */
 	@Override
 	public void registerReadyNotifier(ChainNotifier notifier) {
-		bucket.registerFinishedNotifier(notifier, this);
+		buckets.registerReadyNotifier(key, notifier, this);
 	}
 
 	/**
@@ -123,22 +129,14 @@ public class BucketIterator extends TupleIterator {
 		if (done) {
 			throw new Exception("getTuple() called while next() returned false");
 		}
-		try {
-			tuple.set(signature);
-			serializer.setTuple(tuple);
-			if (!tuples.remove(serializer)) {
+
+		tuple.set(signature);
+		serializer.setTuple(tuple);
+		if (!tuples.remove(serializer)) {
+			if (log.isDebugEnabled()) {
 				log.error("Remove returns false!");
-				throw new Exception("Internal error");
 			}
-			/*
-			 * if (log.isDebugEnabled()) { log.debug("Tuple is " +
-			 * tuple.toString()); }
-			 */
-		} catch (Exception e) {
-			log.error("Bucket = " + bucket.getKey() + ", tuple.nElements = "
-					+ tuple.getNElements() + ", signature.length = "
-					+ signature.length + ", tuple = "
-					+ Arrays.toString(tuple.getSignature()));
+			throw new Exception("Internal error: tuples.remove() returns false");
 		}
 	}
 
@@ -149,6 +147,15 @@ public class BucketIterator extends TupleIterator {
 	 */
 	@Override
 	public boolean isReady() {
+		if (bucket == null) {
+			bucket = buckets.getExistingBucket(key, false);
+			if (bucket != null) {
+				initWithBucket();
+			}
+		}
+		if (bucket == null) {
+			return false;
+		}
 		return bucket.isFinished() || (!bucket.isSorted() && bucket.hasData());
 	}
 

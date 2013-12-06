@@ -12,10 +12,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Comparator;
-//import java.util.zip.Deflater;
-//import java.util.zip.DeflaterOutputStream;
-//import java.util.zip.Inflater;
-//import java.util.zip.InflaterInputStream;
 
 import nl.vu.cs.ajira.buckets.TupleComparator;
 import nl.vu.cs.ajira.data.types.bytearray.BDataInput;
@@ -29,11 +25,16 @@ import nl.vu.cs.ajira.storage.Container;
 import nl.vu.cs.ajira.storage.Factory;
 import nl.vu.cs.ajira.storage.RawComparator;
 import nl.vu.cs.ajira.storage.Writable;
+import nl.vu.cs.ajira.utils.Utils;
 
 import org.iq80.snappy.SnappyInputStream;
 import org.iq80.snappy.SnappyOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+//import java.util.zip.Deflater;
+//import java.util.zip.DeflaterOutputStream;
+//import java.util.zip.Inflater;
+//import java.util.zip.InflaterInputStream;
 
 public class WritableContainer<K extends Writable> extends ByteArray implements
 		Writable, Container<K> {
@@ -110,10 +111,7 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 		start = 0;
 		end = 0;
 		if (nElements > 0) {
-			int len = input.readInt();
-			grow(len);
-			end = len;
-			input.readFully(buffer, 0, end);
+			super.readFrom(input);
 		}
 		pointerLastElement = -1;
 	}
@@ -127,32 +125,42 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 		output.writeLong(nElements);
 		output.writeBoolean(enableFieldDelimitors);
 		if (nElements > 0) {
-			int size = 0;
-			if (end > start) {
-				size = end - start;
-				output.writeInt(size);
-				output.write(buffer, start, end - start);
-			} else {
-				size = end + buffer.length - start;
-				output.writeInt(size);
-				output.write(buffer, start, buffer.length - start);
-				output.write(buffer, 0, end);
-			}
+			super.writeTo(output);
 		}
 	}
-	
+
+	public int compressTo(byte[] value) {
+		Utils.encodeInt(value, 0, nElements);
+		value[4] = (byte) (enableFieldDelimitors ? 1 : 0);
+		int size = 0;
+		if (nElements > 0) {
+			size = super.compress(value, 5);
+		}
+		return 5 + size;
+	}
+
+	public void decompressFrom(byte[] value, int length) {
+		nElements = Utils.decodeInt(value, 0);
+		enableFieldDelimitors = value[4] == 1;
+		start = 0;
+		end = 0;
+		if (nElements > 0) {
+			super.decompress(value, 5, length - 5);
+		}
+		pointerLastElement = -1;
+		// checkConsistency();
+	}
+
 	public void init(boolean fieldMarks) {
 		clear();
 		this.enableFieldDelimitors = fieldMarks;
 	}
 
+	@Override
 	public void clear() {
-		nElements = start = end = 0;
+		nElements = 0;
 		pointerLastElement = -1;
-
-		if (maxSize > 256 * 1024 && buffer.length > 256 * 1024) {
-			buffer = new byte[256 * 1024];
-		}
+		super.clear();
 	}
 
 	@Override
@@ -172,9 +180,8 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 				if (end >= tmpPointerLastElement) {
 					length = end - tmpPointerLastElement;
 				} else {
-					length = end + buffer.length - tmpPointerLastElement;
+					length = end + getTotalCapacity() - tmpPointerLastElement;
 				}
-
 				// Rewrite the length
 				int currentEnd = end;
 				end = tmpPointerLength;
@@ -199,71 +206,62 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 
 	@Override
 	public boolean addAll(WritableContainer<K> buffer) {
-		try {
-			if (enableFieldDelimitors != buffer.enableFieldDelimitors
-					&& nElements > 0) {
-				throw new UnsupportedOperationException(
-						"addAll works only if the two buffers share the parameter FieldDelimiters");
-			}
+		if (enableFieldDelimitors != buffer.enableFieldDelimitors
+				&& nElements > 0) {
+			throw new UnsupportedOperationException(
+					"addAll works only if the two buffers share the parameter FieldDelimiters");
+		}
 
-			int necessarySpace = buffer.buffer.length - 1
-					- buffer.remainingCapacity(buffer.buffer.length); // -1: see
-																		// code
-																		// in
-																		// remainingCapacity
-																		// --Ceriel
-			if (!grow(necessarySpace)) {
-				if (log.isDebugEnabled()) {
-					log.debug("Grow() fails: necessarySpace = "
-							+ necessarySpace);
-				}
-				return false;
-			}
+		// buffer.checkConsistency();
+		// checkConsistency();
 
-			if (buffer.end > buffer.start) {
-				output.write(buffer.buffer, buffer.start, buffer.end
-						- buffer.start);
-			} else if (buffer.end < buffer.start) {
-				output.write(buffer.buffer, buffer.start, buffer.buffer.length
-						- buffer.start);
-				output.write(buffer.buffer, 0, buffer.end);
+		int totalCapacity = getTotalCapacity();
+		int necessarySpace = totalCapacity - 1
+				- buffer.remainingCapacity(totalCapacity);
+		// -1: see code in remainingCapacity --Ceriel
+		if (!grow(necessarySpace)) {
+			if (log.isDebugEnabled()) {
+				log.debug("Grow() fails: necessarySpace = " + necessarySpace);
 			}
-			nElements += buffer.getNElements();
-			enableFieldDelimitors = buffer.enableFieldDelimitors;
-
-			if (buffer.pointerLastElement >= 0) {
-				lengthLastElement = buffer.lengthLastElement;
-				pointerLastElement = end - lengthLastElement;
-				if (pointerLastElement < 0) {
-					pointerLastElement += this.buffer.length;
-				}
-			} else {
-				pointerLastElement = -1;
-			}
-			return true;
-		} catch (IOException e) {
 			return false;
 		}
+
+		readFrom(buffer);
+
+		nElements += buffer.getNElements();
+		enableFieldDelimitors = buffer.enableFieldDelimitors;
+
+		if (buffer.pointerLastElement >= 0) {
+			lengthLastElement = buffer.lengthLastElement;
+			pointerLastElement = end - lengthLastElement;
+			if (pointerLastElement < 0) {
+				pointerLastElement += getTotalCapacity();
+			}
+		} else {
+			pointerLastElement = -1;
+		}
+		// checkConsistency();
+		return true;
 	}
 
 	@Override
 	public boolean remove(K element) {
 
 		if (start == end) {
-			if (log.isDebugEnabled() && nElements > 0) {
-				log.error("Something very wrong: buffer is empty but nElements = " + nElements);
-			}
+			// Container is empty.
 			return false;
 		}
 
-		if (enableFieldDelimitors) // Skip the length of the just read
-			// element
+		if (enableFieldDelimitors) {
+			// Skip the length of the just read element
 			input.skipBytes(4);
+		}
 
 		if (log.isDebugEnabled()) {
 			if (nElements <= 0) {
 				log.error("OOPS: remove on empty container? start = " + start
 						+ ", end = " + end);
+				throw new Error("Inconsistency found");
 			}
 		}
 
@@ -271,6 +269,7 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 			element.readFrom(input);
 		} catch (IOException e) {
 			log.error("Should not happen", e);
+			throw new Error("Got unexpected exception", e);
 		}
 		--nElements;
 		return true;
@@ -296,6 +295,41 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 		return v;
 	}
 
+	private void checkConsistency() {
+		if (end < 0) {
+			log.error("checkConsistency: end = " + end, new Throwable());
+			throw new Error("Inconsistency found");
+		}
+		if (enableFieldDelimitors) {
+			if (start != end) {
+				int savedStart = start;
+				int nEls = nElements;
+				byte[] v = new byte[1];
+				while (nEls > 0) {
+					int length = input.readInt();
+					if (length < 0 || length > 4096) {
+						log.error("Inconsistency, length = " + length,
+								new Throwable());
+						throw new Error("Inconsistency found");
+					}
+					if (v.length != length) {
+						v = new byte[length];
+					}
+					input.readFully(v);
+					--nEls;
+				}
+				if (start != end) {
+					log.error("Inconsistency, start(" + start + ") != end("
+							+ end + ")", new Throwable());
+					throw new Error("Inconsistency found");
+				}
+				start = savedStart;
+			}
+		} else {
+			// TODO
+		}
+	}
+
 	public byte[] getLastElement() {
 		if (pointerLastElement < 0) {
 			// Not available.
@@ -314,57 +348,18 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 		return nElements;
 	}
 
-	public void copyTo(WritableContainer<?> buffer) {
-		buffer.enableFieldDelimitors = enableFieldDelimitors;
-		buffer.nElements = nElements;
-		buffer.start = start;
-		buffer.end = end;
-		buffer.lengthLastElement = lengthLastElement;
-		buffer.pointerLastElement = pointerLastElement;
-		if (end > start) {
-			System.arraycopy(this.buffer, start, buffer.buffer, start, end
-					- start);
-		} else if (start > end) {
-			System.arraycopy(this.buffer, start, buffer.buffer, start,
-					this.buffer.length - start);
-			System.arraycopy(this.buffer, 0, buffer.buffer, 0, end);
-		}
+	public void copyFrom(WritableContainer<?> buffer) {
+		enableFieldDelimitors = buffer.enableFieldDelimitors;
+		nElements = buffer.nElements;
+		start = buffer.start;
+		end = buffer.end;
+		lengthLastElement = buffer.lengthLastElement;
+		pointerLastElement = buffer.pointerLastElement;
+		this.buffer = buffer.buffer;
 	}
 
-	public void moveTo(WritableContainer<?> buffer) {
-		copyTo(buffer);
-		clear();
-	}
-
-	private void copyRegion(int index, int len) {
-		// Appends a copy of a region. This is a bit complicated because both
-		// the source and the target (cb.end) may wrap. Solution: if the source
-		// wraps, split it into two parts.
-		if (len == 0) {
-			return;
-		}
-		if (index + len <= buffer.length) {
-			// source does not wrap.
-			if (end + len <= buffer.length) {
-				// dest does not wrap.
-				System.arraycopy(buffer, index, buffer, end, len);
-				end += len;
-			} else {
-				// dest wraps.
-				int len1 = buffer.length - end;
-				System.arraycopy(buffer, index, buffer, end, len1);
-				System.arraycopy(buffer, index + len1, buffer, 0, len - len1);
-				end = len - len1;
-			}
-		} else {
-			// source wraps
-			int len1 = buffer.length - index;
-			copyRegion(index, len1);
-			copyRegion(0, len - len1);
-		}
-	}
-
-	public void sort(final RawComparator<K> c, Factory<WritableContainer<K>> fb) {
+	public void sort(final RawComparator<K> c, Factory<WritableContainer<K>> fb)
+			throws Exception {
 
 		if (!enableFieldDelimitors) {
 			throw new UnsupportedOperationException(
@@ -373,7 +368,8 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 
 		// 1) Populate
 		long time = System.currentTimeMillis();
-		long size = getRawSize();
+		int size = getRawSize();
+		int capacity = getTotalCapacity();
 
 		int l = 0;
 		final int[] coordinates = new int[(nElements * 2)];
@@ -384,15 +380,17 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 			int length = input.readInt();
 			coordinates[l] = start;
 			coordinates[l + 1] = length;
-			start = (coordinates[l] + coordinates[l + 1]) % buffer.length;
+			start = (coordinates[l] + coordinates[l + 1]) % capacity;
 			nElements--;
 			indexes[i] = i * 2;
 			i++;
 			l += 2;
 		}
-		log.debug("Time populate (\t" + indexes.length + "\t):\t"
-				+ (System.currentTimeMillis() - time) + "\tT:"
-				+ Thread.currentThread().getId());
+		if (log.isDebugEnabled()) {
+			log.debug("Time populate (\t" + indexes.length + "\t):\t"
+					+ (System.currentTimeMillis() - time) + "\tT:"
+					+ Thread.currentThread().getId());
+		}
 
 		// 2) Sort
 		time = System.currentTimeMillis();
@@ -407,131 +405,104 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 			}
 		});
 
-		log.debug("Time sorting (\t" + indexes.length + "\t):\t"
-				+ (System.currentTimeMillis() - time) + "\tT:"
-				+ Thread.currentThread().getId() + "-"
-				+ ((TupleComparator) c).timeConverting);
+		if (log.isDebugEnabled()) {
+			log.debug("Time sorting (\t" + indexes.length + "\t):\t"
+					+ (System.currentTimeMillis() - time) + "\tT:"
+					+ Thread.currentThread().getId() + "-"
+					+ ((TupleComparator) c).timeConverting);
+		}
 
 		// 3) Repopulate
 		time = System.currentTimeMillis();
-		if (size < buffer.length / 2) {
+		if (size < capacity / 2) {
 			for (int index : indexes) {
 				try {
 					output.writeInt(coordinates[index + 1]);
 				} catch (IOException e) {
 					log.error("Internal error, should not happen", e);
+					throw new Error("Got unexpected exception", e);
 				}
-				copyRegion(coordinates[index], coordinates[index + 1]);
+				copyRegion(this, coordinates[index], coordinates[index + 1]);
 				nElements++;
 			}
 		} else { // It's too big. Must use another array
 			WritableContainer<K> newArray = fb.get();
 			newArray.init(enableFieldDelimitors);
-			if (newArray.grow((int) size)) {
+			if (newArray.grow(size)) {
 				for (int index : indexes) {
 					try {
 						newArray.output.writeInt(coordinates[index + 1]);
 					} catch (IOException e) {
 						log.error("Internal error, should not happen", e);
+						throw new Error("Got unexpected exception", e);
 					}
-					if (coordinates[index] + coordinates[index + 1] > buffer.length) {
-						// Note, newArray cannot wrap, since it is new ...
-						int len1 = buffer.length - coordinates[index];
-						System.arraycopy(buffer, coordinates[index],
-								newArray.buffer, newArray.end, len1);
-						System.arraycopy(buffer, 0, newArray.buffer,
-								newArray.end + len1, coordinates[index + 1]
-										- len1);
-					} else {
-						System.arraycopy(buffer, coordinates[index],
-								newArray.buffer, newArray.end,
-								coordinates[index + 1]);
-					}
-					newArray.end += coordinates[index + 1];
+					newArray.copyRegion(this, coordinates[index],
+							coordinates[index + 1]);
 					newArray.nElements++;
 				}
-				newArray.copyTo(this);
-				newArray.clear();
-				fb.release(newArray);
+				copyFrom(newArray); // Uses the buffer from newArray, so don't
+									// recycle it.
+				newArray = null;
 			} else {
 				// I don't need it
 				newArray.clear();
 				fb.release(newArray);
+				newArray = null;
 
 				// Not enough space to create an additional array. Store the
 				// data on disk and reread it.
-				try {
-					File cacheFile = File.createTempFile("cache", "tmp");
-					cacheFile.deleteOnExit();
+				File cacheFile = File.createTempFile("cache", "tmp");
+				cacheFile.deleteOnExit();
 
-					OutputStream fout = new SnappyOutputStream(new BufferedOutputStream(
-							new FileOutputStream(cacheFile), 65536));
-					// OutputStream fout = new DeflaterOutputStream(
-					// 		new FileOutputStream(cacheFile), new Deflater(2), 65536);
-					FDataOutput cacheOutputStream = new FDataOutput(fout);
+				OutputStream fout = new SnappyOutputStream(
+						new BufferedOutputStream(
+								new FileOutputStream(cacheFile)));
+				// OutputStream fout = new DeflaterOutputStream(
+				// new FileOutputStream(cacheFile), new Deflater(2), 65536);
+				FDataOutput cacheOutputStream = new FDataOutput(fout);
 
-					// Copy all stuff on the file
-					int s = 0;
-					try {
-						for (int index : indexes) {
-							s += 4 + coordinates[index + 1];
-							cacheOutputStream.writeInt(coordinates[index + 1]);
-							if (coordinates[index] + coordinates[index + 1] > buffer.length) {
-								int len1 = buffer.length - coordinates[index];
-								cacheOutputStream.write(buffer,
-										coordinates[index], len1);
-								cacheOutputStream.write(buffer, 0,
-										coordinates[index + 1] - len1);
-							} else {
-								cacheOutputStream.write(buffer,
-										coordinates[index],
-										coordinates[index + 1]);
-							}
-						}
-					} catch (IOException e) {
-						log.error("Internal error, should not happen", e);
-					}
-					cacheOutputStream.close();
-
-					// Reread file
-					InputStream fin = new SnappyInputStream(
-							new BufferedInputStream(new FileInputStream(cacheFile), 65536));
-					// InputStream fin = new InflaterInputStream(new FileInputStream(
-					// 				cacheFile), new Inflater(), 65536);
-					FDataInput fInputCache = new FDataInput(fin);
-					fInputCache.readFully(buffer, 0, s);
-					cacheFile.delete();
-					start = 0;
-					end = s;
-					nElements = indexes.length;
-
-				} catch (Exception e) {
-					log.error("Generic exeption", e);
+				// Copy all stuff on the file
+				int s = 0;
+				for (int index : indexes) {
+					s += 4 + coordinates[index + 1];
+					cacheOutputStream.writeInt(coordinates[index + 1]);
+					writeTo(cacheOutputStream, coordinates[index],
+							coordinates[index + 1]);
 				}
+				cacheOutputStream.close();
+
+				// Reread file
+				InputStream fin = new SnappyInputStream(
+						new BufferedInputStream(new FileInputStream(cacheFile)));
+				// InputStream fin = new InflaterInputStream(new
+				// FileInputStream(
+				// cacheFile), new Inflater(), 65536);
+				FDataInput fInputCache = new FDataInput(fin);
+				start = 0;
+				end = s;
+				readFrom(fInputCache);
+				cacheFile.delete();
+				nElements = indexes.length;
 			}
 		}
 
-		log.debug("Time repopulate (\t" + indexes.length + "\t):\t"
-				+ (System.currentTimeMillis() - time) + "\tT:"
-				+ Thread.currentThread().getId());
+		if (log.isDebugEnabled()) {
+			log.debug("Time repopulate (\t" + indexes.length + "\t):\t"
+					+ (System.currentTimeMillis() - time) + "\tT:"
+					+ Thread.currentThread().getId());
+		}
 
 		int lastIndex = indexes[indexes.length - 1];
 		lengthLastElement = coordinates[lastIndex + 1];
 		pointerLastElement = end - lengthLastElement;
 		if (pointerLastElement < 0) {
-			pointerLastElement += buffer.length;
+			pointerLastElement += getTotalCapacity();
 		}
 	}
 
 	public void writeElementsTo(DataOutput cacheOutputStream)
 			throws IOException {
-
-		if (end > start) {
-			cacheOutputStream.write(this.buffer, start, end - start);
-		} else if (start > end) {
-			cacheOutputStream.write(this.buffer, start, buffer.length - start);
-			cacheOutputStream.write(this.buffer, 0, end);
-		}
+		writeRaw(cacheOutputStream);
 	}
 
 	public boolean addRaw(byte[] key) {
@@ -551,6 +522,7 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 			}
 		} catch (IOException e) {
 			log.error("Internal error, should not happen", e);
+			throw new Error("Got unexpected exception", e);
 		}
 
 		nElements++;
@@ -560,32 +532,25 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 
 	public boolean addAll(FDataInput originalStream, byte[] lastEl,
 			long nElements, long size) throws Exception {
-
-		if (!grow((int) size)) {
+		// checkConsistency();
+		int sz = (int) size;
+		if (sz != size || !grow(sz)) {
 			return false;
 		}
 
-		if (size > buffer.length - end) {
-			originalStream.readFully(buffer, end, buffer.length - end);
-			end = (int) (size - buffer.length + end);
-			originalStream.readFully(buffer, 0, end);
-
-		} else {
-			originalStream.readFully(buffer, end, (int) size);
-			end += size;
-		}
+		readFrom(originalStream, sz);
 
 		this.nElements += nElements;
 		if (enableFieldDelimitors && nElements > 0 && lastEl != null) {
 			lengthLastElement = lastEl.length;
 			pointerLastElement = end - lengthLastElement;
 			if (pointerLastElement < 0) {
-				pointerLastElement += buffer.length;
+				pointerLastElement += getTotalCapacity();
 			}
 		} else {
 			pointerLastElement = -1;
 		}
-
+		// checkConsistency();
 		return true;
 	}
 

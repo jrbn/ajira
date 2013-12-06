@@ -144,6 +144,15 @@ class ChainTerminator implements Runnable {
 				null, e);
 		addInfo(ch);
 	}
+	
+	/**
+	 * Adds info about failure.
+	 */
+	public void addThrowable(int submissionNode, int submissionId, Throwable e) {
+		ChainInfo ch = new ChainInfo(submissionNode, submissionId,
+				-1, -1, 0, null, null, e);
+		addInfo(ch);
+	}
 
 	/**
 	 * Adds the informations of a chain to the list of terminated chains.
@@ -183,7 +192,7 @@ class ChainTerminator implements Runnable {
 	 */
 	@Override
 	public void run() {
-		ChainInfo header;
+		ChainInfo header = null;
 		NetworkLayer ibis = context.getNetworkLayer();
 
 		boolean localMode = context.isLocalMode();
@@ -232,24 +241,14 @@ class ChainTerminator implements Runnable {
 						}
 					}
 				} else {
-					// Broadcast to all the nodes that the submission ID
-					// should be removed.
-					if (localMode) {
-						context.cleanupSubmission(header.nodeId,
-								header.submissionId, header.exception);
-					} else {
-						WriteMessage msg = ibis.getMessageToBroadcast();
-						msg.writeByte((byte) 2);
-						msg.writeBoolean(true);
-						msg.writeInt(header.submissionId);
-						msg.writeInt(header.nodeId);
-						msg.writeObject(header.exception);
-						ibis.finishMessage(msg, header.submissionId);
-					}
+					context.killSubmission(header.nodeId,
+							header.submissionId, header.exception);
 				}
-
-			} catch (Exception e) {
-				log.error("Error in sending the termination codes", e);
+			} catch (Throwable e) {
+				log.warn("Error in sending the termination codes", e);
+				// Nothing we can do now, except cleanup locally.
+				context.cleanupSubmission(header.nodeId,
+						header.submissionId, header.exception);
 			}
 
 		}

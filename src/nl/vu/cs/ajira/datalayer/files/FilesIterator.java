@@ -41,13 +41,15 @@ public class FilesIterator extends TupleIterator {
 			Class<? extends FileReader> cfileReader) throws SecurityException,
 			NoSuchMethodException, IOException {
 		this.cfileReader = cfileReader;
-		log.debug("Input: " + files);
+		if (log.isDebugEnabled()) {
+			log.debug("Input: " + files);
+		}
 		this.files = files;
 	}
 
 	/**
-	 * Returns true if a new line in the current file exists, or a next
-	 * file with lines exists. Otherwise, it returns false.
+	 * Returns true if a new line in the current file exists, or a next file
+	 * with lines exists. Otherwise, it returns false.
 	 */
 	@Override
 	public boolean next() throws Exception {

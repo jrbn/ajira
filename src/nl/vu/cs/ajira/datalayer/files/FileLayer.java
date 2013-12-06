@@ -1,6 +1,5 @@
 package nl.vu.cs.ajira.datalayer.files;
 
-import java.io.IOException;
 import java.util.List;
 
 import nl.vu.cs.ajira.Context;
@@ -35,7 +34,7 @@ public class FileLayer extends InputLayer {
 	 * Sets the number of nodes that are used by the current context.
 	 */
 	@Override
-	protected void load(Context context) throws IOException {
+	protected void load(Context context) {
 		numberNodes = context.getNetworkLayer().getNumberNodes();
 	}
 
@@ -44,66 +43,60 @@ public class FileLayer extends InputLayer {
 	 * parameter it can be a ListFilesIterator or a FilesIterator.
 	 */
 	@Override
-	public TupleIterator getIterator(Tuple tuple, ActionContext context) {
-		try {
-			int operation = ((TInt) tuple.get(0)).getValue();
-			String value = ((TString) tuple.get(1)).getValue();
+	public TupleIterator getIterator(Tuple tuple, ActionContext context) throws Exception {
+		int operation = ((TInt) tuple.get(0)).getValue();
+		String value = ((TString) tuple.get(1)).getValue();
 
-			TupleIterator itr = null;
-			if (operation == OP_LS) {
-				// Read if there is also a filter
-				String sFilter = null;
-				if (tuple.getNElements() == 3) {
-					sFilter = ((TString) tuple.get(2)).getValue();
+		TupleIterator itr = null;
+		if (operation == OP_LS) {
+			// Read if there is also a filter
+			String sFilter = null;
+			if (tuple.getNElements() == 3) {
+				sFilter = ((TString) tuple.get(2)).getValue();
+			}
+			itr = new ListFilesIterator(value, sFilter);
+		} else { // OP_READ
+
+			// In this case value is the key to a file collection
+			FileCollection col = (FileCollection) context
+					.getObjectFromCache(value);
+			if (col == null) {
+				// Get it remotely. Operation will contain the node id.
+				operation = ((TInt) tuple.get(2)).getValue();
+				List<Object[]> files = context.retrieveCacheObjects(value);
+				if (files == null || files.size() == 0) {
+					throw new Exception("Failed retrieving the iterator");
 				}
-				itr = new ListFilesIterator(value, sFilter);
-			} else { // OP_READ
-
-				// In this case value is the key to a file collection
-				FileCollection col = (FileCollection) context
-						.getObjectFromCache(value);
-				if (col == null) {
-					// Get it remotely. Operation will contain the node id.
-					operation = ((TInt) tuple.get(2)).getValue();
-					List<Object[]> files = context.retrieveCacheObjects(value);
-					if (files == null || files.size() == 0) {
-						throw new Exception("Failed retrieving the iterator");
-					}
-					for (int i = 0; i < files.size() && col == null; ++i) {
-						col = (FileCollection) files.get(i)[0];
-					}
+				for (int i = 0; i < files.size() && col == null; ++i) {
+					col = (FileCollection) files.get(i)[0];
 				}
-
-				if (tuple.getNElements() == 4) {
-					// There is a customized file reader
-					String clazz = ((TString) tuple.get(3)).getValue();
-
-					// Test whether it is a good class
-					Class<? extends FileReader> c = null;
-					try {
-						c = Class.forName(clazz).asSubclass(FileReader.class);
-					} catch (Exception e) {
-						log.warn("Customized file parser " + clazz
-								+ " is not valid.");
-					}
-					if (c != null)
-						itr = new FilesIterator(col, c);
-					else
-						itr = new FilesIterator(col, DEFAULT_FILE_PARSER);
-
-				} else {
-					itr = new FilesIterator(col, DEFAULT_FILE_PARSER);
-				}
-
 			}
 
-			itr.init(context, "Files");
-			return itr;
-		} catch (Exception e) {
-			log.error("Unable getting tuple iterator", e);
+			if (tuple.getNElements() == 4) {
+				// There is a customized file reader
+				String clazz = ((TString) tuple.get(3)).getValue();
+
+				// Test whether it is a good class
+				Class<? extends FileReader> c = null;
+				try {
+					c = Class.forName(clazz).asSubclass(FileReader.class);
+				} catch (Exception e) {
+					log.error("Could not load custom class " + clazz, e);
+					throw new Error("Could not load custom class " + clazz, e);
+				}
+				if (c != null)
+					itr = new FilesIterator(col, c);
+				else
+					itr = new FilesIterator(col, DEFAULT_FILE_PARSER);
+
+			} else {
+				itr = new FilesIterator(col, DEFAULT_FILE_PARSER);
+			}
+
 		}
 
-		return null;
+		itr.init(context, "Files");
+		return itr;
 	}
 
 	/**
@@ -113,19 +106,13 @@ public class FileLayer extends InputLayer {
 	 */
 	@Override
 	public Location getLocations(Tuple tuple, ActionContext context) {
-		try {
-			if (((TInt) tuple.get(0)).getValue() == OP_LS) {
-				return Location.THIS_NODE;
-			} else {
-				String s = ((TString) tuple.get(1)).getValue();
-				int index = Integer.valueOf(s.substring(s.indexOf('-') + 1));
-				return new Location(index % numberNodes);
-			}
-
-		} catch (Exception e) {
-			log.error("Error", e);
+		if (((TInt) tuple.get(0)).getValue() == OP_LS) {
+			return Location.THIS_NODE;
+		} else {
+			String s = ((TString) tuple.get(1)).getValue();
+			int index = Integer.valueOf(s.substring(s.indexOf('-') + 1));
+			return new Location(index % numberNodes);
 		}
-		return null;
 	}
 
 	@Override

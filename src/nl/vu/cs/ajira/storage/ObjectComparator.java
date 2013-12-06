@@ -7,7 +7,6 @@ import nl.vu.cs.ajira.data.types.bytearray.BDataInput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public abstract class ObjectComparator<T extends Writable> extends
 	RawComparator<T> implements Comparator<T> {
 
@@ -24,6 +23,7 @@ public abstract class ObjectComparator<T extends Writable> extends
      */
     public ObjectComparator() {
 		try {
+			// TODO: this cannot work! Fortunately, this class is never used ....
 		    t1 = (T) t1.getClass().newInstance();
 		    t2 = (T) t2.getClass().newInstance();
 		} catch (Exception e) {

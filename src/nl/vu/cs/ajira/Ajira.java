@@ -8,7 +8,6 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Properties;
@@ -115,12 +114,12 @@ public class Ajira {
 		log.info("Framework is shutting down ...");
 		globalContext.getInputLayerRegistry().close();
 		if (!localMode) {
+			globalContext.getNetworkLayer().signalTermination();
 			try {
 				// Send message to everyone that should stop
-				globalContext.getNetworkLayer().signalTermination();
 				globalContext.getNetworkLayer().stopIbis();
 				System.exit(0);
-			} catch (IOException e) {
+			} catch (Throwable e) {
 				log.error("Error in shutting down", e);
 				System.exit(1);
 			}
@@ -136,153 +135,165 @@ public class Ajira {
 	 * that participate in the computation. After it is finished, the cluster is
 	 * ready to accept incoming jobs.
 	 */
-	public void startup() {
-		try {
-			long time = System.currentTimeMillis();
+	public void startup() throws Exception {
+		long time = System.currentTimeMillis();
 
-			/***** CREATE TMP DIR IF NOT PRESENT *****/
-			String tmpDir = System.getProperty("java.io.tmpdir");
-			File tmpFile = new File(tmpDir);
-			if (!tmpFile.exists()) {
+		/***** CREATE TMP DIR IF NOT PRESENT *****/
+		String tmpDir = System.getProperty("java.io.tmpdir");
+		File tmpFile = new File(tmpDir);
+		if (!tmpFile.exists()) {
+			if (log.isInfoEnabled()) {
 				log.info("Create tmp dir ...");
-				if (!Utils.createRecursevily(tmpFile)) {
-					log.warn("tmp dir not created!");
-				}
+			}
+			if (!Utils.createRecursevily(tmpFile)) {
+				log.warn("tmp dir not created!");
+			}
+		}
+
+		/***** NET *******/
+		NetworkLayer net = NetworkLayer.getInstance();
+		boolean serverMode = true;
+
+		@SuppressWarnings("unchecked")
+		Class<WritableContainer<WritableTuple>> clazz = (Class<WritableContainer<WritableTuple>>) (Class<?>) WritableContainer.class;
+		Factory<WritableContainer<WritableTuple>> bufferFactory = new Factory<WritableContainer<WritableTuple>>(
+				clazz, Consts.TUPLES_CONTAINER_MAX_BUFFER_SIZE);
+		MemoryManager.getInstance().registerFactory(bufferFactory);
+
+		String ibisPoolSize = System.getProperty("ibis.pool.size");
+		localMode = !clusterMode
+				&& (ibisPoolSize == null || ibisPoolSize.equals("1"));
+
+		if (!localMode) {
+			if (log.isDebugEnabled()) {
+				log.debug("Starting the network layer ...");
 			}
 
-			/***** NET *******/
-			NetworkLayer net = NetworkLayer.getInstance();
-			boolean serverMode = true;
-			
-			@SuppressWarnings("unchecked")
-			Class<WritableContainer<WritableTuple>> clazz = (Class<WritableContainer<WritableTuple>>) (Class<?>) WritableContainer.class;
-			Factory<WritableContainer<WritableTuple>> bufferFactory = new Factory<WritableContainer<WritableTuple>>(
-					clazz, Consts.TUPLES_CONTAINER_MAX_BUFFER_SIZE);
-			MemoryManager.getInstance().registerFactory(bufferFactory);
+			/**** START IBIS IF REQUESTED ****/
+			if (conf.getBoolean(Consts.START_IBIS, false)) {
+				TypedProperties properties = new TypedProperties();
+				properties.putAll(System.getProperties());
+				properties.setProperty(ServerProperties.PRINT_EVENTS, "true");
+				new Server(properties);
+			}
 
-			String ibisPoolSize = System.getProperty("ibis.pool.size");
-			localMode = !clusterMode
-					&& (ibisPoolSize == null || ibisPoolSize.equals("1"));
-			
-			if (!localMode) {
-				log.debug("Starting the network layer ...");
+			net.setBufferFactory(bufferFactory);
+			net.startIbis();
+			ArrayList<WritableContainer<WritableTuple>> l = new ArrayList<WritableContainer<WritableTuple>>(
+					Consts.STARTING_SIZE_FACTORY);
+			for (int i = 0; i < Consts.STARTING_SIZE_FACTORY; i++) {
+				l.add(bufferFactory.get());
+			}
+			while (l.size() != 0) {
+				bufferFactory.release(l.remove(l.size() - 1));
+			}
 
-				/**** START IBIS IF REQUESTED ****/
-				if (conf.getBoolean(Consts.START_IBIS, false)) {
-					try {
-						TypedProperties properties = new TypedProperties();
-						properties.putAll(System.getProperties());
-						properties.setProperty(ServerProperties.PRINT_EVENTS,
-								"true");
-						new Server(properties);
-					} catch (Exception e) {
-						log.error("Error starting ibis", e);
-					}
-				}
-
-				net.setBufferFactory(bufferFactory);
-				net.startIbis();
-				ArrayList<WritableContainer<WritableTuple>> l = new ArrayList<WritableContainer<WritableTuple>>(
-						Consts.STARTING_SIZE_FACTORY);
-				for (int i = 0; i < Consts.STARTING_SIZE_FACTORY; i++) {
-					l.add(bufferFactory.get());
-				}
-				while (l.size() != 0) {
-					bufferFactory.release(l.remove(l.size() - 1));
-				}
-
-				serverMode = net.isServer();
+			serverMode = net.isServer();
+			if (log.isDebugEnabled()) {
 				log.debug("...done");
 			}
+		}
 
-			if (serverMode) {
-				log.info("Cluster starting up");
-			}
+		if (log.isInfoEnabled() && serverMode) {
+			log.info("Cluster starting up");
+		}
 
-			StatisticsCollector stats = new StatisticsCollector(conf, net);
+		StatisticsCollector stats = new StatisticsCollector(conf, net);
 
-			/**** OTHER SHARED DATA STRUCTURES ****/
-			CachedFilesMerger merger = new CachedFilesMerger();
-			Buckets tuplesContainer = new Buckets(stats, merger, net, bufferFactory);
-			ActionFactory ap = new ActionFactory();
-			DataProvider dp = new DataProvider();
-			SubmissionCache cache = new SubmissionCache(net);
-			ChainHandlerManager manager = ChainHandlerManager.getInstance();
+		globalContext = new Context();
 
-			SubmissionRegistry registry = new SubmissionRegistry(net, stats,
-					manager.getChainsToProcess(), tuplesContainer, ap, dp,
-					cache, conf);
+		/**** OTHER SHARED DATA STRUCTURES ****/
+		CachedFilesMerger merger = new CachedFilesMerger();
+		Buckets tuplesContainer = new Buckets(stats, globalContext, merger,
+				net, bufferFactory);
+		ActionFactory ap = new ActionFactory();
+		DataProvider dp = new DataProvider();
+		SubmissionCache cache = new SubmissionCache(net);
+		ChainHandlerManager manager = ChainHandlerManager.getInstance();
 
-			/**** INIT INPUT LAYERS ****/
-			InputLayerRegistry inputRegistry = new InputLayerRegistry();
-			inputRegistry.registerLayer(new BucketsLayer(), false);
-			inputRegistry.registerLayer(new DummyLayer(), false);
-			inputRegistry.registerLayer(ChainSplitLayer.getInstance(), false);
-			Class<? extends InputLayer> input = InputLayer
-					.getDefaultInputLayerClass(conf);
-			inputRegistry.registerLayer(input.newInstance(), true);
+		SubmissionRegistry registry = new SubmissionRegistry(net, stats,
+				manager.getChainsToProcess(), tuplesContainer, ap, dp, cache,
+				conf);
 
-			/**** INIT CONTEXT ****/
-			globalContext = new Context();
-			ChainNotifier notifier = new ChainNotifier();
-			globalContext.init(localMode, inputRegistry, tuplesContainer,
-					registry, manager, notifier, merger, net, stats, ap, dp,
-					cache, conf);
-			notifier.init(globalContext);
+		/**** INIT INPUT LAYERS ****/
+		InputLayerRegistry inputRegistry = new InputLayerRegistry();
+		inputRegistry.registerLayer(new BucketsLayer(), false);
+		inputRegistry.registerLayer(new DummyLayer(), false);
+		inputRegistry.registerLayer(ChainSplitLayer.getInstance(), false);
+		Class<? extends InputLayer> input = InputLayer
+				.getDefaultInputLayerClass(conf);
+		inputRegistry.registerLayer(input.newInstance(), true);
 
-			/**** START PROCESSING THREADS ****/
-			manager.setContext(globalContext);
-			int i = conf.getInt(Consts.N_PROC_THREADS, 1);
-			manager.startChainHandlers(i);
+		/**** INIT CONTEXT ****/
+		ChainNotifier notifier = new ChainNotifier();
+		globalContext.init(localMode, inputRegistry, tuplesContainer, registry,
+				manager, notifier, merger, net, stats, ap, dp, cache, conf);
+		notifier.init(globalContext);
 
-			/**** START SORTING MERGE THREADS ****/
-			i = conf.getInt(Consts.N_MERGE_THREADS, 1);
-			merger.setNumberThreads(i);
-			for (int j = 0; j < i; ++j) {
+		/**** START PROCESSING THREADS ****/
+		manager.setContext(globalContext);
+		int nProcs = Runtime.getRuntime().availableProcessors();
+		if (nProcs > 2) {
+			nProcs /= 2;
+		}
+		int i = conf.getInt(Consts.N_PROC_THREADS, nProcs);
+		manager.startChainHandlers(i);
+
+		/**** START SORTING MERGE THREADS ****/
+		i = conf.getInt(Consts.N_MERGE_THREADS, 1);
+		merger.setNumberThreads(i);
+		for (int j = 0; j < i; ++j) {
+			if (log.isDebugEnabled()) {
 				log.debug("Starting Sorting Merge threads " + j + " ...");
-				Thread thread = new Thread(merger);
-				thread.setName("Merge sort " + j);
-				thread.start();
 			}
-
-			/**** START COMMUNICATION THREADS ****/
-			log.debug("Starting Sending/receiving threads ...");
-			net.startupConnections(globalContext);
-
-			/***** LOAD STORAGE *****/
-			log.debug("Starting registered input layers ...");
-			inputRegistry.startup(globalContext);
-
-			/***** LOAD WEB INTERFACE *****/
-			if (conf.getBoolean(WebServer.WEBSERVER_START, true) && serverMode) {
-				WebServer www = new WebServer();
-				www.startWebServer(globalContext);
-				String addr = www.getAddress();
-				if (addr != null) {
-					log.info("Ajira WebInterface available at: " + addr);
-				}
-			}
-
-			/***** HOUSE KEEPING *****/
-			log.debug("Start housekeeping thread ...");
-			NodeHouseKeeper hk = new NodeHouseKeeper(globalContext);
-			Thread thread = new Thread(hk);
-			thread.setName("Housekeeping");
-			thread.setDaemon(true);
+			Thread thread = new Thread(merger);
+			thread.setName("Merge sort " + j);
 			thread.start();
+		}
 
-			if (serverMode) {
-				net.waitUntilAllReady();
+		/**** START COMMUNICATION THREADS ****/
+		if (log.isDebugEnabled()) {
+			log.debug("Starting Sending/receiving threads ...");
+		}
+		net.startupConnections(globalContext);
+
+		/***** LOAD STORAGE *****/
+		if (log.isDebugEnabled()) {
+			log.debug("Starting registered input layers ...");
+		}
+		inputRegistry.startup(globalContext);
+
+		/***** LOAD WEB INTERFACE *****/
+		if (conf.getBoolean(WebServer.WEBSERVER_START, true) && serverMode) {
+			WebServer www = new WebServer();
+			www.startWebServer(globalContext);
+			String addr = www.getAddress();
+			if (log.isInfoEnabled() && addr != null) {
+				log.info("Ajira WebInterface available at: " + addr);
+			}
+		}
+
+		/***** HOUSE KEEPING *****/
+		if (log.isDebugEnabled()) {
+			log.debug("Start housekeeping thread ...");
+		}
+		NodeHouseKeeper hk = new NodeHouseKeeper(globalContext);
+		Thread thread = new Thread(hk);
+		thread.setName("Housekeeping");
+		thread.setDaemon(true);
+		thread.start();
+
+		if (serverMode) {
+			net.waitUntilAllReady();
+			if (log.isInfoEnabled()) {
 				log.info("Time to startup the cluster (ms): "
 						+ (System.currentTimeMillis() - time));
-				log.info("Cluster ready to accept requests");
-			} else {
-				net.signalReady();
+			}
+		} else {
+			net.signalReady();
+			if (log.isInfoEnabled()) {
 				log.info("Startup successful");
 			}
-
-		} catch (Exception e) {
-			log.error("Error creation program", e);
 		}
 	}
 
@@ -308,9 +319,10 @@ public class Ajira {
 		else
 			return globalContext.getNetworkLayer().getMyPartition();
 	}
-	
+
 	/**
 	 * This method returns the number of nodes in the Ajira cluster.
+	 * 
 	 * @return the number of nodes.
 	 */
 	public int getNumberNodes() {
@@ -325,6 +337,10 @@ public class Ajira {
 	 */
 	public Context getContext() {
 		return globalContext;
+	}
+
+	public int getBucketNo() {
+		return globalContext.getUserBucketNo();
 	}
 
 	/**
@@ -385,7 +401,12 @@ public class Ajira {
 			System.exit(1);
 		}
 
-		ajira.startup();
+		try {
+			ajira.startup();
+		} catch (Throwable e) {
+			log.error("Could not start up Ajira", e);
+			System.exit(1);
+		}
 		if (ajira.amItheServer()) {
 			// Write the contact info for the cluster to the specified file.
 			// Terminate cluster if this does not work for some reason.

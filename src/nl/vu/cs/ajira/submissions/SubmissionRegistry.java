@@ -177,10 +177,6 @@ public class SubmissionRegistry {
 
 			ActionSequence actions = job.getActions();
 
-			if (actions == null) {
-				throw new Exception("No action is defined!");
-			}
-
 			Chain chain = new Chain();
 			chain.setParentChainId(-1);
 			chain.setInputLayer(InputLayer.DEFAULT_LAYER);
@@ -200,10 +196,11 @@ public class SubmissionRegistry {
 				context.getNetworkLayer().sendChain(chain);
 			}
 
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			log.error("Init of the submission " + sub + " has failed", e);
 			submissions.remove(submissionId);
 			sub.setFinished(Consts.STATE_INIT_FAILED);
+			sub.setException(e);
 		}
 
 		return sub;
@@ -217,22 +214,18 @@ public class SubmissionRegistry {
 		submissions.get(submissionId).setState(state);
 	}
 
-	public void cleanupSubmission(Submission submission) {
-		try {
-			for (int i = 0; i < net.getNumberNodes(); ++i) {
-				if (i == net.getMyPartition()) {
-					cache.clearAll(submission.getSubmissionId());
-				} else {
-					WriteMessage msg = net.getMessageToSend(
-							net.getPeerLocation(i),
-							NetworkLayer.nameMgmtReceiverPort);
-					msg.writeByte((byte) 8);
-					msg.writeInt(submission.getSubmissionId());
-					msg.finish();
-				}
+	public void cleanupSubmission(Submission submission) throws Exception {
+		for (int i = 0; i < net.getNumberNodes(); ++i) {
+			if (i == net.getMyPartition()) {
+				cache.clearAll(submission.getSubmissionId());
+			} else {
+				WriteMessage msg = net.getMessageToSend(
+						net.getPeerLocation(i),
+						NetworkLayer.nameMgmtReceiverPort);
+				msg.writeByte((byte) 8);
+				msg.writeInt(submission.getSubmissionId());
+				msg.finish();
 			}
-		} catch (Exception e) {
-			log.error("Failure in cleaning up the submission", e);
 		}
 	}
 

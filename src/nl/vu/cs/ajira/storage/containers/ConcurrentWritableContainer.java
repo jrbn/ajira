@@ -7,7 +7,6 @@ import nl.vu.cs.ajira.storage.Writable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class ConcurrentWritableContainer<K extends Writable> extends
 		WritableContainer<K> {
 
@@ -31,7 +30,9 @@ public class ConcurrentWritableContainer<K extends Writable> extends
 	 * output) throws IOException { super.writeContentTo(output); }
 	 */
 
-	public synchronized void readFrom(java.io.DataInput input) throws IOException {
+	@Override
+	public synchronized void readFrom(java.io.DataInput input)
+			throws IOException {
 		super.readFrom(input);
 	}
 
@@ -63,10 +64,5 @@ public class ConcurrentWritableContainer<K extends Writable> extends
 			waiters--;
 		}
 		return super.remove(element);
-	}
-
-	@Override
-	public synchronized void moveTo(WritableContainer<?> tmpBuffer) {
-		super.moveTo(tmpBuffer);
 	}
 }

@@ -41,8 +41,9 @@ public class Factory<K> {
 			} else {
 				constructor = class1.getConstructor();
 			}
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			log.error("Error initializing factory", e);
+			throw new Error("Internal error initializing factory", e);
 		}
 	}
 
@@ -59,7 +60,8 @@ public class Factory<K> {
 			for (int i = 0; i < bufferSize; ++i) {
 				Object el = buffer[i];
 				if (el instanceof WritableContainer) {
-					estimatedSize += ((WritableContainer<?>) el).getTotalCapacity();
+					estimatedSize += ((WritableContainer<?>) el)
+							.getTotalCapacity();
 				}
 			}
 			return estimatedSize;
@@ -67,7 +69,8 @@ public class Factory<K> {
 			for (int i = 0; i < Consts.N_ELEMENTS_TO_SAMPLE; ++i) {
 				Object el = buffer[r.nextInt(bufferSize)];
 				if (el instanceof WritableContainer) {
-					estimatedSize += ((WritableContainer<?>) el).getTotalCapacity();
+					estimatedSize += ((WritableContainer<?>) el)
+							.getTotalCapacity();
 				}
 			}
 			return estimatedSize / Consts.N_ELEMENTS_TO_SAMPLE * bufferSize;
@@ -96,11 +99,10 @@ public class Factory<K> {
 				// --Ceriel
 				return el;
 			}
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			log.error("Error in instantiation", e);
+			throw new Error("Internal error in instantiation", e);
 		}
-
-		return null;
 	}
 
 	/**
@@ -118,7 +120,9 @@ public class Factory<K> {
 			buffer[bufferSize++] = element;
 			return true;
 		}
-		log.warn("Factory is too small. Throwing away stuff");
+		if (log.isInfoEnabled()) {
+			log.info("Factory is too small. Throwing away stuff");
+		}
 		return false;
 	}
 

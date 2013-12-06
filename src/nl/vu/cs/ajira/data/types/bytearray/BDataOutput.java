@@ -7,11 +7,14 @@ public class BDataOutput implements DataOutput {
 
 	public ByteArray cb;
 	protected boolean grow;
-	
+
 	/**
 	 * Creates a new BDataOutput an sets the fields of the class.
-	 * @param cb is the ByteArray of the object.
-	 * @param grow is the new value of the field grow
+	 * 
+	 * @param cb
+	 *            is the ByteArray of the object.
+	 * @param grow
+	 *            is the new value of the field grow
 	 */
 	public BDataOutput(ByteArray cb, boolean grow) {
 		this.cb = cb;
@@ -19,24 +22,26 @@ public class BDataOutput implements DataOutput {
 	}
 
 	/**
-	 * It constructs a new BDataOutput and sets cb's buffer to 
-	 * the parameter and sets the grow to false.
-	 * @param buffer is the new buffer of cb
+	 * It constructs a new BDataOutput and sets cb's buffer to the parameter and
+	 * sets the grow to false.
+	 * 
+	 * @param buffer
+	 *            is the new buffer of cb
 	 */
 	public BDataOutput(byte[] buffer) {
-		cb = new ByteArray();
-		cb.buffer = buffer;
-		grow = false;
+		this(new ByteArray(buffer), false);
 	}
 
 	/**
 	 * Sets the end of cb's buffer
-	 * @param bufferSize is the new end of cb's buffer
+	 * 
+	 * @param bufferSize
+	 *            is the new end of cb's buffer
 	 */
 	public void setCurrentPosition(int bufferSize) {
 		cb.end = bufferSize;
 	}
-	
+
 	@Override
 	/**
 	 * Adds b at the end of the ByteArray's buffer if there is enough space.
@@ -111,8 +116,9 @@ public class BDataOutput implements DataOutput {
 	}
 
 	@Override
-	public void writeDouble(double v) {
-		throw new UnsupportedOperationException("Not supported");
+	public void writeDouble(double v) throws IOException {
+		long n = Double.doubleToLongBits(v);
+		writeLong(n);
 	}
 
 	@Override
@@ -186,7 +192,9 @@ public class BDataOutput implements DataOutput {
 
 	/**
 	 * Skips the number of bytes passed through the parameter.
-	 * @param bytes is the number of bytes that are skiped
+	 * 
+	 * @param bytes
+	 *            is the number of bytes that are skiped
 	 * @throws IOException
 	 */
 	public void skipBytes(int bytes) throws IOException {
@@ -195,5 +203,8 @@ public class BDataOutput implements DataOutput {
 		}
 		cb.end += bytes;
 	}
-}
 
+	public void writeTo(DataOutput out) throws IOException {
+		out.write(cb.buffer, cb.start, cb.end);
+	}
+}

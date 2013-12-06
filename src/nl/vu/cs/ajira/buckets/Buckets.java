@@ -7,7 +7,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.actions.ActionContext;
+import nl.vu.cs.ajira.chains.ChainNotifier;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
 import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.net.NetworkLayer;
@@ -29,6 +31,8 @@ import org.slf4j.LoggerFactory;
 public class Buckets {
 	static final Logger log = LoggerFactory.getLogger(Buckets.class);
 	private final Map<Long, Bucket> buckets = new HashMap<Long, Bucket>();
+	private final Map<Long, ChainNotifier> notifiers = new HashMap<Long, ChainNotifier>();
+	private final Map<Long, BucketIterator> iterators = new HashMap<Long, BucketIterator>();
 
 	// Buffer factories
 	private final Factory<WritableContainer<WritableTuple>> fb;
@@ -40,6 +44,7 @@ public class Buckets {
 	private final StatisticsCollector stats;
 
 	private int myPartition = 0;
+	private final Context context;
 
 	/**
 	 * Custom constructor.
@@ -53,13 +58,15 @@ public class Buckets {
 	 *            Network layer
 	 */
 	@SuppressWarnings("unchecked")
-	public Buckets(StatisticsCollector stats, CachedFilesMerger merger,
-			NetworkLayer net, Factory<WritableContainer<WritableTuple>> fb) {
+	public Buckets(StatisticsCollector stats, Context context,
+			CachedFilesMerger merger, NetworkLayer net,
+			Factory<WritableContainer<WritableTuple>> fb) {
 		this.fb = fb;
 		this.stats = stats;
 		this.merger = merger;
 		this.myPartition = net.getMyPartition();
 		this.net = net;
+		this.context = context;
 		activeTransfers = new Map[net.getNumberNodes()];
 		for (int i = 0; i < activeTransfers.length; ++i) {
 			activeTransfers[i] = new HashMap<Long, Buckets.TransferInfo>();
@@ -78,7 +85,7 @@ public class Buckets {
 	 *            Bucket id
 	 * @return
 	 */
-	private static long getKey(int submissionId, int bucketId) {
+	static long getKey(int submissionId, int bucketId) {
 		return ((long) submissionId << 32) + (bucketId & 0xFFFFFFFFL);
 	}
 
@@ -142,15 +149,21 @@ public class Buckets {
 	 */
 	public synchronized Bucket getOrCreateBucket(int submissionNode,
 			int idSubmission, int idBucket, boolean sort, boolean sortRemote,
-			byte[] sortingFields, byte[] signature) {
+			boolean streaming, byte[] sortingFields, byte[] signature) {
 		long key = getKey(idSubmission, idBucket);
 		Bucket bucket = buckets.get(key);
 
 		if (bucket == null) {
 			bucket = new Bucket();
-			bucket.init(key, stats, submissionNode, idSubmission, sort,
-					sortRemote, sortingFields, fb, merger, signature);
+			bucket.init(key, context, stats, submissionNode, idSubmission,
+					sort, sortRemote, streaming, sortingFields, fb, merger,
+					signature);
 			buckets.put(key, bucket);
+			ChainNotifier notifier = notifiers.remove(key);
+			if (notifier != null) {
+				BucketIterator itr = iterators.remove(key);
+				bucket.registerFinishedNotifier(notifier, itr);
+			}
 			this.notifyAll();
 		}
 
@@ -184,10 +197,8 @@ public class Buckets {
 	 * @return Bucket's iterator
 	 */
 	public TupleIterator getIterator(ActionContext c, int idBucket) {
-		Bucket bucket = null;
-		bucket = getExistingBucket(c.getSubmissionId(), idBucket);
 		BucketIterator itr = new BucketIterator();
-		itr.init(c, bucket, bucket.getSignature(), this);
+		itr.init(c, idBucket, this);
 		return itr;
 	}
 
@@ -232,19 +243,19 @@ public class Buckets {
 
 		while (wait && bucket == null) {
 			// Wait until somebody else will create it
-			try {
-				if (log.isDebugEnabled()) {
-					log.debug("Waiting for bucket " + bucketKey + " to appear");
+			if (log.isDebugEnabled()) {
+				log.debug("Waiting for bucket " + bucketKey + " to appear");
+			}
+			while (bucket == null) {
+				try {
+					wait();
+				} catch (InterruptedException e) {
+					// ignore
 				}
-				while (bucket == null) {
-					this.wait();
-					bucket = buckets.get(bucketKey);
-				}
-				if (log.isDebugEnabled()) {
-					log.debug("Got bucket " + bucketKey);
-				}
-			} catch (Exception e) {
-				log.error("Error", e);
+				bucket = buckets.get(bucketKey);
+			}
+			if (log.isDebugEnabled()) {
+				log.debug("Got bucket " + bucketKey);
 			}
 		}
 
@@ -311,7 +322,7 @@ public class Buckets {
 
 		if (node == myPartition || net.getNumberNodes() == 1) {
 			return getOrCreateBucket(submissionNode, submission, bucketID,
-					sort, sort, sortingFields, signature);
+					sort, sort, streaming, sortingFields, signature);
 		}
 
 		Map<Long, TransferInfo> map = activeTransfers[node];
@@ -326,8 +337,8 @@ public class Buckets {
 				info = new TransferInfo();
 				// Remote buckets are not sorted (sorting is disabled)
 				info.bucket = getOrCreateBucket(submissionNode, submission,
-						context.getNewBucketID(), false, sort, sortingFields,
-						signature);
+						context.getNewBucketID(), false, sort, streaming,
+						sortingFields, signature);
 				info.streaming = streaming;
 				map.put(key, info);
 			} else {
@@ -348,10 +359,11 @@ public class Buckets {
 			return;
 		}
 
-                if (log.isDebugEnabled()) {
-                    log.debug("AlertTransfer for bucket " + bucketID + ", ci = " + chainId
-                            + ", p = " + parentChainId + ", nc = " + nchildren + ", resp = " + responsible);
-                }
+		if (log.isDebugEnabled()) {
+			log.debug("AlertTransfer for bucket " + bucketID + ", ci = "
+					+ chainId + ", p = " + parentChainId + ", nc = "
+					+ nchildren + ", resp = " + responsible);
+		}
 
 		Map<Long, TransferInfo> map = activeTransfers[node];
 		long key = getKey(submission, bucketID);
@@ -501,13 +513,13 @@ public class Buckets {
 	 */
 	public void finishTransfer(int submissionNode, int submission, int node,
 			int bucketID, long chainId, long parentChainId, int nchildren,
-			boolean responsible, boolean sort, byte[] sortingFields,
-			byte[] signature, boolean decreaseCounter,
+			boolean responsible, boolean sort, boolean streaming,
+			byte[] sortingFields, byte[] signature, boolean decreaseCounter,
 			Map<Long, List<Integer>> additionalChildren) throws IOException {
 
 		if (node == myPartition || net.getNumberNodes() == 1) {
 			Bucket bucket = getOrCreateBucket(submissionNode, submission,
-					bucketID, sort, sort, sortingFields, signature);
+					bucketID, sort, sort, streaming, sortingFields, signature);
 
 			if (additionalChildren != null) {
 				bucket.setAdditionalCounters(additionalChildren);
@@ -586,6 +598,17 @@ public class Buckets {
 		synchronized (map) {
 			info = map.get(key);
 			return info != null && info.count > 0;
+		}
+	}
+
+	public synchronized void registerReadyNotifier(long key,
+			ChainNotifier notifier, BucketIterator bucketIterator) {
+		Bucket bucket = getExistingBucket(key, false);
+		if (bucket == null) {
+			notifiers.put(key, notifier);
+			iterators.put(key, bucketIterator);
+		} else {
+			bucket.registerFinishedNotifier(notifier, bucketIterator);
 		}
 	}
 }

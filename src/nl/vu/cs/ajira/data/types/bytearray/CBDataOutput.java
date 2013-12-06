@@ -6,8 +6,11 @@ public class CBDataOutput extends BDataOutput {
 
 	/**
 	 * Creates a new CBDataOutput an sets the fields of the extended class.
-	 * @param cb is the ByteArray of the extended class
-	 * @param grow is the boolean value of the extended class
+	 * 
+	 * @param cb
+	 *            is the ByteArray of the extended class
+	 * @param grow
+	 *            is the boolean value of the extended class
 	 */
 	public CBDataOutput(ByteArray cb, boolean grow) {
 		super(cb, grow);
@@ -34,7 +37,7 @@ public class CBDataOutput extends BDataOutput {
 	/**
 	 * If it is possible to add elements to the buffer then:
 	 * 		If the length is greater than the remaining bytes from the end
-	 * 		of the buffer then are copied cb.buffer.length - cb.end bytes from 
+	 * 		of the buffer then are copied cb.bufferSize - cb.end bytes from 
 	 * 		buffer2 at the end of the buffer and the remaining bytes from buffer2
 	 * 		at the beginning of the buffer.
 	 * 		If there are length bytes left in the buffer then length bytes are
@@ -170,4 +173,3 @@ public class CBDataOutput extends BDataOutput {
 		}
 	}
 }
-

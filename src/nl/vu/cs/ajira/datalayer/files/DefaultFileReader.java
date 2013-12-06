@@ -62,7 +62,9 @@ public class DefaultFileReader implements FileReader {
 			try {
 				reader.close();
 			} catch(Throwable e) {
-				log.info("Got exception while closing reader (ignored)", e);
+				if (log.isInfoEnabled()) {
+					log.info("Got exception while closing reader (ignored)", e);
+				}
 			}
 			reader = null;
 			currentLine = null;
@@ -93,7 +95,9 @@ public class DefaultFileReader implements FileReader {
 				reader.close();
 			}
 		} catch (Throwable e) {
-			log.info("Got exception while closing reader (ignored)", e);
+			if (log.isInfoEnabled()) {
+				log.info("Got exception while closing reader (ignored)", e);
+			}
 			// ignore
 		}
 	}

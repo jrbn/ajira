@@ -34,15 +34,7 @@ public class BucketsLayer extends InputLayer {
 	 */
 	@Override
 	public TupleIterator getIterator(Tuple tuple, ActionContext context) {
-		TupleIterator itr = null;
-		try {
-			itr = buckets
-					.getIterator(context, ((TInt) tuple.get(0)).getValue());
-		} catch (Exception e) {
-			log.error("Error retrieving the tuple iterator", e);
-		}
-
-		return itr;
+		return buckets.getIterator(context, ((TInt) tuple.get(0)).getValue());
 	}
 
 	/**
@@ -52,19 +44,13 @@ public class BucketsLayer extends InputLayer {
 	 */
 	@Override
 	public Location getLocations(Tuple tuple, ActionContext context) {
-		try {
-			int location = ((TInt) tuple.get(tuple.getNElements() - 1))
-					.getValue();
-			if (location == -1 || location == -2) {
-				return Location.ALL_NODES;
-			} else {
-				return new Location(location);
-			}
-		} catch (Exception e) {
-			log.error("Error parsing tuple", e);
+		int location = ((TInt) tuple.get(tuple.getNElements() - 1))
+				.getValue();
+		if (location == -1 || location == -2) {
+			return Location.ALL_NODES;
+		} else {
+			return new Location(location);
 		}
-
-		return null;
 	}
 
 	/**

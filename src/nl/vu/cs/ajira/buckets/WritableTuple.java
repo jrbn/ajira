@@ -172,7 +172,7 @@ public class WritableTuple implements Writable {
 					if (e >= currentPosition) {
 						lengths[i] = e - currentPosition;
 					} else {
-						lengths[i] = o.cb.getBuffer().length - currentPosition
+						lengths[i] = o.cb.getTotalCapacity() - currentPosition
 								+ e;
 					}
 					currentPosition = e;
@@ -200,7 +200,7 @@ public class WritableTuple implements Writable {
 					if (e >= currentPosition) {
 						lengths[i] = e - currentPosition;
 					} else {
-						lengths[i] = o.cb.getBuffer().length - currentPosition
+						lengths[i] = o.cb.getTotalCapacity() - currentPosition
 								+ e;
 					}
 

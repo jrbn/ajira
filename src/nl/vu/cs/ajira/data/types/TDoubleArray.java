@@ -83,4 +83,16 @@ public class TDoubleArray extends SimpleData {
 		return compareTo(el) == 0;
 	}
 
+	/**
+	 * Converts the object to its string representation.
+	 */
+	@Override
+	public String toString() {
+		return Arrays.toString(array);
+	}
+
+	@Override
+	public int hashCode() {
+		return Arrays.hashCode(array);
+	}
 }

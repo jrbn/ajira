@@ -1,5 +1,6 @@
 package nl.vu.cs.ajira.storage;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,25 +56,27 @@ public class SubmissionCache {
 
 	public Object getObjectFromCache(int submissionId, Object key, boolean wait) {
 		if (wait) {
-			try {
-				Map<Object, Object> sc = null;
-				synchronized (submissionsCache) {
-					while ((sc = submissionsCache.get(submissionId)) == null)
+			Map<Object, Object> sc = null;
+			synchronized (submissionsCache) {
+				while ((sc = submissionsCache.get(submissionId)) == null)
+					try {
 						submissionsCache.wait();
-				}
-
-				Object value = null;
-				synchronized (sc) {
-					while ((value = sc.get(key)) == null) {
-						sc.wait();
+					} catch (InterruptedException e) {
+						// ignore
 					}
-				}
-				return value;
-			} catch (Exception e) {
-				log.error("Strange exception", e);
 			}
 
-			return null;
+			Object value = null;
+			synchronized (sc) {
+				while ((value = sc.get(key)) == null) {
+					try {
+						sc.wait();
+					} catch (InterruptedException e) {
+						// ignore
+					}
+				}
+			}
+			return value;
 		} else {
 			Map<Object, Object> sc = null;
 			synchronized (submissionsCache) {
@@ -96,12 +99,16 @@ public class SubmissionCache {
 		if (map != null)
 			size = map.size();
 		if (size > 0) {
-			log.info("Remove " + size + " from the cache since submission "
-					+ submissionId + " is finished");
+			if (log.isDebugEnabled()) {
+				log.debug("Remove " + size
+						+ " objects from the cache since submission "
+						+ submissionId + " is finished");
+			}
 		}
 	}
 
-	public void broadcastCacheObjects(int submissionId, Object... keys) {
+	public void broadcastCacheObjects(int submissionId, Object... keys)
+			throws IOException {
 		Object[] values = new Object[keys.length];
 		for (int i = 0; i < keys.length; i++) {
 			values[i] = getObjectFromCache(submissionId, keys[i]);
@@ -119,7 +126,7 @@ public class SubmissionCache {
 	}
 
 	public void sendCacheObject(int submissionId, int node, Object key,
-			Object value) {
+			Object value) throws IOException {
 		net.sendObject(submissionId, node, key, value);
 	}
 }

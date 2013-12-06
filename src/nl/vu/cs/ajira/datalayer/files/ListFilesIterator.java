@@ -1,6 +1,7 @@
 package nl.vu.cs.ajira.datalayer.files;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 import nl.vu.cs.ajira.data.types.TString;
@@ -32,13 +33,10 @@ public class ListFilesIterator extends TupleIterator {
 	 * @param filter
 	 * 		The name of the filterClass that provides 
 	 * 		the rules that the files have to satisfy.
+	 * @throws IOException 
 	 */
-	public ListFilesIterator(String path, String filter) {
-		try {
-			listFiles = FileUtils.listAllFiles(path, filter);
-		} catch (Exception e) {
-			log.error("Error", e);
-		}
+	public ListFilesIterator(String path, String filter) throws IOException {
+		listFiles = FileUtils.listAllFiles(path, filter);
 	}
 
 	/**

@@ -26,19 +26,23 @@ public class NodeHouseKeeper implements Runnable {
 	public void run() {
 		long lastTime = System.currentTimeMillis();
 		while (true) {
+			long tm = System.currentTimeMillis();
 			try {
 				manager.doHouseKeeping();
 				mem_manager.doHouseKeeping();
-				long tm = System.currentTimeMillis();
 				if (!local
 						&& tm - lastTime >= Consts.STATISTICS_COLLECTION_INTERVAL) {
 					stats.sendStatisticsAway();
-					lastTime = tm;
 				}
-				Thread.sleep(300);
-			} catch (Exception e) {
-				log.error("Error", e);
+			} catch (Throwable e) {
+				log.warn("Ignoring exception", e);
 			}
+			try {
+				Thread.sleep(300);
+			} catch (InterruptedException e) {
+				// ignore
+                        }
+			lastTime = tm;
 		}
 	}
 }

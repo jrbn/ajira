@@ -122,7 +122,12 @@ public class WordCount {
 
 		// Start up the cluster
 		Ajira ajira = new Ajira();
-		ajira.startup();
+		try {
+			ajira.startup();
+		} catch(Throwable e) {
+			log.error("Could not start up Ajira", e);
+			System.exit(1);
+		}
 
 		// With this command we ensure that we submit the job only once
 		if (ajira.amItheServer()) {

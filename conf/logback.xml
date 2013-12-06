@@ -7,20 +7,22 @@
   </encoder>
 </appender>
 
-<root level="warn">
+<appender name="FILE" class="ch.qos.logback.core.FileAppender">
+<File>${HOSTNAME}.log</File>
+<append>true</append>
+<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{15} - %msg%n</pattern>
+</encoder>
+</appender>
+
+<!--
+<root level="debug">
 <appender-ref ref="STDOUT" />
 </root>
+-->
 
 <logger name="nl.vu.cs.ajira">
-<level value="info" />
+<level value="warn" />
 </logger>
-
-<!-- <logger name="nl.vu.cs.ajira.buckets.Bucket">
-<level value="debug" />
-</logger>
-
-<logger name="nl.vu.cs.ajira.submissions.SubmissionRegistry">
-<level value="debug" />
-</logger> -->
 
 </configuration>

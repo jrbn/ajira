@@ -162,7 +162,7 @@ public class NetworkLayer {
 	/**
 	 * 
 	 * @param chain
-	 *       The chain that is added at the ChainTerminator.
+	 *            The chain that is added at the ChainTerminator.
 	 */
 	public void signalChainTerminated(Chain chain,
 			Map<Long, List<Integer>> additionalCounters) {
@@ -178,24 +178,25 @@ public class NetworkLayer {
 		ibis.registry().signal("ready", server);
 	}
 
-	public void signalsBucketToFetch(int idSubmission, int idBucket,
-			int remoteNodeId, long bufferKey, boolean streaming) {
+	public void signalsBucketToFetch(int idSubmission, int submissionNode,
+			int idBucket, int remoteNodeId, long bufferKey, boolean streaming) {
 		// called from upcall thread, so no new thread needed.
-		tupleRequester.handleNewRequest(idSubmission, idBucket, remoteNodeId,
-				bufferKey, 0, 0, streaming);
+		tupleRequester.handleNewRequest(idSubmission, submissionNode, idBucket,
+				remoteNodeId, bufferKey, 0, 0, streaming);
 	}
 
-	public void signalsBucketToFetch(int idSubmission, int idBucket,
-			int remoteNodeId, long bufferKey, int sequence, int nrequest) {
-		tupleRequester.handleNewRequest(idSubmission, idBucket, remoteNodeId,
-				bufferKey, sequence, nrequest);
+	public void signalsBucketToFetch(int idSubmission, int submissionNode,
+			int idBucket, int remoteNodeId, long bufferKey, int sequence,
+			int nrequest) {
+		tupleRequester.handleNewRequest(idSubmission, submissionNode, idBucket,
+				remoteNodeId, bufferKey, sequence, nrequest);
 	}
 
 	public void addRequestToSendTuples(long bucketKey, int remoteNodeId,
-			int submissionId, int bucketId, long ticket, int sequence,
-			int nrequest, boolean streaming) {
+			int submissionId, int submissionNode, int bucketId, long ticket,
+			int sequence, int nrequest) {
 		tupleSender.handleNewRequest(bucketKey, remoteNodeId, submissionId,
-				bucketId, ticket, sequence, nrequest, streaming);
+				submissionNode, bucketId, ticket, sequence, nrequest);
 	}
 
 	/**
@@ -249,39 +250,36 @@ public class NetworkLayer {
 
 			assignedPartitions = new IbisIdentifier[poolSize];
 
-			try {
-				// First wait for all ibises to join.
-				int nJoined = 0;
-				do {
-					IbisIdentifier[] joinedIbis = ibis.registry()
-							.joinedIbises();
-					if (joinedIbis.length > 0) {
-						System.arraycopy(joinedIbis, 0, assignedPartitions,
-								nJoined, joinedIbis.length);
-						nJoined += joinedIbis.length;
-					}
-					try {
-						Thread.sleep(10);
-					} catch (InterruptedException e) {
-						// ignore
-					}
-				} while (nJoined < poolSize);
+			// First wait for all ibises to join.
+			int nJoined = 0;
+			do {
+				IbisIdentifier[] joinedIbis = ibis.registry().joinedIbises();
+				if (joinedIbis.length > 0) {
+					System.arraycopy(joinedIbis, 0, assignedPartitions,
+							nJoined, joinedIbis.length);
+					nJoined += joinedIbis.length;
+				}
+				try {
+					Thread.sleep(10);
+				} catch (InterruptedException e) {
+					// ignore
+				}
+			} while (nJoined < poolSize);
 
-				// Sort on IbisIdentifier, which sorts on pool and then
-				// location.
-				// This at least gives a fixed order which may help in placing
-				// caches ...
-				Arrays.sort(assignedPartitions);
-				for (int i = 0; i < assignedPartitions.length; i++) {
-					if (assignedPartitions[i].equals(ibis.identifier())) {
-						partitionId = i;
+			// Sort on IbisIdentifier, which sorts on pool and then
+			// location.
+			// This at least gives a fixed order which may help in placing
+			// caches ...
+			Arrays.sort(assignedPartitions);
+			for (int i = 0; i < assignedPartitions.length; i++) {
+				if (assignedPartitions[i].equals(ibis.identifier())) {
+					partitionId = i;
+					if (log.isDebugEnabled()) {
 						log.debug("Assigned partition " + i + " to "
 								+ ibis.identifier());
 					}
-					assignedIds.put(assignedPartitions[i].name(), i);
 				}
-			} catch (Exception e) {
-				log.error("Error", e);
+				assignedIds.put(assignedPartitions[i].name(), i);
 			}
 
 			// Put the server on partition 0.
@@ -300,7 +298,9 @@ public class NetworkLayer {
 		try {
 			ibisMonitor = IbisMonitor.createMonitor(ibis);
 		} catch (Throwable e) {
-			log.info("Could not create IbisMonitor instance", e);
+			if (log.isInfoEnabled()) {
+				log.info("Could not create IbisMonitor instance", e);
+			}
 		}
 	}
 
@@ -312,71 +312,73 @@ public class NetworkLayer {
 	 * @param context
 	 *            Current context.
 	 */
-	public void startupConnections(Context context) {
+	public void startupConnections(Context context) throws Exception {
 		stats = context.getStatisticsCollector();
-		try {
 
-			/**** START SUBMISSION MANAGEMENT THREAD ****/
+		/**** START SUBMISSION MANAGEMENT THREAD ****/
+		if (log.isDebugEnabled()) {
 			log.debug("Starting Termination chains thread...");
-			terminator = new ChainTerminator(context);
-			Thread thread = new Thread(terminator);
-			thread.setName("Chain Terminator");
-			thread.start();
+		}
+		terminator = new ChainTerminator(context);
+		Thread thread = new Thread(terminator);
+		thread.setName("Chain Terminator");
+		thread.start();
 
-			if (context.isLocalMode()) {
-				return;
-			}
+		if (context.isLocalMode()) {
+			return;
+		}
 
-			sender = new ChainSender(context, chainsToSend);
-			thread = new Thread(sender);
-			thread.setName("Chain Sender");
-			thread.start();
+		sender = new ChainSender(context, chainsToSend);
+		thread = new Thread(sender);
+		thread.setName("Chain Sender");
+		thread.start();
 
-			tupleRequester = new TupleRequester(context);
-			tupleSender = new TupleSender(context);
+		tupleRequester = new TupleRequester(context);
+		tupleSender = new TupleSender(context);
 
-			receiver = new Receiver(context, bufferFactory);
-			ReceivePort port = ibis.createReceivePort(requestPortType,
-					nameReceiverPort, receiver);
-			port.enableConnections();
-			port.enableMessageUpcalls();
-			receivePorts.add(port);
+		receiver = new Receiver(context, bufferFactory);
 
-			port = ibis.createReceivePort(mgmtRequestPortType,
-					nameMgmtReceiverPort, receiver);
-			port.enableConnections();
-			port.enableMessageUpcalls();
-			receivePorts.add(port);
+		ReceivePort port = ibis.createReceivePort(requestPortType,
+				nameReceiverPort, receiver);
+		port.enableConnections();
+		port.enableMessageUpcalls();
+		receivePorts.add(port);
+
+		port = ibis.createReceivePort(mgmtRequestPortType,
+				nameMgmtReceiverPort, receiver);
+		port.enableConnections();
+		port.enableMessageUpcalls();
+		receivePorts.add(port);
+		if (log.isDebugEnabled()) {
 			log.debug("Mgmt receiver port is created");
+		}
 
-			port = ibis.createReceivePort(broadcastPortType,
-					nameBcstReceiverPort, receiver);
-			port.enableConnections();
-			port.enableMessageUpcalls();
-			receivePorts.add(port);
+		port = ibis.createReceivePort(broadcastPortType, nameBcstReceiverPort,
+				receiver);
+		port.enableConnections();
+		port.enableMessageUpcalls();
+		receivePorts.add(port);
+		if (log.isDebugEnabled()) {
 			log.debug("Broadcast receiver port is created");
+		}
 
-			// Start a broadcast port
-			broadcastPort = ibis.createSendPort(broadcastPortType);
+		// Start a broadcast port
+		broadcastPort = ibis.createSendPort(broadcastPortType);
 
-			// Connect every node with all the others and put the ports in
-			// sendPorts
-			for (IbisIdentifier peer : assignedPartitions) {
-				String nameSenderPort = nameReceiverPort + peer.name();
-				startSenderPort(requestPortType, nameSenderPort, peer,
-						nameReceiverPort);
+		// Connect every node with all the others and put the ports in
+		// sendPorts
+		for (IbisIdentifier peer : assignedPartitions) {
+			String nameSenderPort = nameReceiverPort + peer.name();
+			startSenderPort(requestPortType, nameSenderPort, peer,
+					nameReceiverPort);
 
-				nameSenderPort = nameMgmtReceiverPort + peer.name();
-				startSenderPort(mgmtRequestPortType, nameSenderPort, peer,
-						nameMgmtReceiverPort);
+			nameSenderPort = nameMgmtReceiverPort + peer.name();
+			startSenderPort(mgmtRequestPortType, nameSenderPort, peer,
+					nameMgmtReceiverPort);
 
-				if (!peer.equals(ibis.identifier())) {
-					broadcastPort.connect(peer, nameBcstReceiverPort);
-				}
+			if (!peer.equals(ibis.identifier())) {
+				broadcastPort.connect(peer, nameBcstReceiverPort);
 			}
-
-		} catch (Exception e) {
-			log.error("Error in setting up the connections", e);
 		}
 	}
 
@@ -423,8 +425,10 @@ public class NetworkLayer {
 	 *            The identifier of the Ibis that will receive the message.
 	 * @return A new WriteMessage object constructed for the parameters of the
 	 *         method.
+	 * @throws IOException
 	 */
-	public WriteMessage getMessageToSend(IbisIdentifier receiver) {
+	public WriteMessage getMessageToSend(IbisIdentifier receiver)
+			throws IOException {
 		return getMessageToSend(receiver, nameReceiverPort);
 	}
 
@@ -439,39 +443,36 @@ public class NetworkLayer {
 	 *            The name of the port.
 	 * @return A new WriteMessage object constructed for the parameters of the
 	 *         method.
+	 * @throws IOException
 	 */
 	public WriteMessage getMessageToSend(IbisIdentifier receiver,
-			String receiverPort) {
+			String receiverPort) throws IOException {
 
 		SendPort port = null;
-		try {
-			String nameSenderPort = receiverPort + receiver.name();
-			if (!senderPorts.containsKey(nameSenderPort)) {
-				synchronized (NetworkLayer.class) {
-					if (!senderPorts.containsKey(nameSenderPort)) {
-						PortType type = null;
-						if (receiverPort.equals(queryReceiverPort)) {
-							type = queryPortType;
-						} else if (receiverPort.equals(nameMgmtReceiverPort)) {
-							type = mgmtRequestPortType;
-						} else if (receiverPort.equals(nameBcstReceiverPort)) {
-							type = broadcastPortType;
-						} else {
-							type = requestPortType;
-						}
-						startSenderPort(type, nameSenderPort, receiver,
-								receiverPort);
+
+		String nameSenderPort = receiverPort + receiver.name();
+		if (!senderPorts.containsKey(nameSenderPort)) {
+			synchronized (NetworkLayer.class) {
+				if (!senderPorts.containsKey(nameSenderPort)) {
+					PortType type = null;
+					if (receiverPort.equals(queryReceiverPort)) {
+						type = queryPortType;
+					} else if (receiverPort.equals(nameMgmtReceiverPort)) {
+						type = mgmtRequestPortType;
+					} else if (receiverPort.equals(nameBcstReceiverPort)) {
+						type = broadcastPortType;
+					} else {
+						type = requestPortType;
 					}
+					startSenderPort(type, nameSenderPort, receiver,
+							receiverPort);
 				}
 			}
-			port = senderPorts.get(nameSenderPort);
-			WriteMessage w = port.newMessage();
-			timers.put(nameSenderPort, System.currentTimeMillis());
-			return w;
-		} catch (Exception e) {
-			log.error("Failed in getting new message to write", e);
-			return null;
 		}
+		port = senderPorts.get(nameSenderPort);
+		WriteMessage w = port.newMessage();
+		timers.put(nameSenderPort, System.currentTimeMillis());
+		return w;
 	}
 
 	/**
@@ -549,18 +550,26 @@ public class NetworkLayer {
 	}
 
 	/**
-	 * Sends a message to all the peers, except it, telling them to terminate.
-	 * 
-	 * @throws IOException
+	 * Sends a message to all the peers, except itself, telling them to
+	 * terminate.
 	 */
-	public void signalTermination() throws IOException {
+	public void signalTermination() {
 		for (IbisIdentifier peer : assignedPartitions) {
 			if (!peer.equals(ibis.identifier())) {
-				WriteMessage msg = getMessageToSend(peer, nameMgmtReceiverPort);
-				msg.writeByte((byte) 3);
-				msg.finish();
-				if (log.isDebugEnabled()) {
-					log.debug("Sent message with id 3 to " + peer);
+				WriteMessage msg = null;
+				try {
+					msg = getMessageToSend(peer, nameMgmtReceiverPort);
+					msg.writeByte((byte) 3);
+					msg.finish();
+					if (log.isDebugEnabled()) {
+						log.debug("Sent message with id 3 to " + peer);
+					}
+				} catch (IOException e) {
+					log.error("Could not send termination message to " + peer,
+							e);
+					if (msg != null) {
+						msg.finish(e);
+					}
 				}
 			}
 		}
@@ -789,36 +798,38 @@ public class NetworkLayer {
 	 *            The array of key Objects that is broadcast.
 	 * @param values
 	 *            The array of value Objects that is broadcast.
+	 * @throws IOException
 	 */
 	public void broadcastObjects(int submissionId, Object[] keys,
-			Object[] values) {
-		try {
-			int c;
-			CountInfo remaining = new CountInfo();
-			remaining.count = assignedPartitions.length - 1;
-			synchronized (activeBroadcasts) {
-				c = activeBroadcastCount++;
-				activeBroadcasts.put(c, remaining);
-			}
+			Object[] values) throws IOException {
 
-			WriteMessage msg = broadcastPort.newMessage();
-			msg.writeByte((byte) 10);
-			msg.writeInt(c);
-			msg.writeInt(submissionId);
-			msg.writeObject(keys);
-			msg.writeObject(values);
-			msg.finish();
+		int c;
+		CountInfo remaining = new CountInfo();
+		remaining.count = assignedPartitions.length - 1;
+		synchronized (activeBroadcasts) {
+			c = activeBroadcastCount++;
+			activeBroadcasts.put(c, remaining);
+		}
 
-			synchronized (remaining) {
-				while (remaining.count > 0) {
+		WriteMessage msg = broadcastPort.newMessage();
+		msg.writeByte((byte) 10);
+		msg.writeInt(c);
+		msg.writeInt(submissionId);
+		msg.writeObject(keys);
+		msg.writeObject(values);
+		msg.finish();
+
+		synchronized (remaining) {
+			while (remaining.count > 0) {
+				try {
 					remaining.wait();
+				} catch (InterruptedException e) {
+					// ignore
 				}
 			}
-			synchronized (activeBroadcasts) {
-				activeBroadcasts.remove(c);
-			}
-		} catch (Exception e) {
-			log.error("Failed broadcasting object", e);
+		}
+		synchronized (activeBroadcasts) {
+			activeBroadcasts.remove(c);
 		}
 	}
 
@@ -900,9 +911,10 @@ public class NetworkLayer {
 	 *            The key Object that is send.
 	 * @param value
 	 *            The value Object that is send.
+	 * @throws IOException
 	 */
 	public void sendObject(int submissionId, int nodeId, Object key,
-			Object value) {
+			Object value) throws IOException {
 		IbisIdentifier id = getPeerLocation(nodeId);
 		WriteMessage msg = getMessageToSend(id, nameMgmtReceiverPort);
 		timers.put(msg.localPort().name(), System.currentTimeMillis());
@@ -913,26 +925,26 @@ public class NetworkLayer {
 			c = activeBroadcastCount++;
 			activeBroadcasts.put(c, remaining);
 		}
-		try {
-			msg.writeByte((byte) 10);
-			msg.writeInt(c);
-			msg.writeInt(submissionId);
-			msg.writeObject(new Object[] { key });
-			msg.writeObject(new Object[] { value });
-			finishMessage(msg, submissionId);
 
-			synchronized (remaining) {
-				while (remaining.count > 0) {
+		msg.writeByte((byte) 10);
+		msg.writeInt(c);
+		msg.writeInt(submissionId);
+		msg.writeObject(new Object[] { key });
+		msg.writeObject(new Object[] { value });
+		finishMessage(msg, submissionId);
+
+		synchronized (remaining) {
+			while (remaining.count > 0) {
+				try {
 					remaining.wait();
+				} catch (InterruptedException e) {
+					// ignore
 				}
 			}
-			synchronized (activeBroadcasts) {
-				activeBroadcasts.remove(c);
-			}
-		} catch (Exception e) {
-			log.error("Failed sending object", e);
 		}
-
+		synchronized (activeBroadcasts) {
+			activeBroadcasts.remove(c);
+		}
 	}
 
 	/**

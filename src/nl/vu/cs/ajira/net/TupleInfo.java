@@ -7,21 +7,20 @@ import java.io.IOException;
 import nl.vu.cs.ajira.storage.Writable;
 
 /**
- * Class that contains tuple related information 
- * useful for a transfer request.
- * Is used for transferring the information about
- * a tuple from an input stream to an output one.
+ * Class that contains tuple related information useful for a transfer request.
+ * Is used for transferring the information about a tuple from an input stream
+ * to an output one.
  */
 public class TupleInfo implements Writable {
 	public long bucketKey;
 	public int remoteNodeId;
 	public int submissionId;
+	public int submissionNode;
 	public int bucketId;
 	public int sequence;
 	public long expected;
 	public int nrequests;
 	public long ticket;
-	public boolean streaming;
 
 	/**
 	 * Read the information from an input source.
@@ -29,6 +28,7 @@ public class TupleInfo implements Writable {
 	@Override
 	public void readFrom(DataInput input) throws IOException {
 		submissionId = input.readInt();
+		submissionNode = input.readInt();
 		bucketId = input.readInt();
 		remoteNodeId = input.readInt();
 		bucketKey = input.readLong();
@@ -36,7 +36,6 @@ public class TupleInfo implements Writable {
 		expected = input.readLong();
 		nrequests = input.readInt();
 		ticket = input.readLong();
-		streaming = input.readBoolean();
 	}
 
 	/**
@@ -45,6 +44,7 @@ public class TupleInfo implements Writable {
 	@Override
 	public void writeTo(DataOutput output) throws IOException {
 		output.writeInt(submissionId);
+		output.writeInt(submissionNode);
 		output.writeInt(bucketId);
 		output.writeInt(remoteNodeId);
 		output.writeLong(bucketKey);
@@ -52,6 +52,5 @@ public class TupleInfo implements Writable {
 		output.writeLong(expected);
 		output.writeInt(nrequests);
 		output.writeLong(ticket);
-		output.writeBoolean(streaming);
 	}
 }

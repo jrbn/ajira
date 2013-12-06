@@ -258,7 +258,7 @@ public class ActionConf implements Writable {
 					BDataOutput o = new BDataOutput(new byte[Consts.CHAIN_SIZE]);
 					((Writable) value).writeTo(o);
 					output.writeInt(o.cb.getEnd());
-					output.write(o.cb.getBuffer(), 0, o.cb.getEnd());
+					o.writeTo(output);
 				} else if (value instanceof byte[]) {
 					output.writeByte(4);
 					byte[] v = (byte[]) value;

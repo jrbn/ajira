@@ -12,10 +12,12 @@ public class BDataInput implements DataInput {
 	public BDataInput() {
 		this.cb = new ByteArray();
 	}
-	
+
 	/**
 	 * Creates a new BDataInput an sets the field of the class.
-	 * @param cb is the ByteArray of the object.
+	 * 
+	 * @param cb
+	 *            is the ByteArray of the object.
 	 */
 	public BDataInput(ByteArray cb) {
 		this.cb = cb;
@@ -23,16 +25,19 @@ public class BDataInput implements DataInput {
 
 	/**
 	 * It constructs a new BDataInput and sets the buffer of the ByteArray.
-	 * @param buffer is the new buffer of the ByteArray of the class
+	 * 
+	 * @param buffer
+	 *            is the new buffer of the ByteArray of the class
 	 */
 	public BDataInput(byte[] buffer) {
-		this();
-		this.cb.buffer = buffer;
+		this(new ByteArray(buffer));
 	}
 
 	/**
 	 * Sets the buffer of cb.
-	 * @param b1 is the new buffer of cb
+	 * 
+	 * @param b1
+	 *            is the new buffer of cb
 	 */
 	public void setBuffer(byte[] b1) {
 		cb.buffer = b1;
@@ -40,17 +45,22 @@ public class BDataInput implements DataInput {
 
 	/**
 	 * Sets the buffer and the starting position of cb.
-	 * @param b1 is the new buffer of cb
-	 * @param s1 is the new start position of cb
+	 * 
+	 * @param b1
+	 *            is the new buffer of cb
+	 * @param s1
+	 *            is the new start position of cb
 	 */
 	public void setCurrentPosition(byte[] b1, int s1) {
 		cb.buffer = b1;
 		cb.start = s1;
 	}
-	
+
 	/**
 	 * Sets the start position of the ByteArray
-	 * @param i is the new start position of the ByteArray
+	 * 
+	 * @param i
+	 *            is the new start position of the ByteArray
 	 */
 	public void setCurrentPosition(int i) {
 		cb.start = i;
@@ -81,7 +91,8 @@ public class BDataInput implements DataInput {
 
 	@Override
 	public double readDouble() {
-		throw new UnsupportedOperationException("Not supported");
+		long n = readLong();
+		return Double.longBitsToDouble(n);
 	}
 
 	@Override
@@ -184,7 +195,7 @@ public class BDataInput implements DataInput {
 	}
 
 	@Override
-	public int readUnsignedShort()  {
+	public int readUnsignedShort() {
 		throw new UnsupportedOperationException("Not supported");
 	}
 
@@ -201,4 +212,3 @@ public class BDataInput implements DataInput {
 		return n;
 	}
 }
-

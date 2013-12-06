@@ -44,7 +44,9 @@ public class ChainHandlerManager {
 	public void startChainHandlers(int nChainHandlers) {
 		this.nChainHandlers = nChainHandlers;
 		for (int j = 0; j < nChainHandlers; ++j) {
-			log.debug("Starting Chain Handler " + j + " ...");
+			if (log.isDebugEnabled()) {
+				log.debug("Starting Chain Handler " + j + " ...");
+			}
 			ChainHandler handler = new ChainHandler(context);
 			Thread thread = new Thread(handler);
 			thread.setName("Chain Handler " + j);

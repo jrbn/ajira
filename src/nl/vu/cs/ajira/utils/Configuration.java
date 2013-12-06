@@ -25,16 +25,19 @@ public class Configuration extends Properties {
 	 * @return The value converted to Integer of the key prop.
 	 */
 	public int getInt(String prop, int defaultValue) {
-		try {
-			String value = this.getProperty(prop);
+		String value = this.getProperty(prop);
+		if (value == null) {
+			value = System.getProperty(prop);
 			if (value == null) {
-				value = System.getProperty(prop);
+				return defaultValue;
 			}
-			return Integer.valueOf(value);
-		} catch (Exception e) {
 		}
-
-		return defaultValue;
+		try {
+			return Integer.valueOf(value);
+		} catch(NumberFormatException e) {
+			log.warn("Got exception", e);
+			return defaultValue;
+		}
 	}
 
 	/**
@@ -86,22 +89,20 @@ public class Configuration extends Properties {
 	/**
 	 * 
 	 * @param prop
-	 *            The key (property name) of the value that is looked.
+	 *            The key (property name) of the required property.
 	 * @param defaultValue
-	 *            The default value that is returned if the key does not exists.
+	 *            The default value that is returned if the key does not exist.
 	 * @return The value of the key prop or the defaultValue if the key prop
-	 *         does not exists.
+	 *         does not exist.
 	 */
 	public boolean getBoolean(String prop, boolean defaultValue) {
-		try {
-			String value = this.getProperty(prop);
-			if (value == null) {
-				value = System.getProperty(prop);
-			}
-			return value.equals("true");
-		} catch (Exception e) {
+		String value = this.getProperty(prop);
+		if (value == null) {
+			value = System.getProperty(prop);
 		}
-
+		if (value != null) {
+			return value.equals("true");
+		}
 		return defaultValue;
 	}
 

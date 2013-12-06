@@ -128,7 +128,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	}
 
 	@Override
-	public void broadcastCacheObjects(Object... keys) {
+	public void broadcastCacheObjects(Object... keys) throws IOException {
 		if (!localMode) {
 			context.getSubmissionCache().broadcastCacheObjects(submissionId,
 					keys);
@@ -334,9 +334,10 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 	@Override
 	public Bucket getBucket(final int bucketId, final boolean sort,
-			byte[] sortingFields, byte[] signature) {
+			boolean streaming, byte[] sortingFields, byte[] signature) {
 		return context.getBuckets().getOrCreateBucket(submissionNode,
-				submissionId, bucketId, sort, sort, sortingFields, signature);
+				submissionId, bucketId, sort, sort, streaming, sortingFields,
+				signature);
 	}
 
 	@Override
@@ -347,38 +348,32 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 				submissionId, nodeId, bucketId, sort, sortingFields, signature,
 				this, streaming);
 
-		try {
-			int children = chain.getTotalChainChildren();
+		int children = chain.getTotalChainChildren();
 
-			if (children != 0 && currentAction < smallestRuntimeAction) {
-				// Check whether some intermediate nodes after have derived some
-				// info. If they do, we need to decrease the counter.
-				for (int i = smallestRuntimeAction; i < nActions; ++i) {
-					if (currentAction > cRuntimeBranching[i]) {
-						children -= cRuntimeBranching[i];
-					}
+		if (children != 0 && currentAction < smallestRuntimeAction) {
+			// Check whether some intermediate nodes after have derived some
+			// info. If they do, we need to decrease the counter.
+			for (int i = smallestRuntimeAction; i < nActions; ++i) {
+				if (currentAction > cRuntimeBranching[i]) {
+					children -= cRuntimeBranching[i];
 				}
 			}
-
-			// We cannot update the counters now. Only alert the remote data
-			// that there is available data, unless this was already done (the
-			// method will check this)
-			context.getBuckets().alertTransfer(false, submissionNode,
-					submissionId, nodeId, bucketId, chain.getChainId(), -1, 0,
-					false, sort, sortingFields, signature, null);
-
-		} catch (IOException e) {
-			log.error(e.getMessage(), e);
-			throw e;
 		}
+
+		// We cannot update the counters now. Only alert the remote data
+		// that there is available data, unless this was already done (the
+		// method will check this)
+		context.getBuckets().alertTransfer(false, submissionNode, submissionId,
+				nodeId, bucketId, chain.getChainId(), -1, 0, false, sort,
+				sortingFields, signature, null);
 
 		return temp;
 	}
 
 	@Override
 	public void finishTransfer(int nodeId, int bucketId, boolean sort,
-			byte[] sortingFields, boolean decreaseCounter, byte[] signature)
-			throws IOException {
+			byte[] sortingFields, boolean decreaseCounter, byte[] signature,
+			boolean streaming) throws IOException {
 
 		int children = chain.getTotalChainChildren();
 
@@ -401,13 +396,14 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 			context.getBuckets().finishTransfer(this.submissionNode,
 					submissionId, nodeId, bucketId, chain.getChainId(),
 					chain.getParentChainId(), children, roots[currentAction],
-					sort, sortingFields, signature, decreaseCounter,
+					sort, streaming, sortingFields, signature, decreaseCounter,
 					newChildren);
 		} else {
 			context.getBuckets().finishTransfer(this.submissionNode,
 					submissionId, nodeId, bucketId, chain.getChainId(),
 					chain.getParentChainId(), children, roots[currentAction],
-					sort, sortingFields, signature, decreaseCounter, null);
+					sort, streaming, sortingFields, signature, decreaseCounter,
+					null);
 		}
 	}
 
@@ -442,7 +438,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	}
 
 	@Override
-	public void signal(int token) {
+	public void signal(int token) throws IOException {
 		String key = TOKENPREFIX + "_" + token;
 		context.getSubmissionCache().putObjectInCache(submissionId, key, 1);
 		if (!localMode) {

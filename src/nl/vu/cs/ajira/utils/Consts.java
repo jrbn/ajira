@@ -12,18 +12,21 @@ public class Consts {
 
 	public static final int MAXM = (int) (Runtime.getRuntime().maxMemory() / (256 * 1024 * 1024));
 
-	public static final int TUPLES_CONTAINER_MAX_BUFFER_SIZE = (MAXM > 512 ? 512
-			: MAXM > 256 ? 256 : MAXM > 128 ? 128 : MAXM > 64 ? 64 : 32) * 1024 * 1024;
+	public static final int TUPLES_CONTAINER_MAX_BUFFER_SIZE = (MAXM > 128 ? 128
+			: MAXM > 64 ? 64 : MAXM > 32 ? 32 : MAXM > 16 ? 16 : 8) * 1024 * 1024;
+	// public static final int TUPLES_CONTAINER_MAX_BUFFER_SIZE = 256 * 1024;
+	// For stressing the mechanisms
+
 	public static final int SIZE_BUFFERS_CHAIN_SEND = 4 * 1024 * 1024;
-	public static final int SIZE_BUFFERS_CHAINS_PROCESS = (MAXM > 64 ? 64 : 32) * 1024 * 1024;
+	public static final int SIZE_BUFFERS_CHAINS_PROCESS = 32 * 1024 * 1024;
 
 	// Factory initialization
 	public static final int STARTING_SIZE_FACTORY = 0;
 	public static final int N_ELEMENTS_FACTORY = 10000;
 
-	public static final int MIN_SIZE_TO_SEND = Math.min(64 * 1024 * 1024,
+	public static final int MIN_SIZE_TO_SEND = Math.min(64 * 1024,
 			TUPLES_CONTAINER_MAX_BUFFER_SIZE);
-	public static final int MAX_SEGMENTS_RECEIVED = 2048;
+	public static final int MAX_SEGMENTS_RECEIVED = 8192;
 
 	public static final int MAX_TUPLE_SENDERS = 8;
 

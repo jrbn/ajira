@@ -8,7 +8,7 @@ import nl.vu.cs.ajira.buckets.Bucket;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
 
 public interface ActionContext {
-	
+
 	public Context getContext();
 
 	public long getCounter(String counterId);
@@ -35,7 +35,7 @@ public interface ActionContext {
 
 	public List<Object[]> retrieveCacheObjects(Object... keys);
 
-	public void broadcastCacheObjects(Object... keys);
+	public void broadcastCacheObjects(Object... keys) throws IOException;
 
 	public int getNewBucketID();
 
@@ -43,18 +43,19 @@ public interface ActionContext {
 
 	void waitFor(int token);
 
-	void signal(int token);
+	void signal(int token) throws IOException;
 
 	// TODO: To remove in something safer
 	TupleIterator getInputIterator();
 
-	Bucket getBucket(int bucketId, boolean sort, byte[] sortingFields,
-			byte[] signature);
+	Bucket getBucket(int bucketId, boolean sort, boolean streaming,
+			byte[] sortingFields, byte[] signature);
 
 	Bucket startTransfer(int nodeId, int bucketId, boolean sort,
-			byte[] sortingFields, byte[] signature, boolean streaming) throws IOException;
+			byte[] sortingFields, byte[] signature, boolean streaming)
+			throws IOException;
 
 	void finishTransfer(int nodeId, int bucketId, boolean sort,
-			byte[] sortingFields, boolean decreaseCounter, byte[] signature)
-			throws IOException;
+			byte[] sortingFields, boolean decreaseCounter, byte[] signature,
+			boolean streaming) throws IOException;
 }

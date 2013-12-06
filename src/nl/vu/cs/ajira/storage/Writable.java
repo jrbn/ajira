@@ -12,7 +12,7 @@ import java.io.IOException;
 public interface Writable {
 
 	/**
-	 * The object implements the <code>readExternal</code> method to restore its contents
+	 * The object implements the <code>readFrom</code> method to restore its contents
 	 * by reading its fields from the specified stream.
 	 * @param input
 	 * 		the stream to read from

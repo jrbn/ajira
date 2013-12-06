@@ -21,7 +21,9 @@ public abstract class InputLayer {
 			Configuration configuration) throws Exception {
 		String className = configuration.get(INPUT_LAYER_CLASS, null);
 		if (className == null) {
-			log.debug("Input Layer not specified. Use FileLayer ...");
+			if (log.isDebugEnabled()) {
+				log.debug("Input Layer not specified. Use FileLayer ...");
+			}
 			className = FileLayer.class.getName();
 		}
 		return Class.forName(className).asSubclass(InputLayer.class);
@@ -42,8 +44,10 @@ public abstract class InputLayer {
 	public void startup(Context context) throws Exception {
 		long time = System.currentTimeMillis();
 		load(context);
-		log.debug("Time to load inputLayer " + this.getClass().getName()
-				+ " (ms): " + (System.currentTimeMillis() - time));
+		if (log.isDebugEnabled()) {
+			log.debug("Time to load inputLayer " + this.getClass().getName()
+					+ " (ms): " + (System.currentTimeMillis() - time));
+		}
 	}
 
 	/**
@@ -55,13 +59,13 @@ public abstract class InputLayer {
 	 */
 	protected abstract void load(Context context) throws Exception;
 
-	public abstract TupleIterator getIterator(Tuple tuple, ActionContext context);
+	public abstract TupleIterator getIterator(Tuple tuple, ActionContext context)
+			throws Exception;
 
 	public abstract void releaseIterator(TupleIterator itr,
 			ActionContext context);
 
-	public abstract Location getLocations(Tuple tuple,
-			ActionContext context);
+	public abstract Location getLocations(Tuple tuple, ActionContext context);
 
 	public void close() {
 		// Default implementation is empty.

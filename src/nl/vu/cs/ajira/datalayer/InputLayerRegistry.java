@@ -35,22 +35,19 @@ public class InputLayerRegistry {
 		if (il == null) {
 			try {
 				il = clazz.newInstance();
-				registerLayer(il, false);
-			} catch (Exception e) {
+			} catch (Throwable e) {
 				log.error("error", e);
+				throw new Error("Internal error getting input layer", e);
 			}
+			registerLayer(il, false);
 		}
 		return il;
 	}
 
 	public void registerLayer(InputLayer input, boolean isDefault) {
-		try {
-			registry.put(input.getClass(), input);
-			if (isDefault) {
-				def = input;
-			}
-		} catch (Exception e) {
-			log.error("error", e);
+		registry.put(input.getClass(), input);
+		if (isDefault) {
+			def = input;
 		}
 	}
 
@@ -80,5 +77,4 @@ public class InputLayerRegistry {
 			}
 		}
 	}
-
 }

@@ -120,10 +120,12 @@ public class WriteToFiles extends Action {
 						.newInstance();
 			} catch (Throwable e) {
 				log.error("Could not load class " + customWriter, e);
-				throw new IOException("Could not load class " + customWriter, e);
+				throw new Error("Could not load class " + customWriter, e);
 			}
 		} else {
-			log.debug("No custom writer is specified. Using standard one");
+			if (log.isDebugEnabled()) {
+				log.debug("No custom writer is specified. Using standard one");
+			}
 			file = new DefaultFileWriter();
 		}
 

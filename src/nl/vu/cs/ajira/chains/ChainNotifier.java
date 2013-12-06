@@ -71,10 +71,6 @@ public class ChainNotifier {
 		}
 		InputLayer input = context.getInputLayer(chain.getInputLayer());
 		input.releaseIterator(iter, ac);
-		try {
-			context.getChainHandlerManager().getChainsToProcess().add(chain);
-		} catch (Exception e) {
-			log.error("Error in adding the chain", e);
-		}
+		context.getChainHandlerManager().getChainsToProcess().add(chain);
 	}
 }

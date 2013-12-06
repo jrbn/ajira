@@ -19,6 +19,7 @@ public class CollectToNode extends Action {
 	public static final int B_SORT = 2;
 	public static final int IA_SORTING_FIELDS = 3;
 	public static final int SA_TUPLE_FIELDS = 4;
+	public static final int B_STREAMING_MODE = 5;
 
 	private int nodeId;
 	private int bucketId = -1;
@@ -26,6 +27,7 @@ public class CollectToNode extends Action {
 	private byte[] sortingFields;
 	private byte[] fields;
 	private Bucket bucket;
+	private boolean streamingMode;
 
 	private static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
@@ -56,43 +58,40 @@ public class CollectToNode extends Action {
 		conf.registerParameter(I_NODE_ID, "I_NODE_ID", null, false);
 		conf.registerParameter(I_BUCKET_ID, "I_BUCKET_ID", null, false);
 		conf.registerParameter(B_SORT, "B_SORT", false, false);
-		conf.registerParameter(IA_SORTING_FIELDS, "IA_SORTING_FIELDS", null, false);
+		conf.registerParameter(IA_SORTING_FIELDS, "IA_SORTING_FIELDS", null,
+				false);
 		conf.registerParameter(SA_TUPLE_FIELDS, "SA_TUPLE_FIELDS", null, true);
+		conf.registerParameter(B_STREAMING_MODE, "B_STREAMING_MODE", false,
+				false);
 		conf.registerCustomConfigurator(new ParametersProcessor());
 	}
 
 	@Override
-	public void startProcess(ActionContext context) throws Exception {
+	public void startProcess(ActionContext context) {
 		nodeId = getParamInt(I_NODE_ID);
 		bucketId = getParamInt(I_BUCKET_ID);
 		sort = getParamBoolean(B_SORT);
 		sortingFields = getParamByteArray(IA_SORTING_FIELDS);
 		fields = getParamByteArray(SA_TUPLE_FIELDS);
+		streamingMode = getParamBoolean(B_STREAMING_MODE);
 		bucket = null;
 	}
 
 	@Override
 	public void process(Tuple inputTuple, ActionContext context,
-			ActionOutput output) {
-		try {
-			if (bucket == null) {
-				bucket = context.startTransfer(nodeId, bucketId, sort,
-						sortingFields, fields, false);
-			}
-			bucket.add(inputTuple);
-		} catch (Exception e) {
-			log.error("Failed processing tuple.");
+			ActionOutput output) throws Exception {
+		if (bucket == null) {
+			bucket = context.startTransfer(nodeId, bucketId, sort,
+					sortingFields, fields, streamingMode);
 		}
+		bucket.add(inputTuple);
 	}
 
 	@Override
-	public void stopProcess(ActionContext context, ActionOutput output) {
-		try {
-			context.finishTransfer(nodeId, bucketId, sort, sortingFields,
-					bucket != null, fields);
-		} catch (Exception e) {
-			log.error("Error", e);
-		}
+	public void stopProcess(ActionContext context, ActionOutput output)
+			throws Exception {
+		context.finishTransfer(nodeId, bucketId, sort, sortingFields,
+				bucket != null, fields, streamingMode);
 		bucket = null;
 	}
 }

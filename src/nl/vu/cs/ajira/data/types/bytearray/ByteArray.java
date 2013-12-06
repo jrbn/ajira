@@ -1,13 +1,21 @@
 package nl.vu.cs.ajira.data.types.bytearray;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+
 // import nl.vu.cs.ajira.mgmt.MemoryManager;
 import nl.vu.cs.ajira.storage.RawComparator;
+import nl.vu.cs.ajira.utils.Utils;
+
+import org.iq80.snappy.Snappy;
 
 public class ByteArray {
 	protected byte[] buffer = null;
 	protected int start = 0;
 	protected int end = 0;
 	protected int maxSize = 0;
+	private final int initialSize;
 
 	/**
 	 * Creates a new ByteArray and sets the fields of the object.
@@ -20,12 +28,16 @@ public class ByteArray {
 	public ByteArray(int size, int maxSize) {
 		buffer = new byte[size];
 		this.maxSize = maxSize;
+		initialSize = size;
 	}
 
-	/**
-	 * Creates an empty ByteArray.
-	 */
+	public ByteArray(byte[] buf) {
+		buffer = buf;
+		initialSize = buffer.length;
+	}
+
 	public ByteArray() {
+		initialSize = 0;
 	}
 
 	/**
@@ -40,12 +52,92 @@ public class ByteArray {
 		return start;
 	}
 
-	/**
-	 * 
-	 * @return the buffer of the object
-	 */
-	public byte[] getBuffer() {
-		return buffer;
+	public void readFrom(FDataInput in, int sz) throws IOException {
+		if (sz > buffer.length - end) {
+			in.readFully(buffer, end, buffer.length - end);
+			end = sz - buffer.length + end;
+			in.readFully(buffer, 0, end);
+
+		} else {
+			in.readFully(buffer, end, sz);
+			end += sz;
+		}
+	}
+
+	private void readFrom(byte[] b, int s, int len) {
+		int len1 = buffer.length - end;
+		if (len > len1) {
+			System.arraycopy(b, s, buffer, end, len1);
+			end = len - len1;
+			System.arraycopy(b, s + len1, buffer, 0, end);
+		} else {
+			System.arraycopy(b, s, buffer, end, len);
+			end += len;
+		}
+	}
+
+	public void copyRegion(ByteArray in, int offset, int len) {
+		if (len == 0) {
+			return;
+		}
+		if (offset + len <= in.buffer.length) {
+			readFrom(in.buffer, offset, len);
+		} else {
+			readFrom(in.buffer, offset, in.buffer.length - offset);
+			readFrom(in.buffer, 0, len - (in.buffer.length - offset));
+		}
+	}
+
+	public void readFrom(ByteArray in) {
+		if (in.end >= in.start) {
+			readFrom(in.buffer, in.start, in.end - in.start);
+		} else {
+			readFrom(in.buffer, in.start, in.buffer.length - in.start);
+			readFrom(in.buffer, 0, in.end);
+		}
+	}
+
+	public void readFrom(DataInput input) throws IOException {
+		start = 0;
+		int len = input.readInt();
+		grow(len);
+		end = len;
+		input.readFully(buffer, 0, end);
+	}
+
+	public void writeRaw(DataOutput out) throws IOException {
+
+		if (end > start) {
+			out.write(this.buffer, start, end - start);
+		} else if (start > end) {
+			out.write(this.buffer, start, buffer.length - start);
+			out.write(this.buffer, 0, end);
+		}
+	}
+
+	public void writeTo(DataOutput out, int offset, int len) throws IOException {
+		int e = offset + len;
+		if (e <= buffer.length) {
+			out.write(buffer, offset, len);
+		} else {
+			e -= buffer.length;
+			out.write(buffer, offset, buffer.length - offset);
+			out.write(buffer, 0, e);
+		}
+	}
+
+	public void writeTo(DataOutput output) throws IOException {
+		int size = 0;
+		if (end > start) {
+			size = end - start;
+			output.writeInt(size);
+			output.write(buffer, start, end - start);
+		} else {
+			size = end + buffer.length - start;
+			output.writeInt(size);
+			output.write(buffer, start, buffer.length - start);
+			output.write(buffer, 0, end);
+		}
 	}
 
 	/**
@@ -75,7 +167,7 @@ public class ByteArray {
 	 * 
 	 * @return the length of the buffer
 	 */
-	public long getTotalCapacity() {
+	public int getTotalCapacity() {
 		return buffer.length;
 	}
 
@@ -167,14 +259,13 @@ public class ByteArray {
 		}
 		if (len > buffer.length) {
 			/*
-			 * Commented out code below. It breaks the assumption that you can always
-			 * copy a WritableContainer into another empty WritableContainer.
-			int allowedLength = MemoryManager.getInstance().canAllocate(len);
-			if (allowedLength < buffer.length * 1.20) { // ?????? --Ceriel
-				return false;
-			}
-			growBuffer(allowedLength);
-			*/
+			 * Commented out code below. It breaks the assumption that you can
+			 * always copy a WritableContainer into another empty
+			 * WritableContainer. int allowedLength =
+			 * MemoryManager.getInstance().canAllocate(len); if (allowedLength <
+			 * buffer.length * 1.20) { // ?????? --Ceriel return false; }
+			 * growBuffer(allowedLength);
+			 */
 			growBuffer(len);
 		}
 		return true;
@@ -202,5 +293,47 @@ public class ByteArray {
 			}
 		}
 		return hash;
+	}
+
+	public void clear() {
+		start = end = 0;
+		// if (buffer.length > initialSize) {
+		// buffer = new byte[initialSize];
+		// }
+	}
+
+	public int compress(byte[] value, int offset) {
+		int size;
+		if (end > start) {
+			value[offset] = 0;
+			size = Snappy.compress(buffer, start, end - start, value,
+					offset + 1);
+		} else {
+			value[offset] = 1;
+			size = Snappy.compress(buffer, start, buffer.length - start, value,
+					offset + 5);
+			Utils.encodeInt(value, offset + 1, size);
+			size += 4 + Snappy.compress(buffer, 0, end, value, offset + 5
+					+ size);
+		}
+		return size + 1;
+	}
+
+	public void decompress(byte[] value, int offset, int len) {
+		if (value[offset] == 0) {
+			grow(Snappy.getUncompressedLength(value, offset + 1));
+			end = Snappy.uncompress(value, offset + 1, len - 1, buffer, 0);
+		} else {
+			int s = Utils.decodeInt(value, offset + 1);
+			// Calculate uncompress size
+			offset += 5;
+			len -= 5;
+			int un_s = Snappy.getUncompressedLength(value, offset);
+			un_s += Snappy.getUncompressedLength(value, offset + s);
+			grow(un_s);
+
+			end = Snappy.uncompress(value, offset, s, buffer, 0);
+			end += Snappy.uncompress(value, offset + s, len - s, buffer, end);
+		}
 	}
 }

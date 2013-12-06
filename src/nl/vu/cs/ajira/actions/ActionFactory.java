@@ -29,35 +29,46 @@ public class ActionFactory {
 
 	public static ActionConf getActionConf(String className) {
 		if (!actionParameters.containsKey(className)) {
-			// Setup the list of parameters
+			Class<? extends Action> clazz;
 			try {
-				Class<? extends Action> a = Class.forName(className)
-						.asSubclass(Action.class);
-				Action action = a.newInstance();
-				ActionConf conf = new ActionConf(className);
-				action.registerActionParameters(conf);
-
-				ParamsInfo info = new ParamsInfo();
-				info.params = conf.getListAllowedParameters();
-				if (info.params == null) {
-					info.params = new ArrayList<ParamItem>();
-				}
-				info.proc = conf.getConfigurator();
-				actionParameters.put(className, info);
-			} catch (Exception e) {
-				log.error("Failed in retrieving the parameter list for class"
-						+ className, e);
+				clazz = Class.forName(className).asSubclass(Action.class);
+			} catch (ClassNotFoundException e) {
+				throw new Error("Could not find class " + className, e);
 			}
+			return getActionConf(clazz);
 		}
-
 		ParamsInfo i = actionParameters.get(className);
 		return new ActionConf(className, i.params, i.proc);
+		
 	}
 
 	public static ActionConf getActionConf(Class<? extends Action> clazz) {
 		if (clazz == null)
 			return null;
-		return getActionConf(clazz.getName());
+		String className = clazz.getName();
+		if (!actionParameters.containsKey(className)) {
+			// Setup the list of parameters
+			Action action;
+			try {
+				action = clazz.newInstance();
+			} catch (Exception e) {
+				throw new Error("Failed to instantiate class " + className, e);
+			}
+
+			ActionConf conf = new ActionConf(className);
+			action.registerActionParameters(conf);
+
+			ParamsInfo info = new ParamsInfo();
+			info.params = conf.getListAllowedParameters();
+			if (info.params == null) {
+				info.params = new ArrayList<ParamItem>();
+			}
+			info.proc = conf.getConfigurator();
+			actionParameters.put(className, info);
+		}
+
+		ParamsInfo i = actionParameters.get(className);
+		return new ActionConf(className, i.params, i.proc);
 	}
 
 	public Action getAction(String className, DataInput rawParams)
@@ -65,29 +76,28 @@ public class ActionFactory {
 
 		Object[] params = ActionConf.readValuesFromStream(rawParams);
 
-		try {
-			Factory<Action> factory = listFactories.get(className);
-			if (factory == null) {
-				synchronized (this) {
-					if (!listFactories.containsKey(className)) {
-						Class<? extends Action> cRule = ClassLoader
+		Factory<Action> factory = listFactories.get(className);
+		if (factory == null) {
+			synchronized (this) {
+				if (!listFactories.containsKey(className)) {
+					Class<? extends Action> cRule;
+					try {
+						cRule = ClassLoader
 								.getSystemClassLoader().loadClass(className)
 								.asSubclass(Action.class);
-						factory = new Factory<Action>(cRule);
-						listFactories.put(className, factory);
-					} else {
-						factory = listFactories.get(className);
+					} catch (ClassNotFoundException e) {
+						throw new Error("Could not load class " + className, e);
 					}
+					factory = new Factory<Action>(cRule);
+					listFactories.put(className, factory);
+				} else {
+					factory = listFactories.get(className);
 				}
 			}
-			Action a = factory.get();
-			a.setParams(params);
-			return a;
-		} catch (Exception e) {
-			log.error("Class not found", e);
 		}
-
-		return null;
+		Action a = factory.get();
+		a.setParams(params);
+		return a;
 	}
 
 	public void release(Action action) {

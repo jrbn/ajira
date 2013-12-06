@@ -11,24 +11,23 @@ import org.slf4j.LoggerFactory;
 
 /**
  * This class it is used to provide a list of files 
- * found at a given path and that satisfy a filter.  
- *
+ * found at a given path, that satisfies a filter.  
  */
 public class FileUtils {
 
 	static final Logger log = LoggerFactory.getLogger(FileUtils.class);
 
 	/**
-	 * If the parameter file is a file then it is added at the 
-	 * list of files. If it is a directory, it adds recursively
-	 * the files from it. In case a filter is provided, the 
-	 * files from the directory have to satisfy that filter. 
+	 * If the parameter file is a file then it is added to the 
+	 * list of files. If it is a directory, it adds its contents recursively.
+	 * In case a filter is provided, the files from the directory have
+	 * to satisfy that filter. 
 	 * 
 	 * @param list
 	 * 		The list of the files.
 	 * @param file
-	 * 		The file that is added at the list of files or a 
-	 * 		directory whose files will be added at the list.
+	 * 		The file that is added to the list of files or a 
+	 * 		directory whose files will be added to the list.
 	 * @param filter
 	 * 		The filter that it is used to filter the files 
 	 * 		from the directory.
@@ -101,9 +100,8 @@ public class FileUtils {
 							filterClass).asSubclass(FilenameFilter.class);
 					recursiveListint(list, file, clazz.newInstance());
 				} catch (Exception e) {
-					log.error("Couldn't instantiate filter " + filterClass
-							+ ". Ignore it.");
-					recursiveListint(list, file, null);
+					log.error("Couldn't instantiate filter " + filterClass, e);
+					throw new Error("Couldn't instantiate filter", e);
 				}
 			} else {
 				recursiveListint(list, file, null);

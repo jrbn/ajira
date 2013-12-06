@@ -11,28 +11,27 @@ public abstract class TupleIterator {
 	String textCounter;
 
 	/**
-	 * It initialize the number of Tuples read,
-	 * the ActionContext and the name of the counter
-	 * that is used to keep track of the number of
-	 * Tuples read. 
+	 * It initialize the number of Tuples read, the ActionContext and the name
+	 * of the counter that is used to keep track of the number of Tuples read.
 	 * 
 	 * @param c
-	 * 		The current ActionContext.
+	 *            The current ActionContext.
 	 * @param inputLayer
-	 * 		The name of the InputLayer.
+	 *            The name of the InputLayer.
 	 */
 	public void init(ActionContext c, String inputLayer) {
 		counter = 0;
 		this.c = c;
+		if (c == null) {
+			throw new Error("OOPS");
+		}
 		textCounter = "Records Read From Input: " + inputLayer;
 	}
 
 	/**
 	 * 
 	 * 
-	 * @return
-	 * 		True if there is a next Tuple 
-	 * 		and false otherwise.
+	 * @return True if there is a next Tuple and false otherwise.
 	 * @throws Exception
 	 */
 	public boolean nextTuple() throws Exception {

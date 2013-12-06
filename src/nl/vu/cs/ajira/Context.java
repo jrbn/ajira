@@ -1,7 +1,9 @@
 package nl.vu.cs.ajira;
 
+import ibis.ipl.WriteMessage;
 import ibis.smartsockets.util.ThreadPool;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -33,7 +35,8 @@ import nl.vu.cs.ajira.utils.UniqueCounter;
  */
 public class Context {
 
-	private static final long BUCKET_INIT = 100;
+	private static final long BUCKET_INIT = 1000000;
+	private static final long USER_BUCKET_INIT = 100;
 	private static final long CHAIN_INIT = 1;
 
 	/**
@@ -59,16 +62,24 @@ public class Context {
 		private final Map<Integer, Long> crashedSubmissions = new HashMap<Integer, Long>();
 
 		/**
+		 * Maps crashed submissions to the time we were notified that it
+		 * crashed.
+		 */
+		private final Map<Integer, Throwable> throwables = new HashMap<Integer, Throwable>();
+
+		/**
 		 * Adds the specified submission to the crashed submissions.
 		 * 
 		 * @param submissionId
 		 *            a submission that crashed.
 		 * @return whether the submission was actually added.
 		 */
-		public synchronized boolean addCrashedSubmission(int submissionId) {
+		public synchronized boolean addCrashedSubmission(int submissionId,
+				Throwable e) {
 			if (!crashedSubmissions.containsKey(submissionId)) {
 				crashedSubmissions
 						.put(submissionId, System.currentTimeMillis());
+				throwables.put(submissionId, e);
 				return true;
 			}
 			return false;
@@ -200,7 +211,7 @@ public class Context {
 	public void cleanupSubmission(int submissionNode, int submissionId,
 			Throwable e) {
 
-		if (!crashedSubmissions.addCrashedSubmission(submissionId)) {
+		if (!crashedSubmissions.addCrashedSubmission(submissionId, e)) {
 			return;
 		}
 
@@ -210,6 +221,29 @@ public class Context {
 
 		if (net.getMyPartition() == submissionNode) {
 			registry.killSubmission(submissionId, e);
+		}
+	}
+
+	public void killSubmission(int submissionNode, int submissionId, Throwable e) {
+		if (localMode) {
+			cleanupSubmission(submissionNode, submissionId, e);
+		} else {
+			WriteMessage msg = null;
+			try {
+				msg = net.getMessageToBroadcast();
+				msg.writeByte((byte) 2);
+				msg.writeBoolean(true);
+				msg.writeInt(submissionId);
+				msg.writeInt(submissionNode);
+				msg.writeObject(e);
+				msg.finish();
+			} catch (IOException ex) {
+				// What else ... we could not communicate failure.
+				cleanupSubmission(submissionNode, submissionId, e);
+				if (msg != null) {
+					msg.finish(ex);
+				}
+			}
 		}
 	}
 
@@ -331,5 +365,15 @@ public class Context {
 			}
 		}
 		return getUniqueCounter(name);
+	}
+
+	public int getUserBucketNo() {
+		String name = Consts.BUCKETCOUNTER_NAME + "-user";
+		synchronized (counter) {
+			if (!counter.hasCounter(name)) {
+				initializeCounter(name, USER_BUCKET_INIT);
+			}
+		}
+		return (int) getUniqueCounter(name);
 	}
 }

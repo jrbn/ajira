@@ -94,6 +94,7 @@ public class GroupBy extends Action {
 					log.error("Error with the iterator", e);
 					elementAvailable = false;
 					moreGroups = false;
+					throw new Error("Error with the iterator", e);
 				}
 			}
 

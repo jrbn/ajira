@@ -203,9 +203,8 @@ public class Chain implements Writable, InputQuery {
 		default:
 			try {
 				return Class.forName(inputLayer).asSubclass(InputLayer.class);
-			} catch (Exception e) {
-				log.error("Error", e);
-				return null;
+			} catch (Throwable e) {
+				throw new Error("Could not load inputLayer class " + inputLayer, e);
 			}
 		}
 	}
@@ -236,14 +235,9 @@ public class Chain implements Writable, InputQuery {
 		if (actions != null) {
 			for (int i = actions.length() - 1; i >= 0; i--) {
 				ActionConf c = actions.get(i);
-				try {
-					int v = addAction(c, context);
-					if (i == actions.length() - 1) {
-						retval = v;
-					}
-				} catch (Exception e) {
-					log.error("Error in adding action " + c, e);
-					throw new Exception("The setup of the action " + c);
+				int v = addAction(c, context);
+				if (i == actions.length() - 1) {
+					retval = v;
 				}
 			}
 		} else {

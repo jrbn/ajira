@@ -27,8 +27,7 @@ public class CBDataInput extends BDataInput {
 		if (len > cb.buffer.length - cb.start) {
 			int len1 = cb.buffer.length - cb.start;
 			System.arraycopy(cb.buffer, cb.start, b, off, len1);
-			System.arraycopy(cb.buffer, 0, b,
-					off + len1, len - len1);
+			System.arraycopy(cb.buffer, 0, b, off + len1, len - len1);
 			cb.start = len - len1;
 		} else {
 			super.readFully(b, off, len);
@@ -59,7 +58,7 @@ public class CBDataInput extends BDataInput {
 			return value;
 		}
 	}
-	
+
 	@Override
 	/**
 	 * If there are 2 bytes at the end of the buffer then it reads 
@@ -73,10 +72,10 @@ public class CBDataInput extends BDataInput {
 			if (cb.start >= cb.buffer.length) {
 				cb.start = 0;
 			}
-			short value = (short)((cb.buffer[cb.start++]) << 8);
+			short value = (short) ((cb.buffer[cb.start++]) << 8);
 			if (cb.start >= cb.buffer.length) {
 				cb.start = 0;
-			}		
+			}
 			value += (cb.buffer[cb.start++] & 0xFF);
 			return value;
 		}
@@ -110,7 +109,9 @@ public class CBDataInput extends BDataInput {
 
 	/**
 	 * Creates a new CBDataInput an sets the field of the extended class.
-	 * @param cb is the ByteArray of the extended class
+	 * 
+	 * @param cb
+	 *            is the ByteArray of the extended class
 	 */
 	public CBDataInput(ByteArray cb) {
 		super(cb);

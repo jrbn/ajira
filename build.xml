@@ -2,7 +2,7 @@
 
 <project name="ajira" default="jar" basedir=".">
 
-	<property name="VERSION" value="0.1" />
+	<property name="VERSION" value="0.2" />
 	<property name="debuglevel"    value="source,lines,vars" />
 	<property name="BUILD_PATH" value="build" />
 	<property name="SRC_PATH" value="src" />

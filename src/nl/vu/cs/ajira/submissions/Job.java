@@ -39,6 +39,7 @@ public class Job implements Writable {
 				log.error(
 						"This exception should never happen since the actions were already checked.",
 						e);
+				throw new Error("Internal error", e);
 			}
 		}
 	}

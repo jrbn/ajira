@@ -2,6 +2,7 @@ package nl.vu.cs.ajira.net;
 
 import ibis.ipl.MessageUpcall;
 import ibis.ipl.ReadMessage;
+import ibis.ipl.SendPortIdentifier;
 import ibis.ipl.WriteMessage;
 
 import java.io.ByteArrayOutputStream;
@@ -76,6 +77,8 @@ class Receiver implements MessageUpcall {
 			ClassNotFoundException {
 		long time = System.currentTimeMillis();
 		byte messageId = message.readByte();
+		SendPortIdentifier origin = message.origin();
+
 		WriteMessage reply;
 
 		if (log.isDebugEnabled()) {
@@ -89,7 +92,7 @@ class Receiver implements MessageUpcall {
 		case 0: // Chain to process
 			Chain chain = chainFactory.get();
 			chain.readFrom(new ReadMessageWrapper(message));
-			endMessage(message, time, chain.getSubmissionId());
+			endMessage(message, time, chain.getSubmissionId(), false);
 			if (log.isDebugEnabled()) {
 				log.debug("Received chain " + chain.getChainId());
 			}
@@ -130,37 +133,41 @@ class Receiver implements MessageUpcall {
 			byte[] signature = new byte[lSignature];
 			message.readArray(signature);
 
-			Bucket bucket = buckets.getOrCreateBucket(submissionNode,
-					idSubmission, idBucket, isSorted, isSorted, cfParams,
-					signature);
-			if (updateCounters) {
-				bucket.updateCounters(idChain, idParentChain, children,
-						isResponsible);
-			}
-
 			int additionalCounters = message.readByte();
+			long[] chains = null;
+			int[][] vals = null;
 			if (additionalCounters > 0) {
-				long[] chains = new long[additionalCounters];
-				int[][] values = new int[additionalCounters][];
+				chains = new long[additionalCounters];
+				vals = new int[additionalCounters][];
 				for (int i = 0; i < additionalCounters; ++i) {
 					chains[i] = message.readLong();
 					int[] v = new int[message.readInt()];
 					for (int j = 0; j < v.length; ++j) {
 						v[j] = message.readByte();
 					}
-					values[i] = v;
+					vals[i] = v;
 				}
-				bucket.setAdditionalCounters(chains, values);
+			}
+			endMessage(message, time, idSubmission, true);
+
+			Bucket bucket = buckets.getOrCreateBucket(submissionNode,
+					idSubmission, idBucket, isSorted, isSorted, streaming,
+					cfParams, signature);
+			if (updateCounters) {
+				bucket.updateCounters(idChain, idParentChain, children,
+						isResponsible);
+			}
+
+			if (additionalCounters > 0) {
+				bucket.setAdditionalCounters(chains, vals);
 			}
 
 			if (bufferKey > -1) {
-				finishMessage(message, time, idSubmission);
 				int idRemoteNode = net.getPeerId(message.origin()
 						.ibisIdentifier());
-				net.signalsBucketToFetch(idSubmission, idBucket, idRemoteNode,
-						bufferKey, streaming);
+				net.signalsBucketToFetch(idSubmission, submissionNode,
+						idBucket, idRemoteNode, bufferKey, streaming);
 			} else {
-				endMessage(message, time, idSubmission);
 				if (bufferKey == -1)
 					bucket.updateCounters(0, true);
 			}
@@ -187,7 +194,7 @@ class Receiver implements MessageUpcall {
 					}
 				}
 
-				finishMessage(message, time, idSubmission);
+				endMessage(message, time, idSubmission, true);
 				context.getSubmissionsRegistry().updateCounters(idSubmission,
 						idChain, idParentChain, children, additionalC,
 						additionalCV);
@@ -195,30 +202,37 @@ class Receiver implements MessageUpcall {
 				// Cleanup submission
 				submissionNode = message.readInt();
 				Throwable e = (Throwable) message.readObject();
+				endMessage(message, time, idSubmission, true);
 				context.cleanupSubmission(submissionNode, idSubmission, e);
 				buckets.removeBucketsOfSubmission(idSubmission);
 			}
 			break;
 		case 3: // Termination
-			context.getNetworkLayer().ibis.end();
+			try {
+				context.getNetworkLayer().ibis.end();
+			} catch (Throwable e) {
+				log.error("Got exception in ibis.end()", e);
+			}
 			System.exit(0);
 			break;
 		case 4: // Request to transfer a bucket
 			long bucketKey = message.readLong();
 			int submissionId = message.readInt();
+			submissionNode = message.readInt();
 			int bucketId = message.readInt();
 			long ticket = message.readLong();
 			int sequence = message.readInt();
 			int nrequest = message.readInt();
-			boolean stream = message.readBoolean();
-			endMessage(message, time, submissionId);
+			endMessage(message, time, submissionId, false);
 			net.addRequestToSendTuples(bucketKey,
 					net.getPeerId(message.origin().ibisIdentifier()),
-					submissionId, bucketId, ticket, sequence, nrequest, stream);
+					submissionId, submissionNode, bucketId, ticket, sequence,
+					nrequest);
 			break;
 		case 5: // A bucket to copy to local
 			ticket = message.readLong();
 			submissionId = message.readInt();
+			submissionNode = message.readInt();
 			bucketId = message.readInt();
 			sequence = message.readInt();
 			bucketKey = message.readLong();
@@ -232,36 +246,35 @@ class Receiver implements MessageUpcall {
 				WritableContainer<WritableTuple> container = bufferFactory
 						.get();
 				container.init(isSortingBucket);
-				container.readFrom(new ReadMessageWrapper(message));
+
+				// container.readFrom(new ReadMessageWrapper(message));
+				int s = message.readInt();
+				byte[] compressed_size = new byte[s];
+				message.readArray(compressed_size, 0, s);
+				container.decompressFrom(compressed_size, s);
+
 				boolean isFinished = message.readBoolean();
-
+				endMessage(message, time, submissionId, true);
+				// Finish message before calling getExistingBucket, because that
+				// call may block.
 				bucket = buckets.getExistingBucket(submissionId, bucketId);
-
-				try {
-					bucket.addAll(container, isSorted);
-				} catch (Exception e) {
-					log.error("Failed in adding the elements", e);
-				}
-
+				bucket.addAll(container, isSorted);
+				// addAll takes over control of container.
 				bucket.updateCounters(sequence, isFinished);
-				if (!isFinished) {
-					finishMessage(message, time, submissionId);
-					// Need to request for another fetch
-					int remoteNodeId = net.getPeerId(message.origin()
-							.ibisIdentifier());
-					net.signalsBucketToFetch(submissionId, bucketId,
-							remoteNodeId, bucketKey, ++sequence, ++nrequest);
-				} else {
-					endMessage(message, time, submissionId);
-				}
 
+				if (!isFinished) {
+					// Need to request for another fetch
+					int remoteNodeId = net.getPeerId(origin.ibisIdentifier());
+					net.signalsBucketToFetch(submissionId, submissionNode,
+							bucketId, remoteNodeId, bucketKey, ++sequence,
+							++nrequest);
+				}
 			} else {
-				finishMessage(message, time, submissionId);
-				int remoteNodeId = net.getPeerId(message.origin()
-						.ibisIdentifier());
+				endMessage(message, time, submissionId, true);
+				int remoteNodeId = net.getPeerId(origin.ibisIdentifier());
 				// Resubmit it
-				net.signalsBucketToFetch(submissionId, bucketId, remoteNodeId,
-						bucketKey, sequence, ++nrequest);
+				net.signalsBucketToFetch(submissionId, submissionNode,
+						bucketId, remoteNodeId, bucketKey, sequence, ++nrequest);
 			}
 			break;
 		case 6: // Statistics Collector
@@ -321,18 +334,20 @@ class Receiver implements MessageUpcall {
 					tmpBuffer = bucket.removeWChunk(retval);
 				} else {
 					retval[0] = true;
-					tmpBuffer = new WritableContainer<WritableTuple>(1);
+					tmpBuffer = bufferFactory.get();
 				}
 				// Write a reply to the origin containing the results of this
 				// submission
 
 				tmpBuffer.writeTo(new WriteMessageWrapper(reply));
-				tmpBuffer = null;
 				reply.writeBoolean(retval[0]);
 				if (!retval[0]) {
 					reply.writeLong(bucket.getKey());
 				}
 				reply.finish();
+				tmpBuffer.clear();
+				bufferFactory.release(tmpBuffer);
+				tmpBuffer = null;
 				context.getSubmissionsRegistry().getStatistics(submission);
 
 				if (retval[0]) {
@@ -394,8 +409,7 @@ class Receiver implements MessageUpcall {
 				log.debug("Sent reply isFinished=" + retval[0] + " tmpBuffer="
 						+ tmpBuffer.getNElements());
 			}
-
-			// bufferFactory.release(tmpBuffer);
+			bucket.releaseContainer(tmpBuffer);
 			tmpBuffer = null;
 			if (retval[0]) {
 				buckets.removeBucketsOfSubmission((int) (bucketKey >> 32));
@@ -550,30 +564,6 @@ class Receiver implements MessageUpcall {
 	}
 
 	/**
-	 * Updates the counters when an "ongoing" send-receive transmission has
-	 * finished. What it comes next is to send another request to fetch the
-	 * remaining tuples from the remote-bucket :).
-	 * 
-	 * @param msg
-	 *            Message being received
-	 * @param startTime
-	 *            The send-receive start time for this message
-	 * @param submissionId
-	 *            The submission id
-	 * @throws IOException
-	 */
-	public void finishMessage(ReadMessage msg, long startTime, int submissionId)
-			throws IOException {
-		long bytes = msg.finish();
-		long time = System.currentTimeMillis() - startTime;
-		stats.addCounter(0, submissionId,
-				"Receiver:upcall: time receiving msgs (ms)", time);
-		stats.addCounter(0, submissionId, "Receiver:upcall: bytes received",
-				bytes);
-		// stats.addCounter(0, submissionId, "Messages read", 1);
-	}
-
-	/**
 	 * Updates the counters when a remote-bucket fetch has finished (basically,
 	 * when the signal alert arrives). After that, the local-bucket will be
 	 * flagged as being finished.
@@ -584,11 +574,13 @@ class Receiver implements MessageUpcall {
 	 *            The last message's send-receive start time
 	 * @param submissionId
 	 *            The submission id
+	 * @param mustFinish
+	 *            Set if the message must be finished
 	 * @throws IOException
 	 */
-	public void endMessage(ReadMessage msg, long startTime, int submissionId)
-			throws IOException {
-		long bytes = msg.bytesRead();
+	public void endMessage(ReadMessage msg, long startTime, int submissionId,
+			boolean mustFinish) throws IOException {
+		long bytes = mustFinish ? msg.finish() : msg.bytesRead();
 		long time = System.currentTimeMillis() - startTime;
 		stats.addCounter(0, submissionId,
 				"Receiver:upcall: time receiving msgs (ms)", time);

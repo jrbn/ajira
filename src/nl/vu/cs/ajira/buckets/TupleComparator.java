@@ -9,9 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *  This class represents the implementation of a comparator 
- *  that is used inside the framework for sorting tuples (data
- *  with a tuple structure).
+ * This class represents the implementation of a comparator that is used inside
+ * the framework for sorting tuples (data with a tuple structure).
  */
 public class TupleComparator extends RawComparator<WritableTuple> {
 	static final Logger log = LoggerFactory.getLogger(TupleComparator.class);
@@ -24,11 +23,11 @@ public class TupleComparator extends RawComparator<WritableTuple> {
 	private int length_positions;
 
 	/**
-	 * Initialization method. Takes the array of comparators used
-	 * for sorting the fields.
-	 *  
+	 * Initialization method. Takes the array of comparators used for sorting
+	 * the fields.
+	 * 
 	 * @param comparators
-	 * 			  Comparator for each field
+	 *            Comparator for each field
 	 */
 	public void init(RawComparator<? extends SimpleData>[] comparators) {
 		this.comparators = comparators;
@@ -36,11 +35,10 @@ public class TupleComparator extends RawComparator<WritableTuple> {
 	}
 
 	/**
-	 * Method that copies the comparator into another,
-	 * given as parameter.
-	 *  
+	 * Method that copies the comparator into another, given as parameter.
+	 * 
 	 * @param comp
-	 * 			  The destination comparator
+	 *            The destination comparator
 	 */
 	public void copyTo(TupleComparator comp) {
 		comp.comparators = comparators;
@@ -48,8 +46,8 @@ public class TupleComparator extends RawComparator<WritableTuple> {
 	}
 
 	/**
-	 * Compares the bytes from b1 and b2 taking in consideration that
-	 * they have a Tuple structure.
+	 * Compares the bytes from b1 and b2 taking in consideration that they have
+	 * a Tuple structure.
 	 */
 	@Override
 	public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
@@ -70,8 +68,7 @@ public class TupleComparator extends RawComparator<WritableTuple> {
 			int lField2 = reader2.readShort();
 
 			int res;
-			if ((res = comparators[i].compare(b1, s1, lField1, b2, s2,
-					lField2)) != 0) {
+			if ((res = comparators[i].compare(b1, s1, lField1, b2, s2, lField2)) != 0) {
 				return res;
 			}
 

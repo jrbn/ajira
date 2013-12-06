@@ -2,6 +2,9 @@ package nl.vu.cs.ajira.net;
 
 import ibis.ipl.IbisIdentifier;
 import ibis.ipl.WriteMessage;
+
+import java.io.IOException;
+
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.actions.support.Query;
 import nl.vu.cs.ajira.chains.Chain;
@@ -46,19 +49,21 @@ class ChainSender implements Runnable {
 
 	@Override
 	public void run() {
-		try {
-			Query query = new Query();
-			Chain chain = new Chain();
-			Chain supportChain = new Chain();
+		Query query = new Query();
+		Chain chain = new Chain();
+		Chain supportChain = new Chain();
 
-			while (true) {
+		while (true) {
+
+			WriteMessage msg = null;
+
+			try {
 				chainsToSend.remove(chain);
 				ChainExecutor ac = new ChainExecutor(null, context, chain);
 
 				chain.getQuery(query);
-				Location loc = context
-						.getInputLayer(chain.getInputLayer()).getLocations(
-								query.getTuple(), ac);
+				Location loc = context.getInputLayer(chain.getInputLayer())
+						.getLocations(query.getTuple(), ac);
 
 				NetworkLayer ibis = context.getNetworkLayer();
 				IbisIdentifier[] nodes = ibis.getPeersLocation(loc);
@@ -69,19 +74,19 @@ class ChainSender implements Runnable {
 
 					int i = nodes.length - 1;
 					while (i != 0) {
-						chain.branch(supportChain,
-								context.getChainCounter(chain.getSubmissionId()),
-								0);
+						chain.branch(supportChain, context
+								.getChainCounter(chain.getSubmissionId()), 0);
 
 						if (nodes[i].compareTo(ibis.ibis.identifier()) == 0) {
 							chainsToProcess.add(supportChain);
 						} else {
-							WriteMessage msg = ibis.getMessageToSend(nodes[i],
+							msg = ibis.getMessageToSend(nodes[i],
 									NetworkLayer.nameMgmtReceiverPort);
 							msg.writeByte((byte) 0);
 							supportChain.writeTo(new WriteMessageWrapper(msg));
 							ibis.finishMessage(msg,
 									supportChain.getSubmissionId());
+							msg = null;
 						}
 						i--;
 					}
@@ -89,17 +94,27 @@ class ChainSender implements Runnable {
 					if (nodes[0].compareTo(ibis.ibis.identifier()) == 0) {
 						chainsToProcess.add(chain);
 					} else {
-						WriteMessage msg = ibis.getMessageToSend(nodes[0],
+						msg = ibis.getMessageToSend(nodes[0],
 								NetworkLayer.nameMgmtReceiverPort);
 						msg.writeByte((byte) 0);
 						chain.writeTo(new WriteMessageWrapper(msg));
 						ibis.finishMessage(msg, chain.getSubmissionId());
+						msg = null;
 					}
 				}
+
+			} catch (Throwable e) {
+				if (msg != null && e instanceof IOException) {
+					msg.finish((IOException) e);
+				}
+				if (log.isDebugEnabled()) {
+					log.debug(
+							"Error in the main execution of the communicator thread",
+							e);
+				}
+				context.killSubmission(chain.getSubmissionNode(),
+						chain.getSubmissionId(), e);
 			}
-		} catch (Exception e) {
-			log.error("Error in the main execution of the communicator thread",
-					e);
 		}
 	}
 }

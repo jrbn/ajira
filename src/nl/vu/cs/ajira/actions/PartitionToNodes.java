@@ -206,8 +206,9 @@ public class PartitionToNodes extends Action {
 				for (int i = 1; i < nPartitionsPerNode; i++) {
 					ActionConf c = ActionFactory
 							.getActionConf(ReadFromBucket.class);
-					c.setParamInt(ReadFromBucket.I_BUCKET_ID, bucketIds[i]);
-					c.setParamInt(ReadFromBucket.I_NODE_ID, -1);
+					c.setParamIntArray(ReadFromBucket.IA_BUCKET_IDS,
+							bucketIds[i]);
+					c.setParamIntArray(ReadFromBucket.IA_NODE_IDS, -1);
 					output.branch(new ActionSequence(c));
 				}
 			}
@@ -256,8 +257,9 @@ public class PartitionToNodes extends Action {
 				for (int i = 1; i < nPartitionsPerNode; i++) {
 					ActionConf c = ActionFactory
 							.getActionConf(ReadFromBucket.class);
-					c.setParamInt(ReadFromBucket.I_BUCKET_ID, bucketIds[i]);
-					c.setParamInt(ReadFromBucket.I_NODE_ID, -1);
+					c.setParamIntArray(ReadFromBucket.IA_BUCKET_IDS,
+							bucketIds[i]);
+					c.setParamIntArray(ReadFromBucket.IA_NODE_IDS, -1);
 					output.branch(new ActionSequence(c));
 				}
 			}
@@ -267,7 +269,7 @@ public class PartitionToNodes extends Action {
 			int nodeNo = i / nPartitionsPerNode;
 			int bucketNo = bucketIds[i % nPartitionsPerNode];
 			context.finishTransfer(nodeNo, bucketNo, shouldSort, sortingFields,
-					bucketsCache[i] != null, tupleFields);
+					bucketsCache[i] != null, tupleFields, streaming);
 			// context.incrCounter("Partition-" + i, partitionCounts[i]);
 		}
 

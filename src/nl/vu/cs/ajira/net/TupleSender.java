@@ -3,6 +3,7 @@ package nl.vu.cs.ajira.net;
 import ibis.ipl.WriteMessage;
 import ibis.util.ThreadPool;
 
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -13,6 +14,7 @@ import nl.vu.cs.ajira.buckets.WritableTuple;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
 import nl.vu.cs.ajira.utils.Consts;
 
+import org.iq80.snappy.Snappy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,33 +79,37 @@ class TupleSender {
 	 * @param nrequest
 	 *            Requests number (how many requests were sent inside this
 	 *            message)
-	 * @param streaming 
 	 */
 	public void handleNewRequest(long localBufferKey, int remoteNodeId,
-			int idSubmission, int idBucket, long ticket, int sequence,
-			int nrequest, boolean streaming) {
+			int idSubmission, int submissionNode, int idBucket, long ticket,
+			int sequence, int nrequest) {
 		final TupleInfo tu = new TupleInfo();
 
 		tu.bucketKey = localBufferKey;
 		tu.remoteNodeId = remoteNodeId;
 		tu.submissionId = idSubmission;
+		tu.submissionNode = submissionNode;
 		tu.bucketId = idBucket;
 		tu.ticket = ticket;
 		tu.sequence = sequence;
 		tu.nrequests = nrequest;
 		tu.expected = -1;
-		tu.streaming = streaming;
 
 		Bucket bucket = buckets.getExistingBucket(tu.bucketKey, false);
 
 		if (bucket != null) {
-			boolean enoughData = (streaming && bucket.availableToTransmitWhileStreaming())
-					|| bucket.availableToTransmit()
+			boolean enoughData = bucket.availableToTransmit()
 					|| !buckets.isActiveTransfer(tu.submissionId,
 							tu.remoteNodeId, tu.bucketId);
-                        if (log.isDebugEnabled()) {
-                            log.debug("Checking bucket " + tu.bucketKey + ", enoughData = " + enoughData);
-                        }
+			if (log.isDebugEnabled()) {
+				log.debug("Checking bucket "
+						+ tu.bucketKey
+						+ ", enoughData = "
+						+ enoughData
+						+ ", isActive = "
+						+ buckets.isActiveTransfer(tu.submissionId,
+								tu.remoteNodeId, tu.bucketId));
+			}
 			if (enoughData) {
 				synchronized (sendList) {
 					sendList.add(tu);
@@ -150,12 +156,26 @@ class TupleSender {
 					Bucket bucket = buckets.getExistingBucket(info.bucketKey,
 							false);
 					if (bucket != null) {
-						boolean enoughData = (info.streaming && bucket.availableToTransmitWhileStreaming())
-								|| bucket.availableToTransmit()
+						boolean enoughData = bucket.availableToTransmit()
 								|| !buckets.isActiveTransfer(info.submissionId,
 										info.remoteNodeId, info.bucketId);
-
 						if (enoughData) {
+							if (log.isDebugEnabled()) {
+								log.debug("Data available for "
+										+ context.getNetworkLayer()
+												.getPeerLocation(
+														info.remoteNodeId)
+										+ ", bucket = "
+										+ info.bucketKey
+										+ ", remote bucket = "
+										+ info.bucketId
+										+ ", isActive = "
+										+ buckets.isActiveTransfer(
+												info.submissionId,
+												info.remoteNodeId,
+												info.bucketId));
+							}
+
 							synchronized (sendList) {
 								sendList.add(info);
 								sendList.notify();
@@ -183,6 +203,8 @@ class TupleSender {
 	 * Removes a request from the queue and answers to it.
 	 */
 	private void sendTuples() {
+		byte[] buffer = new byte[10 + Snappy
+				.maxCompressedLength(Consts.TUPLES_CONTAINER_MAX_BUFFER_SIZE)];
 		for (;;) {
 			TupleInfo info;
 			synchronized (sendList) {
@@ -197,9 +219,13 @@ class TupleSender {
 				info = sendList.remove(0);
 			}
 			try {
-				sendTuple(info);
-			} catch (Exception e) {
-				log.warn("Got Exception in tuple sender", e);
+				sendTuple(info, buffer);
+			} catch (Throwable e) {
+				if (log.isDebugEnabled()) {
+					log.debug("Got Exception in tuple sender", e);
+				}
+				context.killSubmission(info.submissionNode, info.submissionId,
+						e);
 			}
 		}
 	}
@@ -213,7 +239,8 @@ class TupleSender {
 	 *            Information about the request
 	 * @throws Exception
 	 */
-	private void sendTuple(TupleInfo info) throws Exception {
+	private void sendTuple(TupleInfo info, byte[] supportBuffer)
+			throws Exception {
 
 		if (context.hasCrashed(info.submissionId)) {
 			return;
@@ -223,36 +250,49 @@ class TupleSender {
 		WritableContainer<WritableTuple> tmpBuffer;
 		Bucket bucket = buckets.getExistingBucket(info.bucketKey, false);
 		if (log.isDebugEnabled()) {
-			log.debug("Getting chunk for " + net.getPeerLocation(info.remoteNodeId)
-					+ ", bucket = " + info.bucketKey + ", remote bucket = " + info.bucketId);
+			log.debug("Getting chunk for "
+					+ net.getPeerLocation(info.remoteNodeId) + ", bucket = "
+					+ info.bucketKey + ", remote bucket = " + info.bucketId);
 		}
-		tmpBuffer = bucket.removeWChunk(null);
+		tmpBuffer = bucket.nonBlockingRemoveWChunk(null);
 		WriteMessage msg = net.getMessageToSend(net
 				.getPeerLocation(info.remoteNodeId));
-		msg.writeByte((byte) 5);
-		msg.writeLong(info.ticket);
-		msg.writeInt(info.submissionId);
-		msg.writeInt(info.bucketId);
-		msg.writeInt(info.sequence);
-		msg.writeLong(info.bucketKey);
-		msg.writeInt(info.nrequests);
-		msg.writeBoolean(bucket.isSortingBucket());
-		msg.writeBoolean(bucket.isSorted());
-		msg.writeBoolean(true);
-		tmpBuffer.writeTo(new WriteMessageWrapper(msg));
+		try {
+			msg.writeByte((byte) 5);
+			msg.writeLong(info.ticket);
+			msg.writeInt(info.submissionId);
+			msg.writeInt(info.submissionNode);
+			msg.writeInt(info.bucketId);
+			msg.writeInt(info.sequence);
+			msg.writeLong(info.bucketKey);
+			msg.writeInt(info.nrequests);
+			msg.writeBoolean(bucket.isSortingBucket());
+			msg.writeBoolean(bucket.isSorted());
+			msg.writeBoolean(true);
 
-		boolean isTransfered = buckets.cleanTransfer(info.remoteNodeId,
-				info.submissionId, info.bucketId);
-		msg.writeBoolean(isTransfered);
+			// tmpBuffer.writeTo(new WriteMessageWrapper(msg));
+			int s = tmpBuffer.compressTo(supportBuffer);
+			msg.writeInt(s);
+			msg.writeArray(supportBuffer, 0, s);
 
-		net.finishMessage(msg, info.submissionId);
+			boolean isTransfered = buckets.cleanTransfer(info.remoteNodeId,
+					info.submissionId, info.bucketId);
+			msg.writeBoolean(isTransfered);
 
-		if (log.isDebugEnabled()) {
-			log.debug("Sent chunk to " + net.getPeerLocation(info.remoteNodeId)
-					+ " of size " + tmpBuffer.getNElements() + " be copied at "
-					+ info.bucketKey + " req.=" + info.nrequests
-					+ " isTransfered=" + isTransfered);
+			net.finishMessage(msg, info.submissionId);
+			bucket.releaseContainer(tmpBuffer);
+			if (log.isDebugEnabled()) {
+				log.debug("Sent chunk to "
+						+ net.getPeerLocation(info.remoteNodeId) + " of size "
+						+ tmpBuffer.getNElements() + " be copied at "
+						+ info.bucketKey + " req.=" + info.nrequests
+						+ " isTransfered=" + isTransfered);
+			}
+		} catch (IOException e) {
+			msg.finish(e);
+			throw e;
 		}
+
 		tmpBuffer = null;
 	}
 }

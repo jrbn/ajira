@@ -2,6 +2,7 @@ package nl.vu.cs.ajira.mgmt;
 
 import java.net.BindException;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 import nl.vu.cs.ajira.Context;
 
@@ -67,11 +68,12 @@ public class WebServer implements Runnable {
 			} catch (BindException e) {
 				try {
 					handler.stop();
-				} catch (Exception e1) {
+				} catch (Throwable e1) {
+					// ignore
 				}
 				serverPort++;
 				currentAttempt++;
-			} catch (Exception e) {
+			} catch (Throwable e) {
 				log.error("The web server instance has terminated", e);
 				break;
 			}
@@ -98,9 +100,9 @@ public class WebServer implements Runnable {
 		}
 		try {
 			return "http://" + InetAddress.getLocalHost().getHostAddress()
-					+ ":" + serverPort;
-		} catch (Exception e) {
-			return "<null>:" + serverPort;
+						+ ":" + serverPort;
+		} catch (UnknownHostException e) {
+			return null;
 		}
 	}
 }
