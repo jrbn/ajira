@@ -35,7 +35,8 @@ public class ActionSequence implements Iterable<ActionConf>, Writable {
 		return list.iterator();
 	}
 
-	public void add(ActionConf action) throws ActionNotConfiguredException {
+	private void checkActionConf(ActionConf action)
+			throws ActionNotConfiguredException {
 		int paramMissing = action.validateParameters();
 		if (paramMissing != -1) {
 			String actionName = action.getClassName();
@@ -43,6 +44,16 @@ public class ActionSequence implements Iterable<ActionConf>, Writable {
 			throw new ActionNotConfiguredException("Action " + actionName
 					+ ": the required parameter " + paramName + " is not set.");
 		}
+	}
+
+	public void insert(int index, ActionConf action)
+			throws ActionNotConfiguredException {
+		checkActionConf(action);
+		list.add(index, action);
+	}
+
+	public void add(ActionConf action) throws ActionNotConfiguredException {
+		checkActionConf(action);
 		list.add(action);
 	}
 
@@ -80,5 +91,11 @@ public class ActionSequence implements Iterable<ActionConf>, Writable {
 			output.writeUTF(action.getClassName());
 			action.writeTo(output);
 		}
+	}
+
+	
+	public void copyTo(ActionSequence newSequence) {
+		newSequence.list.clear();
+		newSequence.list.addAll(list);
 	}
 }

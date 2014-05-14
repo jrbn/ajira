@@ -48,6 +48,10 @@ public abstract class TupleIterator {
 			return false;
 		}
 	}
+	
+	protected ActionContext getContext() {
+		return c;
+	}
 
 	protected abstract boolean next() throws Exception;
 

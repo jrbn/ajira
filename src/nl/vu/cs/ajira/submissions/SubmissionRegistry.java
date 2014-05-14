@@ -180,14 +180,21 @@ public class SubmissionRegistry {
 			Chain chain = new Chain();
 			chain.setParentChainId(-1);
 			chain.setInputLayer(InputLayer.DEFAULT_LAYER);
+			chain.setSubmissionNode(context.getNetworkLayer().getMyPartition());
+			chain.setSubmissionId(submissionId);
 			int resultBucket = chain.setActions(new ChainExecutor(null,
 					context, chain), actions);
-
 			if (resultBucket != -1) {
 				sub.assignedBucket = resultBucket;
 			}
-			chain.setSubmissionNode(context.getNetworkLayer().getMyPartition());
-			chain.setSubmissionId(submissionId);
+
+			JobProperties props = job.getProperties();
+			if (props != null && props.size() != 0) {
+				context.getSubmissionCache().putObjectInCache(submissionId,
+						"job-properties", props);
+				context.getSubmissionCache().broadcastCacheObject(submissionId,
+						"job-properties");
+			}
 
 			// If local
 			if (context.isLocalMode()) {
@@ -219,8 +226,7 @@ public class SubmissionRegistry {
 			if (i == net.getMyPartition()) {
 				cache.clearAll(submission.getSubmissionId());
 			} else {
-				WriteMessage msg = net.getMessageToSend(
-						net.getPeerLocation(i),
+				WriteMessage msg = net.getMessageToSend(net.getPeerLocation(i),
 						NetworkLayer.nameMgmtReceiverPort);
 				msg.writeByte((byte) 8);
 				msg.writeInt(submission.getSubmissionId());

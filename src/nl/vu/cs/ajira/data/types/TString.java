@@ -4,6 +4,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
+import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.storage.RawComparator;
 import nl.vu.cs.ajira.utils.Consts;
 
@@ -134,7 +135,7 @@ public final class TString extends SimpleData {
 	 * It returns true if the value of the objects are equal
 	 * It returns false if the value of the objects are different 
 	 */
-	public boolean equals(SimpleData el) {
+	public boolean equals(SimpleData el, ActionContext context) {
 		return ((TString) el).value.equals(value);
 	}
 

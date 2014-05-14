@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 public class ChainSplitLayer extends InputLayer {
 
 	static final Logger log = LoggerFactory.getLogger(ChainSplitLayer.class);
-	
+
 	private static class CircularBuffer {
 		private Tuple data[];
 		private int head;
@@ -32,12 +32,12 @@ public class ChainSplitLayer extends InputLayer {
 			data = new Tuple[size];
 			head = tail = 0;
 		}
-		
+
 		private synchronized void getSpot() {
 			while (bufferFull()) {
 				try {
 					wait();
-				} catch(InterruptedException e) {
+				} catch (InterruptedException e) {
 					// ignore
 				}
 			}
@@ -56,7 +56,7 @@ public class ChainSplitLayer extends InputLayer {
 				tail = 0;
 			}
 		}
-		
+
 		public synchronized void push(SimpleData... v) {
 			getSpot();
 			data[tail++].set(v);
@@ -65,12 +65,11 @@ public class ChainSplitLayer extends InputLayer {
 			}
 		}
 
-
 		public synchronized Tuple pop() {
-			while (head == tail && ! closed) {
+			while (head == tail && !closed) {
 				try {
 					wait();
-				} catch(InterruptedException e) {
+				} catch (InterruptedException e) {
 					// ignore
 				}
 			}
@@ -87,7 +86,7 @@ public class ChainSplitLayer extends InputLayer {
 			}
 			return v;
 		}
-		
+
 		public synchronized void close() {
 			closed = true;
 			notify();
@@ -196,8 +195,8 @@ public class ChainSplitLayer extends InputLayer {
 
 	@Override
 	public TupleIterator getIterator(Tuple tuple, ActionContext context) {
-		SplitIterator itr = existingSplits.get(((TInt) tuple.get(0))
-				.getValue());
+		SplitIterator itr = existingSplits
+				.get(((TInt) tuple.get(0)).getValue());
 		itr.init(context, "ChainSplitsLayer");
 		return itr;
 	}

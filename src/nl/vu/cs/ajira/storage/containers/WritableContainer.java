@@ -295,40 +295,40 @@ public class WritableContainer<K extends Writable> extends ByteArray implements
 		return v;
 	}
 
-	private void checkConsistency() {
-		if (end < 0) {
-			log.error("checkConsistency: end = " + end, new Throwable());
-			throw new Error("Inconsistency found");
-		}
-		if (enableFieldDelimitors) {
-			if (start != end) {
-				int savedStart = start;
-				int nEls = nElements;
-				byte[] v = new byte[1];
-				while (nEls > 0) {
-					int length = input.readInt();
-					if (length < 0 || length > 4096) {
-						log.error("Inconsistency, length = " + length,
-								new Throwable());
-						throw new Error("Inconsistency found");
-					}
-					if (v.length != length) {
-						v = new byte[length];
-					}
-					input.readFully(v);
-					--nEls;
-				}
-				if (start != end) {
-					log.error("Inconsistency, start(" + start + ") != end("
-							+ end + ")", new Throwable());
-					throw new Error("Inconsistency found");
-				}
-				start = savedStart;
-			}
-		} else {
-			// TODO
-		}
-	}
+//	private void checkConsistency() {
+//		if (end < 0) {
+//			log.error("checkConsistency: end = " + end, new Throwable());
+//			throw new Error("Inconsistency found");
+//		}
+//		if (enableFieldDelimitors) {
+//			if (start != end) {
+//				int savedStart = start;
+//				int nEls = nElements;
+//				byte[] v = new byte[1];
+//				while (nEls > 0) {
+//					int length = input.readInt();
+//					if (length < 0 || length > 4096) {
+//						log.error("Inconsistency, length = " + length,
+//								new Throwable());
+//						throw new Error("Inconsistency found");
+//					}
+//					if (v.length != length) {
+//						v = new byte[length];
+//					}
+//					input.readFully(v);
+//					--nEls;
+//				}
+//				if (start != end) {
+//					log.error("Inconsistency, start(" + start + ") != end("
+//							+ end + ")", new Throwable());
+//					throw new Error("Inconsistency found");
+//				}
+//				start = savedStart;
+//			}
+//		} else {
+//			// TODO
+//		}
+//	}
 
 	public byte[] getLastElement() {
 		if (pointerLastElement < 0) {

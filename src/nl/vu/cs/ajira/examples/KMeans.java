@@ -76,12 +76,6 @@ public class KMeans {
 		}
 	}
 
-	/*
-	 * private static final boolean equals(double[] s1, double[] s2) { if
-	 * (s1.length == s2.length) { for (int i = 0; i < s1.length; ++i) { if
-	 * (s1[i] != s2[i]) { return false; } } return true; } return false; }
-	 */
-
 	private static final void kmeans(ActionSequence actions, String outputDir)
 			throws ActionNotConfiguredException {
 		// Find the closest center

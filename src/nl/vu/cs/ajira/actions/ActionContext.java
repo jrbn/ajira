@@ -5,11 +5,19 @@ import java.util.List;
 
 import nl.vu.cs.ajira.Context;
 import nl.vu.cs.ajira.buckets.Bucket;
+import nl.vu.cs.ajira.datalayer.InputLayer;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
+import nl.vu.cs.ajira.submissions.JobProperties;
 
 public interface ActionContext {
 
 	public Context getContext();
+
+	public JobProperties getJobProperties();
+
+	public Class<? extends InputLayer> getInputLayer();
+
+	public void cleanup();
 
 	public long getCounter(String counterId);
 

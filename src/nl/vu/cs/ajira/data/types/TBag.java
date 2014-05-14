@@ -5,6 +5,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Iterator;
 
+import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.utils.Consts;
 
 public class TBag extends SimpleData implements Iterable<Tuple> {
@@ -53,7 +54,7 @@ public class TBag extends SimpleData implements Iterable<Tuple> {
 	}
 
 	@Override
-	public boolean equals(SimpleData el) {
-		return super.equals((Object) el);
+	public boolean equals(SimpleData el, ActionContext context) {
+		return super.equals(el);
 	}
 }

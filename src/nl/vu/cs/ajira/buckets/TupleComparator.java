@@ -55,11 +55,11 @@ public class TupleComparator extends RawComparator<WritableTuple> {
 		reader2.setBuffer(b2);
 
 		// Compare all the fields one by one
-		int pos_length1 = s1;
-		int pos_length2 = s2;
+		int pos_length1 = s1 + 1; // Skip nFields
+		int pos_length2 = s2 + 1; // Skip nFields
 
-		s1 += length_positions;
-		s2 += length_positions;
+		s1 += length_positions + 1;
+		s2 += length_positions + 1;
 
 		for (int i = 0; i < comparators.length; ++i) {
 			reader1.setCurrentPosition(pos_length1);

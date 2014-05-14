@@ -17,6 +17,7 @@ import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.TInt;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.data.types.TupleFactory;
+import nl.vu.cs.ajira.datalayer.InputLayer;
 import nl.vu.cs.ajira.datalayer.TupleIterator;
 import nl.vu.cs.ajira.datalayer.buckets.BucketsLayer;
 import nl.vu.cs.ajira.datalayer.chainsplits.ChainSplitLayer;
@@ -24,6 +25,7 @@ import nl.vu.cs.ajira.datalayer.chainsplits.ChainSplitLayer.SplitIterator;
 import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.net.NetworkLayer;
 import nl.vu.cs.ajira.storage.containers.WritableContainer;
+import nl.vu.cs.ajira.submissions.JobProperties;
 import nl.vu.cs.ajira.utils.Consts;
 
 import org.slf4j.Logger;
@@ -70,7 +72,7 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	private int transferBucketId;
 	private final boolean localMode;
 
-	private static final Logger log = LoggerFactory
+	protected static final Logger log = LoggerFactory
 			.getLogger(ChainExecutor.class);
 
 	public ChainExecutor(ChainHandler handler, Context context) {
@@ -178,6 +180,10 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 		openedStreams.clear();
 	}
 
+	public void cleanup() {
+		context.getBuckets().removeBucketsOfSubmission(submissionId);
+	}
+
 	void addAction(Action action, boolean root, int chainRawSize,
 			long responsibleChain) {
 		actions[nActions] = action;
@@ -246,11 +252,6 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 				itr.close();
 			}
 		}
-
-		if (!transferComputation) {
-			net.signalChainTerminated(chain, newChildren);
-		}
-
 	}
 
 	@Override
@@ -264,6 +265,10 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 
 	@Override
 	public void branch(ActionSequence actions) throws Exception {
+		if (actions.length() == 0) {
+			throw new Exception("There is no action to branch");
+		}
+
 		chain.setRawSize(rawSizes[currentAction]);
 
 		if (transferComputation && currentAction == nActions - 1) {
@@ -478,7 +483,36 @@ public class ChainExecutor implements ActionContext, ActionOutput {
 	}
 
 	@Override
+	public Class<? extends InputLayer> getInputLayer() {
+		if (chain != null) {
+			return chain.getInputLayer();
+		}
+		return null;
+	}
+
+	// @Override
+	// public int countActionsContaining(String s) {
+	// if (chain != null) {
+	// return chain.countActionsContaining(s);
+	// }
+	// return 0;
+	// }
+
+	@Override
 	public Context getContext() {
 		return context;
+	}
+
+	@Override
+	public JobProperties getJobProperties() {
+		return (JobProperties) getObjectFromCache("job-properties");
+	}
+
+	boolean isTransferedComputation() {
+		return transferComputation;
+	}
+
+	Map<Long, List<Integer>> getNewChildren() {
+		return newChildren;
 	}
 }

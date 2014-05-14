@@ -47,12 +47,17 @@ public class Chain implements Writable, InputQuery {
 		public void init() {
 			stopProcessing = doNotAddAction = false;
 			listActions.clear();
+			bucketId = -1;
 		}
 
 		@Override
 		public void continueComputationOn(int destination, int bucketId) {
 			stopProcessing = true;
 			this.destination = destination;
+			this.bucketId = bucketId;
+		}
+
+		public void setOutputBucket(int bucketId) {
 			this.bucketId = bucketId;
 		}
 
@@ -72,7 +77,7 @@ public class Chain implements Writable, InputQuery {
 	private final FlowController controller = new FlowController();
 
 	private int bufferSize = CHAIN_RESERVED_SPACE;
-	private final byte[] buffer = new byte[Consts.CHAIN_SIZE];
+	private byte[] buffer = new byte[Consts.INITIAL_CHAIN_SIZE];
 
 	private final Tuple tuple = TupleFactory.newTuple();
 	private String inputLayer = null;
@@ -83,6 +88,7 @@ public class Chain implements Writable, InputQuery {
 	@Override
 	public void readFrom(DataInput input) throws IOException {
 		bufferSize = input.readInt();
+		grow(bufferSize, true);
 		input.readFully(buffer, 0, bufferSize);
 
 		if (buffer[32] == -1) {
@@ -204,7 +210,8 @@ public class Chain implements Writable, InputQuery {
 			try {
 				return Class.forName(inputLayer).asSubclass(InputLayer.class);
 			} catch (Throwable e) {
-				throw new Error("Could not load inputLayer class " + inputLayer, e);
+				throw new Error(
+						"Could not load inputLayer class " + inputLayer, e);
 			}
 		}
 	}
@@ -251,6 +258,8 @@ public class Chain implements Writable, InputQuery {
 
 		int retval = -1;
 
+		grow(bufferSize + 1024, true);
+
 		// Process the parameters and possibly insert instructions to control
 		// the flow.
 		if (action.getConfigurator() != null) {
@@ -273,12 +282,12 @@ public class Chain implements Writable, InputQuery {
 				cos.writeInt(controller.destination);
 				cos.writeBoolean(true);
 				bufferSize += 9;
-				retval = controller.bucketId;
 			} else {
 				cos.setCurrentPosition(bufferSize);
 				cos.writeBoolean(false);
 				bufferSize++;
 			}
+			retval = controller.bucketId;
 		} else {
 			cos.setCurrentPosition(bufferSize);
 			cos.writeBoolean(false);
@@ -321,6 +330,7 @@ public class Chain implements Writable, InputQuery {
 
 	void copyTo(Chain newChain) {
 		newChain.bufferSize = bufferSize;
+		newChain.grow(bufferSize, false);
 		System.arraycopy(buffer, 0, newChain.buffer, 0, bufferSize);
 		tuple.copyTo(newChain.tuple);
 		newChain.inputLayer = inputLayer;
@@ -385,6 +395,9 @@ public class Chain implements Writable, InputQuery {
 		}
 
 		newChain.bufferSize = sizeToCopy;
+		if (newChain.buffer.length < buffer.length) {
+			newChain.buffer = new byte[buffer.length];
+		}
 		System.arraycopy(buffer, 0, newChain.buffer, 0, sizeToCopy);
 
 		// Set up the new chain
@@ -431,6 +444,40 @@ public class Chain implements Writable, InputQuery {
 
 		if (stopProcessing) {
 			actions.moveComputation(nodeId, bucketId);
+		}
+	}
+
+	int countActionsContaining(String s) {
+		int tmpSize = bufferSize;
+		int count = 0;
+		while (tmpSize > CHAIN_RESERVED_SPACE) {
+			int size = Utils.decodeInt(buffer, tmpSize - 4);
+			String sAction = new String(buffer, tmpSize - size - 4, size);
+			if (sAction.indexOf(s) != -1) {
+				count++;
+			}
+			tmpSize -= Utils.decodeInt(buffer, tmpSize - 8 - size) + 4 + size;
+
+		}
+		return count;
+	}
+
+	public void grow(int needed, boolean copy) {
+		if (needed > buffer.length) {
+			int n = buffer.length;
+			while (n < needed) {
+				n += n;
+			}
+			byte[] newbuf = new byte[n];
+			if (log.isDebugEnabled()) {
+				log.debug("Growing buffer to " + n);
+			}
+			if (copy) {
+				System.arraycopy(buffer, 0, newbuf, 0, buffer.length);
+			}
+			buffer = newbuf;
+			cis.setBuffer(newbuf);
+			cos.setBuffer(newbuf);
 		}
 	}
 }

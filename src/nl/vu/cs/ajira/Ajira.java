@@ -79,7 +79,7 @@ public class Ajira {
 	 * @param clusterMode
 	 *            whether to start in cluster mode or not.
 	 */
-	private Ajira(boolean clusterMode) {
+	public Ajira(boolean clusterMode) {
 		this.clusterMode = clusterMode;
 	}
 
@@ -178,7 +178,7 @@ public class Ajira {
 			}
 
 			net.setBufferFactory(bufferFactory);
-			net.startIbis();
+			net.startIbis(clusterMode);
 			ArrayList<WritableContainer<WritableTuple>> l = new ArrayList<WritableContainer<WritableTuple>>(
 					Consts.STARTING_SIZE_FACTORY);
 			for (int i = 0; i < Consts.STARTING_SIZE_FACTORY; i++) {
@@ -285,10 +285,8 @@ public class Ajira {
 
 		if (serverMode) {
 			net.waitUntilAllReady();
-			if (log.isInfoEnabled()) {
-				log.info("Time to startup the cluster (ms): "
-						+ (System.currentTimeMillis() - time));
-			}
+			log.info("Time to startup the cluster (ms): "
+					+ (System.currentTimeMillis() - time));
 		} else {
 			net.signalReady();
 			if (log.isInfoEnabled()) {
@@ -421,7 +419,7 @@ public class Ajira {
 			}
 			Properties p = new Properties();
 			p.setProperty("ibis.server.address", serverAddress);
-			p.setProperty("ibis.pool.name", poolName);
+			p.setProperty("ibis.pool.name", poolName + "-server");
 			try {
 				p.store(out, "Ajira Cluster properties file");
 				out.close();

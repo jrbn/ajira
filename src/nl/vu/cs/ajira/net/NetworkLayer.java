@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -60,16 +61,22 @@ public class NetworkLayer {
 			PortType.COMMUNICATION_RELIABLE, PortType.SERIALIZATION_OBJECT_SUN,
 			PortType.CONNECTION_MANY_TO_MANY, PortType.RECEIVE_AUTO_UPCALLS);
 
-	public static final PortType queryPortType = new PortType(
+	public static final PortType queryAnswerPortType = new PortType(
 			PortType.COMMUNICATION_RELIABLE, PortType.SERIALIZATION_DATA,
 			PortType.CONNECTION_MANY_TO_ONE, PortType.RECEIVE_EXPLICIT);
 
-	public static final IbisCapabilities ibisCapabilities = new IbisCapabilities(
+	public static final IbisCapabilities ibisClusterCapabilities = new IbisCapabilities(
 			IbisCapabilities.ELECTIONS_STRICT,
 			IbisCapabilities.MEMBERSHIP_TOTALLY_ORDERED,
-			IbisCapabilities.SIGNALS, IbisCapabilities.MALLEABLE);
+			IbisCapabilities.SIGNALS, IbisCapabilities.CLOSED_WORLD);
 
-	Ibis ibis = null;
+	public static final IbisCapabilities ibisServerCapabilities = new IbisCapabilities(
+			IbisCapabilities.ELECTIONS_STRICT,
+			IbisCapabilities.MEMBERSHIP_TOTALLY_ORDERED,
+			IbisCapabilities.MALLEABLE);
+
+	Ibis clusterIbis = null;
+	Ibis clientIbis = null;
 	private int partitionId = 0;
 	private int poolSize;
 	private IbisIdentifier[] assignedPartitions = null;
@@ -79,6 +86,7 @@ public class NetworkLayer {
 	private final Map<String, Long> timers = new ConcurrentHashMap<String, Long>();
 
 	private boolean serverMode = false;
+	private boolean clusterMode = false;
 	private IbisIdentifier server = null;
 	private StatisticsCollector stats = null;
 
@@ -101,6 +109,8 @@ public class NetworkLayer {
 	private final static NetworkLayer instance = new NetworkLayer();
 
 	ChainTerminator terminator;
+
+	private ReceivePort clientReceivePort;
 
 	/**
 	 * Creates a new NetworkLayer object.
@@ -169,15 +179,6 @@ public class NetworkLayer {
 		terminator.addChain(chain, additionalCounters);
 	}
 
-	/**
-	 * Sends a "ready" signal to the server.
-	 * 
-	 * @throws IOException
-	 */
-	public void signalReady() throws IOException {
-		ibis.registry().signal("ready", server);
-	}
-
 	public void signalsBucketToFetch(int idSubmission, int submissionNode,
 			int idBucket, int remoteNodeId, long bufferKey, boolean streaming) {
 		// called from upcall thread, so no new thread needed.
@@ -199,30 +200,6 @@ public class NetworkLayer {
 				submissionNode, bucketId, ticket, sequence, nrequest);
 	}
 
-	/**
-	 * The server waits until all ibises have send a "ready" signal to the
-	 * server.
-	 */
-	public void waitUntilAllReady() {
-		int n = getNumberNodes() - 1;
-		int currentSignals = 0;
-		while (currentSignals < n) {
-			String[] signals = ibis.registry().receivedSignals();
-			if (signals != null) {
-				for (String signal : signals) {
-					if (signal.equalsIgnoreCase("ready")) {
-						currentSignals++;
-					}
-				}
-			}
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-				// ignore
-			}
-		}
-	}
-
 	public void removeActiveRequest(long ticket) {
 		tupleRequester.removeActiveRequest(ticket);
 	}
@@ -234,37 +211,20 @@ public class NetworkLayer {
 	/**
 	 * Creates a new Ibis instance. Waits for all the ibises from the pool to
 	 * join. Keeps track of the identifier of every Ibis. The server is elected
-	 * to be on the first partition. It is created a monitor for each ibis.
+	 * to be on the first partition. A monitor is created for each ibis.
 	 * 
 	 * @throws Exception
 	 */
-	public void startIbis() throws Exception {
+	public void startIbis(boolean clusterMode) throws Exception {
+		this.clusterMode = clusterMode;
+		if (clusterIbis == null) {
+			clusterIbis = IbisFactory.createIbis(ibisClusterCapabilities, null,
+					requestPortType, mgmtRequestPortType, broadcastPortType);
 
-		if (ibis == null) {
-			ibis = IbisFactory.createIbis(ibisCapabilities, null,
-					requestPortType, queryPortType, mgmtRequestPortType,
-					broadcastPortType);
+			clusterIbis.registry().waitUntilPoolClosed();
+			poolSize = clusterIbis.registry().getPoolSize();
 
-			poolSize = Integer.valueOf(System
-					.getProperty("ibis.pool.size", "1"));
-
-			assignedPartitions = new IbisIdentifier[poolSize];
-
-			// First wait for all ibises to join.
-			int nJoined = 0;
-			do {
-				IbisIdentifier[] joinedIbis = ibis.registry().joinedIbises();
-				if (joinedIbis.length > 0) {
-					System.arraycopy(joinedIbis, 0, assignedPartitions,
-							nJoined, joinedIbis.length);
-					nJoined += joinedIbis.length;
-				}
-				try {
-					Thread.sleep(10);
-				} catch (InterruptedException e) {
-					// ignore
-				}
-			} while (nJoined < poolSize);
+			assignedPartitions = clusterIbis.registry().joinedIbises();
 
 			// Sort on IbisIdentifier, which sorts on pool and then
 			// location.
@@ -272,31 +232,41 @@ public class NetworkLayer {
 			// caches ...
 			Arrays.sort(assignedPartitions);
 			for (int i = 0; i < assignedPartitions.length; i++) {
-				if (assignedPartitions[i].equals(ibis.identifier())) {
+				if (assignedPartitions[i].equals(clusterIbis.identifier())) {
 					partitionId = i;
-					if (log.isDebugEnabled()) {
-						log.debug("Assigned partition " + i + " to "
-								+ ibis.identifier());
+					if (log.isInfoEnabled()) {
+						log.info("Assigned partition " + i + " to "
+								+ clusterIbis.identifier());
 					}
 				}
 				assignedIds.put(assignedPartitions[i].name(), i);
 			}
 
 			// Put the server on partition 0.
-			if (assignedPartitions[0].equals(ibis.identifier())) {
-				server = ibis.registry().elect("server");
+			if (assignedPartitions[0].equals(clusterIbis.identifier())) {
+				server = clusterIbis.registry().elect("server");
 				serverMode = true;
 			} else {
-				server = ibis.registry().getElectionResult("server");
+				server = clusterIbis.registry().getElectionResult("server");
+			}
+
+			if (serverMode && clusterMode) {
+				// Start an Ibis to server query requests.
+				Properties p = new Properties(System.getProperties());
+				p.setProperty("ibis.pool.name",
+						System.getProperty("ibis.pool.name") + "-server");
+				clientIbis = IbisFactory.createIbis(ibisServerCapabilities, p,
+						true, null, mgmtRequestPortType, queryAnswerPortType);
+				clientIbis.registry().elect("server");
 			}
 
 			if (log.isDebugEnabled()) {
-				log.debug("I AM " + ibis.identifier() + ", partition "
+				log.debug("I AM " + clusterIbis.identifier() + ", partition "
 						+ partitionId);
 			}
 		}
 		try {
-			ibisMonitor = IbisMonitor.createMonitor(ibis);
+			ibisMonitor = IbisMonitor.createMonitor(clusterIbis);
 		} catch (Throwable e) {
 			if (log.isInfoEnabled()) {
 				log.info("Could not create IbisMonitor instance", e);
@@ -338,13 +308,13 @@ public class NetworkLayer {
 
 		receiver = new Receiver(context, bufferFactory);
 
-		ReceivePort port = ibis.createReceivePort(requestPortType,
+		ReceivePort port = clusterIbis.createReceivePort(requestPortType,
 				nameReceiverPort, receiver);
 		port.enableConnections();
 		port.enableMessageUpcalls();
 		receivePorts.add(port);
 
-		port = ibis.createReceivePort(mgmtRequestPortType,
+		port = clusterIbis.createReceivePort(mgmtRequestPortType,
 				nameMgmtReceiverPort, receiver);
 		port.enableConnections();
 		port.enableMessageUpcalls();
@@ -353,8 +323,8 @@ public class NetworkLayer {
 			log.debug("Mgmt receiver port is created");
 		}
 
-		port = ibis.createReceivePort(broadcastPortType, nameBcstReceiverPort,
-				receiver);
+		port = clusterIbis.createReceivePort(broadcastPortType,
+				nameBcstReceiverPort, receiver);
 		port.enableConnections();
 		port.enableMessageUpcalls();
 		receivePorts.add(port);
@@ -363,7 +333,7 @@ public class NetworkLayer {
 		}
 
 		// Start a broadcast port
-		broadcastPort = ibis.createSendPort(broadcastPortType);
+		broadcastPort = clusterIbis.createSendPort(broadcastPortType);
 
 		// Connect every node with all the others and put the ports in
 		// sendPorts
@@ -376,16 +346,23 @@ public class NetworkLayer {
 			startSenderPort(mgmtRequestPortType, nameSenderPort, peer,
 					nameMgmtReceiverPort);
 
-			if (!peer.equals(ibis.identifier())) {
+			if (!peer.equals(clusterIbis.identifier())) {
 				broadcastPort.connect(peer, nameBcstReceiverPort);
 			}
+		}
+
+		if (clientIbis != null) {
+			clientReceivePort = clientIbis.createReceivePort(
+					mgmtRequestPortType, queryReceiverPort, receiver);
+			clientReceivePort.enableConnections();
+			clientReceivePort.enableMessageUpcalls();
 		}
 	}
 
 	/**
 	 * 
 	 * @return The id of the partition. Is the position in the
-	 *         assignedPartitions array of the ibis.
+	 *         assignedPartitions array of the clusterIbis.
 	 */
 	public int getMyPartition() {
 		return partitionId;
@@ -416,7 +393,16 @@ public class NetworkLayer {
 			}
 		}
 
-		ibis.end();
+		clusterIbis.end();
+
+		if (clientIbis != null) {
+			try {
+				clientReceivePort.close(-1);
+			} catch (Throwable e) {
+				// ignore
+			}
+			clientIbis.end();
+		}
 	}
 
 	/**
@@ -456,7 +442,7 @@ public class NetworkLayer {
 				if (!senderPorts.containsKey(nameSenderPort)) {
 					PortType type = null;
 					if (receiverPort.equals(queryReceiverPort)) {
-						type = queryPortType;
+						type = queryAnswerPortType;
 					} else if (receiverPort.equals(nameMgmtReceiverPort)) {
 						type = mgmtRequestPortType;
 					} else if (receiverPort.equals(nameBcstReceiverPort)) {
@@ -502,14 +488,14 @@ public class NetworkLayer {
 	 * @return All or some of the IbisIdentifiers depending on the parameter.
 	 */
 	public IbisIdentifier[] getPeersLocation(Location loc) {
-		if (loc.getValue() == Location.V_ALL_NODES) {
+		if (loc == Location.ALL_NODES) {
 			return assignedPartitions;
-		} else if (loc.getValue() == Location.V_THIS_NODE) {
+		} else if (loc == Location.THIS_NODE) {
 			return Arrays.copyOfRange(assignedPartitions, partitionId,
 					partitionId + 1);
 		} else {
-			return Arrays.copyOfRange(assignedPartitions, loc.getValue(),
-					loc.getValue() + 1);
+			return Arrays.copyOfRange(assignedPartitions, loc.getStart(),
+					loc.getEnd() + 1);
 		}
 	}
 
@@ -531,6 +517,8 @@ public class NetworkLayer {
 			String senderPort, IbisIdentifier receiver, String receiverPort) {
 
 		SendPort port = null;
+		Ibis ibis = receiverPort.equals(queryReceiverPort) ? clientIbis
+				: clusterIbis;
 		try {
 			port = ibis.createSendPort(senderPortType, senderPort);
 			port.connect(receiver, receiverPort);
@@ -555,7 +543,7 @@ public class NetworkLayer {
 	 */
 	public void signalTermination() {
 		for (IbisIdentifier peer : assignedPartitions) {
-			if (!peer.equals(ibis.identifier())) {
+			if (!peer.equals(clusterIbis.identifier())) {
 				WriteMessage msg = null;
 				try {
 					msg = getMessageToSend(peer, nameMgmtReceiverPort);
@@ -581,7 +569,8 @@ public class NetworkLayer {
 	 */
 	public long getSentBytes() {
 		try {
-			return Long.parseLong(ibis.getManagementProperty("bytesSent"));
+			return Long.parseLong(clusterIbis
+					.getManagementProperty("bytesSent"));
 		} catch (Exception e) {
 			log.error("getSentBytes error", e);
 			return 0;
@@ -594,7 +583,7 @@ public class NetworkLayer {
 	 */
 	public long getSentMessages() {
 		try {
-			return Long.parseLong(ibis
+			return Long.parseLong(clusterIbis
 					.getManagementProperty("outgoingMessageCount"));
 		} catch (Exception e) {
 			log.error("getSentMessages error", e);
@@ -608,7 +597,8 @@ public class NetworkLayer {
 	 */
 	public long getReceivedBytes() {
 		try {
-			return Long.parseLong(ibis.getManagementProperty("bytesReceived"));
+			return Long.parseLong(clusterIbis
+					.getManagementProperty("bytesReceived"));
 		} catch (Exception e) {
 			log.error("getSentBytes error", e);
 			return 0;
@@ -621,7 +611,7 @@ public class NetworkLayer {
 	 */
 	public long getReceivedMessages() {
 		try {
-			return Long.parseLong(ibis
+			return Long.parseLong(clusterIbis
 					.getManagementProperty("incomingMessageCount"));
 		} catch (Exception e) {
 			log.error("getSentMessages error", e);
@@ -682,6 +672,8 @@ public class NetworkLayer {
 	int activeCodeExecutionsCount = 0;
 	Map<Integer, CountInfo> activeCodeExecutions = new HashMap<Integer, CountInfo>();
 
+	private int readyCount;
+
 	/**
 	 * 
 	 * @return A WriteMessge object for the broadcast port.
@@ -689,58 +681,6 @@ public class NetworkLayer {
 	 */
 	public WriteMessage getMessageToBroadcast() throws IOException {
 		return broadcastPort.newMessage();
-	}
-
-	/**
-	 * This method requests to execute custom code on every node.
-	 * 
-	 * @param nodeId
-	 *            The node id.
-	 * @param submissionId
-	 *            The submission id.
-	 * @param className
-	 *            The name of the class.
-	 * @return True if the operation was successfully completed, false
-	 *         otherwise.
-	 */
-	public boolean executeRemoteCode(int nodeId, int submissionId,
-			String className) {
-		try {
-			int c;
-			CountInfo remaining = new CountInfo();
-			remaining.count = assignedPartitions.length - 1;
-
-			synchronized (activeCodeExecutions) {
-				c = activeCodeExecutionsCount++;
-				activeCodeExecutions.put(c, remaining);
-			}
-
-			WriteMessage msg = broadcastPort.newMessage();
-			msg.writeByte((byte) 14);
-			msg.writeInt(c);
-			msg.writeInt(nodeId);
-			msg.writeInt(submissionId);
-			msg.writeString(className);
-			msg.finish();
-
-			synchronized (remaining) {
-				while (remaining.count > 0) {
-					remaining.wait();
-				}
-			}
-
-			synchronized (activeCodeExecutions) {
-				activeCodeExecutions.remove(c);
-			}
-
-			// Return the objects
-			return remaining.success;
-
-		} catch (Exception e) {
-			log.error("Failed retrieving objects", e);
-		}
-
-		return false;
 	}
 
 	/**
@@ -857,8 +797,8 @@ public class NetworkLayer {
 			msg.writeByte((byte) 10);
 			msg.writeInt(c);
 			msg.writeInt(submissionId);
-			msg.writeObject(key);
-			msg.writeObject(value);
+			msg.writeObject(new Object[] { key });
+			msg.writeObject(new Object[] { value });
 			msg.finish();
 
 			synchronized (remaining) {
@@ -957,5 +897,29 @@ public class NetworkLayer {
 	 */
 	public void signalChainFailed(Chain chain, Throwable exception) {
 		terminator.addFailedChain(chain, exception);
+	}
+
+	public void waitUntilAllReady() {
+		int n = poolSize - 1;
+		int currentSignals = 0;
+		while (currentSignals < n) {
+			String[] signals = clusterIbis.registry().receivedSignals();
+			if (signals != null) {
+				for (String signal : signals) {
+					if (signal.equalsIgnoreCase("ready")) {
+						currentSignals++;
+					}
+				}
+			}
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				// ignore
+			}
+		}
+	}
+
+	public void signalReady() throws IOException {
+		clusterIbis.registry().signal("ready", server);
 	}
 }

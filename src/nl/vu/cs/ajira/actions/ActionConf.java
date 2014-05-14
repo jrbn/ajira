@@ -9,11 +9,11 @@ import java.util.List;
 import nl.vu.cs.ajira.data.types.DataProvider;
 import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.TIntArray;
+import nl.vu.cs.ajira.data.types.TLongArray;
 import nl.vu.cs.ajira.data.types.TStringArray;
 import nl.vu.cs.ajira.data.types.bytearray.BDataOutput;
 import nl.vu.cs.ajira.datalayer.InputQuery;
 import nl.vu.cs.ajira.storage.Writable;
-import nl.vu.cs.ajira.utils.Consts;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -255,7 +255,7 @@ public class ActionConf implements Writable {
 					v.writeTo(output);
 				} else if (value instanceof Writable) {
 					output.writeByte(4);
-					BDataOutput o = new BDataOutput(new byte[Consts.CHAIN_SIZE]);
+					BDataOutput o = new BDataOutput(new byte[32768]);
 					((Writable) value).writeTo(o);
 					output.writeInt(o.cb.getEnd());
 					o.writeTo(output);
@@ -385,6 +385,26 @@ public class ActionConf implements Writable {
 			return false;
 		}
 		valuesParameters[pos] = new TIntArray(value);
+		return true;
+	}
+
+	/**
+	 * Specifies a value for the configuration parameter at the specified
+	 * position.
+	 * 
+	 * @param pos
+	 *            the position of the parameter to set
+	 * @param value
+	 *            the value to set the parameter to
+	 * @return <code>true</code> on success, <code>false</code> on failure (when
+	 *         an illegal position is specified) TODO: should it not just throw
+	 *         an IllegalArgumentException in this case? --Ceriel
+	 */
+	public final boolean setParamLongArray(int pos, long... value) {
+		if (!checkPos(pos)) {
+			return false;
+		}
+		valuesParameters[pos] = new TLongArray(value);
 		return true;
 	}
 

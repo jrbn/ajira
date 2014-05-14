@@ -21,9 +21,10 @@ public class DataProvider {
 	 *            is the class whose informations are added at the fields of the
 	 *            DataProvider
 	 */
-	static synchronized public void addType(Class<? extends SimpleData> clazz) {
+	static synchronized public int addType(Class<? extends SimpleData> clazz) {
 		registeredTypes.put(counter, clazz);
-		retrieveIds.put(clazz.getName(), counter++);
+		retrieveIds.put(clazz.getName(), counter);
+		return counter++;
 	}
 
 	/**
@@ -108,6 +109,14 @@ public class DataProvider {
 		return list[type].get();
 	}
 
+	public SimpleData[] getArrayOf(byte[] types) {
+		SimpleData[] out = new SimpleData[types.length];
+		for(int i = 0; i < types.length; ++i) {
+			out[i] = list[types[i]].get();
+		}
+		return out;
+	}
+	
 	/**
 	 * Releases in the Factory's buffer the object which is found in the list at
 	 * the data's id position.

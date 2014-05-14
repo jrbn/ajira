@@ -4,6 +4,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
+import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.utils.Consts;
 
 public class TDouble extends SimpleData {
@@ -50,7 +51,7 @@ public class TDouble extends SimpleData {
 	}
 
 	@Override
-	public boolean equals(SimpleData el) {
+	public boolean equals(SimpleData el, ActionContext context) {
 		return ((TDouble) el).value == this.value;
 	}
 

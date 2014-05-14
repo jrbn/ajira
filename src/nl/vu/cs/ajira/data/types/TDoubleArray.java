@@ -5,6 +5,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Arrays;
 
+import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.utils.Consts;
 
 public class TDoubleArray extends SimpleData {
@@ -79,7 +80,7 @@ public class TDoubleArray extends SimpleData {
 	}
 
 	@Override
-	public boolean equals(SimpleData el) {
+	public boolean equals(SimpleData el, ActionContext context) {
 		return compareTo(el) == 0;
 	}
 

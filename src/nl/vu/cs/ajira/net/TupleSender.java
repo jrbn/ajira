@@ -32,6 +32,7 @@ class TupleSender {
 	private final List<TupleInfo> checkList = new LinkedList<TupleInfo>();
 	private final List<TupleInfo> sendList = new LinkedList<TupleInfo>();
 	private int checkerTime = 1;
+        private final boolean compressing;
 
 	/**
 	 * Custom constructor.
@@ -42,6 +43,7 @@ class TupleSender {
 	public TupleSender(Context context) {
 		this.context = context;
 		this.buckets = context.getBuckets();
+                this.compressing = context.getConfiguration().getBoolean(Consts.SEND_TUPLES_COMPRESSED, true);
 		ThreadPool.createNew(new Runnable() {
 			@Override
 			public void run() {
@@ -269,11 +271,15 @@ class TupleSender {
 			msg.writeBoolean(bucket.isSortingBucket());
 			msg.writeBoolean(bucket.isSorted());
 			msg.writeBoolean(true);
+                        msg.writeBoolean(compressing);
 
-			// tmpBuffer.writeTo(new WriteMessageWrapper(msg));
-			int s = tmpBuffer.compressTo(supportBuffer);
-			msg.writeInt(s);
-			msg.writeArray(supportBuffer, 0, s);
+                        if (compressing) {
+                            int s = tmpBuffer.compressTo(supportBuffer);
+                            msg.writeInt(s);
+                            msg.writeArray(supportBuffer, 0, s);
+                        } else {
+                            tmpBuffer.writeTo(new WriteMessageWrapper(msg));
+                        }
 
 			boolean isTransfered = buckets.cleanTransfer(info.remoteNodeId,
 					info.submissionId, info.bucketId);

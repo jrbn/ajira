@@ -4,15 +4,16 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
+import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.utils.Consts;
 
 import com.google.common.primitives.Longs;
 
 /**
  * 
- * This class provides the methods that are needed in 
- * order to manipulate a long value. 
- *
+ * This class provides the methods that are needed in order to manipulate a long
+ * value.
+ * 
  */
 public final class TLong extends SimpleData {
 
@@ -29,7 +30,8 @@ public final class TLong extends SimpleData {
 	/**
 	 * Creates a new TLong and sets the filed value.
 	 * 
-	 * @param value is the new value of the filed value
+	 * @param value
+	 *            is the new value of the filed value
 	 */
 	public TLong(long value) {
 		this.value = value;
@@ -52,7 +54,8 @@ public final class TLong extends SimpleData {
 	/**
 	 * Sets the field value.
 	 * 
-	 * @param value is the new value of the field value
+	 * @param value
+	 *            is the new value of the field value
 	 */
 	public void setValue(long value) {
 		this.value = value;
@@ -115,7 +118,7 @@ public final class TLong extends SimpleData {
 	 * It returns true if the value of the objects are equal
 	 * It returns false if the value of the objects are different 
 	 */
-	public boolean equals(SimpleData el) {
+	public boolean equals(SimpleData el, ActionContext context) {
 		return ((TLong) el).value == value;
 	}
 }

@@ -147,6 +147,10 @@ public class ChainHandler implements Runnable {
 				input.releaseIterator(itr, actions);
 			}
 		}
+
+		if (!actions.isTransferedComputation()) {
+			net.signalChainTerminated(currentChain, actions.getNewChildren());
+		}
 	}
 
 	private boolean getSubmissionFailed() {

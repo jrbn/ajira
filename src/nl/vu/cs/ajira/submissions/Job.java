@@ -21,6 +21,7 @@ public class Job implements Writable {
 	private boolean printIntermediateStats = false;
 	private boolean printStatistics = true;
 	private ActionSequence actions;
+	private JobProperties properties;
 
 	@Override
 	public void readFrom(DataInput input) throws IOException {
@@ -42,6 +43,12 @@ public class Job implements Writable {
 				throw new Error("Internal error", e);
 			}
 		}
+
+		n = input.readInt();
+		if (n != 0) {
+			properties = new JobProperties();
+			properties.readFrom(input);
+		}
 	}
 
 	@Override
@@ -58,13 +65,43 @@ public class Job implements Writable {
 		} else {
 			output.writeInt(0);
 		}
+		if (properties != null) {
+			output.writeInt(1);
+			properties.writeTo(output);
+		} else {
+			output.writeInt(0);
+		}
 	}
 
 	public void setActions(ActionSequence actions) {
 		this.actions = actions;
 	}
 
+	public void setProperties(JobProperties properties) {
+		this.properties = properties;
+	}
+
+	public JobProperties getProperties() {
+		return properties;
+	}
+
 	public ActionSequence getActions() {
 		return actions;
+	}
+
+	public void setPrintIntermediateStats(boolean value) {
+		printIntermediateStats = value;
+	}
+
+	public void setPrintStatistics(boolean value) {
+		printStatistics = value;
+	}
+
+	public boolean getprintIntermediateStats() {
+		return printIntermediateStats;
+	}
+
+	public boolean getPrintStatistics() {
+		return printStatistics;
 	}
 }

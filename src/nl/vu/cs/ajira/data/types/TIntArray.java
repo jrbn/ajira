@@ -5,13 +5,14 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Arrays;
 
+import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.utils.Consts;
 
 /**
  * 
- * This class provides the methods that are needed in 
- * order to manipulate an array of int values. 
- *
+ * This class provides the methods that are needed in order to manipulate an
+ * array of int values.
+ * 
  */
 public class TIntArray extends SimpleData {
 
@@ -19,7 +20,9 @@ public class TIntArray extends SimpleData {
 
 	/**
 	 * Creates a new TIntArray and sets the size of its field.
-	 * @param size is the size of the array
+	 * 
+	 * @param size
+	 *            is the size of the array
 	 */
 	public TIntArray(int size) {
 		array = new int[size];
@@ -27,18 +30,20 @@ public class TIntArray extends SimpleData {
 
 	/**
 	 * Creates a new TIntArray and sets its field.
-	 * @param array is the new array of the object
+	 * 
+	 * @param array
+	 *            is the new array of the object
 	 */
 	public TIntArray(int[] array) {
 		this.array = array;
 	}
 
 	/**
-	 * Creates an empty TIntArray object. 
+	 * Creates an empty TIntArray object.
 	 */
 	public TIntArray() {
 	}
-	
+
 	/**
 	 * 
 	 * @return the field of the class
@@ -50,7 +55,8 @@ public class TIntArray extends SimpleData {
 	/**
 	 * Sets the field of the class.
 	 * 
-	 * @param array is the new array of the object
+	 * @param array
+	 *            is the new array of the object
 	 */
 	public void setArray(int[] array) {
 		this.array = array;
@@ -155,7 +161,7 @@ public class TIntArray extends SimpleData {
 	 * It returns true if they are equal
 	 * It returns false if they are not equal 
 	 */
-	public boolean equals(SimpleData el) {
+	public boolean equals(SimpleData el, ActionContext context) {
 		return compareTo(el) == 0;
 	}
 }

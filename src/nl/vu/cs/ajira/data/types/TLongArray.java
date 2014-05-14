@@ -5,13 +5,14 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Arrays;
 
+import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.utils.Consts;
 
 /**
  * 
- * This class provides the methods that are needed in 
- * order to manipulate an array of long values. 
- *
+ * This class provides the methods that are needed in order to manipulate an
+ * array of long values.
+ * 
  */
 public class TLongArray extends SimpleData {
 
@@ -19,7 +20,9 @@ public class TLongArray extends SimpleData {
 
 	/**
 	 * Creates a new TLongArray and sets the size of its field.
-	 * @param size is the size of the array
+	 * 
+	 * @param size
+	 *            is the size of the array
 	 */
 	public TLongArray(int size) {
 		array = new long[size];
@@ -27,14 +30,16 @@ public class TLongArray extends SimpleData {
 
 	/**
 	 * Creates a new TLongArray and sets its field.
-	 * @param array is the new array of the object
+	 * 
+	 * @param array
+	 *            is the new array of the object
 	 */
 	public TLongArray(long[] array) {
 		this.array = array;
 	}
-	
+
 	/**
-	 * Creates an empty TLongArray object. 
+	 * Creates an empty TLongArray object.
 	 */
 	public TLongArray() {
 	}
@@ -50,7 +55,8 @@ public class TLongArray extends SimpleData {
 	/**
 	 * Sets the field of the class.
 	 * 
-	 * @param array is the new array of the object
+	 * @param array
+	 *            is the new array of the object
 	 */
 	public void setArray(long[] array) {
 		this.array = array;
@@ -149,7 +155,25 @@ public class TLongArray extends SimpleData {
 	 * It returns true if they are equal
 	 * It returns false if they are not equal 
 	 */
-	public boolean equals(SimpleData el) {
-		return compareTo(el) == 0;
+	public boolean equals(SimpleData el, ActionContext context) {
+		long[] array2 = ((TLongArray) el).array;
+		if (array == null) {
+			if (array2 == null) {
+				return true;
+			}
+			return false;
+		}
+		if (array2 == null) {
+			return false;
+		}
+		if (array.length != array2.length) {
+			return false;
+		}
+		for (int i = 0; i < array.length; i++) {
+			if (array[i] != array2[i]) {
+				return false;
+			}
+		}
+		return true;
 	}
 }

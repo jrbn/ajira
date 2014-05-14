@@ -4,7 +4,6 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-import nl.vu.cs.ajira.data.types.SimpleData;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.data.types.bytearray.BDataOutput;
@@ -92,23 +91,33 @@ public class WritableTuple implements Writable {
 	 *            Initial tuple (acts as a transfer buffer)
 	 */
 	public WritableTuple(Tuple tuple) {
-		this.tuple = tuple;
-	}
-
-	public WritableTuple(SimpleData... data) {
-		this(TupleFactory.newTuple(data));
+		setTuple(tuple);
 	}
 
 	public void setTuple(Tuple tuple) {
-		if (nFields == 0) {
+		if (nFields == 0 || nFields != tuple.getNElements()) {
 			nFields = tuple.getNElements();
+
+			if (fieldsToSort != null) {
+				lengths = new int[fieldsToSort.length];
+				otherFields = new byte[nFields - fieldsToSort.length];
+
+				int c = 0;
+				for (int i = 0; i < nFields && c < otherFields.length; ++i) {
+					boolean found = false;
+					for (int j = 0; j < fieldsToSort.length && !found; ++j) {
+						if (fieldsToSort[j] == i) {
+							found = true;
+						}
+					}
+					if (!found) {
+						otherFields[c++] = (byte) i;
+					}
+				}
+			} else {
+				lengths = new int[nFields];
+			}
 		}
-		/*
-		 * if (log.isDebugEnabled() && nFields != tuple.getNElements() &&
-		 * nFields != 0) {
-		 * log.debug("Setting tuple to different number of elements!", new
-		 * Throwable()); }
-		 */
 		this.tuple = tuple;
 	}
 
@@ -121,7 +130,16 @@ public class WritableTuple implements Writable {
 	 */
 	@Override
 	public void readFrom(DataInput input) throws IOException {
-
+		int n = input.readUnsignedByte();
+		if (n != tuple.getNElements()) {
+			// SimpleData[] els = new SimpleData[n];
+			// for (int i = 0; i < n; i++) {
+			// els[i] = tuple.get(i);
+			// }
+			// tuple.set(els);
+			// setTuple(tuple);
+			throw new IOException("The tuple does not match the container");
+		}
 		if (shouldSort) {
 			// First skip a number of bytes
 			if (fieldsToSort != null) {
@@ -139,11 +157,6 @@ public class WritableTuple implements Writable {
 		}
 
 		for (int i = 0; i < tuple.getNElements(); ++i) {
-			/*
-			 * if (log.isDebugEnabled()) {
-			 * log.debug("readFrom, tuple.getNElements = " +
-			 * tuple.getNElements() + ", i = " + i); }
-			 */
 			tuple.get(i).readFrom(input);
 		}
 	}
@@ -156,6 +169,7 @@ public class WritableTuple implements Writable {
 	 */
 	@Override
 	public void writeTo(DataOutput output) throws IOException {
+		output.writeByte((byte) nFields);
 		if (shouldSort) {
 			// First write the fields that need to be sorted
 			BDataOutput o = (BDataOutput) output;

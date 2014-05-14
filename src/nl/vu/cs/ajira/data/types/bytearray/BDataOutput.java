@@ -42,6 +42,16 @@ public class BDataOutput implements DataOutput {
 		cb.end = bufferSize;
 	}
 
+	/**
+	 * Sets the buffer of cb.
+	 * 
+	 * @param buffer
+	 *            is the new buffer of cb
+	 */
+	public void setBuffer(byte[] buffer) {
+		cb.buffer = buffer;
+	}
+
 	@Override
 	/**
 	 * Adds b at the end of the ByteArray's buffer if there is enough space.

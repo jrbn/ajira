@@ -7,11 +7,14 @@ public class Consts {
 	public static final double MIN_MEMORY_SIZE_BEFORE_CLEANING = 0.10;
 	public static final int N_ELEMENTS_TO_SAMPLE = 10;
 
+	public static final int MAX_TUPLE_ELEMENTS = 64;
 	public static final int MAX_N_ACTIONS = 128;
-	public static final int CHAIN_SIZE = 10 * 1024;
+	public static final int INITIAL_CHAIN_SIZE = 4 * 1024;
 
 	public static final int MAXM = (int) (Runtime.getRuntime().maxMemory() / (256 * 1024 * 1024));
 
+	public static final int MAX_SIZE = 128 * 1024 * 1024; // Maximum of
+															// TUPLES_CONTAINER_MAX_BUFFER_SIZE
 	public static final int TUPLES_CONTAINER_MAX_BUFFER_SIZE = (MAXM > 128 ? 128
 			: MAXM > 64 ? 64 : MAXM > 32 ? 32 : MAXM > 16 ? 16 : 8) * 1024 * 1024;
 	// public static final int TUPLES_CONTAINER_MAX_BUFFER_SIZE = 256 * 1024;
@@ -59,5 +62,5 @@ public class Consts {
 
 	public static final String BUCKETCOUNTER_NAME = "ajira.BucketCounter";
 	public static final String CHAINCOUNTER_NAME = "ajira.ChainCounter";
-
+	public static final String SEND_TUPLES_COMPRESSED = "ajira.compressTuples";
 }

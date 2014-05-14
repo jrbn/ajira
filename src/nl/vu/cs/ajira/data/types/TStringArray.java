@@ -5,28 +5,31 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Arrays;
 
+import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.utils.Consts;
 
 /**
  * 
- * This class provides the methods that are needed in 
- * order to manipulate an array of String values. 
- *
+ * This class provides the methods that are needed in order to manipulate an
+ * array of String values.
+ * 
  */
 public class TStringArray extends SimpleData {
 
 	String[] array;
-	
+
 	/**
 	 * Creates a new StringArray and sets its field.
-	 * @param array is the new array of the object
+	 * 
+	 * @param array
+	 *            is the new array of the object
 	 */
 	public TStringArray(String[] array) {
 		this.array = array;
 	}
-	
+
 	/**
-	 * Creates an empty TStringArray object. 
+	 * Creates an empty TStringArray object.
 	 */
 	public TStringArray() {
 	}
@@ -39,11 +42,11 @@ public class TStringArray extends SimpleData {
 		return array;
 	}
 
-
 	/**
 	 * Sets the field of the class.
 	 * 
-	 * @param array is the new array of the object
+	 * @param array
+	 *            is the new array of the object
 	 */
 	public void setArray(String[] array) {
 		this.array = array;
@@ -147,7 +150,7 @@ public class TStringArray extends SimpleData {
 	 * It returns true if they are equal
 	 * It returns false if they are not equal 
 	 */
-	public boolean equals(SimpleData el) {
+	public boolean equals(SimpleData el, ActionContext context) {
 		return compareTo(el) == 0;
 	}
 }

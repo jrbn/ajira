@@ -100,9 +100,14 @@ public class ByteArray {
 	public void readFrom(DataInput input) throws IOException {
 		start = 0;
 		int len = input.readInt();
-		grow(len);
+		if (!grow(len)) {
+			System.err.println("OOPS: could not grow to length " + len
+					+ ", maxSize = " + maxSize);
+		}
 		end = len;
-		input.readFully(buffer, 0, end);
+		if (len > 0) {
+			input.readFully(buffer, 0, end);
+		}
 	}
 
 	public void writeRaw(DataOutput out) throws IOException {
@@ -132,11 +137,13 @@ public class ByteArray {
 			size = end - start;
 			output.writeInt(size);
 			output.write(buffer, start, end - start);
-		} else {
+		} else if (end < start) {
 			size = end + buffer.length - start;
 			output.writeInt(size);
 			output.write(buffer, start, buffer.length - start);
 			output.write(buffer, 0, end);
+		} else {
+			output.writeInt(0);
 		}
 	}
 

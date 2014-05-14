@@ -5,6 +5,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Arrays;
 
+import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.storage.RawComparator;
 import nl.vu.cs.ajira.utils.Consts;
 
@@ -132,7 +133,7 @@ public class TByteArray extends SimpleData {
 	 * It returns true if they are equal
 	 * It returns false if they are not equal 
 	 */
-	public boolean equals(SimpleData el) {
+	public boolean equals(SimpleData el, ActionContext context) {
 		return compareTo(el) == 0;
 	}
 

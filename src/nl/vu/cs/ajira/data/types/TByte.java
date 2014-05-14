@@ -4,8 +4,8 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
+import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.utils.Consts;
-
 
 public class TByte extends SimpleData {
 
@@ -14,7 +14,8 @@ public class TByte extends SimpleData {
 	/**
 	 * Creates a new TByte and sets the filed value.
 	 * 
-	 * @param b is the new value of the filed value
+	 * @param b
+	 *            is the new value of the filed value
 	 */
 	public TByte(int b) {
 		value = b;
@@ -69,7 +70,8 @@ public class TByte extends SimpleData {
 	/**
 	 * Sets the field value.
 	 * 
-	 * @param value is the new value of the field value
+	 * @param value
+	 *            is the new value of the field value
 	 */
 	public void setValue(int value) {
 		this.value = value;
@@ -110,7 +112,7 @@ public class TByte extends SimpleData {
 	 * It returns true if the value of the objects are equal
 	 * It returns false if the value of the objects are different 
 	 */
-	public boolean equals(SimpleData el) {
+	public boolean equals(SimpleData el, ActionContext context) {
 		return ((TByte) el).value == value;
 	}
 }

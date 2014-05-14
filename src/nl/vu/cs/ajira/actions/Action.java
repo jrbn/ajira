@@ -3,6 +3,7 @@ package nl.vu.cs.ajira.actions;
 import java.io.IOException;
 
 import nl.vu.cs.ajira.data.types.TIntArray;
+import nl.vu.cs.ajira.data.types.TLongArray;
 import nl.vu.cs.ajira.data.types.TStringArray;
 import nl.vu.cs.ajira.data.types.Tuple;
 import nl.vu.cs.ajira.data.types.bytearray.BDataInput;
@@ -271,6 +272,27 @@ public abstract class Action {
 		Object o = getParam(pos);
 		if (o != null) {
 			return ((TIntArray) o).getArray();
+		}
+		return null;
+	}
+
+	/**
+	 * Obtains the parameter, supposed to be of type <code>long[]</code>, at the
+	 * specified position.
+	 * 
+	 * @param pos
+	 *            the index of the required parameter.
+	 * @return the value of the parameter.
+	 * @throws IllegalArgumentException
+	 *             when there are no parameters, or the specified position is
+	 *             out of range.
+	 * @throws ClassCastException
+	 *             when the specified parameter is of the wrong type.
+	 */
+	protected final long[] getParamLongArray(int pos) {
+		Object o = getParam(pos);
+		if (o != null) {
+			return ((TLongArray) o).getArray();
 		}
 		return null;
 	}

@@ -15,14 +15,12 @@
 </encoder>
 </appender>
 
-<!--
-<root level="debug">
-<appender-ref ref="STDOUT" />
+<root level="warn">
+<appender-ref ref="FILE" />
 </root>
--->
 
 <logger name="nl.vu.cs.ajira">
-<level value="warn" />
+<level value="info" />
 </logger>
 
 </configuration>

@@ -1,31 +1,62 @@
 package nl.vu.cs.ajira.chains;
 
+/*
+ * Represents a range of nodes. Special cases are predefined.
+ */
 public class Location {
 
-	public static final int V_ALL_NODES = -1;
-	public static final int V_THIS_NODE = -2;
+	private static final int V_ALL_NODES = -1;
+	private static final int V_THIS_NODE = -2;
 
-	int nodeId = -1;
+	private final int startNode;
+	private final int endNode;
 
 	/**
-	 * Custom constructor. Sets the id of the node.
+	 * Constructor that specifies a range consisting of a single node.
+	 * 
 	 * @param nodeId
-	 * 		The new value of the nodeId.
+	 *            The new value of the nodeId.
 	 */
 	public Location(int nodeId) {
-		this.nodeId = nodeId;
+		this.startNode = nodeId;
+		this.endNode = nodeId;
 	}
 
+	/**
+	 * Constructor specifying a range from <code>start</code> to
+	 * <code>end</code>.
+	 * 
+	 * @param start
+	 *            start of the range
+	 * @param end
+	 *            end of the range (included in the range)
+	 */
+	public Location(int start, int end) {
+		this.startNode = start;
+		this.endNode = end;
+	}
+
+	/** Special case: range indicating the current node. */
 	public static final Location THIS_NODE = new Location(V_THIS_NODE);
+
+	/** Special case: range indicating all nodes. */
 	public static final Location ALL_NODES = new Location(V_ALL_NODES);
 
 	/**
+	 * Returns the start of the range.
 	 * 
-	 * @return
-	 * 		The node id.
+	 * @return the start
 	 */
-	public int getValue() {
-		return nodeId;
+	public int getStart() {
+		return startNode;
 	}
 
+	/**
+	 * Returns the end of the range.
+	 * 
+	 * @return the end
+	 */
+	public int getEnd() {
+		return endNode;
+	}
 }

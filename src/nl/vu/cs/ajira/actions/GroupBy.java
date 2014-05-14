@@ -25,6 +25,7 @@ public class GroupBy extends Action {
 		private int sizeKey;
 		boolean elementAvailable;
 		boolean moreGroups;
+		private ActionContext context;
 
 		private Tuple inputTuple;
 
@@ -32,11 +33,13 @@ public class GroupBy extends Action {
 		private Tuple outputTuple;
 
 		public GroupIterator(TupleIterator itr, Tuple inputTuple,
-				SimpleData[] key, int sizeKey) throws Exception {
+				SimpleData[] key, int sizeKey, ActionContext context)
+				throws Exception {
 			this.itr = itr;
 			this.key = key;
 			this.sizeKey = sizeKey;
 			this.inputTuple = inputTuple;
+			this.context = context;
 
 			// The values are a copy of the current tuple
 			this.sValues = new SimpleData[inputTuple.getNElements() - sizeKey];
@@ -85,7 +88,8 @@ public class GroupBy extends Action {
 					if (nextElement) {
 						itr.getTuple(inputTuple);
 						for (int i = 0; i < sizeKey && elementAvailable; ++i) {
-							elementAvailable = inputTuple.get(i).equals(key[i]);
+							elementAvailable = inputTuple.get(i).equals(key[i],
+									context);
 						}
 					} else {
 						elementAvailable = false;
@@ -128,7 +132,7 @@ public class GroupBy extends Action {
 			// parameter
 			ActionConf partition = ActionFactory
 					.getActionConf(PartitionToNodes.class);
-			
+
 			params[BA_FIELDS_TO_GROUP] = convertToBytes(params[BA_FIELDS_TO_GROUP]);
 
 			partition.setParamBoolean(PartitionToNodes.B_SORT, true);
@@ -149,10 +153,11 @@ public class GroupBy extends Action {
 
 	@Override
 	public void registerActionParameters(ActionConf conf) {
-		conf.registerParameter(BA_FIELDS_TO_GROUP, "FIELDS_TO_GROUP", null, true);
+		conf.registerParameter(BA_FIELDS_TO_GROUP, "FIELDS_TO_GROUP", null,
+				true);
 		conf.registerParameter(SA_TUPLE_FIELDS, "TUPLE_FIELDS", null, true);
-		conf.registerParameter(I_NPARTITIONS_PER_NODE, "NPARTITIONS_PER_NODE", null,
-				false);
+		conf.registerParameter(I_NPARTITIONS_PER_NODE, "NPARTITIONS_PER_NODE",
+				null, false);
 		conf.registerCustomConfigurator(new Configurator());
 	}
 
@@ -168,7 +173,7 @@ public class GroupBy extends Action {
 			ActionOutput actionOutput) throws Exception {
 
 		itr = new GroupIterator(context.getInputIterator(), tuple, outputTuple,
-				posFieldsToGroup.length);
+				posFieldsToGroup.length, context);
 		outputTuple[posFieldsToGroup.length] = new TBag(itr);
 		do {
 			itr.initKey();

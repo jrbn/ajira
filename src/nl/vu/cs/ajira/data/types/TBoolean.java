@@ -4,13 +4,14 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
+import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.utils.Consts;
 
 /**
  * 
- * This class provides the methods that are needed in 
- * order to manipulate a Boolean value. 
- *
+ * This class provides the methods that are needed in order to manipulate a
+ * Boolean value.
+ * 
  */
 public final class TBoolean extends SimpleData {
 
@@ -19,7 +20,8 @@ public final class TBoolean extends SimpleData {
 	/**
 	 * Creates a new TBoolean and sets the filed value.
 	 * 
-	 * @param b is the new value of the filed value
+	 * @param b
+	 *            is the new value of the filed value
 	 */
 	public TBoolean(boolean b) {
 		value = b;
@@ -42,7 +44,8 @@ public final class TBoolean extends SimpleData {
 	/**
 	 * Sets the field value.
 	 * 
-	 * @param value is the new value of the field value
+	 * @param value
+	 *            is the new value of the field value
 	 */
 	public void setValue(boolean value) {
 		this.value = value;
@@ -121,7 +124,7 @@ public final class TBoolean extends SimpleData {
 	 * It returns true if the value of the objects are equal
 	 * It returns false if the value of the objects are different 
 	 */
-	public boolean equals(SimpleData el) {
+	public boolean equals(SimpleData el, ActionContext context) {
 		return ((TBoolean) el).value == value;
 	}
 

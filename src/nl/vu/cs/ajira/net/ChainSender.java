@@ -77,7 +77,7 @@ class ChainSender implements Runnable {
 						chain.branch(supportChain, context
 								.getChainCounter(chain.getSubmissionId()), 0);
 
-						if (nodes[i].compareTo(ibis.ibis.identifier()) == 0) {
+						if (nodes[i].compareTo(ibis.clusterIbis.identifier()) == 0) {
 							chainsToProcess.add(supportChain);
 						} else {
 							msg = ibis.getMessageToSend(nodes[i],
@@ -91,7 +91,7 @@ class ChainSender implements Runnable {
 						i--;
 					}
 
-					if (nodes[0].compareTo(ibis.ibis.identifier()) == 0) {
+					if (nodes[0].compareTo(ibis.clusterIbis.identifier()) == 0) {
 						chainsToProcess.add(chain);
 					} else {
 						msg = ibis.getMessageToSend(nodes[0],

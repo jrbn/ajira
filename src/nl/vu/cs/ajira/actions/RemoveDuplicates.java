@@ -39,7 +39,7 @@ public class RemoveDuplicates extends Action {
 			output.output(inputTuple);
 			first = false;
 			different++;
-		} else if (!inputTuple.equals(tuple)) {
+		} else if (inputTuple.compareTo(tuple) != 0) {
 			inputTuple.copyTo(tuple);
 			output.output(inputTuple);
 			different++;

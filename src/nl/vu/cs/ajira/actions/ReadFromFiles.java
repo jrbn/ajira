@@ -98,8 +98,6 @@ public class ReadFromFiles extends Action {
 		c.setParamString(QueryInputLayer.S_INPUTLAYER,
 				FileLayer.class.getName());
 		c.setParamWritable(QueryInputLayer.W_QUERY, new Query(tuple));
-		c.setParamStringArray(QueryInputLayer.SA_SIGNATURE_QUERY,
-				tuple.getSignature());
 		output.branch(new ActionSequence(c));
 
 		currentFileSplit = new FileCollection();

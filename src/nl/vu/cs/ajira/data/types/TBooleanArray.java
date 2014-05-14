@@ -5,13 +5,14 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.util.Arrays;
 
+import nl.vu.cs.ajira.actions.ActionContext;
 import nl.vu.cs.ajira.utils.Consts;
 
 /**
  * 
- * This class provides the methods that are needed in 
- * order to manipulate an array of boolean values. 
- *
+ * This class provides the methods that are needed in order to manipulate an
+ * array of boolean values.
+ * 
  */
 public class TBooleanArray extends SimpleData {
 
@@ -19,7 +20,9 @@ public class TBooleanArray extends SimpleData {
 
 	/**
 	 * Creates a new TBooleanArray and sets the size of its field.
-	 * @param size is the size of the array
+	 * 
+	 * @param size
+	 *            is the size of the array
 	 */
 	public TBooleanArray(int size) {
 		array = new boolean[size];
@@ -27,14 +30,16 @@ public class TBooleanArray extends SimpleData {
 
 	/**
 	 * Creates a new TBooleanArray and sets its field.
-	 * @param array is the new array of the object
+	 * 
+	 * @param array
+	 *            is the new array of the object
 	 */
 	public TBooleanArray(boolean[] array) {
 		this.array = array;
 	}
 
 	/**
-	 * Creates a empty TBooleanArray. 
+	 * Creates a empty TBooleanArray.
 	 */
 	public TBooleanArray() {
 	}
@@ -50,7 +55,8 @@ public class TBooleanArray extends SimpleData {
 	/**
 	 * Sets the field of the class.
 	 * 
-	 * @param array is the new array of the object
+	 * @param array
+	 *            is the new array of the object
 	 */
 	public void setArray(boolean[] array) {
 		this.array = array;
@@ -155,7 +161,7 @@ public class TBooleanArray extends SimpleData {
 	 * It returns true if they are equal
 	 * It returns false if they are not equal 
 	 */
-	public boolean equals(SimpleData el) {
+	public boolean equals(SimpleData el, ActionContext context) {
 		return compareTo(el) == 0;
 	}
 }

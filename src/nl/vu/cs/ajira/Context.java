@@ -225,25 +225,22 @@ public class Context {
 	}
 
 	public void killSubmission(int submissionNode, int submissionId, Throwable e) {
-		if (localMode) {
-			cleanupSubmission(submissionNode, submissionId, e);
-		} else {
-			WriteMessage msg = null;
-			try {
-				msg = net.getMessageToBroadcast();
-				msg.writeByte((byte) 2);
-				msg.writeBoolean(true);
-				msg.writeInt(submissionId);
-				msg.writeInt(submissionNode);
-				msg.writeObject(e);
-				msg.finish();
-			} catch (IOException ex) {
-				// What else ... we could not communicate failure.
-				cleanupSubmission(submissionNode, submissionId, e);
-				if (msg != null) {
-					msg.finish(ex);
-				}
+		WriteMessage msg = null;
+		try {
+			msg = net.getMessageToBroadcast();
+			msg.writeByte((byte) 2);
+			msg.writeBoolean(true);
+			msg.writeInt(submissionId);
+			msg.writeInt(submissionNode);
+			msg.writeObject(e);
+			msg.finish();
+		} catch (IOException ex) {
+			// What else ... we could not communicate failure.
+			if (msg != null) {
+				msg.finish(ex);
 			}
+		} finally {
+			cleanupSubmission(submissionNode, submissionId, e);
 		}
 	}
 

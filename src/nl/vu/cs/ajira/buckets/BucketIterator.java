@@ -59,11 +59,14 @@ public class BucketIterator extends TupleIterator {
 		byte[] sig = bucket.getSignature();
 		this.signature = new SimpleData[sig.length];
 		if (log.isDebugEnabled()) {
-			log.debug("initializing iterator for bucket " + bucket.getKey()
-					+ ", signature.length - " + sig.length);
+			log.debug("initializing iterator for bucket " + bucket.getKey());
 		}
-		for (int i = 0; i < signature.length; ++i) {
-			this.signature[i] = DataProvider.get().get(sig[i]);
+		for (int i = 0; i < sig.length; ++i) {
+			int j = i;
+			if (j >= sig.length) {
+				j = sig.length - 1;
+			}
+			this.signature[i] = DataProvider.get().get(sig[j]);
 		}
 	}
 

@@ -11,14 +11,18 @@ import ibis.ipl.WriteMessage;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
 import nl.vu.cs.ajira.buckets.WritableTuple;
+import nl.vu.cs.ajira.data.types.DataProvider;
 import nl.vu.cs.ajira.data.types.Tuple;
+import nl.vu.cs.ajira.data.types.TupleFactory;
 import nl.vu.cs.ajira.exceptions.JobFailedException;
 import nl.vu.cs.ajira.net.NetworkLayer;
 import nl.vu.cs.ajira.net.ReadMessageWrapper;
@@ -44,6 +48,7 @@ public class AjiraClient {
 	private boolean closed = false;
 	private boolean getResultCalled = false;
 	private long bucketKey = -1L;
+	private double time;
 
 	/**
 	 * Constructs an Ajira client from an Ajira cluster described by the
@@ -60,13 +65,16 @@ public class AjiraClient {
 
 		Properties properties = new Properties();
 
-		properties.load(new BufferedInputStream(new FileInputStream(filename)));
+		if (filename != null && new File(filename).exists()) {
+			properties.load(new BufferedInputStream(new FileInputStream(
+					filename)));
+		}
 
 		// Create an ibis.
 		try {
-			ibis = IbisFactory.createIbis(NetworkLayer.ibisCapabilities,
+			ibis = IbisFactory.createIbis(NetworkLayer.ibisServerCapabilities,
 					properties, true, null, NetworkLayer.mgmtRequestPortType,
-					NetworkLayer.queryPortType);
+					NetworkLayer.queryAnswerPortType);
 		} catch (IbisCreationFailedException e) {
 			throw new IOException("Could not create Ibis", e);
 		}
@@ -76,7 +84,7 @@ public class AjiraClient {
 		// answers from the cluster.
 		try {
 			server = ibis.registry().getElectionResult("server");
-			rp = ibis.createReceivePort(NetworkLayer.queryPortType,
+			rp = ibis.createReceivePort(NetworkLayer.queryAnswerPortType,
 					NetworkLayer.queryReceiverPort);
 		} catch (IOException e) {
 			log.error("Could not get server", e);
@@ -90,7 +98,7 @@ public class AjiraClient {
 		WriteMessage msg = null;
 		try {
 			sp = ibis.createSendPort(NetworkLayer.mgmtRequestPortType);
-			sp.connect(server, NetworkLayer.nameMgmtReceiverPort);
+			sp.connect(server, NetworkLayer.queryReceiverPort);
 			msg = sp.newMessage();
 			msg.writeByte((byte) 7);
 			job.writeTo(new WriteMessageWrapper(msg));
@@ -105,7 +113,7 @@ public class AjiraClient {
 		}
 	}
 
-	public boolean getResult(List<Tuple> v) throws JobFailedException {
+	public boolean getResult(ArrayList<Tuple> v) throws JobFailedException {
 
 		ReadMessage r;
 
@@ -138,20 +146,37 @@ public class AjiraClient {
 					close();
 				}
 			}
-			/* double time = */r.readDouble();
+			time = r.readDouble();
 			WritableContainer<WritableTuple> tmpBuffer = new WritableContainer<WritableTuple>(
 					Consts.TUPLES_CONTAINER_MAX_BUFFER_SIZE);
 			tmpBuffer.readFrom(new ReadMessageWrapper(r));
+
+			int lengthTuples = r.readInt();
+			byte[] signature = new byte[lengthTuples];
+			for (int i = 0; i < lengthTuples; ++i) {
+				signature[i] = r.readByte();
+			}
+
 			boolean isFinished = r.readBoolean();
 			if (!isFinished) {
 				bucketKey = r.readLong();
 			}
 			r.finish();
+
 			v.clear();
-			WritableTuple ts = new WritableTuple();
-			while (tmpBuffer.remove(ts)) {
-				v.add(ts.getTuple());
+			if (tmpBuffer.getNElements() > 0) {
+				WritableTuple ts = new WritableTuple();
+				Tuple t = TupleFactory.newTuple(DataProvider.get().getArrayOf(
+						signature));
+				ts.setTuple(t);
+				while (tmpBuffer.remove(ts)) {
+					v.add(t);
+					t = TupleFactory.newTuple(DataProvider.get().getArrayOf(
+							signature));
+					ts.setTuple(t);
+				}
 			}
+
 			if (isFinished) {
 				close();
 			}
@@ -162,7 +187,15 @@ public class AjiraClient {
 		}
 	}
 
-	boolean getMoreResults(List<Tuple> v) throws JobFailedException {
+	public double getTime() {
+		if (!getResultCalled) {
+			log.error("getResult() not called yet, time is not available");
+			return 0.0;
+		}
+		return time;
+	}
+
+	public boolean getMoreResults(List<Tuple> v) throws JobFailedException {
 		if (closed || !getResultCalled) {
 			log.error("getMoreResults called incorrectly");
 			throw new JobFailedException("getMoreResults called incorrectly",
@@ -173,16 +206,31 @@ public class AjiraClient {
 			msg.writeByte((byte) 9);
 			msg.writeLong(bucketKey);
 			msg.finish();
+
 			WritableContainer<WritableTuple> tmpBuffer = new WritableContainer<WritableTuple>(
-					Consts.TUPLES_CONTAINER_MAX_BUFFER_SIZE);
+					Consts.MAX_SIZE);
 			ReadMessage r = rp.receive();
 			tmpBuffer.readFrom(new ReadMessageWrapper(r));
+
+			int lengthTuples = r.readInt();
+			byte[] signature = new byte[lengthTuples];
+			for (int i = 0; i < lengthTuples; ++i) {
+				signature[i] = r.readByte();
+			}
+
 			boolean isFinished = r.readBoolean();
 			r.finish();
 			v.clear();
+
 			WritableTuple ts = new WritableTuple();
+			Tuple t = TupleFactory.newTuple(DataProvider.get().getArrayOf(
+					signature));
+			ts.setTuple(t);
 			while (tmpBuffer.remove(ts)) {
-				v.add(ts.getTuple());
+				v.add(t);
+				t = TupleFactory.newTuple(DataProvider.get().getArrayOf(
+						signature));
+				ts.setTuple(t);
 			}
 			if (isFinished) {
 				close();

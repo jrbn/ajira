@@ -91,32 +91,52 @@ public class Submission {
 		return counters;
 	}
 
-	public void printStatistics() {
-
-		String stats = "\n**************************************************\nOUTPUT OF JOB "
-				+ getSubmissionId()
-				+ ":\n-> status: "
-				+ getState()
-				+ "\n-> counters: ";
+	public String getStatistics() {
+		StringBuffer b = new StringBuffer();
+		b.append("\n**************************************************\nOUTPUT OF JOB ");
+		b.append(getSubmissionId());
+		b.append(":\n-> status: ");
+		b.append(getState());
+		b.append("\n-> counters: ");
 
 		if (counters != null) {
-			stats += "\n";
+			b.append("\n");
 			for (Map.Entry<String, Long> entry : counters.entrySet()) {
-				stats += " " + entry.getKey() + " = " + entry.getValue() + "\n";
+				b.append(" ");
+				b.append(entry.getKey());
+				b.append(" = ");
+				b.append(entry.getValue());
+				b.append("\n");
 			}
 		} else {
-			stats += "NONE";
+			b.append("NONE");
 		}
-		stats += "\n-> execution time: " + getExecutionTimeInMs() + " ms.";
+		b.append("\n-> execution time: ");
+		b.append(getExecutionTimeInMs());
+		b.append(" ms.\n");
+		b.append("**************************************************\n");
 
-		System.out.println(stats);
+		return b.toString();
+	}
+
+	public void printStatistics() {
+
+		String stats = getStatistics();
+
+		if (log.isInfoEnabled()) {
+			log.info(stats);
+		} else {
+			System.out.println(stats);
+		}
 
 		if (getState().equals(Consts.STATE_FAILED) && exception != null) {
-			System.out.println("Job failed with exception " + exception);
-			exception.printStackTrace(System.out);
+			if (log.isErrorEnabled()) {
+				log.error("Job failed with exception", exception);
+			} else {
+				System.err.println("Job failed with exception " + exception);
+				exception.printStackTrace(System.err);
+			}
 		}
-		System.out
-				.println("**************************************************\n");
 	}
 
 	public Throwable getException() {

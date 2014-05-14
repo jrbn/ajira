@@ -14,6 +14,7 @@ import nl.vu.cs.ajira.buckets.Bucket;
 import nl.vu.cs.ajira.buckets.Buckets;
 import nl.vu.cs.ajira.buckets.WritableTuple;
 import nl.vu.cs.ajira.chains.Chain;
+import nl.vu.cs.ajira.exceptions.JobFailedException;
 import nl.vu.cs.ajira.mgmt.StatisticsCollector;
 import nl.vu.cs.ajira.storage.Container;
 import nl.vu.cs.ajira.storage.Factory;
@@ -209,9 +210,9 @@ class Receiver implements MessageUpcall {
 			break;
 		case 3: // Termination
 			try {
-				context.getNetworkLayer().ibis.end();
+				context.getNetworkLayer().stopIbis();
 			} catch (Throwable e) {
-				log.error("Got exception in ibis.end()", e);
+				log.error("Got exception in stopIbis()", e);
 			}
 			System.exit(0);
 			break;
@@ -241,17 +242,21 @@ class Receiver implements MessageUpcall {
 			isSorted = message.readBoolean();
 			boolean data = message.readBoolean();
 			if (data) {
+                                boolean compressed = message.readBoolean();
 				net.removeActiveRequest(ticket);
 
 				WritableContainer<WritableTuple> container = bufferFactory
 						.get();
 				container.init(isSortingBucket);
 
-				// container.readFrom(new ReadMessageWrapper(message));
-				int s = message.readInt();
-				byte[] compressed_size = new byte[s];
-				message.readArray(compressed_size, 0, s);
-				container.decompressFrom(compressed_size, s);
+                                if (compressed) {
+                                    int s = message.readInt();
+                                    byte[] compressed_size = new byte[s];
+                                    message.readArray(compressed_size, 0, s);
+                                    container.decompressFrom(compressed_size, s);
+                                } else {
+                                    container.readFrom(new ReadMessageWrapper(message));
+                                }
 
 				boolean isFinished = message.readBoolean();
 				endMessage(message, time, submissionId, true);
@@ -330,7 +335,6 @@ class Receiver implements MessageUpcall {
 					bucket = buckets.getExistingBucket(
 							submission.getSubmissionId(),
 							submission.getAssignedBucket());
-
 					tmpBuffer = bucket.removeWChunk(retval);
 				} else {
 					retval[0] = true;
@@ -338,8 +342,18 @@ class Receiver implements MessageUpcall {
 				}
 				// Write a reply to the origin containing the results of this
 				// submission
-
 				tmpBuffer.writeTo(new WriteMessageWrapper(reply));
+
+				if (bucket != null) {
+					byte[] sign = bucket.getSignature();
+					reply.writeInt(sign.length);
+					for (int i = 0; i < sign.length; ++i) {
+						reply.writeByte(sign[i]);
+					}
+				} else {
+					reply.writeInt(0);
+				}
+
 				reply.writeBoolean(retval[0]);
 				if (!retval[0]) {
 					reply.writeLong(bucket.getKey());
@@ -349,6 +363,9 @@ class Receiver implements MessageUpcall {
 				bufferFactory.release(tmpBuffer);
 				tmpBuffer = null;
 				context.getSubmissionsRegistry().getStatistics(submission);
+				if (job.getPrintStatistics()) {
+					submission.printStatistics();
+				}
 
 				if (retval[0]) {
 					buckets.removeBucketsOfSubmission(submission
@@ -361,7 +378,12 @@ class Receiver implements MessageUpcall {
 				// Marshal the exception.
 				ByteArrayOutputStream bo = new ByteArrayOutputStream();
 				ObjectOutputStream o = new ObjectOutputStream(bo);
-				o.writeObject(submission.getException());
+				Throwable e = submission.getException();
+				if (!(e instanceof JobFailedException)) {
+					e = new JobFailedException(
+							"Job failed with exception " + e, e);
+				}
+				o.writeObject(e);
 				o.flush();
 				o.close();
 				byte[] buf = bo.toByteArray();
@@ -402,6 +424,13 @@ class Receiver implements MessageUpcall {
 			reply = net.getMessageToSend(message.origin().ibisIdentifier(),
 					NetworkLayer.queryReceiverPort);
 			tmpBuffer.writeTo(new WriteMessageWrapper(reply));
+
+			byte[] sign = bucket.getSignature();
+			reply.writeInt(sign.length);
+			for (int i = 0; i < sign.length; ++i) {
+				reply.writeByte(sign[i]);
+			}
+
 			reply.writeBoolean(retval[0]);
 			reply.finish();
 

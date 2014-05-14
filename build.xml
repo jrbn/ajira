@@ -2,7 +2,7 @@
 
 <project name="ajira" default="jar" basedir=".">
 
-	<property name="VERSION" value="0.2" />
+	<property name="VERSION" value="0.3" />
 	<property name="debuglevel"    value="source,lines,vars" />
 	<property name="BUILD_PATH" value="build" />
 	<property name="SRC_PATH" value="src" />
@@ -23,6 +23,7 @@
 		<delete file="${AJIRA_JAR_LOCATION}" />
 		<delete file="${AJIRA_FAT_JAR_LOCATION}" />
 		<delete file="${JAR_WEBAPPS_LOCATION}" />
+		<delete file="src.zip" />
 	</target>
 
 	<target name="init">
@@ -66,6 +67,7 @@
 			<fileset dir="${BUILD_PATH}" includes="**/*.class"/>
 			<fileset dir="." includes ="jsp/**/*.jsp"/>
 			<fileset dir="." includes ="src.zip"/>
+			<fileset dir="." includes ="LICENSE"/>
 			<manifest>
 				<attribute name="Main-Class" value="nl.vu.cs.ajira.Ajira" />
 			</manifest>

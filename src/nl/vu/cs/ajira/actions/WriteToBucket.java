@@ -41,10 +41,27 @@ public class WriteToBucket extends Action {
 	 */
 	public static final int B_STREAMING = 2;
 
+	/**
+	 * The <code>B_FORWARD_TUPLES</code> parameter is used to determine whether
+	 * the tuples in input should be passed to the next actions in the chain.
+	 * Default is FALSE.
+	 * 
+	 */
+	public static final int B_FORWARD = 3;
+
+	/**
+	 * If this parameter is set, then the action will output at the end one
+	 * tuple with a pair of (TInt,TInt) where it is written the node ID and the
+	 * bucket ID where the tuples are stored.
+	 */
+	public static final int B_OUTPUT_BUCKET_ID = 4;
+
 	private Bucket bucket = null;
 	private int bucketID;
 	private byte[] fields;
 	private boolean streaming;
+	private boolean forward;
+	private boolean outputnode;
 
 	private static class ParametersProcessor extends ActionConf.Configurator {
 		@Override
@@ -60,8 +77,9 @@ public class WriteToBucket extends Action {
 			params[SA_TUPLE_FIELDS] = f;
 
 			if (params[I_BUCKET_ID] == null) {
-				params[I_BUCKET_ID] = -1;
+				params[I_BUCKET_ID] = context.getNewBucketID();
 			}
+			controller.setOutputBucket((Integer)(params[I_BUCKET_ID]));
 		}
 	}
 
@@ -70,6 +88,9 @@ public class WriteToBucket extends Action {
 		conf.registerParameter(I_BUCKET_ID, "I_BUCKET_ID", null, false);
 		conf.registerParameter(SA_TUPLE_FIELDS, "SA_TUPLE_FIELDS", null, true);
 		conf.registerParameter(B_STREAMING, "B_STREAMING", false, false);
+		conf.registerParameter(B_FORWARD, "B_FORWARD", false, false);
+		conf.registerParameter(B_OUTPUT_BUCKET_ID, "B_OUTPUT_BUCKET_ID", true,
+				false);
 		conf.registerCustomConfigurator(new ParametersProcessor());
 	}
 
@@ -78,10 +99,8 @@ public class WriteToBucket extends Action {
 		bucketID = getParamInt(I_BUCKET_ID);
 		fields = getParamByteArray(SA_TUPLE_FIELDS);
 		streaming = getParamBoolean(B_STREAMING);
-
-		if (bucketID == -1) {
-			bucketID = context.getNewBucketID();
-		}
+		forward = getParamBoolean(B_FORWARD);
+		outputnode = getParamBoolean(B_OUTPUT_BUCKET_ID);
 		bucket = context.getBucket(bucketID, false, streaming, null, fields);
 	}
 
@@ -89,12 +108,18 @@ public class WriteToBucket extends Action {
 	public void process(Tuple inputTuple, ActionContext context,
 			ActionOutput output) throws Exception {
 		bucket.add(inputTuple);
+		if (forward) {
+			output.output(inputTuple);
+		}
 	}
 
 	@Override
 	public void stopProcess(ActionContext context, ActionOutput output)
 			throws Exception {
 		bucket.setFinished();
-		output.output(new TInt(context.getMyNodeId()), new TInt(bucketID));
+
+		if (outputnode) {
+			output.output(new TInt(context.getMyNodeId()), new TInt(bucketID));
+		}
 	}
 }

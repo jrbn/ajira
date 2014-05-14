@@ -80,7 +80,6 @@ public class Bucket {
 
 	private TupleIterator iter;
 	private long key;
-	private CachedFilesMerger merger;
 
 	private Map<Long, List<Integer>> additionalChildrenCounts = null;
 
@@ -421,7 +420,6 @@ public class Bucket {
 		this.key = key;
 		this.fb = fb;
 		this.inBuffer = null;
-		this.merger = merger;
 		this.context = context;
 		this.streaming = streaming;
 

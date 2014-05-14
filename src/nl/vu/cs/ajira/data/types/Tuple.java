@@ -2,6 +2,9 @@ package nl.vu.cs.ajira.data.types;
 
 import java.util.Arrays;
 
+import nl.vu.cs.ajira.actions.ActionContext;
+import nl.vu.cs.ajira.utils.Consts;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,6 +70,9 @@ public class Tuple {
 			 * != signature.length) { log.debug("Changing elements of tuple to "
 			 * + elements.length, new Throwable()); }
 			 */
+			if (elements.length > Consts.MAX_TUPLE_ELEMENTS) {
+				throw new Error("Too many elements in tuple");
+			}
 			signature = elements;
 			nElements = elements.length;
 		} else {
@@ -127,7 +133,35 @@ public class Tuple {
 	 *         is lower than tuple a number greater than 0 if the current object
 	 *         is greater than tuple
 	 */
-	public boolean equals(Tuple tuple) {
+        public int compareTo(Tuple tuple) {
+            if (nElements != tuple.nElements) {
+                return tuple.nElements - nElements;
+            }
+            for (int i = 0; i < nElements; ++i) {
+                    SimpleData s1 = signature[i];
+                    SimpleData s2 = tuple.signature[i];
+                    if (s1 == null) {
+                            if (s2 != null) {
+                                    return 1;
+                            }
+                    } else if (s2 == null) {
+                            return -1;
+                    } else {
+                        int d1 = s1.getIdDatatype();
+                        int d2 = s2.getIdDatatype();
+                        if (d1 != d2) {
+                            return d2 - d1;
+                        }
+                        int c = s1.compareTo(s2);
+                        if (c != 0) {
+                            return c;
+                        }
+                    }
+            }
+            return 0;
+        }
+
+	public boolean equals(Tuple tuple, ActionContext context) {
 		if (nElements == tuple.nElements) {
 			for (int i = 0; i < nElements; ++i) {
 				if (signature[i] == null) {
@@ -138,19 +172,11 @@ public class Tuple {
 					if (signature[i] != null) {
 						return false;
 					}
-				} else if (signature[i].compareTo(tuple.signature[i]) != 0) {
+				} else if (!signature[i].equals(tuple.signature[i], context)) {
 					return false;
 				}
 			}
 			return true;
-		}
-		return false;
-	}
-
-	@Override
-	public boolean equals(Object o) {
-		if (o instanceof Tuple) {
-			return equals((Tuple) o);
 		}
 		return false;
 	}
